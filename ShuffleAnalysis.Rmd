@@ -1,0 +1,737 @@
+---
+title: "Untitled"
+author: "Sarah Tennant"
+date: "21/08/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+title: "ShuffleAnalysis"
+author: "Sarah Tennant"
+date: "07/04/2020"
+output: html_document
+---
+
+### Script generates 1000 shuffled datasets for each neuron 
+
+
+### load data 
+
+_Run if using script stand alone_
+
+```{r}
+spatial_firing_test <- readRDS(file="spatial_firing_test.Rda")
+```
+
+
+_run if using from Prelim_Analysis_0100.Rmd_
+
+```{r}
+spatial_firing_test <- subset(spatial_firing2, asr_b_rewarded_slope_o < -0.38) #extract test neuron
+```
+
+
+1. write function for running lm
+
+```{r}
+
+lm_helper <- function(df, bins){
+  if(all(is.na(df))) 
+    return(0)
+  df <- df  %>% subset(Position > 30 & Position <= 90) %>%  
+    group_by(Position) %>%
+    summarise(Rates = mean(Rates, na.rm = TRUE))  %>% 
+    mutate(Position = c(31:90))
+  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
+}
+
+```
+
+2. write function to generate 1000 shuffles
+- shuffles spikes using sample() function
+- runs lm
+- extracts coefficients
+- stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
+```{r}
+#library(gdata)
+shuffle_rates <- function(df) {
+  df_modified <- data.frame(neuron=as.numeric(),
+                 slope=as.numeric(), 
+                 rsquared=as.numeric(), 
+                 pval=vector())
+  names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
+  x <- 1
+  repeat {
+  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = rep(1:200, times=length(df)/200), Trials = rep(1:(length(df)/200), each=200))
+  shuff_df <- subset(shuff_df, Position >=30 & Position <=90)
+  df_mod <- lm_helper(shuff_df)
+  rsquared <- glance(df_mod)$r.squared
+  pval<- glance(df_mod)$p.value
+  slope <- coefficients(df_mod)[2] # slope
+  data <- data.frame(as.numeric(x), slope, rsquared, round(pval,5))
+  names(data) <- c("neuron", "slope", "rsquared", "pval")
+  df_modified <- rbind(df_modified,data)
+
+  x = x+1
+  if (x == 100){
+  break
+  }
+  }
+return(df_modified)
+}
+```
+
+3. Run on example neuron
+```{r}
+
+spatial_firing_test <- spatial_firing_test %>%
+  mutate(shuffle_results = map(Firing_rate_b, shuffle_rates)) 
+
+```
+
+Then we want to find limits of the shuffled data for this neuron
+
+1. extract shuffle results (slopes and r2 for each shuffle)
+_functions_
+```{r} 
+
+extract_shuffle_slopes <- function(df){
+  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
+  return(df$slopes)
+}
+
+extract_shuffle_r2 <- function(df){
+  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
+  return(df$rsquared)
+}
+
+extract_shuffle_pval <- function(df){
+  df <- tibble(pval = unlist(df$pval))
+  return(df$pval)
+}
+```
+
+2. run on test neuron
+```{r}
+spatial_firing_test <- spatial_firing_test %>%
+  mutate(shuffle_slopes = map(shuffle_results, extract_shuffle_slopes)) %>%
+  mutate(shuffle_rsquared = map(shuffle_results, extract_shuffle_r2)) %>%
+  mutate(shuffle_pval = map(shuffle_results, extract_shuffle_r2)) 
+
+
+```
+
+3. find limits for that neuron
+```{r}
+min_slope_o <- quantile(as.numeric(unlist(spatial_firing_test$shuffle_slopes)), c(.05, .95)) [[1]][1]
+max_slope_o <- quantile(as.numeric(unlist(spatial_firing_test$shuffle_slopes)), c(.05, .95)) [[2]][1]
+max_r2_o <- quantile(as.numeric(unlist(spatial_firing_test$shuffle_rsquared)), c(.025, .975)) [[2]][1]
+
+```
+
+Now we can plot coefficients from shuffled and real datasets 
+
+1. make two tibbles with data
+- first tibble contains all data
+- second tibble contains only ramp data as identified by lm
+
+```{r}
+
+lm_results <- tibble(Slopes =  unlist(spatial_firing_test$shuffle_slopes), 
+    r2 = unlist(spatial_firing_test$shuffle_rsquared), 
+    id = rep(1:999))
+
+lm_results_ramps <- tibble(
+    Slopes = as.numeric(unlist(spatial_firing_test$asr_b_rewarded_slope_o)), 
+    r2 = as.numeric(unlist(spatial_firing_test$asr_b_rewarded_r2_o)), 
+    id = as.numeric(spatial_firing_test$cluster_id))
+
+```
+
+2. Plot results, color coded by ramp type
+
+```{r}
+
+lm_plot_start <- ggplot(data=lm_results, aes(x = Slopes, y = r2)) + 
+    #coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
+    xlim(c(-0.6,0.6)) + 
+    geom_point() +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2), color="Blue") +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+lm_plot_start <- lm_plot_start + geom_vline(xintercept = min_slope_o , linetype="dotted", color = "blue", size=.6)
+lm_plot_start <- lm_plot_start + geom_vline(xintercept = max_slope_o, linetype="dotted", color = "blue", size=.6)
+lm_plot_start <- lm_plot_start + geom_hline(yintercept = max_r2_o, linetype="dotted", color = "red", size=.6)
+show(lm_plot_start)
+ggsave(file = "plots/shuff_lm1_examplecell.png", width = 4, height = 5, ggMarginal(lm_plot_start, expand = FALSE, type = "density", margins = c("both"), size=4))
+```
+
+3. plot zoom of shuffled data to see the limits
+```{r}
+
+lm_plot_start <- ggplot(data=lm_results, aes(x = Slopes, y = r2)) + 
+    geom_jitter() +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+lm_plot_start <- lm_plot_start + geom_vline(xintercept = min_slope_o , linetype="dotted", color = "blue", size=.6)
+lm_plot_start <- lm_plot_start + geom_vline(xintercept = max_slope_o, linetype="dotted", color = "blue", size=.6)
+lm_plot_start <- lm_plot_start + geom_hline(yintercept = max_r2_o, linetype="dotted", color = "red", size=.6)
+show(lm_plot_start)
+ggsave(file = "plots/shuff_lm1_examplecell_shuffinsert.png", width = 4, height = 5, ggMarginal(lm_plot_start, expand = FALSE, type = "density", margins = c("both"), size=4))
+
+```
+
+
+
+Now i want to check the shuffled data. So I want to plot these shuffles.
+
+1. write function to plot shuffled dataset in a loop
+```{r}
+#library(gdata)
+shuffle_rates <- function(df) {
+  df_modified <- data.frame(neuron=as.numeric(), 
+                 rates = vector())
+  names(df_modified) <- c("neuron","rates")
+  x <- 1
+  repeat {
+  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = rep(1:200, times=length(df)/200), Trials = rep(1:(length(df)/200), each=200))
+  shuff_df <- subset(shuff_df, Position >=30 & Position <=90)
+  
+  #plot shuffled points - use jitter to see density of points
+  ggplot(data=shuff_df, aes(x = Position, y = Rates)) + 
+    geom_jitter(size=0.5) +
+    theme_classic()
+  ggsave(file = paste0("plots/ExampleShuffle.", as.character(x), ".png"), width = 4, height = 3)
+  
+  #average firing rate
+  shuff_df <- shuff_df %>% 
+    group_by(Position) %>% 
+    summarise(avg_rate = mean(Rates, na.rm =TRUE)) %>% 
+    mutate(bins=rep(30:90))
+  ggplot(data=shuff_df, aes(x = bins, y = avg_rate)) + 
+  geom_line() +
+  theme_classic()
+  ggsave(file = paste0("plots/ExampleShuffle_rate.", as.character(x), ".png"), width = 4, height = 3)
+  
+  x = x+1
+  if (x == 100){
+  break
+  }
+  }
+return(df_modified)
+}
+```
+
+2. run on test neuron shuffle rates 1000 times
+```{r}
+
+spatial_firing_test <- spatial_firing_test %>%
+  mutate(shuffle_firing_rates = map(Firing_rate_b, shuffle_rates)) 
+
+```
+
+
+Also want to plot the real firing rate of the neuron
+
+1. extract firing rate into a tibble
+```{r}
+real_df <- tibble(Rates = as.vector(unlist(spatial_firing_test$Firing_rate_b)), Position = rep(1:200, times=length(as.vector(unlist(spatial_firing_test$Firing_rate_b)))/200), Trials = rep(1:(length(as.vector(unlist(spatial_firing_test$Firing_rate_b)))/200), each=200))
+
+```
+
+2. plot real rates
+```{r}
+ggplot(data=real_df, aes(x =Position, y = Rates)) + 
+  coord_cartesian(xlim=c(30,90), ylim=c(0,45)) +
+  geom_jitter(size=0.5) +
+  theme_classic()
+ggsave(file = paste0("plots/ExampleShuffle-real.png"), width = 4, height = 3)
+
+```
+
+
+### plot pval distribution of shuffled data
+
+3. plot zoom of shuffled data to see the limits
+
+```{r}
+pdata <- tibble(pvals = unlist(spatial_firing_test$shuffle_pval))
+```
+
+```{r}
+ggplot(data=pdata, aes(x = pvals)) + 
+    geom_histogram() +
+    xlab("pval") +
+    ylab("count") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+ggsave(file = "plots/shuff_pvalues.png", width = 4, height = 5)
+
+```
+
+
+
+### ----------------------------------------------------------------- ###
+
+
+### Run shuffle analysis on all neurons
+
+
+```{r}
+lm_helper <- function(df){
+  if(all(is.na(df))) 
+    return(0)
+  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
+}
+```
+
+2. write function to generate 1000 shuffles
+- shuffles spikes using sample() function
+- runs lm
+- extracts coefficients
+- stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
+```{r}
+#library(gdata)
+shuffle_rates <- function(df) {
+  df_modified <- data.frame(neuron=as.numeric(),
+                 slope=as.numeric(), 
+                 rsquared=as.numeric(), 
+                 pval=vector())
+  names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
+  x <- 1
+  repeat {
+  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
+  shuff_df <- subset(shuff_df, Position >=30 & Position <=90)
+  df_mod <- lm_helper(shuff_df)
+  rsquared <- glance(df_mod)$r.squared
+  pval<- glance(df_mod)$p.value
+  slope <- coefficients(df_mod)[2] # slope
+  data <- data.frame(as.numeric(x), slope, rsquared, round(pval,5))
+  names(data) <- c("neuron", "slope", "rsquared", "pval")
+  df_modified <- rbind(df_modified,data)
+
+  x = x+1
+  if (x == 100){
+  break
+  }
+  }
+return(df_modified)
+}
+```
+
+3. Run on example neuron (beaconed and non-beaconed trials)
+```{r}
+
+spatial_firing <- spatial_firing %>%
+  #mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
+  #mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
+  mutate(shuffle_results_p = map(Rates_averaged_p, shuffle_rates)) 
+
+```
+
+
+### ---------------------------------------------------------------------------------------------------- ### 
+
+### classify neurons based on shuffle activity
+
+First, extract the limits of shuffled data for each neuron 
+
+1. write function to find min and max slope for shuffled datasets 
+```{r}
+
+extract_min_shuffle_slopes <- function(df){
+  df <- tibble(slopes = unlist(df[2]), rsquared = unlist(df[3]))
+  min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
+  #max_r2_o <- quantile(as.numeric(unlist(df$rsquared)), c(.025, .975)) [[2]][1]
+  #variables <- c(min_slope_o, max_slope_o, max_r2_o) # return all three criteria
+  return(min_slope_o)
+}
+
+extract_max_shuffle_slopes <- function(df){
+  df <- tibble(slopes = unlist(df[2]), rsquared = unlist(df[3]))
+  max_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[2]][1]
+  return(max_slope_o)
+}
+
+```
+
+2. Run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_min_slope = map(shuffle_results, extract_min_shuffle_slopes)) %>%
+  mutate(shuffle_max_slope = map(shuffle_results, extract_max_shuffle_slopes)) 
+
+```
+
+3. Do same for non-beaconed/probe trials
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_min_slope_nb = map(shuffle_results_nb, extract_min_shuffle_slopes)) %>%
+  mutate(shuffle_max_slope_nb = map(shuffle_results_nb, extract_max_shuffle_slopes)) 
+
+```
+
+3. Do same for non-beaconed/probe trials
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_min_slope_p = map(shuffle_results_p, extract_min_shuffle_slopes)) %>%
+  mutate(shuffle_max_slope_p = map(shuffle_results_p, extract_max_shuffle_slopes)) 
+
+```
+
+
+We also want to extract all shuffled slopes, r2 and pvalues
+
+1. Function to extract shuffle results (slopes and r2 for each shuffle)
+
+```{r} 
+
+extract_shuffle_slopes <- function(df){
+  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
+  return(df$slopes)
+}
+
+extract_shuffle_r2 <- function(df){
+  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
+  return(df$rsquared)
+}
+
+extract_shuffle_pval <- function(df){
+  df <- tibble(pval = unlist(df$pval))
+  return(df$pval)
+}
+```
+
+2. run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_slopes = map(shuffle_results, extract_shuffle_slopes)) %>%
+  mutate(shuffle_rsquared = map(shuffle_results, extract_shuffle_r2)) %>%
+  mutate(shuffle_pval = map(shuffle_results, extract_shuffle_pval)) 
+
+
+```
+
+3. run on all non-beaconed/probe trials
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_slopes_nb = map(shuffle_results_nb, extract_shuffle_slopes)) %>%
+  mutate(shuffle_rsquared_nb = map(shuffle_results_nb, extract_shuffle_r2)) %>%
+  mutate(shuffle_pval_nb = map(shuffle_results_nb, extract_shuffle_pval)) 
+
+
+```
+
+4. run on just probe trials
+
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_slopes_p = map(shuffle_results_p, extract_shuffle_slopes)) %>%
+  mutate(shuffle_rsquared_p = map(shuffle_results_p, extract_shuffle_r2)) %>%
+  mutate(shuffle_pval_p = map(shuffle_results_p, extract_shuffle_pval)) 
+
+```
+
+### -------------------------------------------------------------------------------------------------------------------- ### 
+
+Then we want to correct the pvals of the lm, to account for multiple comparisons
+
+1. put all pvalues into tibble then adjust using p.adjust from - package
+```{r}
+p_vals <- tibble(pvals = spatial_firing$asr_b_rewarded_Pval_o)
+adjusted_vals <- p.adjust(p_vals$pvals, "BH")
+adu_p <- tibble(adjust_pval = adjusted_vals)
+
+```
+
+2. bind new adjusted pvalues to dataframe
+```{r}
+spatial_firing <- cbind(spatial_firing, adu_p)
+```
+
+3. do the same for non-beaconed trials
+```{r}
+p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_rewarded_Pval_o)
+adjusted_vals <- p.adjust(p_vals_nb$pvals, "BH")
+adu_p_nb <- tibble(adjust_pval_nb = adjusted_vals)
+
+spatial_firing <- cbind(spatial_firing, adu_p_nb)
+```
+
+
+3. do the same for probe trials
+```{r}
+p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_Pval_o)
+adjusted_vals <- p.adjust(p_vals_p$pvals, "BH")
+adu_p_p <- tibble(adjust_pval_p = adjusted_vals)
+
+spatial_firing <- cbind(spatial_firing, adu_p_p)
+```
+
+
+# remove duplicate columns from dataframe if needed  _nb should only need if ran the above code twice_
+```{r}
+spatial_firing = spatial_firing[,!duplicated(names(spatial_firing))]
+
+```
+
+
+### -------------------------------------------------------------------------------------------------------------------- ### 
+
+
+Now we want to classify neurons, taking their significance into account
+
+```{r}
+
+
+compare_slopes <- function(min_slope, max_slope, slope, pval){
+  if ( pval > 0.01) {
+    return( "Unclassified" )
+  } else if( slope < min_slope & pval < 0.01) {
+    return( "Negative" )
+  } else if( slope > max_slope & pval < 0.01){
+    return("Positive")
+  } else if( slope > min_slope & slope < max_slope){
+    return("Unclassified")
+  } else {
+    return("Unclassified")
+  }
+}
+
+spatial_firing <- spatial_firing %>%
+  mutate(slope_criteria_pval = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) %>%
+  mutate(slope_criteria_pval_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes)) %>%
+  mutate(slope_criteria_pval_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
+
+```
+
+
+
+### -------------------------------------------------------------------------------------------------------------------- ### 
+
+
+Now we want to visualise the coefficients of all neurons and all shuffled datasets
+
+1. extract shuffled values into tibble _nb needed because each 1000 shuffled datasets are nested for each neuron_
+```{r}
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unlist(spatial_firing$shuffle_rsquared))
+```
+
+2. plot real and shuffled coefficients 
+```{r}
+ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32") + 
+    coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
+    geom_point(alpha=.4) + 
+    geom_point(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o, color=factor(unlist(slope_criteria_pval)))) +
+    #geom_point(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32") +
+    xlab("\nslope") +
+    ylab("R2") +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey82")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/LMOut_coefficients_pval_05.png", width = 4, height = 5)
+
+```
+
+
+
+Now lets find and plot the proportion of cells that pass criteria according to our classification
+
+1. extract proportion of cells that meet each criteria
+```{r}
+# positive homebound slopes
+start <- nrow(subset(spatial_firing, slope_criteria_pval == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, slope_criteria_pval == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, slope_criteria_pval == "Unclassified"))/nrow(spatial_firing)*100
+
+
+```
+
+2. Put into a tibble 
+```{r}
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+```
+
+3. Plot bar graph of proportions
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=16), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/LMOut_proportions_rewarded.png", width = 3, height = 6)
+
+```
+
+
+4. Find raw numbers for plot above (instead of proportion)
+```{r}
+start <- nrow(subset(spatial_firing, slope_criteria_pval == "Negative"))
+reward <- nrow(subset(spatial_firing, slope_criteria_pval == "Positive"))
+nonslope <- nrow(subset(spatial_firing, slope_criteria_pval == "Unclassified"))
+```
+
+
+
+### -------------------------------------------------------------------------------------------------------------------- ### 
+
+
+We might also want to visualise the coefficients for the real and shuffled dataset as a histogram. 
+
+1. First, make stacked histogram of slope values for real dataset
+```{r}
+level_order <- c("Negative", "Positive", "Unclassified")
+
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(slope_criteria_pval), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+  coord_cartesian(xlim = c(-0.6,0.6)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+  ylab("Proportion") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/LMOut_histogram_slopes.png", width = 4.5, height = 2)
+
+```
+
+2. same as above but for shuffled datasets
+```{r}
+ggplot(data=shuff_slopes, aes(x = slopes)) + 
+    coord_cartesian(xlim = c(-0.6,0.6)) +
+    geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+    labs(x = "Slope (Hz/cm)") +
+    ylab("Proportion") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=14), 
+          legend.text=element_text(size=14), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height = 2)
+```
+
+
+3. Make stacked histogram of rsquared values for real dataset
+
+```{r}
+level_order <- c("Negative", "Positive", "Unclassified")
+
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_r2_o, fill=factor(unlist(slope_criteria_pval), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+  coord_cartesian(xlim = c(0,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+  ylab("Proportion") +
+  xlab("\nrsquared") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/LMOut_histogram_r2.png", width = 4.5, height = 2)
+
+
+```
+
+4. Same as above but for shuffled datasets
+
+```{r}
+ggplot(data=shuff_slopes, aes(x = r2)) + 
+    coord_cartesian(xlim = c(0,1)) +
+    geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+    xlab(expression(R^2)) +
+    ylab("Proportion") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.position="none", 
+          legend.title = element_blank(),
+          text = element_text(size=14), 
+          legend.text=element_text(size=14), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/LMOut_shuffle_r2_datasets_histogram.png", width = 4.5, height = 2)
+```
+
+
+
+### ---------------------------------------------------------------------------------------------------- ### 
+
+Plot distribution of the shuffled data
+
+1. Extract shuffled slopes and rsquared values
+```{r}
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unlist(spatial_firing$shuffle_rsquared))
+```
+
+2. Plot in scatter 
+```{r}
+ggplot(data=shuff_slopes, aes(x = slopes, y = r2)) + 
+    #coord_cartesian(xlim = c(-1,1), ylim = c(0,1)) +
+    #geom_point(alpha=.4) + 
+    geom_point() +
+    xlab("\nslope") +
+    ylab("R2") +
+    #scale_color_manual(values=c("violetred2", "grey82", "chartreuse3")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/LMOut_shuffle_datasets.png", width = 3, height = 3)
+
+```

@@ -1,0 +1,954 @@
+---
+title: "Untitled"
+author: "Sarah Tennant"
+date: "06/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+title: "Prelim_Analysis_0100"
+author: "Sarah Tennant"
+date: "07/04/2020"
+output: html_document
+---
+
+## Analysis of neurons recorded from the medial entorhinal cortex during virtual navigation
+
+The aim of this analysis is to identify all ramp cells within a specified dataset (all mice or all days for one mouse) and perform analysis to investigate their firing properties. 
+1. Identify cells that represent location by ramping their firing rate using LM modeling 
+2. Subset data by model fit (r2 value)
+3. Compare firing rates of cells in this group
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import packages
+
+```{r}
+library(tidyverse)
+library(broom)
+library(lme4)
+library(ggplot2)
+library(ggExtra)
+library(ggthemes)
+library(scales)
+library(dplyr)
+library(tidyr)
+library(Hmisc)
+library(Metrics)
+library(plotrix)
+#library(plyr)
+#library("plot3D")
+#library(NetworkD3)
+```
+
+
+## Import functions
+
+```{r}
+source("Functions.R")
+source("Functions_Outbound_LMER.R")
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Load the data
+_note : only run if not ran ConvertPickletoRda.Rmd_
+
+1. Set up the python environment. 
+This is so we can call a python script from R that loads the pickled dataframes and sends it back to the R workspace. 
+The python environment needs to be >v.3 as 2.7 (system python) doesnt have Pandas package which is needed to open dataframes
+
+```{r}
+
+require(reticulate) # package that allows R to call python code
+Sys.setenv(RETICULATE_PYTHON = "/usr/local/Cellar/python3/3.7.4_1/Frameworks/Python.framework/Versions/3.7/bin/python3.7") 
+
+```
+
+2. Load dataframe for all mice and days (all curated cells from one animal/multiple animals)
+
+```{r}
+dataframe_to_load <- "data/Alldays_cohort_1_1.pkl" # name of the pickled dataframe want to load 
+source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
+spatial_firing <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
+
+```
+
+OR 2. load RDa file 
+
+```{r}
+spatial_firing <- readRDS(file="df_final.Rda")
+saveRDS(spatial_firing_test, file="spatial_firing_test.Rda")
+
+```
+
+```{r}
+saveRDS(spatial_firing, file="df_final.Rda")
+```
+
+```{r}
+
+find_reward_number <- function(df) {
+  x <- length(df[!is.na(df)])
+  return(as.numeric(x))
+}
+
+
+spatial_firing <- spatial_firing  %>%
+  mutate(number_of_rewards = map(rewarded_locations, find_reward_number))
+
+```
+
+
+```{r}
+spatial_firing <- subset(spatial_firing, number_of_rewards >= 15)
+
+```
+
+
+
+```{r}
+spatial_firing <- subset(spatial_firing, max_trial_number >= 30)
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Average firing rate (for LM modelling)
+
+The linear model uses firing rate data binned in space. For this we want to load average firing rate over trials from the data frame for each cluster. 
+- Map over "Rates_averaged" column and extract averaged rates
+- Add position for each point ( data is binned into 200, 1 cm bins )
+- Insert result back into dataframe
+- Do this for beaconed, nonbeaconed and probe trials
+- Do this for shuffled spike rate (beaconed)
+
+1. Write function to add position
+```{r}
+add_position <- function(df) { 
+  df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
+}
+```
+
+2. Run on dataframe : Average trials with reward
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(asr_b_rewarded = map(Rates_averaged_rewarded_b, add_position)) %>%
+  mutate(asr_nb_rewarded = map(Rates_averaged_rewarded_nb, add_position)) %>%
+  mutate(asr_p_rewarded = map(averaged_rewarded_p, add_position))
+
+```
+
+
+
+```{r}
+add_position <- function(df) {
+  size_df <- length(as.vector(unlist(df)))
+  if(size_df <2)
+    return(tibble(Rates = as.character()))
+  df <- tibble(Rates = as.vector(unlist(df)), Position = rep(1:200, times=size_df/200), Trials = rep(1:(size_df/200), each=200))
+}
+```
+
+2. Run on dataframe : Average trials with reward
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(asr_b_rewarded = map(Firing_rate_rewarded_b, add_position)) 
+  #mutate(asr_p_rewarded = map(Firing_rate_rewarded_nb, add_position)) %>%
+  #mutate(asr_nb_rewarded = map(Firing_rate_rewarded_p, add_position))
+  #mutate(shuff_asr_b = map(Shuffled_Rates_averaged, add_position))
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+# Remove NA's and clusters with no data on probe trials
+_note : this is to prevent an error when running the LM - temp fix_
+
+1. Write function to sum rates
+```{r}
+sum_rates <- function(df){
+  if(all(is.na(as.numeric(df$Rates))))
+    return(0)
+  df <- df  %>% subset(Position > 30 & Position <= 90) 
+  x = sum(as.numeric(df$Rates), na.rm=TRUE)     
+}
+```
+1. Write function to sum rates
+```{r}
+sum_rates <- function(df){
+  #if(all(is.na(as.numeric(df$Rates[30:90]))))
+  #  return(0)
+  x = sum(as.numeric(df$Rates[31:90]), na.rm=TRUE)     
+}
+```
+2. Run on dataframe : sum rates across location for each cluster
+```{r}
+
+spatial_firing <- spatial_firing %>% 
+  mutate(asr_b_reward_sum = map(asr_b_rewarded, sum_rates)) %>% 
+  mutate(asr_p_reward_sum = map(asr_p_rewarded, sum_rates)) %>% 
+  mutate(asr_nb_reward_sum = map(asr_nb_rewarded, sum_rates))
+
+```
+
+3. Remove NA's and clusters with no data on probe trials
+```{r}
+spatial_firing <- spatial_firing %>% 
+  filter(asr_b_reward_sum > 0 & asr_nb_reward_sum > 0)
+#& asr_p_reward_sum > 0 & asr_nb_reward_sum > 0 
+
+spatial_firing <- spatial_firing %>% 
+  filter(asr_p_reward_sum > 0 )
+#& asr_p_reward_sum > 0 & asr_nb_reward_sum > 0 
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+# Run simple linear model 
+
+```{r}
+lm_helper <- function(df, bins){
+  df_mod <- lm(Rates ~ Position, data = df[bins,], na.action=na.exclude)
+}
+```
+
+```{r}
+lm_helper <- function(df, bins){
+  if(all(is.na(df))) 
+    return(0)
+  #df <- df  %>% subset(Position >= 30 & Position <= 90) 
+  df_mod <- lm(Rates ~ Position, data = df[30:90], na.action=na.exclude)
+}
+```
+
+```{r}
+lm_helper <- function(df, bins){
+  if(all(is.na(df))) 
+    return(0)
+  df <- df  %>% subset(Position > 30 & Position <= 90) %>%  
+    group_by(Position) %>%
+    summarise(Rates = mean(Rates, na.rm = TRUE))  %>% 
+    mutate(Position = c(31:90))
+  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
+}
+```
+
+```{r}
+lm_analysis <- function(df, spike_rate_col, startbin = 30, endbin = 90) {
+  spike_rate_col <- enquo(spike_rate_col)
+  out_name <- sym(paste0(quo_name(spike_rate_col)))
+  sr_unnest_name <- sym(paste0(quo_name(spike_rate_col), "_unnest"))
+  fit_name <- sym(paste0(quo_name(out_name), "_fit"))
+  glance_name <- sym(paste0(quo_name(out_name), "_glance"))
+  r2_name <- sym(paste0(quo_name(out_name), "_r2_o"))
+  Pval_name <- sym(paste0(quo_name(out_name), "_Pval_o"))
+  slope_name <- sym(paste0(quo_name(out_name), "_slope_o"))
+  intercept_name <- sym(paste0(quo_name(out_name), "_intercept_o"))
+  df <- df %>%
+    mutate(!!fit_name := map(!!spike_rate_col, bins=c(startbin:endbin), lm_helper),
+           !!glance_name := map(!!fit_name, glance),
+           !!r2_name := map_dbl(!!glance_name, ~.$r.squared),
+           !!Pval_name := map_dbl(!!glance_name, ~.$p.value),
+           !!slope_name := map_dbl(!!fit_name, ~.$coefficients[2]),
+           !!intercept_name := map_dbl(!!fit_name, ~.$coefficients[1]))
+}
+```
+
+
+3. run lm on rewarded data
+```{r}
+
+spatial_firing <- spatial_firing %>%
+  lm_analysis(asr_b_rewarded, 30, 90) %>%
+  lm_analysis(asr_nb_rewarded, 30, 90) %>%
+  lm_analysis(asr_p_rewarded, 30, 90)
+
+```
+
+
+```{r}
+ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o)) + 
+    coord_cartesian(xlim = c(-1,1), ylim = c(0,1)) +
+    #geom_point(alpha=.4) + 
+    geom_point() +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/shuff_lm1_allcells.png", width = 4, height = 5)
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+## Identification of ramp cells in dataset (Beaconed trials)
+
+Here we do this by finding the tails of the shuffled data
+
+1. load slope and r2 from shuffled datasets for all neurons
+
+```{r}
+slopes <- as.numeric(na.omit(spatial_firing_reset$shuff_asr_b_slope_o))
+r2 <- as.numeric(na.omit(spatial_firing_reset$shuff_asr_b_r2_o))
+```
+
+2. find the 95% and 5% percentiles of the shuffled data
+
+```{r}
+min_slope_o <- quantile(slopes, c(.05, .95)) [[1]][1]
+max_slope_o <- quantile(slopes, c(.05, .95)) [[2]][1]
+max_r2_o <- quantile(r2, c(.025, .975)) [[2]][1]
+```
+
+3. Classify neurons based on activity in outbound in relation to shuffled limits
+```{r}
+
+spatial_firing_reset <- spatial_firing_reset %>%
+  mutate(lm_result_o_rewarded = pmap(list(asr_b_rewarded_Pval_o, asr_b_rewarded_r2_o, asr_b_rewarded_slope_o,max_r2_o, max_slope_o, min_slope_o), select_final_lm_result)) %>%
+  mutate(lm_result_o_rewarded_nb = pmap(list(asr_nb_rewarded_Pval_o, asr_nb_rewarded_r2_o, asr_nb_rewarded_slope_o,max_r2_o, max_slope_o, min_slope_o), select_final_lm_result)) %>%
+  mutate(lm_result_o_rewarded_p = pmap(list(asr_p_rewarded_Pval_o, asr_p_rewarded_r2_o, asr_p_rewarded_slope_o,max_r2_o, max_slope_o, min_slope_o), select_final_lm_result))
+
+```
+
+
+## how much of the shuffled dataset is past criteria? 
+
+```{r}
+shuff_ramps <- nrow(subset(spatial_firing,lm_result_o_shuff == "Positive" | lm_result_o_shuff == "Negative" ))/nrow(spatial_firing)*100
+non_shuff_ramps <- nrow(subset(spatial_firing,lm_result_o_shuff == "None" | lm_result_o_shuff == "NoSlope" ))/nrow(spatial_firing)*100
+
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+```{r}
+start_ramps <- spatial_firing %>%
+  filter(asr_b_rewarded_r2_o > max_r2_o)
+```
+
+
+First, reorder the dataframe with ramps according to slope.
+_For start ramps, steepest slope should be negative - thus will have the highest cluster id_
+
+```{r}
+start_ramps<-start_ramps[order(start_ramps$asr_b_rewarded_r2_o),]
+start_ramp_number = nrow(start_ramps)
+new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
+start_ramps <- cbind(start_ramps, new_cluster_id)
+```
+Then we want to look at the distribution of these firing proeprty variables in our ramp cell dataset. 
+_to examine only ramp/distance cells we are looking only at neurons that had slope > 0.15 from using a GLM on firing rate and distance_
+
+Prep data:
+1. Filter dataset for slope to get only ramp cells
+2. Create marker for whether is start or end of track firing cells
+3. Concatenate frames so all ramps are in one frame
+
+```{r}
+to_reward_ramps <- subset(start_ramps, lm_result_o_rewarded == "Positive")
+ramp_id=rep("to_reward", times= nrow(to_reward_ramps))
+binary_ramp_id = rep(4, times= nrow(to_reward_ramps))
+to_reward_ramps <- cbind(to_reward_ramps, ramp_id, binary_ramp_id)
+
+start_ramps <- subset(start_ramps, lm_result_o_rewarded == "Negative")
+ramp_id=rep("start", times= nrow(start_ramps))
+binary_ramp_id = rep(1, times= nrow(start_ramps))
+start_ramps <- cbind(start_ramps, ramp_id, binary_ramp_id)
+
+outbound_ramps <- bind_rows(start_ramps, to_reward_ramps)
+
+```
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+
+### Plot LM results for outbound region
+
+1. make two tibbles with data
+- first tibble contains all data
+- second tibble contains only ramp data as identified by lm
+
+```{r}
+
+#function2 - shuffled and real : beaconed trials
+return_b_shuffle_lm_results <- function(df){
+  tibble(
+    Trial_type = factor(c(rep(c("Real","Shuffled"), each =nrow(df)))),
+    Slopes = c(df$asr_b_rewarded_slope_o, df$shuff_asr_b_slope_o), 
+    r2 = c(df$asr_b_rewarded_r2_o, df$shuff_asr_b_r2_o), 
+    id = c(df$cluster_id, df$cluster_id))
+}
+
+lm_results <- return_b_shuffle_lm_results(spatial_firing)
+
+lm_results_ramps <- tibble(Ramp_type = c(as.character(start_ramps$ramp_id), as.character(to_reward_ramps$ramp_id)),
+    Slopes = c(start_ramps$asr_b_rewarded_slope_o, to_reward_ramps$asr_b_rewarded_slope_o), 
+    r2 = c(start_ramps$asr_b_rewarded_r2_o, to_reward_ramps$asr_b_rewarded_r2_o), 
+    id = c(start_ramps$cluster_id, to_reward_ramps$cluster_id))
+```
+
+2. Plot results, color coded by ramp type
+
+```{r}
+
+
+lm_plot_start <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
+    #geom_point(alpha=.4) +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2, color=factor(Trial_type))) +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type)),alpha=.4) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+lm_plot_start <- lm_plot_start + geom_vline(xintercept = min_slope_o , linetype="dotted", 
+                color = "blue", size=.6)
+lm_plot_start <- lm_plot_start + geom_vline(xintercept = max_slope_o, linetype="dotted", 
+                color = "blue", size=.6)
+lm_plot_start <- lm_plot_start + geom_hline(yintercept = max_r2_o, linetype="dotted", 
+                color = "red", size=.6)
+
+ggsave(file = "plots/shuff_lm1_rewarded.png", width = 4, height = 5)
+
+```
+
+
+# find and plot proportions for ramp types in dataset
+
+```{r}
+# positive homebound slopes
+start <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, lm_result_o_rewarded == "NoSlope" | lm_result_o_rewarded == "None"))/nrow(spatial_firing)*100
+
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), ramp_id= c("Start", "ToReward", "NoSlope"),ramp_type = c("Start", "ToReward", "NoSlope"))
+
+```
+
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("grey62", "violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/LMStart_cellproportions_rewarded.png", width = 3, height = 6)
+
+```
+
+3. get numbers of cells for each lm group (positive/negative/unclassified)
+```{r}
+start <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Negative"))
+reward <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Positive"))
+nonslope <- nrow(subset(spatial_firing, lm_result_o_rewarded == "NoSlope" | lm_result_o_rewarded == "None"))
+
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Run mixed effect model which examines contribution of speed, acceleration and position on firing rate
+
+1. Functions to perform linear mixed effect model
+```{r}
+source("Functions_Outbound_LMER.R")
+
+```
+
+```{r}
+
+tval_pos_b <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
+  if(length(df) == 1 | nrow(df) < 3) 
+    return(NA) 
+  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude, REML=FALSE)
+  print(coef(summary(df_int))["Position","t value"])
+  #print(summary(df_int)[,"t value"])
+  prtAnova <- car::Anova(df_int) 
+  return(prtAnova$"Pr(>Chisq)"[1])
+}
+```
+
+
+2. Run on all cells 
+```{r}
+spatial_firing <- spatial_firing  %>%
+  mutate(o_pos_b = map(spikes_in_time, car_pos_b)) %>%
+  mutate(o_speed_b = map(spikes_in_time, car_speed_b)) %>%
+  mutate(o_accel_b = map(spikes_in_time, car_accel_b)) %>%
+  mutate(o_pos_nb = map(spikes_in_time, car_pos_nb)) %>%
+  mutate(o_speed_nb = map(spikes_in_time, car_speed_nb)) %>%
+  mutate(o_accel_nb = map(spikes_in_time, car_accel_nb)) %>%
+  mutate(o_pos_p = map(spikes_in_time, car_pos_p)) %>%
+  mutate(o_speed_p = map(spikes_in_time, car_speed_p)) %>%
+  mutate(o_accel_p = map(spikes_in_time, car_accel_p))
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+## Select best model 
+
+1. Write function to perform model selection
+```{r}
+
+model_comparison <- function(null_pos, null_speed, null_accel){
+  pval <- 0.01
+  if( is.na(null_pos) & is.na(null_accel)) {
+    return( "None" )
+  
+  } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
+    return( "P" )
+    
+  } else if( null_pos > pval & null_accel > pval & null_speed < pval) {
+    return( "S" ) 
+    
+  } else if( null_pos > pval & null_accel < pval & null_speed > pval) {
+    return( "A" )
+    
+  } else if( null_pos < pval & null_accel > pval & null_speed < pval) {
+    return("PS")
+    
+  } else if( null_pos < pval & null_accel < pval & null_speed > pval) {
+    return( "PA" )
+        
+  } else if( null_pos > pval & null_accel < pval & null_speed < pval) {
+    return("SA")
+
+  } else if( null_pos < pval & null_accel < pval & null_speed < pval) {
+    return("PSA")
+    
+  } else {
+    return("None")
+  }
+}
+
+```
+
+2. Run on all cells in dataframe
+```{r}
+spatial_firing <- spatial_firing  %>%
+    mutate(final_model_o_b  = pmap(list(o_pos_b, o_speed_b, o_accel_b), model_comparison))
+    #mutate(final_model_o_nb  = pmap(list(o_pos_nb, o_speed_nb, o_accel_nb), model_comparison))  %>%
+    #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
+
+```
+
+
+
+
+
+```{r}
+saveRDS(spatial_firing, file="df_final.Rda")
+```
+
+```{r}
+df2 <- readRDS(file="df_final.Rda")
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+### PLOT MODEL SELECTION RESULTS
+
+## Beaconed trials
+
+```{r}
+
+# extracting diff models 
+pos <-subset(spatial_firing, slope_criteria_pval == "Positive")
+neg <-subset(spatial_firing, slope_criteria_pval == "Negative")
+none <-subset(spatial_firing, slope_criteria_pval == "None")
+
+```
+
+
+```{r}
+
+P_positive <- nrow(subset(pos, final_model_o_b == "P"))/nrow(pos)*100
+P_negative <- nrow(subset(neg, final_model_o_b == "P"))/nrow(neg)*100
+P_none <- nrow(subset(none,final_model_o_b == "P"))/nrow(none)*100
+
+S_positive <- nrow(subset(pos,final_model_o_b == "S"))/nrow(pos)*100
+S_negative <- nrow(subset(neg,final_model_o_b == "S"))/nrow(neg)*100
+S_none <- nrow(subset(none,final_model_o_b == "S"))/nrow(none)*100
+
+A_positive <- nrow(subset(pos,final_model_o_b == "A"))/nrow(pos)*100
+A_negative <- nrow(subset(neg,final_model_o_b == "A"))/nrow(neg)*100
+A_none <- nrow(subset(none,final_model_o_b == "A"))/nrow(none)*100
+
+P_S_positive <- nrow(subset(pos,final_model_o_b == "PS"))/nrow(pos)*100
+P_S_negative <- nrow(subset(neg,final_model_o_b == "PS"))/nrow(neg)*100
+P_S_none <- nrow(subset(none,final_model_o_b == "PS"))/nrow(none)*100
+
+P_A_positive <- nrow(subset(pos ,final_model_o_b == "PA"))/nrow(pos)*100
+P_A_negative <- nrow(subset(neg ,final_model_o_b == "PA"))/nrow(neg)*100
+P_A_none <- nrow(subset(none,final_model_o_b == "PA"))/nrow(none)*100
+
+S_A_positive <- nrow(subset(pos ,final_model_o_b == "SA"))/nrow(pos)*100
+S_A_negative <- nrow(subset(neg ,final_model_o_b == "SA"))/nrow(neg)*100
+S_A_none <- nrow(subset(none,final_model_o_b == "SA"))/nrow(none)*100
+
+P_S_A_positive <- nrow(subset(pos ,final_model_o_b == "PSA"))/nrow(pos)*100
+P_S_A_negative <- nrow(subset(neg ,final_model_o_b == "PSA"))/nrow(neg)*100
+P_S_A_none <- nrow(subset(none ,final_model_o_b == "PSA"))/nrow(none)*100
+
+NONE_positive <- nrow(subset(pos ,final_model_o_b == "None"))/nrow(pos)*100
+NONE_negative <- nrow(subset(neg ,final_model_o_b == "None"))/nrow(neg)*100
+NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
+
+
+
+mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative, S_none, A_positive,A_negative,A_none,  P_S_positive, P_S_negative,P_S_none, P_A_positive, P_A_negative, P_A_none, S_A_positive, S_A_negative, S_A_none,P_S_A_positive, P_S_A_negative, P_S_A_none, NONE_positive,NONE_negative, NONE_none), 
+                      
+                      ramp_id= c("P","P","P", 
+                                 "S", "S", "S", 
+                                 "A", "A", "A",
+                                 "PS", "PS", "PS", 
+                                 "PA", "PA", "PA", 
+                                 "SA", "SA", "SA", 
+                                 "PAS", "PAS","PAS",
+                                 "Null","Null", "Null"), 
+                      ramp_type= c("Positive", "Negative", "Unclassified","Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified","Positive", "Negative" ,"Unclassified","Positive", "Negative","Unclassified","Positive", "Negative","Unclassified", "Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified" ))
+
+
+```
+
+
+
+
+7. Plot model results
+
+```{r}
+# plot data
+level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "Null")
+ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .7) +
+  labs(y = "Percent of neurons") +
+  #scale_fill_manual(values=c("deeppink1","indianred3", "steelblue3", "darkred", "orchid", "lightseagreen", "darkgreen", "grey32")) +
+  scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
+  #scale_fill_brewer(palette= "RdYlBu") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/cell_proportions-lmmodel_beaconed2.png", width = 4, height = 4.5)
+
+
+```
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+# PLOT HEAT MAPS FOR ALL NEURONS
+
+
+First, reorder the dataframe with ramps according to slope.
+_For start ramps, steepest slope should be negative - thus will have the highest cluster id_
+
+```{r}
+start_ramps<-spatial_firing[order(spatial_firing$asr_b_rewarded_slope_o),]
+start_ramp_number = nrow(start_ramps)
+new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
+start_ramps <- cbind(start_ramps, new_cluster_id)
+```
+
+
+Then, scale firing rate for all neurons
+
+1. make function to load rates and normalise
+2. Run on dataframe 
+```{r}
+normalise_rates_outbound <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  df <- df %>%
+    filter(Position >=30, Position <= 90)
+  x <- normalit(df$Rates)
+  return(x)
+}
+
+start_ramps <- start_ramps %>%
+  mutate(normalised_rates_o = map(Rates_averaged, normalise_rates_outbound))
+
+```
+
+Add position to normalised rates for plotting
+```{r}
+add_position <- function(df) {
+  df <- tibble(Rates = unlist(df), Position = rep(30:90))
+}
+
+start_ramps <- start_ramps %>%
+  mutate(normalised_rates_o = map(normalised_rates_o, add_position))
+
+```
+
+Extract columns (normalised rates) for plotting into a tibble
+```{r}
+concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o))
+```
+
+
+Extract ramp score for annotating heatmap
+_since its a list of three (outbound/homebound/all) we extract the first one_
+```{r}
+extract_ramp_score <- function(df){
+  dx <- df[[1]]
+  return(dx)
+}
+
+start_ramps <- start_ramps %>%
+  mutate(start_ramp_score = map(ramp_score, extract_ramp_score))
+
+```
+
+
+Put ramp scores and lm results in tibble for annotating heatmap
+```{r}
+# data for annotating
+ramp_result <- tibble(ramp_score = as.numeric(start_ramps$start_ramp_score))
+brain_region <- tibble(region = as.character(start_ramps$brain_region))
+lm_result <- tibble(result = as.character(start_ramps$lm_result_o_rewarded))
+cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
+```
+
+            
+Plot heatmap with annotations using pheatmap
+```{r}
+#library(pheatmap) # import pheatmap if necessary
+#library(RColorBrewer) # color palette
+
+#convert data to wide format
+wide_DF <- concat_firing_start %>% spread(Position, Rates)
+
+# Generte data (modified the mydf slightly)
+colnames(wide_DF) <- c("new_cluster_id", rep(30:90, times=1))
+rownames(wide_DF) <- paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_")
+
+#remove unused column
+name <- "new_cluster_id"
+wide_DF <- wide_DF %>% select(-one_of(name))
+
+# data for annotation rows in seperate dataframe
+mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), category = lm_result, region = brain_region, ramp_score=ramp_result)
+
+# change the color of annotation to what you want: (eg: "navy", "darkgreen")
+Var1        <- c("violetred2", "black", "chartreuse3")
+names(Var1) <- c("Negative", "None", "Positive")
+
+Var2        <- c("springgreen4", "deepskyblue1", "firebrick")
+names(Var2) <- c("MEC", "PS", "UN")
+
+anno_col <- list(result = Var1, region = Var2, ramp_score = brewer.pal(11,"RdBu"))
+
+#annotation_row = mydf, annotation_colors = anno_col, show_rownames = F, show_colnames = F
+myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, show_rownames = F, show_colnames = F )
+```
+
+
+
+
+
+```{r}
+save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+ 
+save_pheatmap_png(myheatmap, "my_heatmap_all.png")
+```
+
+
+
+
+
+
+## extract t value
+
+
+
+```{r}
+
+tval_pos_b <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(df[[3]]), Speed = as.numeric(df[[4]]), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
+  if(length(df) == 1 | nrow(df) < 3) 
+    return(NA) 
+  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
+  return(coef(summary(df_int))["Position","t value"])
+}
+
+
+tval_pos_b <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(df[[3]]), Speed = as.numeric(df[[4]]), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
+  if(length(df) == 1 | nrow(df) < 3) 
+    return(NA) 
+  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
+  return(coef(summary(df_int))["Speed","t value"])
+}
+
+
+tval_pos_b <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(df[[3]]), Speed = as.numeric(df[[4]]), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
+  if(length(df) == 1 | nrow(df) < 3) 
+    return(NA) 
+  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
+  return(coef(summary(df_int))["Acceleration","t value"])
+}
+```
+
+
+2. Run on all cells 
+```{r}
+spatial_firing <- spatial_firing  %>%
+  mutate(o_pos_b_tval = map(spikes_in_time, tval_pos_b)) %>%
+  mutate(o_speed_b_tval = map(spikes_in_time, car_speed_b)) %>%
+  mutate(o_accel_b_tval = map(spikes_in_time, car_accel_b))
+  #mutate(o_pos_nb = map(spikes_in_time, car_pos_nb)) %>%
+  #mutate(o_speed_nb = map(spikes_in_time, car_speed_nb)) %>%
+  #mutate(o_accel_nb = map(spikes_in_time, car_accel_nb)) %>%
+  #mutate(o_pos_p = map(spikes_in_time, car_pos_p)) %>%
+  #mutate(o_speed_p = map(spikes_in_time, car_speed_p)) %>%
+  #mutate(o_accel_p = map(spikes_in_time, car_accel_p))
+```
+
+
+3. write results
+```{r}
+spatial_firing_save <- subset(spatial_firing, select = c("session_id", "cluster_id", "o_pos_b_tval", "o_speed_b_tval","o_accel_b_tval", "final_model_o_b", "lm_result_o_rewarded"))
+
+#"predict_mse", "predict_mse_p","predict_results", "predict_results_p"
+spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id, cluster_id = spatial_firing_save$cluster_id, o_pos_b_tval =  as.character(spatial_firing_save$o_pos_b_tval), o_speed_b_tval =  as.character(spatial_firing_save$o_speed_b_tval), o_accel_b_tval =  as.character(spatial_firing_save$o_accel_b_tval), final_model_o_b =  as.character(spatial_firing_save$final_model_o_b), lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_result_o_rewarded))
+
+write.table(spatial_firing_save, "all_results_tvalues.txt", quote=FALSE, sep="\t")
+```
+
+
+
+
+### correlate data with ramp score
+
+
+1. Extract ramp score 
+_since its a list of three (outbound/homebound/all) we extract the first one_
+```{r}
+extract_ramp_score <- function(df){
+  dx <- df[[1]]
+  return(dx)
+}
+
+spatial_firing <- spatial_firing %>%
+  mutate(start_ramp_score = map(ramp_score, extract_ramp_score))
+
+```
+
+2. find apsolute ramp scores for -ve and +ve slopes
+```{r}
+
+positive_ramps <- subset(spatial_firing, lm_result_o_rewarded == "Positive")
+negative_ramps <- subset(spatial_firing, lm_result_o_rewarded == "Negative")
+
+#shuff_positive_ramps <- subset(spatial_firing, lm_result_o_shuff == "Positive")
+#shuff_negative_ramps <- subset(spatial_firing, lm_result_o_shuff == "Negative")
+
+```
+
+2. find apsolute ramp scores for -ve and +ve slopes
+```{r}
+
+positive_ramps_scores <- tibble(ramp_score = as.numeric(positive_ramps$start_ramp_score))
+negative_ramps_scores <- tibble(ramp_score = as.numeric(negative_ramps$start_ramp_score))
+
+```
+
+```{r}
+abs_pos_ramp <- positive_ramps_scores  %>%
+  summarise(mean(ramp_score, na.rm = TRUE), sd(ramp_score, na.rm = TRUE))
+abs_neg_ramp <- negative_ramps_scores  %>%
+  summarise(mean(ramp_score, na.rm = TRUE), sd(ramp_score, na.rm = TRUE))
+```
+
+## ttest on ramp scores
+
+
+```{r}
+positive_ramps_scores <- as.numeric(positive_ramps$start_ramp_score)
+shuff_positive_ramps_scores <- as.numeric(shuff_positive_ramps$start_ramp_score)
+
+# paired t-test
+t.test(positive_ramps_scores,shuff_positive_ramps_scores) # where y1 & y2 are numeric
+
+
+negative_ramps_scores <- as.numeric(negative_ramps$start_ramp_score)
+shuff_negative_ramps_scores <- as.numeric(shuff_negative_ramps$start_ramp_score)
+
+# paired t-test
+t.test(negative_ramps_scores,shuff_negative_ramps_scores) # where y1 & y2 are numeric
+```
+

@@ -1,0 +1,106 @@
+---
+title: "ConvertPickletoRda"
+author: "Sarah Tennant"
+date: "28/01/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+## This code loads dataframes with spatial firing of neurons in the virtual reality
+
+Aim:We want to load dataframes from python output which are in pickled format, and save them in Rs dataframe format (.Rda). 
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+
+First we need to set up the python environment. This is so we can call a python script from R that loads the pickled dataframes and sends it back to the R workspace. 
+The python environment needs to be >v.3 as 2.7 (system python) doesnt have Pandas package which is needed to open dataframes
+
+```{r}
+
+require(reticulate) # package that allows R to call python code
+Sys.setenv(RETICULATE_PYTHON = "/usr/local/Cellar/python3/3.7.4_1/Frameworks/Python.framework/Versions/3.7/bin/python3.7") 
+
+```
+
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------------------- 
+
+### LOAD EXAMPLE DATASET
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------------------- 
+
+
+First, specify the path to the dataframe - this assumes its in your working directory
+
+```{r}
+
+dataframe_to_load <- "data/spatial_firing-2.pkl" # name of the pickled dataframe want to load - should be in your current_directory
+
+```
+
+Then call the python code to load the pickled dataframe and return it to the R project
+
+```{r}
+
+source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
+spatial_firing_test <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
+
+```
+
+Finally, save the loaded dataframe as a .Rda file 
+
+```{r}
+
+save(spatial_firing,file="data/spatial_firing_ramp.Rda")#save as R dataframe - used for testing
+
+```
+
+
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------------------- 
+
+### LOAD ALL MICE ALL DAYS DATAFRAMES
+
+## ----------------------------------------------------------------------------------------------------------------------------------------------------------- 
+
+## Loading dataframe for all mice and days (all curated cells from one animal/multiple animals)
+
+1. Load frame for each cohort
+```{r}
+dataframe_to_load <- "data/Alldays_cohort_1_reset.pkl" # name of the pickled dataframe want to load 
+source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
+spatial_firing1 <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
+
+dataframe_to_load <- "data/Alldays_cohort_2_reset.pkl" # name of the pickled dataframe want to load 
+source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
+spatial_firing2 <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
+
+dataframe_to_load <- "data/Alldays_cohort_3_reset.pkl" # name of the pickled dataframe want to load 
+source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
+spatial_firing3 <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
+
+dataframe_to_load <- "data/Alldays_cohort_4_reset.pkl" # name of the pickled dataframe want to load 
+source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
+spatial_firing4 <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
+
+
+```
+
+2. Concatinate cohorts together
+```{r}
+spatial_firing <- rbind(spatial_firing1, spatial_firing2, spatial_firing3, spatial_firing4)
+```
+
+
+## test dataset
+
+```{r}
+spatial_firing_reset <- spatial_firing2
+```
+

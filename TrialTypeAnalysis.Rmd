@@ -1,0 +1,1507 @@
+---
+title: "TrialTypeAnalysis"
+author: "Sarah Tennant"
+date: "16/04/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+### This script is aimed at comparing properties of cells that encode distance on different trial types. Trial types are listed below. 
+
+1. Beaconed (reward, cue)
+2. Non beaconed (reward, no cue)
+3. Probe (no reward, no cue)
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+
+
+
+
+
+### PLOT LM RESULTS FOR NON BEACONED AND PROBE TRIALS
+
+First, make functions for calling slope and r2 for nonbeaconed and probe trials
+
+```{r}
+#function3 - shuffled and real : non beaconed trials
+return_nb_shuffle_lm_results <- function(df){
+  tibble(
+    Trial_type = factor(c(rep(c("Real","Shuffled"), each =nrow(df)))),
+    Slopes = c(df$asr_nb_slope, df$shuff_asr_nb_slope), 
+    r2 = c(df$asr_nb_r2, df$shuff_asr_nb_r2), 
+    id = c(df$cluster_id, df$cluster_id), 
+    session_id = c(df$session_id, df$session_id))
+}
+
+#function4 - shuffled and real : probe trials
+return_p_shuffle_lm_results <- function(df){
+  tibble(
+    Trial_type = factor(c(rep(c("Real","Shuffled"), each =nrow(df)))),
+    Slopes = c(df$asr_p_slope, df$shuff_asr_p_slope), 
+    r2 = c(df$asr_p_r2, df$shuff_asr_p_r2), 
+    id = c(df$cluster_id, df$cluster_id),
+    session_id = c(df$session_id, df$session_id))
+}
+
+```
+
+
+1. Plot LM reaults for end of track 
+Do this for non-beaconed and probe trials
+
+```{r}
+lm_results <- return_nb_shuffle_lm_results(spatial_firing_end)
+
+lm_results_ramps <- tibble(Ramp_type = c(as.character(end_ramps$ramp_id), as.character(from_reward_ramps$ramp_id)),
+    Slopes = c(end_ramps$asr_nb_slope, from_reward_ramps$asr_nb_slope), 
+    r2 = c(end_ramps$asr_nb_r2, from_reward_ramps$asr_nb_r2), 
+    id = c(end_ramps$cluster_id, from_reward_ramps$cluster_id),
+    session_id = c(end_ramps$session_id, from_reward_ramps$session_id))
+
+
+lm_plot_end <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    coord_cartesian(xlim = c(-0.65,0.65), ylim = c(0,1)) +
+    geom_point() +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2, color=factor(Trial_type))) +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("deepskyblue3","mediumpurple3","grey82", "grey32")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+
+ggsave(file = "plots/shuff_nb_lm_plot_end_redo.png", ggMarginal(lm_plot_end, type = "density", groupColour = TRUE, groupFill = TRUE, margins = c("both"), size=4), width = 5, height = 6)
+```
+
+```{r}
+
+lm_results <- return_p_shuffle_lm_results(spatial_firing_end)
+
+lm_results_ramps <- tibble(Ramp_type = c(as.character(end_ramps$ramp_id), as.character(from_reward_ramps$ramp_id)),
+    Slopes = c(end_ramps$asr_nb_slope, from_reward_ramps$asr_nb_slope), 
+    r2 = c(end_ramps$asr_nb_r2, from_reward_ramps$asr_nb_r2), 
+    id = c(end_ramps$cluster_id, from_reward_ramps$cluster_id))
+
+
+lm_plot_end <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    geom_point() +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2, color=factor(Trial_type))) +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("deepskyblue3","mediumpurple3","grey82", "grey32")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+ggsave(file = "plots/shuff_p_lm_plot_end.png", ggMarginal(lm_plot_end, type = "density", groupColour = TRUE, groupFill = TRUE, margins = c("both"), size=4), width = 5, height = 6)
+
+```
+
+
+
+### plot with clusetr ID on
+
+```{r}
+lm_plot_end <- ggplot() + 
+    coord_cartesian(xlim = c(-0.65,0.65), ylim = NULL) +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2, color=factor(Trial_type))) +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    scale_color_manual(values=c("deepskyblue3","mediumpurple3","grey82", "grey32")) +
+    geom_text(data=lm_results, aes(label=ifelse(Slopes< -0.12 & r2 >0.2,as.character(session_id),''), x = Slopes, y = r2),hjust=0, vjust=0, size=1) +
+    geom_text(data=lm_results, aes(label=ifelse(Slopes< -0.12 & r2 >0.2,as.character(id),''), x = Slopes, y = r2),hjust=1, vjust=1, size=1) +
+    geom_text(data=lm_results, aes(label=ifelse(Slopes> 0.12 & r2 >0.2,as.character(session_id),''), x = Slopes, y = r2),hjust=0, vjust=0, size=1) +
+    geom_text(data=lm_results, aes(label=ifelse(Slopes> 0.12 & r2 >0.2,as.character(id),''), x = Slopes, y = r2),hjust=1, vjust=1, size=1) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+
+ggsave(file = "plots/shuff_nb_lm_plot_end_test.png", ggMarginal(lm_plot_end, type = "density", groupColour = TRUE, groupFill = TRUE, margins = c("both"), size=4), width = 5, height = 6)
+```
+
+
+1. Plot LM reaults for start of track 
+Do this for non-beaconed and probe trials
+
+```{r}
+lm_results <- return_nb_shuffle_lm_results(spatial_firing_start)
+
+lm_results_ramps <- tibble(Ramp_type = c(as.character(start_ramps$ramp_id), as.character(to_reward_ramps$ramp_id)),
+    Slopes = c(start_ramps$asr_nb_slope, to_reward_ramps$asr_nb_slope), 
+    r2 = c(start_ramps$asr_nb_r2, to_reward_ramps$asr_nb_r2), 
+    id = c(start_ramps$cluster_id, to_reward_ramps$cluster_id))
+
+
+lm_plot_start <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    coord_cartesian(xlim = c(-0.65,0.65), ylim = c(0,1)) +
+    geom_point() +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2, color=factor(Trial_type))) +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+ggsave(file = "plots/shuff_nb_lm_plot_start_redo.png", ggMarginal(lm_plot_start, type = "density", groupColour = TRUE, groupFill = TRUE, margins = c("both"), size=4), width = 5, height = 6)
+
+```
+
+```{r}
+
+lm_results <- return_p_shuffle_lm_results(spatial_firing_start)
+
+lm_results_ramps <- tibble(Ramp_type = c(as.character(start_ramps$ramp_id), as.character(to_reward_ramps$ramp_id)),
+    Slopes = c(start_ramps$asr_b_slope, to_reward_ramps$asr_b_slope), 
+    r2 = c(start_ramps$asr_b_r2, to_reward_ramps$asr_b_r2), 
+    id = c(start_ramps$cluster_id, to_reward_ramps$cluster_id))
+
+
+lm_plot_start <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    coord_cartesian(xlim = c(-0.6,0.6), ylim = NULL) +
+    geom_point() +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2, color=factor(Trial_type))) +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+ggsave(file = "plots/shuff_p_lm_plot_end.png", ggMarginal(lm_plot_start, type = "density", groupColour = TRUE, groupFill = TRUE, margins = c("both"), size=4), width = 5, height = 6)
+
+
+```
+
+
+
+### plot with clusetr ID on
+
+```{r}
+lm_plot_end <- ggplot() + 
+    coord_cartesian(xlim = c(-0.65,0.65), ylim = NULL) +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2, color=factor(Trial_type))) +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    geom_text(data=lm_results, aes(label=ifelse(Slopes< -0.12 & r2 >0.2,as.character(session_id),''), x = Slopes, y = r2),hjust=0, vjust=0, size=1) +
+    geom_text(data=lm_results, aes(label=ifelse(Slopes< -0.12 & r2 >0.2,as.character(id),''), x = Slopes, y = r2),hjust=1, vjust=1, size=1) +
+    geom_text(data=lm_results, aes(label=ifelse(Slopes> 0.12 & r2 >0.2,as.character(session_id),''), x = Slopes, y = r2),hjust=0, vjust=0, size=1) +
+    geom_text(data=lm_results, aes(label=ifelse(Slopes> 0.12 & r2 >0.2,as.character(id),''), x = Slopes, y = r2),hjust=1, vjust=1, size=1) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+
+ggsave(file = "plots/shuff_nb_lm_plot_start_test.png", ggMarginal(lm_plot_end, type = "density", groupColour = TRUE, groupFill = TRUE, margins = c("both"), size=4), width = 5, height = 6)
+```
+
+3. Plot nonbeaconed and probe on same plot
+
+```{r}
+
+return_lm_results_trial_types <- function(df) {
+  tibble(Trial_type = factor(c(rep(c("Non-beaconed", "Probe"), each =nrow(df)))),
+    Slopes = c(df$asr_nb_slope, df$asr_p_slope), 
+    r2 = c(df$asr_nb_r2, df$asr_p_r2), 
+    id = c(df$cluster_id, df$cluster_id))
+}
+
+lm_results <- return_lm_results_trial_types(na.omit(spatial_firing_start))
+lm_plot_start<- lm_plot(lm_results)
+ggsave(file = "plots/lm_plot_start.png", ggMarginal(lm_plot_start, type = "density", groupColour = TRUE, groupFill = TRUE, margins = c("both"), size=4), width = 5, height = 6)
+lm_results <- return_lm_results_trial_types(na.omit(spatial_firing_end))
+lm_plot_end <- lm_plot(lm_results)
+ggsave(file = "plots/lm_plot_end.png", ggMarginal(lm_plot_end, type = "density", groupColour = TRUE, groupFill = TRUE, margins = c("both"), size=4), width = 5, height = 6)
+
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+### PLOT HEATMAPS 
+
+Extract data then plot using geom_tile() to plot all clusters
+normalise rate values for each cluster
+- make functions:
+1. normalise values
+2. function to group by cluster then call normalisation function 1
+3. Replot normalised rates 
+
+## Do this for BOUNDARY ramps
+
+```{r}
+concat_firing_start <- unnest(select(na.omit(start_ramps), new_cluster_id, asr_nb, asr_b_slope, asr_nb_smooth), asr_nb, asr_nb_smooth)
+#concat_firing_start <- subset(concat_firing_start, Position>30 & Position <90)
+
+concat_firing_start <- concat_firing_start %>%
+  group_by(new_cluster_id) %>%
+  mutate(asr_b = normalit(scale(Rates))) %>%
+  mutate(asr_b_smooth = scale(Rates1))
+
+heatmap_plot(concat_firing_start)
+ggsave(file = "plots/norm_stacked_rates_startramp_nonbeaconed.png", width = 4, height = 4)
+
+```
+
+```{r}
+
+concat_firing_end <- unnest(select(end_ramps, new_cluster_id, asr_nb, asr_nb_smooth, asr_b_slope), asr_nb, asr_nb_smooth)
+#concat_firing_end <- subset(concat_firing_end, Position>110 & Position <170)
+
+concat_firing_end <- concat_firing_end %>%
+  group_by(new_cluster_id) %>%
+  mutate(asr_b = normalit(scale(Rates))) %>%
+  mutate(asr_b_smooth = (scale(Rates1)))
+
+heatmap_plot(concat_firing_end)
+ggsave(file = "plots/norm_stacked_rates_endramp_nonbeaconed.png", width = 4, height = 4)
+```
+
+
+## Do this for GOAL ramps
+
+```{r}
+concat_firing_start <- unnest(select(na.omit(to_reward_ramps), new_cluster_id, asr_nb, asr_b_slope, asr_nb_smooth), asr_nb, asr_nb_smooth)
+#concat_firing_start <- subset(concat_firing_start, Position>30 & Position <90)
+
+concat_firing_start <- concat_firing_start %>%
+  group_by(new_cluster_id) %>%
+  mutate(asr_b = normalit(scale(Rates))) %>%
+  mutate(asr_b_smooth = scale(Rates1))
+
+heatmap_plot(concat_firing_start)
+ggsave(file = "plots/norm_stacked_rates_torewardramp_nonbeaconed.png", width = 4, height = 4)
+
+```
+
+```{r}
+concat_firing_end <- unnest(select(from_reward_ramps, new_cluster_id, asr_nb, asr_nb_smooth, asr_b_slope), asr_nb, asr_nb_smooth)
+#concat_firing_end <- subset(concat_firing_end, Position>110 & Position <170)
+
+concat_firing_end <- concat_firing_end %>%
+  group_by(new_cluster_id) %>%
+  mutate(asr_b = normalit(scale(Rates))) %>%
+  mutate(asr_b_smooth = (scale(Rates1)))
+
+heatmap_plot(concat_firing_end)
+ggsave(file = "plots/norm_stacked_rates_fromrewardramp_nonbeaconed.png", width = 4, height = 4)
+
+```
+
+
+### same as above for probe trials
+```{r}
+concat_firing_start <- unnest(select(na.omit(start_ramps), new_cluster_id, asr_p, asr_b_slope, asr_p_smooth), asr_p, asr_p_smooth)
+concat_firing_start <- subset(concat_firing_start, Position>30 & Position <90)
+
+concat_firing_start <- concat_firing_start %>%
+  group_by(new_cluster_id) %>%
+  mutate(asr_b = normalit(scale(Rates))) %>%
+  mutate(asr_b_smooth = scale(Rates1))
+
+heatmap_plot(concat_firing_start)
+ggsave(file = "plots/norm_stacked_rates_startramp_probe.png", width = 4, height = 4)
+
+```
+
+```{r}
+
+concat_firing_end <- unnest(select(end_ramps, new_cluster_id, asr_p, asr_p_smooth, asr_b_slope), asr_p, asr_p_smooth)
+concat_firing_end <- subset(concat_firing_end, Position>110 & Position <170)
+
+concat_firing_end <- concat_firing_end %>%
+  group_by(new_cluster_id) %>%
+  mutate(asr_b = normalit(scale(Rates))) %>%
+  mutate(asr_b_smooth = (scale(Rates1)))
+
+heatmap_plot(concat_firing_end)
+ggsave(file = "plots/norm_stacked_rates_endramp_probe.png", width = 4, height = 4)
+```
+
+```{r}
+concat_firing_start <- unnest(select(na.omit(to_reward_ramps), new_cluster_id, asr_p, asr_b_slope, asr_p_smooth), asr_p, asr_p_smooth)
+concat_firing_start <- subset(concat_firing_start, Position>30 & Position <90)
+
+concat_firing_start <- concat_firing_start %>%
+  group_by(new_cluster_id) %>%
+  mutate(asr_b = normalit(scale(Rates))) %>%
+  mutate(asr_b_smooth = scale(Rates1))
+
+heatmap_plot(concat_firing_start)
+ggsave(file = "plots/norm_stacked_rates_torewardramp_probe.png", width = 4, height = 4)
+
+```
+
+```{r}
+concat_firing_end <- unnest(select(from_reward_ramps, new_cluster_id, asr_p, asr_p_smooth, asr_b_slope), asr_p, asr_p_smooth)
+concat_firing_end <- subset(concat_firing_end, Position>110 & Position <170)
+
+concat_firing_end <- concat_firing_end %>%
+  group_by(new_cluster_id) %>%
+  mutate(asr_b = normalit(scale(Rates))) %>%
+  mutate(asr_b_smooth = (scale(Rates1)))
+
+heatmap_plot(concat_firing_end)
+ggsave(file = "plots/norm_stacked_rates_fromrewardramp_probe.png", width = 4, height = 4)
+
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Comparison of firing rate over location using LM
+
+_this part of the script assumes you have ran the LM analysis in OverallAnalysis.Rmd, subset the frame to select only distance modulated neurons and carried out analysis in CellTypeAnalysis.Rmd_
+
+Q1. Do slopes and r2 of LM model differ between beaconed, nonbeaconed and probe trials?
+
+1. make new columns of frame with difference in r2/slope between beaconed and non-beaconed & beaconed and probe
+2. plot difference for condition 1 and 2 seperately
+
+```{r}
+
+beaconed_slope=abs(all_ramp_df$asr_b_slope)
+nonbeaconed_slope=abs(all_ramp_df$asr_nb_slope)
+probe_slope=abs(all_ramp_df$asr_p_slope)
+beaconed_r2=all_ramp_df$asr_b_r2
+nonbeaconed_r2=all_ramp_df$asr_nb_r2
+probe_r2=all_ramp_df$asr_p_r2
+
+
+all_ramp_df <- all_ramp_df %>%
+  mutate(r2_diff_nb = beaconed_r2-nonbeaconed_r2) %>%
+  mutate(slope_diff_nb = beaconed_slope-nonbeaconed_slope) %>%
+  mutate(r2_diff_p = beaconed_r2-probe_r2) %>%
+  mutate(slope_diff_p = beaconed_slope-probe_slope)
+
+#tried to do using function
+simple_difference_helper <- function(value1,value2) {
+  value1-value2
+  }
+
+#all_ramp_df <- all_ramp_df %>%
+#  mutate(r2_diff = map(asr_b_r2, asr_nb_r2, simple_difference_helper)) %>%
+#  mutate(slope_diff = map(asr_b_slope, asr_nb_slope, simple_difference_helper))
+
+```
+
+# Get mean values per group
+
+```{r}
+tt <- all_ramp_df %>% 
+  group_by(ramp_id) %>% 
+  summarise_if(is.numeric, funs(mean,sd)) 
+```
+
+Plot the difference in slope and r2 values between trial types
+
+```{r}
+ggplot(all_ramp_df, aes(x = r2_diff_nb, y = slope_diff_nb, color=ramp_id)) + 
+  geom_point(alpha=0.3) +
+  geom_point(data=tt, aes(x = r2_diff_nb_mean, y = slope_diff_nb_mean),  size = 4) +
+  ylab("Slope difference") + xlab("R2 difference") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  #coord_cartesian(xlim = NULL, ylim = c(0,32)) +
+  theme_minimal()
+ggsave(file = "plots/TrialTypeComparison/Nonbeaconed_LM_comparison_RampCells.png", width = 4, height = 3)
+
+ggplot(all_ramp_df, aes(x = r2_diff_p, y = slope_diff_p, color=ramp_id)) + 
+  geom_point(alpha=0.3) +
+  #geom_point(data=gd, aes(x = mean_cv2_mean, y = max_rate_mean),  size = 4) +
+  ylab("Slope difference") + xlab("R2 difference") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  #coord_cartesian(xlim = NULL, ylim = c(0,32)) +
+  theme_minimal()
+ggsave(file = "plots/TrialTypeComparison/Probe_LM_comparison_RampCells.png", width = 4, height = 3)
+
+
+ggplot(all_ramp_df, aes(x = slope_diff_nb, y = slope_diff_p, color=ramp_id)) + 
+  geom_point(alpha=0.3) +
+  geom_point(data=tt, aes(x = slope_diff_nb_mean, y = slope_diff_p_mean),  size = 4) +
+  ylab("Slope difference probe") + xlab("Slope difference nonbeaconed") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  #coord_cartesian(xlim = NULL, ylim = c(0,32)) +
+  theme_minimal()
+ggsave(file = "plots/TrialTypeComparison/SlopeDiff_LM_comparison_RampCells.png", width = 4, height = 3)
+
+```
+
+
+1. Does slope in beaconed correlate with slope non beaconed?
+
+```{r}
+ggplot(all_ramp_df, aes(x = abs(asr_b_slope), y = abs(asr_nb_slope), color=ramp_id)) + 
+  geom_point(alpha=0.5,  size = 1.5) +
+  geom_abline(intercept=0, slope=0.5) +
+  geom_point(data=tt, aes(x = abs(asr_b_slope_mean), y = abs(asr_nb_slope_mean)),  size = 3) +
+  xlab("Beaconed slope") + ylab("Non beaconed slope") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  coord_cartesian(xlim = c(-0.1,0.7), ylim = c(-0.1,0.7)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+      axis.text.y = element_text(size=14),
+      legend.position="bottom", 
+      legend.title = element_blank(),
+      text = element_text(size=14), 
+      legend.text=element_text(size=14), 
+      axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/TrialTypeComparison/Nonbeaconed_SlopeComparison_RampCells.png", width = 4, height = 4)
+
+
+r2_comparison <- ggplot(all_ramp_df, aes(x = asr_b_r2, y = asr_nb_r2, color=ramp_id)) + 
+  geom_point(alpha=0.5,  size = 1) +
+  geom_point(data=tt, aes(x = asr_b_r2_mean, y = asr_nb_r2_mean),  size = 2.5) +
+  xlab("Beaconed r2") + ylab("Non-beaconed r2") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  coord_cartesian(xlim = c(-0.25,1.2), ylim = c(-0.25,1.2)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+      axis.text.y = element_text(size=14),
+      legend.position="bottom", 
+      legend.title = element_blank(),
+      text = element_text(size=14), 
+      legend.text=element_text(size=14), 
+      axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/TrialTypeComparison/r2Comparison_RampCells.png", ggMarginal(r2_comparison, type = "density", groupColour = TRUE, groupFill = TRUE, margins = c("both"), size=3), width = 4, height = 4)
+
+
+# plot individual groups seperately
+r2_comparison <- ggplot(data=subset(all_ramp_df, ramp_id=="to_reward"), aes(x = asr_b_r2, y = asr_nb_r2, color=ramp_id)) + 
+  geom_point(data=subset(all_ramp_df, ramp_id=="to_reward"), alpha=0.5,  size = 1) +
+  #geom_point(data=tt, aes(x = asr_b_r2_mean, y = asr_nb_r2_mean),  size = 2.5) +
+  xlab("Beaconed r2") + ylab("Non-beaconed r2") +
+  scale_color_manual(values=c("chartreuse3","deepskyblue3","violetred2", "mediumpurple3")) +
+  coord_cartesian(xlim = c(-0.25,1.2), ylim = c(-0.25,1.2)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+      axis.text.y = element_text(size=14),
+      legend.position="bottom", 
+      legend.title = element_blank(),
+      text = element_text(size=14), 
+      legend.text=element_text(size=14), 
+      axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/TrialTypeComparison/r2Comparison_RampCells_ggmarginal_toreward.png", ggMarginal(r2_comparison, type = "density", groupColour = TRUE, groupFill = TRUE, margins = c("both"), size=3), width = 4, height = 4)
+
+
+
+# plot individual groups seperately
+ggplot(data=all_ramp_df, aes(x = asr_b_intercept, y = asr_nb_intercept, color=ramp_id)) + 
+  geom_point(data=all_ramp_df, alpha=0.5,  size = 1) +
+  #geom_point(data=tt, aes(x = asr_b_r2_mean, y = asr_nb_r2_mean),  size = 2.5) +
+  xlab("Beaconed r2") + ylab("Non-beaconed r2") +
+  scale_color_manual(values=c("chartreuse3","deepskyblue3","violetred2", "mediumpurple3")) +
+  #coord_cartesian(xlim = c(-0.25,1.2), ylim = c(-0.25,1.2)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+      axis.text.y = element_text(size=14),
+      legend.position="bottom", 
+      legend.title = element_blank(),
+      text = element_text(size=14), 
+      legend.text=element_text(size=14), 
+      axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/TrialTypeComparison/InterceptComparison_RampCells_ggmarginal.png", width = 4, height = 4)
+```
+
+2. Does slope in beaconed correlate with slope probe?
+
+```{r}
+ggplot(all_ramp_df, aes(x = asr_b_slope, y = asr_p_slope, color=ramp_id)) + 
+  geom_point(alpha=0.3,  size = 1) +
+  geom_point(data=tt, aes(x = asr_b_slope_mean, y = asr_p_slope_mean),  size = 2) +
+  xlab("Beaconed slope") + ylab("Probe slope") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  coord_cartesian(xlim = c(-0.8,0.8), ylim = c(-0.8,0.8)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+      axis.text.y = element_text(size=14),
+      legend.position="bottom", 
+      legend.title = element_blank(),
+      text = element_text(size=14), 
+      legend.text=element_text(size=14), 
+      axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+ggsave(file = "plots/TrialTypeComparison/Probe_SlopeComparison_RampCells.png", width = 4, height = 3)
+
+```
+
+3. Does slope in non beaconed correlate with slope probe?
+
+```{r}
+ggplot(all_ramp_df, aes(x = asr_nb_slope, y = asr_p_slope, color=ramp_id)) + 
+  geom_point(alpha=0.3) +
+  geom_point(data=tt, aes(x = asr_nb_slope_mean, y = asr_p_slope_mean),  size = 4) +
+  xlab("Non beaconed slope") + ylab("Probe slope") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  coord_cartesian(xlim = c(-0.8,0.7), ylim = c(-0.8,0.7)) +
+  theme_minimal()
+ggsave(file = "plots/TrialTypeComparison/Probe_and_Nonbeaconed_SlopeComparison_RampCells.png", width = 3, height = 2)
+
+```
+
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+### Number of recuited cells in non beaconed trials
+1. subset dataframe of cells according to r2 and slope in non beaconed trials
+2. 
+
+
+subset based on distance coding in beaconed and non beaconed trials
+
+```{r}
+
+start_beaconed_only_ramps <- spatial_firing_start %>% filter(asr_b_r2 > 0.2 & asr_nb_r2 < 0.2)
+start_nonbeaconed_only_ramps <- spatial_firing_start %>% filter(asr_b_r2 < 0.2 & asr_nb_r2 > 0.2)
+start_both_ramps <- spatial_firing_start %>% filter(asr_b_r2 > 0.2 & asr_nb_r2 > 0.2)
+
+```
+
+Now subset by slope
+
+```{r}
+to_reward_start_beaconed_only_ramps <- nrow(subset(start_beaconed_only_ramps, asr_b_slope > 0.12))/nrow(final_frame)*100
+start_start_beaconed_only_ramps <- nrow(subset(start_beaconed_only_ramps, asr_b_slope < -0.12))/nrow(final_frame)*100
+
+to_reward_start_nonbeaconed_only_ramps <- nrow(subset(start_nonbeaconed_only_ramps, asr_nb_slope > 0.12))/nrow(final_frame)*100
+start_start_nonbeaconed_only_ramps <- nrow(subset(start_nonbeaconed_only_ramps, asr_nb_slope < -0.12))/nrow(final_frame)*100
+
+to_reward_start_both_ramps <- nrow(subset(start_both_ramps, asr_b_slope > 0.12 & asr_nb_slope > 0.12))/nrow(final_frame)*100
+start_start_both_ramps <- nrow(subset(start_both_ramps, asr_b_slope < -0.12, asr_nb_slope > 0.12))/nrow(final_frame)*100
+
+proportions_mixed_ramps <- tibble(perc=c(to_reward_start_beaconed_only_ramps, start_start_beaconed_only_ramps, to_reward_start_nonbeaconed_only_ramps, start_start_nonbeaconed_only_ramps, to_reward_start_both_ramps, start_start_both_ramps), ramp_id= c("To reward", "Start", "To reward", "Start", "To reward", "Start"),ramp_type = c("beaconed_only_ramps", "beaconed_only_ramps","nonbeaconed_only_ramps", "nonbeaconed_only_ramps",  "both_ramps","both_ramps"))
+
+```
+
+# run below to get numbers
+```{r}
+to_reward_start_beaconed_only_ramps <- subset(start_beaconed_only_ramps, asr_b_slope > 0.12)
+start_start_beaconed_only_ramps <- subset(start_beaconed_only_ramps, asr_b_slope < -0.12)
+
+to_reward_start_nonbeaconed_only_ramps <- subset(start_nonbeaconed_only_ramps, asr_nb_slope > 0.12)
+start_start_nonbeaconed_only_ramps <- subset(start_nonbeaconed_only_ramps, asr_nb_slope < -0.12)
+
+to_reward_start_both_ramps <- subset(start_both_ramps, asr_b_slope > 0.12 & asr_nb_slope > 0.12)
+start_start_both_ramps <- subset(start_both_ramps, asr_b_slope < -0.12, asr_nb_slope > 0.12)
+```
+
+# plot proportions
+
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.7, alpha = .5) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c( "violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/emergentcells_start.png", width = 5, height = 6)
+```
+
+
+
+
+
+subset based on distance coding in beaconed and non beaconed trials
+
+```{r}
+
+end_beaconed_only_ramps <- spatial_firing_end %>% filter(asr_b_r2 > 0.2 & asr_nb_r2 < 0.2)
+end_nonbeaconed_only_ramps <- spatial_firing_end %>% filter(asr_b_r2 < 0.2 & asr_nb_r2 > 0.2)
+end_both_ramps <- spatial_firing_end %>% filter(asr_b_r2 > 0.2 & asr_nb_r2 > 0.2)
+
+```
+
+Now subset by slope
+
+```{r}
+end_end_beaconed_only_ramps <- nrow(subset(end_beaconed_only_ramps, asr_b_slope > 0.12))/nrow(final_frame)*100
+from_reward_end_beaconed_only_ramps <- nrow(subset(end_beaconed_only_ramps, asr_b_slope < -0.12))/nrow(final_frame)*100
+
+end_end_nonbeaconed_only_ramps <- nrow(subset(end_nonbeaconed_only_ramps, asr_nb_slope > 0.12))/nrow(final_frame)*100
+from_reward_end_nonbeaconed_only_ramps <- nrow(subset(end_nonbeaconed_only_ramps, asr_nb_slope < -0.12))/nrow(final_frame)*100
+
+end_end_both_ramps <- nrow(subset(end_both_ramps, asr_b_slope > 0.12 & asr_nb_slope > 0.12))/nrow(final_frame)*100
+from_reward_end_both_ramps <- nrow(subset(end_both_ramps, asr_b_slope < -0.12, asr_nb_slope > 0.12))/nrow(final_frame)*100
+
+proportions_mixed_ramps <- tibble(perc=c(end_end_beaconed_only_ramps, from_reward_end_beaconed_only_ramps, end_end_nonbeaconed_only_ramps, from_reward_end_nonbeaconed_only_ramps, end_end_both_ramps, from_reward_end_both_ramps), ramp_id= c("End", "From Reward", "End", "From Reward", "End", "From Reward"),ramp_type = c("beaconed_only_ramps", "beaconed_only_ramps","nonbeaconed_only_ramps", "nonbeaconed_only_ramps", "both_ramps", "both_ramps"))
+
+```
+
+
+```{r}
+end_end_beaconed_only_ramps <- subset(end_beaconed_only_ramps, asr_b_slope > 0.12)
+from_reward_end_beaconed_only_ramps <- subset(end_beaconed_only_ramps, asr_b_slope < -0.12)
+
+end_end_nonbeaconed_only_ramps <- subset(end_nonbeaconed_only_ramps, asr_nb_slope > 0.12)
+from_reward_end_nonbeaconed_only_ramps <- subset(end_nonbeaconed_only_ramps, asr_nb_slope < -0.12)
+
+end_end_both_ramps <- subset(end_both_ramps, asr_b_slope > 0.12 & asr_nb_slope > 0.12)
+from_reward_end_both_ramps <- subset(end_both_ramps, asr_b_slope < -0.12, asr_nb_slope > 0.12)
+```
+
+# plot proportions
+
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.7, alpha = .5) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/emergentcells_end.png", width = 5, height = 6)
+```
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+### Firing property differences between trial types 
+
+> mean firing rate (Hz)
+> mean interspike interval (cm) [calculated from vector of all spike locations for cluster]
+> mean CV2 of ISI (Holt et al (1996))
+> black box firing rate (Hz)
+> Reward zone firing rate (Hz)
+
+
+First, calculate MEANS for all variables in the dataframe, make new dataframe for plotting means
+
+```{r}
+
+all_ramp_df$mean_interspike_interval_b <- as.numeric(all_ramp_df$mean_interspike_interval_b)
+all_ramp_df$mean_interspike_interval_nb <- as.numeric(all_ramp_df$mean_interspike_interval_nb)
+all_ramp_df$mean_interspike_interval_p <- as.numeric(all_ramp_df$mean_interspike_interval_p)
+all_ramp_df$mean_cv2_b <- as.numeric(all_ramp_df$mean_cv2_b)
+all_ramp_df$mean_cv2_nb <- as.numeric(all_ramp_df$mean_cv2_nb)
+all_ramp_df$mean_cv2_p <- as.numeric(all_ramp_df$mean_cv2_p)
+
+all_ramp_df$mean_firing_rate <- as.numeric(all_ramp_df$mean_firing_rate)
+
+gd <- all_ramp_df %>% 
+  group_by(ramp_id) %>% 
+  summarise_if(is.numeric, funs(mean,sd)) 
+```
+
+
+1. Is there any difference in the ISI across trial types?
+
+```{r}
+
+ggplot(data=all_ramp_df, aes(x = mean_interspike_interval_b, y = mean_interspike_interval_nb, color=ramp_id)) + 
+  geom_point(alpha=0.3) +
+  geom_point(data=gd, aes(x = mean_interspike_interval_b_mean, y = mean_interspike_interval_nb_mean),  size = 4) +
+  coord_cartesian(ylim = c(0,8), xlim = c(0,8)) +
+  xlab("Mean beaconed ISI (cm)") + ylab("Mean nonbeaconed ISI (cm)") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  theme_minimal()
+ggsave(file = "plots/TrialTypeComparison/Comparison_MeanISIB_MeanISINB_RampCells.png", width = 3, height = 3)
+
+ggplot(data=all_ramp_df, aes(x = mean_interspike_interval_b, y = mean_interspike_interval_p, color=ramp_id)) + 
+  geom_point(alpha=0.3) +
+  geom_point(data=gd, aes(x = mean_interspike_interval_b_mean, y = mean_interspike_interval_p_mean),  size = 4) +
+  coord_cartesian(ylim = c(0,8), xlim = c(0,8)) +
+  xlab("Mean beaconed ISI (cm)") + ylab("Mean probe ISI (cm)") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  theme_minimal()
+ggsave(file = "plots/TrialTypeComparison/Comparison_MeanISIB_MeanISIP_RampCells.png", width = 3, height = 3)
+
+ggplot(data=all_ramp_df, aes(x = mean_interspike_interval_nb, y = mean_interspike_interval_p, color=ramp_id)) + 
+  geom_point(alpha=0.3) +
+  geom_point(data=gd, aes(x = mean_interspike_interval_nb_mean, y = mean_interspike_interval_p_mean),  size = 4) +
+  coord_cartesian(ylim = c(0,8), xlim = c(0,8)) +
+  xlab("Mean nonbeaconed ISI (cm)") + ylab("Mean probe ISI (cm)") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  theme_minimal()
+ggsave(file = "plots/TrialTypeComparison/Comparison_MeanISINB_MeanISIP_RampCells.png", width = 3, height = 3, color=ramp_id)
+
+
+```
+
+
+2. Is there any difference in the CV2 across trial types?
+
+```{r}
+
+ggplot(data=all_ramp_df, aes(x = mean_cv2_b, y = mean_cv2_nb, color=ramp_id)) + 
+  geom_point(alpha=0.3) +
+  geom_point(data=gd, aes(x = mean_cv2_b_mean, y = mean_cv2_nb_mean),  size = 4) +
+  #coord_cartesian(ylim = NULL, xlim = c(0,35)) +
+  xlab("Mean CV2 : beaconed") + ylab("Mean CV2 : nonbeaconed") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  theme_minimal()
+ggsave(file = "plots/TrialTypeComparison/Comparison_MeanCVB_MeanCVNB_RampCells.png", width = 3, height = 3)
+
+ggplot(data=all_ramp_df, aes(x = mean_cv2_b, y = mean_cv2_p, color=ramp_id)) + 
+  geom_point(alpha=0.3) +
+  geom_point(data=gd, aes(x = mean_cv2_b_mean, y = mean_cv2_p_mean),  size = 4) +
+  #coord_cartesian(ylim = NULL, xlim = c(0,35)) +
+  xlab("Mean CV2 : beaconed") + ylab("Mean CV2 : probe") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  theme_minimal()
+ggsave(file = "plots/TrialTypeComparison/Comparison_MeanCVB_MeanCVP_RampCells.png", width = 3, height = 3)
+
+ggplot(data=all_ramp_df, aes(x = mean_cv2_nb, y = mean_cv2_p, color=ramp_id)) + 
+  geom_point(alpha=0.3) +
+  geom_point(data=gd, aes(x =mean_cv2_nb_mean, y = mean_cv2_p_mean),  size = 4) +
+  #coord_cartesian(ylim = NULL, xlim = c(0,35)) +
+  xlab("Mean CV2 : nonbeaconed") + ylab("Mean CV2 : probe") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3","violetred2", "chartreuse3")) +
+  theme_minimal()
+ggsave(file = "plots/TrialTypeComparison/Comparison_MeanCVNB_MeanCVP_RampCells.png", width = 3, height = 3)
+
+
+```
+
+
+3. Difference in mean firing rate?
+```{r}
+ggplot(all_ramp_df, aes(x = unlist(all_ramp_df$mean_firing_rate), color=unlist(all_ramp_df$ramp_id), fill=unlist(all_ramp_df$ramp_id))) +
+
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  facet_wrap(vars(all_ramp_df$ramp_id)) +
+  labs(x = "Mean Firing Rate", y="density") +
+  scale_color_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/MeanFiringRate.png",width = 6, height = 5)
+```
+
+```{r}
+ggplot(all_ramp_df, aes(x = unlist(all_ramp_df$spike_width), color=unlist(all_ramp_df$ramp_id), fill=unlist(all_ramp_df$ramp_id))) +
+
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  facet_wrap(vars(all_ramp_df$ramp_id)) +
+  labs(x = "Spike Width", y="density") +
+  scale_color_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/SpikeWidth.png",width = 6, height = 5)
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+
+### Firing rate difference and correlation coefficient diff between trial types
+
+Trial comparisons (syntax used):
+Trial1 = beaconed versus nonbeaconed
+Trial2 = beaconed versus probe
+Trial3 = nonbeaconed versus probe
+
+First, look at firing rate diff in different parts of the track between trial types.
+1. Reward zone
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(all_ramp_df$ramp_id),
+    type1 = as.numeric(all_ramp_df$FRdiff_RZ_trials1))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+
+```
+
+```{r}
+timeconv_results <- timeconv_results_ramps %>% 
+  group_by(Ramp_type) %>% 
+  summarise_all(funs(mean,sd)) 
+
+```
+
+```{r}
+
+g <- ggplot(data=timeconv_results_ramps, aes(x=factor(Ramp_type), y=type1, fill=factor(Ramp_type))) +
+    geom_violin(alpha=0.3) +
+    coord_cartesian(xlim = NULL, ylim = c(-0.6,0.6)) +
+    scale_fill_manual(values=c("deepskyblue3","mediumpurple3", "violetred2", "chartreuse3")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+#g + stat_summary(fun.data="mean_sdl", mult=1, geom="pointrange", color="black") 
+g + geom_boxplot(width=0.1)
+ggsave(file = "plots/timeconvolved_FRdiff_RZ.png", width = 5, height = 4)
+
+```
+
+
+2. Outbound
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(all_ramp_df$ramp_id),
+    type1 = as.numeric(all_ramp_df$FRdiff_outbound_trials1))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+
+
+```
+
+```{r}
+timeconv_results <- timeconv_results_ramps %>% 
+  group_by(Ramp_type) %>% 
+  summarise(mean = mean(type1)) 
+
+```
+
+```{r}
+g <- ggplot(data=timeconv_results_ramps, aes(x=factor(Ramp_type), y=type1, fill=factor(Ramp_type))) +
+    geom_violin(alpha=0.3) +
+    coord_cartesian(xlim = NULL, ylim = c(-0.4,0.4)) +
+    scale_fill_manual(values=c("deepskyblue3","mediumpurple3", "violetred2", "chartreuse3")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+g + geom_boxplot(width=0.1)
+
+ggsave(file = "plots/timeconvolved_FRdiff_outbound.png", width = 5, height = 4)
+
+```
+
+3. Homebound
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(all_ramp_df$ramp_id),
+    type1 = as.numeric(all_ramp_df$FRdiff_homebound_trials1))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+
+
+```
+
+```{r}
+timeconv_results_b <- timeconv_results_ramps %>% 
+  group_by(Ramp_type) %>% 
+  summarise(mean = mean(type1)) 
+
+```
+
+```{r}
+g <- ggplot(data=timeconv_results_ramps, aes(x=factor(Ramp_type), y=type1, fill=factor(Ramp_type))) +
+    geom_violin(alpha=0.3) +
+    coord_cartesian(xlim = NULL, ylim = c(-0.6,0.6)) +
+    scale_fill_manual(values=c("deepskyblue3","mediumpurple3", "violetred2", "chartreuse3")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+#g + stat_summary(fun.data="mean_sdl", mult=1, geom="pointrange", color="black") 
+g + geom_boxplot(width=0.1)
+
+ggsave(file = "plots/timeconvolved_FRdiff_homebound.png", width = 5, height = 4)
+
+```
+
+
+
+### BAR CHART of above
+## compares beaconed with non beaconed 
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(c(all_ramp_df$ramp_id, all_ramp_df$ramp_id, all_ramp_df$ramp_id)),
+                                 type1 = as.numeric(c(all_ramp_df$FRdiff_RZ_trials1,all_ramp_df$FRdiff_outbound_trials1, all_ramp_df$FRdiff_homebound_trials1)), 
+                                  Tracksegment = factor(c(rep(c("RZ", "Outbound", "Homebound"), each =nrow(all_ramp_df)))))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+```
+
+```{r}
+timeconv_results_b <- timeconv_results_ramps %>% 
+  group_by(Ramp_type, Tracksegment) %>% 
+  summarise(mean = mean(type1)) 
+```
+
+```{r}
+ggplot(timeconv_results_b, aes(x= factor(Ramp_type), y = mean, fill=factor(Tracksegment))) +
+  geom_bar(stat="identity",width = 0.7, alpha = .5) +
+  labs(y = "Normalised firing rate diff") +
+  geom_hline(yintercept=0) +
+  scale_fill_manual(values=c( "darkgoldenrod1", "darkorange1", "red1")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/RampCells_FRdiff.png", width = 5, height = 4)
+```
+
+
+```{r}
+library(ggpubr)
+ggbarplot(timeconv_results_ramps, x = "Ramp_type", y = "type1", 
+          add = c("mean_se", "jitter"),
+          color = "Tracksegment", palette = c("darkgoldenrod1", "darkorange1", "red1"),
+          position = position_dodge(0.8))
+ggsave(file = "plots/RampCells_FRdiff_dotplot.png", width = 5, height = 4)
+
+```
+
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(homebound_ramps$ramp_id),
+                                 type1 = as.numeric(homebound_ramps$FRdiff_homebound_trials1))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+```
+
+```{r}
+timeconv_results_b <- timeconv_results_ramps %>% 
+  group_by(Ramp_type) %>% 
+  summarise(mean = mean(type1)) 
+```
+
+
+```{r}
+ggbarplot(timeconv_results_ramps, x = "Ramp_type", y = "type1", 
+          add = c("mean_se", "jitter"),
+          position = position_dodge(0.8),
+          color = "Ramp_type", palette = c("deepskyblue3","mediumpurple3"))
+
+ggsave(file = "plots/RampCells_FRdiff_dotplot2.png", width = 4, height = 4)
+
+```
+
+```{r}
+x <- timeconv_results_ramps$type1
+
+t.test(x, mu = 0, alternative = "two.sided")
+```
+## same as above for outbound
+
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(outbound_ramps$ramp_id),
+                                 type1 = as.numeric(outbound_ramps$FRdiff_outbound_trials1))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+```
+
+```{r}
+timeconv_results_b <- timeconv_results_ramps %>% 
+  group_by(Ramp_type) %>% 
+  summarise(mean = mean(type1)) 
+```
+
+
+```{r}
+ggbarplot(timeconv_results_ramps, x = "Ramp_type", y = "type1", 
+          add = c("mean_se", "jitter"),
+          #coord_cartesian(xlim = NULL, ylim = c(-0.25, 0.75)) +
+          position = position_dodge(0.8),
+          color = "Ramp_type", palette = c("violetred2", "chartreuse3"), 
+          ylim=c(-0.25, 0.75))
+ggsave(file = "plots/RampCells_FRdiff_dotplot4.png", width = 4, height = 4)
+
+```
+
+
+### reward zone
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(all_ramp_df$ramp_id),
+                                 type1 = as.numeric(all_ramp_df$FRdiff_RZ_trials1))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+```
+
+```{r}
+timeconv_results_b <- timeconv_results_ramps %>% 
+  group_by(Ramp_type) %>% 
+  summarise(mean = mean(type1)) 
+```
+
+
+```{r}
+ggbarplot(timeconv_results_ramps, x = "Ramp_type", y = "type1", 
+          add = c("mean_se", "jitter"),
+          position = position_dodge(0.8),
+          color = "Ramp_type", palette = c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3"))
+
+ggsave(file = "plots/RampCells_FRdiff_dotplot3.png", width = 5, height = 4)
+
+```
+
+### above for comparing nonbeaconed and probe trials
+
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(c(all_ramp_df$ramp_id, all_ramp_df$ramp_id, all_ramp_df$ramp_id)),
+                                 type1 = as.numeric(c(all_ramp_df$FRdiff_RZ_trials3,all_ramp_df$FRdiff_outbound_trials3, all_ramp_df$FRdiff_homebound_trials3)), 
+                                  Tracksegment = factor(c(rep(c("RZ", "Outbound", "Homebound"), each =nrow(all_ramp_df)))))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+```
+
+```{r}
+timeconv_results_b <- timeconv_results_ramps %>% 
+  group_by(Ramp_type, Tracksegment) %>% 
+  summarise(mean = mean(type1)) 
+```
+
+```{r}
+ggplot(timeconv_results_b, aes(x= factor(Ramp_type), y = mean, fill=factor(Tracksegment))) +
+  geom_bar(stat="identity",width = 0.7, alpha = .5) +
+  labs(y = "Normalised firing rate diff") +
+  geom_hline(yintercept=0) +
+  scale_fill_manual(values=c( "darkgoldenrod1", "darkorange1", "red1")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/RampCells_FRdiff_nb-probe.png", width = 5, height = 4)
+```
+
+
+```{r}
+#library(ggpubr)
+ggbarplot(timeconv_results_ramps, x = "Ramp_type", y = "type1", 
+          add = c("mean_se", "jitter"),
+          color = "Tracksegment", palette = c("darkgoldenrod1", "darkorange1", "red1"),
+          position = position_dodge(0.8))
+```
+
+### above for probe trials
+## compares beaconed and probe
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(c(all_ramp_df$ramp_id, all_ramp_df$ramp_id, all_ramp_df$ramp_id)),
+                                 type1 = as.numeric(c(all_ramp_df$FRdiff_RZ_trials2,all_ramp_df$FRdiff_outbound_trials2, all_ramp_df$FRdiff_homebound_trials2)), 
+                                  Tracksegment = factor(c(rep(c("RZ", "Outbound", "Homebound"), each =nrow(all_ramp_df)))))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+```
+
+```{r}
+timeconv_results_b <- timeconv_results_ramps %>% 
+  group_by(Ramp_type, Tracksegment) %>% 
+  summarise(mean = mean(type1)) 
+```
+
+```{r}
+ggplot(timeconv_results_b, aes(x= factor(Ramp_type), y = mean, fill=factor(Tracksegment))) +
+  geom_bar(stat="identity",width = 0.7, alpha = .5) +
+  labs(y = "Normalised firing rate diff") +
+  geom_hline(yintercept=0) +
+  scale_fill_manual(values=c( "darkgoldenrod1", "darkorange1", "red1")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/RampCells_FRdiff_b-probe.png", width = 5, height = 4)
+```
+
+
+### cross correlation coefficient diff between trial types
+
+1. All signal
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(all_ramp_df$ramp_id),
+    type1 = as.numeric(all_ramp_df$cccoef_trials1))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+
+```
+
+# mean for groups 
+
+```{r}
+timeconv_results <- timeconv_results_ramps %>% 
+  group_by(Ramp_type) %>% 
+  summarise_all(funs(mean,sd)) 
+```
+
+# plot results
+
+```{r}
+
+g <- ggplot(data=timeconv_results_ramps, aes(x=factor(Ramp_type), y=type1, fill=factor(Ramp_type))) +
+    geom_violin(alpha=0.3) +
+    #coord_cartesian(xlim = NULL, ylim = c(-0.1,0.1)) +
+    scale_fill_manual(values=c("deepskyblue3","mediumpurple3", "violetred2", "chartreuse3")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+#g + stat_summary(fun.data="mean_sdl", mult=1, geom="pointrange", color="black") 
+g + geom_boxplot(width=0.1)
+
+ggsave(file = "plots/timeconvolved_corrcoeff.png", width = 5, height = 4.5)
+
+```
+
+
+2. Reward zone
+
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(all_ramp_df$ramp_id),
+    type1 = as.numeric(all_ramp_df$cccoef_trials1_rz))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+
+```
+
+# mean for groups 
+
+```{r}
+timeconv_results <- timeconv_results_ramps %>% 
+  group_by(Ramp_type) %>% 
+  summarise_all(funs(mean,sd)) 
+```
+
+# plot results
+
+```{r}
+
+g <- ggplot(data=timeconv_results_ramps, aes(x=factor(Ramp_type), y=type1, fill=factor(Ramp_type))) +
+    geom_violin(alpha=0.3) +
+    #coord_cartesian(xlim = NULL, ylim = c(-0.1,0.1)) +
+    scale_fill_manual(values=c("deepskyblue3","mediumpurple3", "violetred2", "chartreuse3")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+#g + stat_summary(fun.data="mean_sdl", mult=1, geom="pointrange", color="black") 
+g + geom_boxplot(width=0.1)
+
+ggsave(file = "plots/timeconvolved_corrcoeff_rz.png", width = 5, height = 5)
+
+```
+
+
+
+3. non reward zone
+
+>> outbound ramps
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(outbound_ramps$ramp_id),
+    type1 = as.numeric(outbound_ramps$cccoef_trials1_nonrz))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+
+```
+
+# mean for groups 
+
+```{r}
+timeconv_results <- timeconv_results_ramps %>% 
+  group_by(Ramp_type) %>% 
+  summarise_all(funs(mean,sd)) 
+```
+
+# plot results
+
+```{r}
+
+g <- ggplot(data=timeconv_results_ramps, aes(x=factor(Ramp_type), y=type1, fill=factor(Ramp_type))) +
+    geom_violin(alpha=0.3) +
+    coord_cartesian(xlim = NULL, ylim = c(-0.3,1)) +
+    scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+#g + stat_summary(fun.data="mean_sdl", mult=1, geom="pointrange", color="black") 
+g + geom_boxplot(width=0.1)
+
+ggsave(file = "plots/timeconvolved_corrcoeff_nonrz_outbound.png", width = 5, height = 5)
+
+```
+
+
+
+>> homebound ramps
+```{r}
+timeconv_results_ramps <- tibble(Ramp_type = as.character(homebound_ramps$ramp_id),
+    type1 = as.numeric(homebound_ramps$cccoef_trials1_nonrz))
+timeconv_results_ramps <- timeconv_results_ramps %>% drop_na()
+
+```
+
+# mean for groups 
+
+```{r}
+timeconv_results <- timeconv_results_ramps %>% 
+  group_by(Ramp_type) %>% 
+  summarise_all(funs(mean,sd)) 
+```
+
+# plot results
+
+```{r}
+
+g <- ggplot(data=timeconv_results_ramps, aes(x=factor(Ramp_type), y=type1, fill=factor(Ramp_type))) +
+    geom_violin(alpha=0.3) +
+    coord_cartesian(xlim = NULL, ylim = c(-0.3,1)) +
+    scale_fill_manual(values=c("deepskyblue3","mediumpurple3", "violetred2", "chartreuse3")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+#g + stat_summary(fun.data="mean_sdl", mult=1, geom="pointrange", color="black") 
+g + geom_boxplot(width=0.1)
+
+ggsave(file = "plots/timeconvolved_corrcoeff_nonrz_homebound.png", width = 5, height = 5)
+
+```
+
+
+### ----------------------------------------------------------------------- ###
+
+# SLOPE COMPARISON BETWEEN OUTBOUND AND HOMEBOUND REGION (MULTICOLOR ANALYSIS)
+
+Here we want to see whether cells who have steep slopes in the outbound or homebound region are also slopey in the other part of the track. 
+In order to do this we will compare slopes in start of track with slopes in end of track.
+
+First, get all the data into format that is plotable. 
+
+```{r}
+slope_comparison <- cbind(cluster_id=spatial_firing_end$cluster_id, 
+                          start_nb_slope= spatial_firing_start$asr_nb_slope,
+                          end_nb_slope = spatial_firing_end$asr_nb_slope,
+                          start_nb_r2 = spatial_firing_start$asr_nb_r2, 
+                          end_nb_r2 = spatial_firing_end$asr_nb_r2, 
+                          start_b_slope= spatial_firing_start$asr_b_slope,
+                          end_b_slope = spatial_firing_end$asr_b_slope,
+                          start_b_r2 = spatial_firing_start$asr_b_r2, 
+                          end_b_r2 = spatial_firing_end$asr_b_r2)
+```
+
+
+1. First, we want to plot according to NONBEACONED CRITERIA 
+>> subset the data based on LM r-squared value and slope to extract distance encoding cells. 
+
+```{r}
+slope_comparison<-as_tibble(slope_comparison)
+slope_comparison <- subset(slope_comparison, end_nb_r2>0.2 | start_nb_r2>0.2)
+slope_comparison <- subset(slope_comparison, start_nb_slope > 0.12 | start_nb_slope < -0.12 | end_nb_slope > 0.12 | end_nb_slope < -0.12)
+
+```
+
+
+## Find proportions of cells for each distance type that are in catagory
+1. subset cells based on outbound and homebound slope
+
+```{r}
+# positive homebound slopes
+high_homebound <-subset(slope_comparison, end_slope > 0.1)
+magenta <- nrow(subset(high_homebound, start_slope < - 0.1))/nrow(slope_comparison)*100
+burgende <- nrow(subset(high_homebound, start_slope < 0.1 & start_slope > -0.1))/nrow(slope_comparison)*100
+red <- nrow(subset(high_homebound, start_slope > 0.1))/nrow(slope_comparison)*100
+
+# neagtive homebound slopes
+low_homebound <-subset(slope_comparison, end_slope < -0.1)
+blue <- nrow(subset(low_homebound, start_slope < - 0.1))/nrow(slope_comparison)*100
+green <- nrow(subset(low_homebound, start_slope < 0.1 & start_slope > -0.1))/nrow(slope_comparison)*100
+yellow <- nrow(subset(low_homebound, start_slope > 0.1))/nrow(slope_comparison)*100
+
+# no homebound slopes
+no_homebound <-subset(slope_comparison, end_slope > -0.1 & end_slope < 0.1)
+orange <- nrow(subset(no_homebound, start_slope < - 0.1))/nrow(slope_comparison)*100
+purple <- nrow(subset(no_homebound, start_slope > 0.1))/nrow(slope_comparison)*100
+
+proportions_mixed_ramps <- tibble(perc=c(magenta, burgende, red, orange, yellow, green, blue, purple), ramp_id= c("Magenta", "Burgunde", "Red", "orange",  "yellow", "green", "Blue", "purple"),ramp_type = c("Magenta", "Burgunde", "Red", "orange",  "yellow", "green", "Blue", "purple"))
+```
+
+
+# plot data
+
+```{r}
+level_order <- c("Magenta", "Burgunde", "Red", "orange",  "yellow", "green", "Blue", "purple")
+ggplot(proportions_mixed_ramps, aes(x= factor(ramp_type, level = level_order), y = perc, fill=factor(ramp_id, level = level_order))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .7) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("deeppink1","red3", "red1", "darkorange1", "darkgoldenrod1", "springgreen3", "steelblue3", "purple1")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/ramp_mixed_cell_proportions_nb.png", width = 7, height = 6)
+```
+
+
+
+# subset data into types
+
+```{r}
+# positive homebound slopes
+high_homebound <-subset(slope_comparison, end_nb_slope > 0.1)
+magenta <- subset(high_homebound, start_nb_slope < - 0.1)
+ramp_id=rep("Magenta", times= nrow(magenta))
+magenta <- cbind(magenta, ramp_id)
+burgende <- subset(high_homebound, start_nb_slope < 0.1 & start_nb_slope > -0.1)
+ramp_id=rep("burgende", times= nrow(burgende))
+burgende <- cbind(burgende, ramp_id)
+red <- subset(high_homebound, start_nb_slope > 0.1)
+ramp_id=rep("red", times= nrow(red))
+red <- cbind(red, ramp_id)
+
+
+# neagtive homebound slopes
+low_homebound <-subset(slope_comparison, end_nb_slope < -0.1)
+blue <- subset(low_homebound, start_nb_slope < - 0.1)
+ramp_id=rep("blue", times= nrow(blue))
+blue <- cbind(blue, ramp_id)
+green <- subset(low_homebound, start_nb_slope < 0.1 & start_nb_slope > -0.1)
+ramp_id=rep("green", times= nrow(green))
+green <- cbind(green, ramp_id)
+yellow <- subset(low_homebound, start_nb_slope > 0.1)
+ramp_id=rep("yellow", times= nrow(yellow))
+yellow <- cbind(yellow, ramp_id)
+
+# no homebound slopes
+no_homebound <-subset(slope_comparison, end_nb_slope > -0.1 & end_nb_slope < 0.1)
+orange <- subset(no_homebound, start_nb_slope > 0.1)
+ramp_id=rep("orange", times= nrow(orange))
+orange <- cbind(orange, ramp_id)
+purple <- subset(no_homebound, start_nb_slope < - 0.1)
+ramp_id=rep("purple", times= nrow(purple))
+purple <- cbind(purple, ramp_id)
+
+mixed_ramps <- rbind(magenta, burgende, red, orange, yellow, green, blue, purple)
+mixed_ramps <- mixed_ramps %>% select("start_b_slope", "end_b_slope", "start_nb_slope", "end_nb_slope", "ramp_id")
+mixed_ramps <- na.omit(mixed_ramps)
+```
+
+
+# repot comparison of slopes
+
+```{r}
+level_order <- c("magenta", "burgende", "red", "orange",  "yellow", "green", "blue", "purple")
+
+slope_comparison_plot <- ggplot(mixed_ramps,aes(x = start_nb_slope, y = end_nb_slope, color=factor(ramp_id))) + 
+    geom_jitter() +
+    coord_cartesian(ylim = c(-.6,.6), xlim = c(-.6,.6)) +
+    xlab("Outbound slope") +
+    ylab("Homebound slope") +
+    theme_classic() +
+    scale_color_manual(values=c("deeppink1","red3", "red1", "darkorange1", "darkgoldenrod1", "springgreen3", "steelblue3", "purple1")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/slope_comparison_plot2_nb_nbcriteria.png", width = 5, height = 5)
+
+```
+
+
+

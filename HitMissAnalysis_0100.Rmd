@@ -1,0 +1,285 @@
+---
+title: "HitMissAnalysis"
+author: "Sarah Tennant"
+date: "30/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+## Differences in spatial firing between hit/rewarded and miss/unrewarded trials
+
+We might want to see differences in the relationship between firing rate and position along the track between rewarded and non rewarded trials (i.e. hit and miss trials)
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+
+
+
+Average trials with reward/no reward
+
+
+
+```{r}
+
+average_over_rewarded_trials <- function(df, trial_id=2) {
+  df <- tibble(SpikeRates = as.numeric(df[[1]]), Reward_indicator = df[[2]], Trials = df[[3]], Types = df[[4]], Position = c(rep(1:200, times=max(df[[3]]))))
+  df %>% 
+    filter(Types == trial_id) %>% 
+    select(SpikeRates, Position, Trials, Reward_indicator) %>% 
+    group_by(Position, Reward_indicator) %>% 
+    summarise(Rates = n(), Rates = mean(SpikeRates))
+}
+
+
+spatial_firing <- spatial_firing %>%
+  mutate(both_asr_b = map(R_Reward_data, trial_id=0, average_over_rewarded_trials)) 
+
+```
+
+```{r}
+start_ramps <- start_ramps %>%
+  mutate(both_asr_b = map(R_Reward_data, trial_id=0, average_over_rewarded_trials)) 
+
+```
+
+```{r}
+to_reward_ramps <- to_reward_ramps %>%
+  mutate(both_asr_b = map(R_Reward_data, trial_id=0, average_over_rewarded_trials)) 
+
+```
+
+
+
+
+```{r}
+
+outbound_ramps <- outbound_ramps %>%
+  lm_analysis(both_asr_b, 30, 90) %>%
+  lm_analysis(both_asr_b, 30, 90)
+
+
+```
+
+
+
+
+## Run lm on seperately 
+
+```{r}
+compare_models_end <- function(df1){
+  fit1 <- lm(Rates ~ Position, data = df1[110:170,], na.action = na.omit)
+  fit2 <- lm(Rates ~ Position * Reward_indicator, data = df1[110:170,], na.action = na.omit)
+  test <-anova(fit2, fit1, test="Chisq")
+  print(anova(fit2, fit1, test="Chisq")$"Pr(>Chi)"[2])
+  #print(1-pchisq( abs(test$Deviance[2]),df=abs(test$Df[2])))
+}
+
+compare_models_start <- function(df1){
+  fit1 <- lm(Rates ~ Position, data = df1[30:90,], na.action = na.omit)
+  fit2 <- lm(Rates ~ Position * Reward_indicator, data = df1[30:90,], na.action = na.omit)
+  test <-anova(fit2, fit1, test="Chisq")
+  print(anova(fit2, fit1, test="Chisq")$"Pr(>Chi)"[2])
+  #print(1-pchisq( abs(test$Deviance[2]),df=abs(test$Df[2])))
+}
+```
+
+
+```{r}
+outbound_ramps <- outbound_ramps %>%
+  mutate(pval = map(both_asr_b, compare_models_start))
+
+```
+
+
+
+```{r}
+all_ramp_df <- bind_rows(start_ramps, to_reward_ramps)
+outbound_ramps <- bind_rows(start_ramps, to_reward_ramps)
+
+```
+```{r}
+all_ramp_df_rewards <- all_ramp_df[all_ramp_df$pval < 0.05,]
+outbound_ramps_rewards <- outbound_ramps[outbound_ramps$pval < 0.05,]
+homebound_ramps_rewards <- homebound_ramps[homebound_ramps$pval < 0.05,]
+
+```
+
+
+
+```{r}
+
+lm_results <- tibble(Ramp_type = as.character(outbound_ramps$ramp_id),
+    Slopes = outbound_ramps$asr_b_slope, 
+    r2 = outbound_ramps$asr_b_r2, 
+    id = outbound_ramps$cluster_id)
+
+lm_results_ramps <- tibble(Ramp_type = as.character(outbound_ramps_rewards$ramp_id),
+    Slopes = outbound_ramps_rewards$asr_b_slope, 
+    r2 = outbound_ramps_rewards$asr_b_r2, 
+    id = outbound_ramps_rewards$cluster_id)
+
+
+lm_plot_end <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    coord_cartesian(xlim = c(-0.65,0.65), ylim = c(0,.9)) +
+    geom_point() +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2), color='grey') +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("red", "red")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+ggsave(file = "plots/b_lm_plot_start_rewards.png", width = 5, height = 6)
+```
+
+
+
+
+# find proportions for above.
+# end of track
+
+```{r}
+# positive homebound slopes
+
+
+# extracting diff models 
+pos <-subset(outbound_ramps, lm_result == "Positive")
+neg <-subset(outbound_ramps, lm_result == "Negative")
+none <-subset(outbound_ramps, lm_result == "None")
+
+sig_toreward <- nrow(subset(outbound_ramps, pval < 0.05 & lm_result == "Positive" ))/nrow(pos)*100
+sig_start <- nrow(subset(outbound_ramps, pval < 0.05 & lm_result == "Negative" ))/nrow(neg)*100
+notsig_toreward <- nrow(subset(outbound_ramps, pval > 0.05 & lm_result == "Positive" ))/nrow(pos)*100
+notsig_start <- nrow(subset(outbound_ramps,pval > 0.05 & lm_result == "Negative" ))/nrow(neg)*100
+
+proportions_mixed_ramps <- tibble(perc=c(sig_start, notsig_start, sig_toreward, notsig_toreward), ramp_id= c("Sig", "Not", "Sig", "Not"),ramp_type = c("Start", "Start", "ToReward", "ToReward"))
+
+```
+
+
+
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  coord_cartesian(ylim = c(0,100), xlim=(NULL)) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("grey62", "red")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/LMStart_cellproportions_hitmiss.png", width = 3, height = 6)
+
+```
+
+
+
+
+## just for postition
+
+
+```{r}
+P <-subset(outbound_ramps, final_model == "P")
+
+P_rewards <- P[P$pval < 0.05,]
+
+```
+
+
+
+```{r}
+
+lm_results <- tibble(Ramp_type = as.character(P$ramp_id),
+    Slopes = P$asr_b_slope, 
+    r2 = P$asr_b_r2, 
+    id = P$cluster_id)
+
+lm_results_ramps <- tibble(Ramp_type = as.character(P_rewards$ramp_id),
+    Slopes = P_rewards$asr_b_slope, 
+    r2 = P_rewards$asr_b_r2, 
+    id = P_rewards$cluster_id)
+
+
+lm_plot_end <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    coord_cartesian(xlim = c(-0.65,0.65), ylim = c(0,.9)) +
+    geom_point() +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2), color='grey') +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("red", "red")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+ggsave(file = "plots/b_lm_plot_start_rewards_POSITION.png", width = 5, height = 6)
+```
+
+
+
+
+# find proportions for above.
+# end of track
+
+```{r}
+# positive homebound slopes
+
+
+# extracting diff models 
+pos <-subset(P, lm_result == "Positive")
+neg <-subset(P, lm_result == "Negative")
+none <-subset(P, lm_result == "None")
+
+sig_toreward <- nrow(subset(P, pval < 0.05 & lm_result == "Positive" ))/nrow(pos)*100
+sig_start <- nrow(subset(P, pval < 0.05 & lm_result == "Negative" ))/nrow(neg)*100
+notsig_toreward <- nrow(subset(P, pval > 0.05 & lm_result == "Positive" ))/nrow(pos)*100
+notsig_start <- nrow(subset(P,pval > 0.05 & lm_result == "Negative" ))/nrow(neg)*100
+
+proportions_mixed_ramps <- tibble(perc=c(sig_start, notsig_start, sig_toreward, notsig_toreward), ramp_id= c("Sig", "Not", "Sig", "Not"),ramp_type = c("Start", "Start", "ToReward", "ToReward"))
+
+```
+
+
+
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  coord_cartesian(ylim = c(0,100), xlim=(NULL)) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("grey62", "red")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/LMStart_cellproportions_hitmiss_position.png", width = 3, height = 6)
+
+```

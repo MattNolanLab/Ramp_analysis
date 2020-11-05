@@ -1,0 +1,454 @@
+---
+title: "FiringProperties"
+author: "Sarah Tennant"
+date: "30/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+_This code assumes you have loaded the required dataset with curated clusters from all days & all mice_
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+### Analysis of cell type in ramp cell population
+
+```{r}
+ggplot(outbound_ramps, aes(x = unlist(max_firing_location_outbound), color=unlist(ramp_id), fill=unlist(ramp_id))) +
+
+  geom_histogram(aes(y=..count.., ), alpha = 0.7) +
+  geom_histogram(aes(y=..count.., x = unlist(min_firing_location_outbound), color=unlist(ramp_id), fill=unlist(ramp_id)), alpha = 0.05) + #, color="grey2", fill="grey2"
+  coord_cartesian(x=c(20,180), y=NULL) +
+  facet_wrap(vars(ramp_id)) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("violetred2", "chartreuse3", "violetred1","chartreuse1")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "violetred1","chartreuse1")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/MaxLocation_outbound.png",width = 6, height = 3)
+
+```
+
+
+```{r}
+ggplot(homebound_ramps, aes(x = unlist(max_firing_location_homebound), color=unlist(ramp_id), fill=unlist(ramp_id))) +
+  geom_histogram(aes(y=..count..), alpha = 0.7) +
+  facet_wrap(vars(ramp_id)) +
+  coord_cartesian(x=c(20,180), y=NULL) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3", "grey2")) +
+  scale_fill_manual(values=c("deepskyblue3","mediumpurple3", "grey2")) +
+  geom_histogram(aes(y=..count.., x = unlist(min_firing_location_homebound), color=unlist(ramp_id), fill=unlist(ramp_id)), alpha = 0.01) +
+  #scale_color_manual(values=c("grey2", "grey2")) +
+  #scale_fill_manual(values=c("grey2", "grey2")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/MaxLocation_homebound.png",width = 6, height = 3)
+```
+
+
+
+
+
+
+
+```{r}
+ggplot(outbound_ramps, aes(x = unlist(all_track_rates)*3, color=unlist(ramp_id), fill=unlist(ramp_id))) +
+
+  geom_histogram(aes(y=..count.., ), alpha = 0.7) +
+  #geom_histogram(aes(y=..count.., x = unlist(outbound_ramps$min_firing_location_outbound), color=unlist(ramp_id), fill=unlist(ramp_id)), alpha = 0.05) + #, color="grey2", fill="grey2"
+  coord_cartesian(x=c(0,65), y=NULL) +
+  facet_wrap(vars(ramp_id)) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("violetred2", "chartreuse3", "violetred1","chartreuse1")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "violetred1","chartreuse1")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/MeanFiringRate_outbound.png",width = 6, height = 3)
+
+ggplot(homebound_ramps, aes(x = unlist(all_track_rates)*3, color=unlist(ramp_id), fill=unlist(ramp_id))) +
+  geom_histogram(aes(y=..count..), alpha = 0.7) +
+  facet_wrap(vars(ramp_id)) +
+  coord_cartesian(x=c(0,65), y=NULL) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3", "grey2")) +
+  scale_fill_manual(values=c("deepskyblue3","mediumpurple3", "grey2")) +
+  #geom_histogram(aes(y=..count.., x = unlist(min_firing_location_homebound), color=unlist(ramp_id), fill=unlist(ramp_id)), alpha = 0.01) +
+  #scale_color_manual(values=c("grey2", "grey2")) +
+  #scale_fill_manual(values=c("grey2", "grey2")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/MeanFiringRate_homebound.png",width = 6, height = 3)
+```
+
+
+
+
+```{r}
+ggplot(homebound_ramps, aes(x = unlist(homebound_ramps$min_firing_location_homebound), color=unlist(homebound_ramps$ramp_id), fill=unlist(homebound_ramps$ramp_id))) +
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  facet_wrap(vars(homebound_ramps$ramp_id)) +
+  #coord_cartesian(x=c(20,180), y=NULL) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/MinLocation_homebound.png",width = 6, height = 3)
+```
+
+
+```{r}
+ggplot(outbound_ramps, aes(x = unlist(outbound_ramps$min_firing_location_outbound), color=unlist(outbound_ramps$ramp_id), fill=unlist(outbound_ramps$ramp_id))) +
+
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  #coord_cartesian(x=c(20,180), y=NULL) +
+  facet_wrap(vars(outbound_ramps$ramp_id)) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/MinLocation_outbound.png",width = 6, height = 3)
+
+```
+
+```{r}
+ggplot(homebound_ramps, aes(x = abs(unlist(homebound_ramps$ramp_length_homebound)), color=unlist(homebound_ramps$ramp_id), fill=unlist(homebound_ramps$ramp_id))) +
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  facet_wrap(vars(homebound_ramps$ramp_id)) +
+  coord_cartesian(x=c(0,60), y=NULL) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/RampLength_homebound.png",width = 6, height = 3)
+```
+
+
+```{r}
+ggplot(outbound_ramps, aes(x = abs(unlist(outbound_ramps$ramp_length_outbound)), color=unlist(outbound_ramps$ramp_id), fill=unlist(outbound_ramps$ramp_id))) +
+
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  coord_cartesian(x=c(0,60), y=NULL) +
+  facet_wrap(vars(outbound_ramps$ramp_id)) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/RampLength_outbound.png",width = 6, height = 3)
+
+```
+
+
+
+### black box analysis
+
+
+```{r}
+ggplot(homebound_ramps, aes(x = unlist(bb_rates)*3, color=unlist(ramp_id), fill=unlist(ramp_id))) +
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  facet_wrap(vars(ramp_id)) +
+  coord_cartesian(x=c(0,60), y=NULL) +
+  labs(x = "Blackbox firing rate (Hz)", y="density") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/BBrate_homebound.png",width = 6, height = 3)
+```
+
+```{r}
+ggplot(outbound_ramps, aes(x = unlist(bb_rates)*3, color=unlist(ramp_id), fill=unlist(ramp_id))) +
+
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  coord_cartesian(x=c(0,60), y=NULL) +
+  facet_wrap(vars(ramp_id)) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/BBrate_outbound.png",width = 6, height = 3)
+```
+
+
+```{r}
+ggplot(homebound_ramps, aes(x = unlist(track_rates)*3, color=unlist(ramp_id), fill=unlist(ramp_id))) +
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  facet_wrap(vars(ramp_id)) +
+  coord_cartesian(x=c(0,60), y=NULL) +
+  labs(x = "Blackbox firing rate (Hz)", y="density") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/Trackrate_homebound.png",width = 6, height = 3)
+```
+
+
+```{r}
+ggplot(outbound_ramps, aes(x = unlist(track_rates)*3, color=unlist(ramp_id), fill=unlist(ramp_id))) +
+
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  coord_cartesian(x=c(0,60), y=NULL) +
+  facet_wrap(vars(ramp_id)) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/Trackrate_outbound.png",width = 6, height = 3)
+```
+
+
+
+```{r}
+track_analysis <- function(x,y){
+  if(all(is.na(x))) 
+    return(0)
+  result = x-y
+}
+
+all_ramp_df <- all_ramp_df %>% 
+  mutate(track_diff_bb = map2(bb_rate, track_rate, track_analysis))
+
+```
+
+
+```{r}
+ggplot(all_ramp_df, aes(x = as.numeric(unlist(all_ramp_df$track_diff_bb)), color=unlist(all_ramp_df$ramp_id), fill=unlist(all_ramp_df$ramp_id))) +
+
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  #coord_cartesian(x=c(0,60), y=NULL) +
+  facet_wrap(vars(all_ramp_df$ramp_id)) +
+  labs(x = "Max firing location (cm)", y="density") +
+  scale_color_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/FRdiff_allramp.png",width = 6, height = 3)
+
+```
+
+
+
+```{r}
+firing_comparison <- as.tibble(cbind(cluster_id = c(all_ramp_df$cluster_id, all_ramp_df$cluster_id),
+                          rate = c(unlist(all_ramp_df$bb_rate), unlist(all_ramp_df$track_rate)),
+                          cluster_type = c(all_ramp_df$ramp_id, all_ramp_df$ramp_id),
+                          Seg_type = rep(c("Track","BlackBoxes"), each =nrow(all_ramp_df))))
+
+firing_comparison_2 <- as.tibble(cbind(cluster_id = c(spatial_firing_all$cluster_id, spatial_firing_all$cluster_id),
+                          rate = c(unlist(spatial_firing_all$bb_rate), unlist(spatial_firing_all$track_rate)),
+                          Seg_type = rep(c("Track","BlackBoxes"), each =nrow(all_ramp_df))))
+
+
+
+ggplot(data=firing_comparison, aes(x = as.factor(Seg_type), y = as.numeric(rate))) + 
+  geom_point(aes(color=as.factor(cluster_type), fill=as.factor(cluster_type)), alpha=0.2) +
+  geom_line(data=firing_comparison, aes(color=as.factor(cluster_type), fill=as.factor(cluster_type), group=cluster_id)) + #aes(x = as.factor(Seg_type),y = as.numeric(rate), group = cluster_id),
+  scale_color_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3", "grey32")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3", "grey32")) +
+  #geom_point(data=firing_comparison_2, aes(x = as.factor(Seg_type), y = as.numeric(rate), color="grey32", fill="grey32", group = cluster_id), alpha=0.2) +
+  #geom_line(data=firing_comparison_2, aes(x = as.factor(Seg_type),y = as.numeric(rate), group = cluster_id)) +
+  ylab("Mean firing rate (Hz)") + xlab("") +
+  #geom_segment(aes(x=1, xend=2, y=as.numeric(rate),yend=as.numeric(rate))) + 
+  #geom_segment(aes(x=1, xend=2, y=`1952`, yend=`1957`, col=class), size=.75, show.legend=F) +
+  theme_classic()
+
+```
+
+
+
+```{r}
+track_analysis_rates <- function(x,y){
+  if(all(is.na(x))) 
+    return(0)
+  result = (x+y)/2
+}
+
+outbound_ramps <- outbound_ramps %>% 
+  mutate(all_track_rates = map2(bb_rates, track_rates, track_analysis_rates))
+
+homebound_ramps <- homebound_ramps %>% 
+  mutate(all_track_rates = map2(bb_rates, track_rates, track_analysis_rates))
+
+```
+
+```{r}
+track_analysis <- function(x,y){
+  if(all(is.na(x))) 
+    return(0)
+  result = y-x
+}
+
+outbound_ramps <- outbound_ramps %>% 
+  mutate(all_track_diff = map2(bb_rates, track_rates, track_analysis))
+
+homebound_ramps <- homebound_ramps %>% 
+  mutate(all_track_diff = map2(bb_rates, track_rates, track_analysis))
+```
+
+
+```{r}
+ggplot(homebound_ramps, aes(x = unlist(all_track_diff)*3, color=unlist(ramp_id), fill=unlist(ramp_id))) +
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  facet_wrap(vars(ramp_id)) +
+  #coord_cartesian(x=c(0,60), y=NULL) +
+  labs(x = "Firing rate diff (track - bb) (Hz)", y="density") +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/Trackratediff_homebound.png",width = 6, height = 3)
+```
+
+```{r}
+ggplot(outbound_ramps, aes(x = unlist(all_track_diff)*3, color=unlist(ramp_id), fill=unlist(ramp_id))) +
+
+  geom_histogram(aes(y=..count..), alpha = 0.1) +
+  #coord_cartesian(x=c(0,60), y=NULL) +
+  facet_wrap(vars(ramp_id)) +
+  labs(x = "Firing rate diff (track - bb) (Hz)", y="density") +
+  scale_color_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "deepskyblue3","mediumpurple3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/Trackratediff_outbound.png",width = 6, height = 3)
+```
+
+# Identify cell types (Inhibitory/excitatory)
+
+1. firing rate and spike width are often used as markers to identify inhibitory and excitatory cells. Here we ask whether start or end of track firing cells are clustered according to firing rate and spike width.
+_need to reference here the thresholds we use_
+
+```{r}
+ggplot(homebound_ramps, aes(x = unlist(all_track_rates)*3, y = spike_width, color=ramp_id, fill=ramp_id)) + 
+  geom_point() +
+  theme_classic() +
+  coord_cartesian(x=c(0,50), y=c(0,30)) +
+  ylab("Spike width (samples)") + xlab("Mean firing rate (Hz)") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  scale_color_manual(values=c("violetred2", "chartreuse3")) +
+  theme(axis.text.x = element_text(size=15),
+        axis.text.y = element_text(size=15),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=15), 
+        legend.text=element_text(size=15), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/fr_versus_width_rampcells_homebound.png", width = 4, height = 4.5)
+
+
+ggplot(outbound_ramps, aes(x = unlist(all_track_rates)*3, y = spike_width, color=ramp_id, fill=ramp_id)) + 
+  geom_point() +
+  theme_classic() +
+  coord_cartesian(x=c(0,50), y=c(0,30)) +
+  ylab("Spike width (samples)") + xlab("Mean firing rate (Hz)") +
+  scale_fill_manual(values=c("deepskyblue3","mediumpurple3")) +
+  scale_color_manual(values=c("deepskyblue3","mediumpurple3")) +
+  theme(axis.text.x = element_text(size=15),
+        axis.text.y = element_text(size=15),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=15), 
+        legend.text=element_text(size=15), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/fr_versus_width_rampcells_outbound.png", width = 4, height = 4.5)
+
+```

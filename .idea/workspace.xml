@@ -1,0 +1,1796 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list id="433da7cb-9f8e-4c7b-892e-c1748e7de2d8" name="upload dataframe" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/df_final.Rda" />
+    </list>
+    <list default="true" id="b9bb9504-81c9-4c63-b32b-94061a350b8c" name="Default" comment="update model in homebound comparison of hit and miss trials - account for uncorrelated intercept and slope">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/Prelim_Analysis_rewarded.Rmd" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Figure1_A.png" afterPath="$PROJECT_DIR$/Figure1_A.png" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Figure1_B.png" afterPath="$PROJECT_DIR$/Figure1_B.png" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Control_PostSorting_Analysis.py" afterPath="$PROJECT_DIR$/Control_PostSorting_Analysis.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ConvertPickletoRda.Rmd" afterPath="$PROJECT_DIR$/ConvertPickletoRda.Rmd" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/CueAnalysis_0100.Rmd" afterPath="$PROJECT_DIR$/CueAnalysis_0100.Rmd" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Functions_Outbound_LMER.R" afterPath="$PROJECT_DIR$/Functions_Outbound_LMER.R" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/PlaceFieldsvsRamps.Rmd" afterPath="$PROJECT_DIR$/PlaceFieldsvsRamps.Rmd" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/PredictFiringRate.Rmd" afterPath="$PROJECT_DIR$/PredictFiringRate.Rmd" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/PredictFiringRate_probe.Rmd" afterPath="$PROJECT_DIR$/PredictFiringRate_probe.Rmd" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/PrelimAnalysis_Homebound.Rmd" afterPath="$PROJECT_DIR$/PrelimAnalysis_Homebound.Rmd" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Prelim_Analysis_0100.Rmd" afterPath="$PROJECT_DIR$/Prelim_Analysis_0100.Rmd" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Python_PostSorting/CalculateAcceleration.py" afterPath="$PROJECT_DIR$/Python_PostSorting/CalculateAcceleration.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Python_PostSorting/Concat_Local_Frames.py" afterPath="$PROJECT_DIR$/Python_PostSorting/Concat_Local_Frames.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Python_PostSorting/Concat_Server_Frames.py" afterPath="$PROJECT_DIR$/Python_PostSorting/Concat_Server_Frames.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Python_PostSorting/ConvolveRates_FFT.py" afterPath="$PROJECT_DIR$/Python_PostSorting/ConvolveRates_FFT.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Python_PostSorting/Curation.py" afterPath="$PROJECT_DIR$/Python_PostSorting/Curation.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Python_PostSorting/LoadDataFrames.py" afterPath="$PROJECT_DIR$/Python_PostSorting/LoadDataFrames.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Python_PostSorting/MakePlots.py" afterPath="$PROJECT_DIR$/Python_PostSorting/MakePlots.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Python_PostSorting/RewardFiring.py" afterPath="$PROJECT_DIR$/Python_PostSorting/RewardFiring.py" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="TRACKING_ENABLED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileEditorManager">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file leaf-file-name="Control_PostSorting_Analysis.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Control_PostSorting_Analysis.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="195">
+              <caret line="303" column="126" lean-forward="false" selection-start-line="303" selection-start-column="126" selection-end-line="303" selection-end-column="126" />
+              <folding>
+                <element signature="e#1659#1928#0" expanded="false" />
+                <element signature="e#4308#4619#0" expanded="false" />
+                <element signature="e#4661#5016#0" expanded="false" />
+                <element signature="e#5077#5331#0" expanded="false" />
+                <element signature="e#5397#5764#0" expanded="false" />
+                <element signature="e#5833#6384#0" expanded="false" />
+                <element signature="e#6432#6784#0" expanded="false" />
+                <element signature="e#6832#9600#0" expanded="false" />
+                <element signature="e#9661#10098#0" expanded="false" />
+                <element signature="e#10141#10382#0" expanded="false" />
+                <element signature="e#10444#11422#0" expanded="false" />
+                <element signature="e#11478#13204#0" expanded="false" />
+                <element signature="e#13475#15414#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="RewardFiring.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/Python_PostSorting/RewardFiring.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="207">
+              <caret line="596" column="62" lean-forward="false" selection-start-line="596" selection-start-column="0" selection-end-line="597" selection-end-column="0" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+                <element signature="e#3186#3839#0" expanded="false" />
+                <element signature="e#6951#13177#0" expanded="false" />
+                <element signature="e#13268#13708#0" expanded="false" />
+                <element signature="e#13802#14238#0" expanded="false" />
+                <element signature="e#14334#14774#0" expanded="false" />
+                <element signature="e#14867#15309#0" expanded="false" />
+                <element signature="e#15415#17163#0" expanded="false" />
+                <element signature="e#17265#19019#0" expanded="false" />
+                <element signature="e#19131#20877#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="MakePlots.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Python_PostSorting/MakePlots.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="152">
+              <caret line="1934" column="76" lean-forward="true" selection-start-line="1934" selection-start-column="63" selection-end-line="1934" selection-end-column="76" />
+              <folding>
+                <element signature="e#0#9#0" expanded="true" />
+                <element signature="e#2805#4659#0" expanded="false" />
+                <element signature="e#4760#8441#0" expanded="false" />
+                <element signature="e#8543#15810#0" expanded="false" />
+                <element signature="e#15913#19492#0" expanded="false" />
+                <element signature="e#19576#21469#0" expanded="false" />
+                <element signature="e#21578#25357#0" expanded="false" />
+                <element signature="e#25467#32061#0" expanded="false" />
+                <element signature="e#32125#32536#0" expanded="false" />
+                <element signature="e#32608#34090#0" expanded="false" />
+                <element signature="e#34177#37751#0" expanded="false" />
+                <element signature="e#37832#39724#0" expanded="false" />
+                <element signature="e#39812#41761#0" expanded="false" />
+                <element signature="e#41856#48338#0" expanded="false" />
+                <element signature="e#48434#55068#0" expanded="false" />
+                <element signature="e#55143#56788#0" expanded="false" />
+                <element signature="e#56856#58446#0" expanded="false" />
+                <element signature="e#58555#61449#0" expanded="false" />
+                <element signature="e#61927#62424#0" expanded="false" />
+                <element signature="e#62495#64479#0" expanded="false" />
+                <element signature="e#64553#66792#0" expanded="false" />
+                <element signature="e#66863#69014#0" expanded="false" />
+                <element signature="e#69084#71236#0" expanded="false" />
+                <element signature="e#71329#73173#0" expanded="false" />
+                <element signature="e#73264#75102#0" expanded="false" />
+                <element signature="e#75348#75448#0" expanded="false" />
+                <element signature="e#77922#78162#0" expanded="false" />
+                <element signature="e#82547#85690#0" expanded="false" />
+                <element signature="e#85773#86576#0" expanded="false" />
+                <element signature="e#86670#95219#0" expanded="false" />
+                <element signature="e#95299#96102#0" expanded="false" />
+                <element signature="e#100709#101512#0" expanded="false" />
+                <element signature="e#106199#108957#0" expanded="false" />
+                <element signature="e#109086#116658#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="LoadDataFrames.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Python_PostSorting/LoadDataFrames.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="289">
+              <caret line="78" column="43" lean-forward="true" selection-start-line="78" selection-start-column="43" selection-end-line="78" selection-end-column="43" />
+              <folding>
+                <element signature="e#0#9#0" expanded="true" />
+                <element signature="e#73#535#1" expanded="false" />
+                <element signature="e#583#1630#0" expanded="false" />
+                <element signature="e#1686#2705#0" expanded="false" />
+                <element signature="e#4159#4591#0" expanded="false" />
+                <element signature="e#4649#5508#0" expanded="false" />
+                <element signature="e#5563#5967#0" expanded="false" />
+                <element signature="e#6015#8309#0" expanded="false" />
+                <element signature="e#8311#8699#1" expanded="false" />
+                <element signature="e#8755#11687#0" expanded="false" />
+                <element signature="e#11734#12285#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Spike_Analysis.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="152">
+              <caret line="109" column="67" lean-forward="true" selection-start-line="109" selection-start-column="67" selection-end-line="109" selection-end-column="67" />
+              <folding>
+                <element signature="e#0#19#0" expanded="true" />
+                <element signature="e#20479#21689#0" expanded="false" />
+                <element signature="e#21761#22514#0" expanded="false" />
+                <element signature="e#29228#34205#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ConvolveRates_FFT.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Python_PostSorting/ConvolveRates_FFT.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="572">
+              <caret line="44" column="0" lean-forward="false" selection-start-line="44" selection-start-column="0" selection-end-line="44" selection-end-column="0" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>plot_stops</find>
+      <find>package</find>
+      <find>_smoothed</find>
+      <find>spike_rate</find>
+      <find>histogram</find>
+      <find>rolling</find>
+      <find>logical</find>
+      <find>print</find>
+      <find>where</find>
+      <find>mode</find>
+      <find>convolved_rate = signal.convolve(rate, window, mode='same')</find>
+      <find>extract_stop_info</find>
+      <find>take</find>
+      <find>np.vstack((shuffledtrials,shuffledtrial))</find>
+      <find>sn.append(np.array(shuffled_cluster_firings[:,4])) # speed</find>
+      <find>extract</find>
+      <find>fill</find>
+      <find>data = np.vstack((trials, speed, position, acceleration))</find>
+      <find>extract_time</find>
+      <find>&quot;&quot;</find>
+      <find>plt.subplot</find>
+      <find>stats</find>
+      <find>Spike_AnalysisSpike_Analysis</find>
+      <find>Spike_Analysis</find>
+      <find>csv</find>
+      <find>inter</find>
+      <find>tiny</find>
+      <find>line = slope*position_array</find>
+      <find>binned_speed_nb</find>
+      <find>/4</find>
+    </findStrings>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/PostSorting/RewardFiring.py" />
+        <option value="$PROJECT_DIR$/PostSorting/Concat_frames.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Control_PostSorting_Analysis" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/FiringRateMaps.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Create2DHistogram.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_in_time.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/SpikeTrainAnalysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/FixUnequalTrialNumbers.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/InstantFiringRate.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/plot_utility.py" />
+        <option value="$PROJECT_DIR$/pickle_writer.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/RampAnalysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/FiringProperties.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/RateAnalysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Monotonicity.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/RewardAnalysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/FirstStopAnalysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/postsorting_parameters.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/math_utility.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Open_field_make_plots" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/ShuffleStops.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/TrialType_Comparison.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/CrossCorrelateFR_TrialTypes.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/StopAnalysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/SpikeWidth.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Spike_Time_Analysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/ThetaModulation.py" />
+        <option value="$PROJECT_DIR$/ConvolveRates_FFT.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Extract_Journeys.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/ExtractFiringData.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Speed_Analysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/BrainRender_EC.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/FitAnalysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/MakePlots_FiringProperties.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/RePackage_Data.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Curation.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Concat_Server_Frames.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Concat_Local_Frames.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/ShuffleAnalysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/MakePlots_Behaviour.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Add_BrainRegion_Classifier.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/PeakAnalysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/ConvolveRates_FFT.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/CalculateAcceleration.py" />
+        <option value="$PROJECT_DIR$/Control_PostSorting_Analysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/LoadDataFrames.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/MakePlots.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py" />
+        <option value="$PROJECT_DIR$/Python_PostSorting/RewardFiring.py" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds">
+    <option name="x" value="-3" />
+    <option name="y" value="23" />
+    <option name="width" value="1280" />
+    <option name="height" value="733" />
+  </component>
+  <component name="ProjectView">
+    <navigator currentView="ProjectPane" proportions="" version="1">
+      <flattenPackages />
+      <showMembers />
+      <showModules />
+      <showLibraryContents />
+      <hideEmptyPackages />
+      <abbreviatePackageNames />
+      <autoscrollToSource />
+      <autoscrollFromSource />
+      <sortByType />
+      <manualOrder />
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="Scratches" />
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="in_vivo_virtual_reality" type="b2602c69:ProjectViewProjectNode" />
+              <item name="in_vivo_virtual_reality" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="in_vivo_virtual_reality" type="b2602c69:ProjectViewProjectNode" />
+              <item name="in_vivo_virtual_reality" type="462c0819:PsiDirectoryNode" />
+              <item name="Python_PostSorting" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="settings.github" />
+    <property name="SearchEverywhereHistoryKey" value="rolling_mean&#9;null&#9;null&#10;np.logical_and&#9;null&#9;null&#10;np.take&#9;null&#9;null" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/Python_PostSorting" />
+      <recent name="$PROJECT_DIR$/PostSorting" />
+    </key>
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager" selected="Python.Control_PostSorting_Analysis (1)">
+    <configuration name="BrainRender_EC" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Python_PostSorting" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="in_vivo_virtual_reality" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Python_PostSorting/BrainRender_EC.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+    </configuration>
+    <configuration name="Concat_Local_Frames" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Python_PostSorting" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="in_vivo_virtual_reality" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Python_PostSorting/Concat_Local_Frames.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+    </configuration>
+    <configuration name="Concat_Server_Frames" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Python_PostSorting" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="in_vivo_virtual_reality" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Python_PostSorting/Concat_Server_Frames.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+    </configuration>
+    <configuration name="Control_PostSorting_Analysis (1)" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="in_vivo_virtual_reality" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Control_PostSorting_Analysis.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+    </configuration>
+    <configuration name="PeakAnalysis" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Python_PostSorting" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="in_vivo_virtual_reality" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Python_PostSorting/PeakAnalysis.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+    </configuration>
+    <list size="5">
+      <item index="0" class="java.lang.String" itemvalue="Python.Control_PostSorting_Analysis (1)" />
+      <item index="1" class="java.lang.String" itemvalue="Python.Concat_Local_Frames" />
+      <item index="2" class="java.lang.String" itemvalue="Python.BrainRender_EC" />
+      <item index="3" class="java.lang.String" itemvalue="Python.PeakAnalysis" />
+      <item index="4" class="java.lang.String" itemvalue="Python.Concat_Server_Frames" />
+    </list>
+    <recent_temporary>
+      <list size="5">
+        <item index="0" class="java.lang.String" itemvalue="Python.Control_PostSorting_Analysis (1)" />
+        <item index="1" class="java.lang.String" itemvalue="Python.PeakAnalysis" />
+        <item index="2" class="java.lang.String" itemvalue="Python.Concat_Server_Frames" />
+        <item index="3" class="java.lang.String" itemvalue="Python.Concat_Local_Frames" />
+        <item index="4" class="java.lang.String" itemvalue="Python.BrainRender_EC" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="ShelveChangesManager" show_recycled="false">
+    <option name="remove_strategy" value="false" />
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="-3" y="23" width="1280" height="733" extended-state="0" />
+    <editor active="true" />
+    <layout>
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.27382874" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.33387357" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3273906" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3273906" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.36466774" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.67689824" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3279483" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+    </layout>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="RECENTLY_FILTERED_USER_GROUPS">
+                <collection />
+              </option>
+              <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
+                <collection />
+              </option>
+              <option name="COLUMN_ORDER">
+                <list>
+                  <option value="0" />
+                  <option value="1" />
+                  <option value="2" />
+                  <option value="3" />
+                </list>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsContentAnnotationSettings">
+    <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="update quartiles to 95 %" />
+    <MESSAGE value="updated to run lm on hit and miss trials" />
+    <MESSAGE value="udpted bugs" />
+    <MESSAGE value="updated LMER function to return NA if DF  rows are &lt;3 - this causes problem with trial as a random effect" />
+    <MESSAGE value="load brain region (estimated) into dataframe" />
+    <MESSAGE value="calculate rewarded rates in time for probe trials" />
+    <MESSAGE value="split time data by trial type and rewarded trials" />
+    <MESSAGE value="extract brain region classifier values" />
+    <MESSAGE value="do comparison of rewarded/failed trials for homebound ramps" />
+    <MESSAGE value="update and fix bugs" />
+    <MESSAGE value="add back in all data to frame for later splitting" />
+    <MESSAGE value="extract mouse and day" />
+    <MESSAGE value="remove outliers from instant rate plots - uses 5 and 95 quartiles" />
+    <MESSAGE value="update plots" />
+    <MESSAGE value="added plotting for trough and peak seperately" />
+    <MESSAGE value="remove unused code" />
+    <MESSAGE value="set spine thickness" />
+    <MESSAGE value="set spine thickness, change axis label and import trial number" />
+    <MESSAGE value="seperate complex values and remove outliers" />
+    <MESSAGE value="function for removing speed outliers" />
+    <MESSAGE value="update model for comparing hit and miss trials" />
+    <MESSAGE value="update model in homebound comparison of hit and miss trials - account for uncorrelated intercept and slope" />
+    <MESSAGE value="average failed rates" />
+    <MESSAGE value="plot all trial types on whole track - remove fits" />
+    <MESSAGE value="fix bug in convolve with scipy" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix bug in convolve with scipy" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/vr_load_data_frames.py</url>
+          <line>49</line>
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/vr_load_data_frames.py</url>
+          <line>51</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/vr_load_data_frames.py</url>
+          <line>59</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/MakePlots.py</url>
+          <line>67</line>
+          <option name="timeStamp" value="104" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/InstantFiringRate.py</url>
+          <line>7</line>
+          <option name="timeStamp" value="116" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/LoadDataFrames.py</url>
+          <line>185</line>
+          <option name="timeStamp" value="259" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/MakePlots_Shuffled.py</url>
+          <line>87</line>
+          <option name="timeStamp" value="269" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/MakePlots_Shuffled.py</url>
+          <line>88</line>
+          <option name="timeStamp" value="270" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/MakePlots_Shuffled.py</url>
+          <line>89</line>
+          <option name="timeStamp" value="272" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/MakePlots_Shuffled.py</url>
+          <line>90</line>
+          <option name="timeStamp" value="273" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/SavePickledDataframes.py</url>
+          <line>18</line>
+          <option name="timeStamp" value="284" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/Concat_frames.py</url>
+          <line>46</line>
+          <option name="timeStamp" value="306" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/Concat_frames.py</url>
+          <line>48</line>
+          <option name="timeStamp" value="307" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/Concat_frames.py</url>
+          <line>55</line>
+          <option name="timeStamp" value="308" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/PostSorting/Concat_frames.py</url>
+          <line>57</line>
+          <option name="timeStamp" value="322" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Control_PostSorting_Analysis</url>
+          <line>155</line>
+          <option name="timeStamp" value="340" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Control_PostSorting_Analysis</url>
+          <line>150</line>
+          <option name="timeStamp" value="341" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Concat_Local_Frames.py</url>
+          <line>119</line>
+          <option name="timeStamp" value="402" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Concat_Local_Frames.py</url>
+          <line>117</line>
+          <option name="timeStamp" value="403" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Concat_Local_Frames.py</url>
+          <line>118</line>
+          <option name="timeStamp" value="404" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FiringProperties.py</url>
+          <line>78</line>
+          <option name="timeStamp" value="457" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FiringProperties.py</url>
+          <line>81</line>
+          <option name="timeStamp" value="459" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FiringProperties.py</url>
+          <line>82</line>
+          <option name="timeStamp" value="460" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FiringProperties.py</url>
+          <line>83</line>
+          <option name="timeStamp" value="464" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>57</line>
+          <option name="timeStamp" value="489" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>58</line>
+          <option name="timeStamp" value="490" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RewardFiring.py</url>
+          <line>65</line>
+          <option name="timeStamp" value="545" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/SpikeTrainAnalysis.py</url>
+          <line>128</line>
+          <option name="timeStamp" value="552" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/SpikeTrainAnalysis.py</url>
+          <line>129</line>
+          <option name="timeStamp" value="553" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/CrossCorrelateFR_TrialTypes.py</url>
+          <line>98</line>
+          <option name="timeStamp" value="557" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/CrossCorrelateFR_TrialTypes.py</url>
+          <line>171</line>
+          <option name="timeStamp" value="564" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/CrossCorrelateFR_TrialTypes.py</url>
+          <line>20</line>
+          <option name="timeStamp" value="567" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/CrossCorrelateFR_TrialTypes.py</url>
+          <line>46</line>
+          <option name="timeStamp" value="571" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/CrossCorrelateFR_TrialTypes.py</url>
+          <line>47</line>
+          <option name="timeStamp" value="572" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/TrialType_Comparison.py</url>
+          <line>60</line>
+          <option name="timeStamp" value="575" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/TrialType_Comparison.py</url>
+          <line>40</line>
+          <option name="timeStamp" value="581" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/TrialType_Comparison.py</url>
+          <line>41</line>
+          <option name="timeStamp" value="582" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Concat_Server_Frames.py</url>
+          <line>148</line>
+          <option name="timeStamp" value="583" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Concat_Server_Frames.py</url>
+          <line>152</line>
+          <option name="timeStamp" value="584" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FixUnequalTrialNumbers.py</url>
+          <line>87</line>
+          <option name="timeStamp" value="609" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FixUnequalTrialNumbers.py</url>
+          <line>60</line>
+          <option name="timeStamp" value="610" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FixUnequalTrialNumbers.py</url>
+          <line>61</line>
+          <option name="timeStamp" value="611" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FixUnequalTrialNumbers.py</url>
+          <line>47</line>
+          <option name="timeStamp" value="612" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>155</line>
+          <option name="timeStamp" value="645" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>112</line>
+          <option name="timeStamp" value="653" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Concat_Local_Frames.py</url>
+          <line>203</line>
+          <option name="timeStamp" value="657" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ExtractFiringData.py</url>
+          <line>164</line>
+          <option name="timeStamp" value="663" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ExtractFiringData.py</url>
+          <line>165</line>
+          <option name="timeStamp" value="664" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/MakePlots.py</url>
+          <line>777</line>
+          <option name="timeStamp" value="667" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/LoadDataFrames.py</url>
+          <line>169</line>
+          <option name="timeStamp" value="675" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/LoadDataFrames.py</url>
+          <line>168</line>
+          <option name="timeStamp" value="676" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/LoadDataFrames.py</url>
+          <line>142</line>
+          <option name="timeStamp" value="686" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/LoadDataFrames.py</url>
+          <line>143</line>
+          <option name="timeStamp" value="687" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FirstStopAnalysis.py</url>
+          <line>107</line>
+          <option name="timeStamp" value="713" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FirstStopAnalysis.py</url>
+          <line>82</line>
+          <option name="timeStamp" value="714" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FirstStopAnalysis.py</url>
+          <line>97</line>
+          <option name="timeStamp" value="715" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FirstStopAnalysis.py</url>
+          <line>96</line>
+          <option name="timeStamp" value="716" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FirstStopAnalysis.py</url>
+          <line>95</line>
+          <option name="timeStamp" value="717" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FirstStopAnalysis.py</url>
+          <line>35</line>
+          <option name="timeStamp" value="723" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FirstStopAnalysis.py</url>
+          <line>36</line>
+          <option name="timeStamp" value="724" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RateAnalysis.py</url>
+          <line>34</line>
+          <option name="timeStamp" value="728" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RateAnalysis.py</url>
+          <line>36</line>
+          <option name="timeStamp" value="729" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RateAnalysis.py</url>
+          <line>35</line>
+          <option name="timeStamp" value="730" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RateAnalysis.py</url>
+          <line>37</line>
+          <option name="timeStamp" value="731" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/SpikeWidth.py</url>
+          <line>21</line>
+          <option name="timeStamp" value="734" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/SpikeWidth.py</url>
+          <line>23</line>
+          <option name="timeStamp" value="735" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/SpikeWidth.py</url>
+          <line>22</line>
+          <option name="timeStamp" value="736" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RewardAnalysis.py</url>
+          <line>24</line>
+          <option name="timeStamp" value="737" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RewardAnalysis.py</url>
+          <line>145</line>
+          <option name="timeStamp" value="738" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RewardAnalysis.py</url>
+          <line>147</line>
+          <option name="timeStamp" value="739" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RewardAnalysis.py</url>
+          <line>151</line>
+          <option name="timeStamp" value="740" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RewardAnalysis.py</url>
+          <line>161</line>
+          <option name="timeStamp" value="742" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/MakePlots.py</url>
+          <line>1629</line>
+          <option name="timeStamp" value="745" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>420</line>
+          <option name="timeStamp" value="764" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>285</line>
+          <option name="timeStamp" value="770" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>284</line>
+          <option name="timeStamp" value="771" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>286</line>
+          <option name="timeStamp" value="772" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>290</line>
+          <option name="timeStamp" value="773" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>295</line>
+          <option name="timeStamp" value="774" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py</url>
+          <line>281</line>
+          <option name="timeStamp" value="776" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ThetaModulation.py</url>
+          <line>111</line>
+          <option name="timeStamp" value="782" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ThetaModulation.py</url>
+          <line>105</line>
+          <option name="timeStamp" value="796" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/FitAnalysis.py</url>
+          <line>65</line>
+          <option name="timeStamp" value="805" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Concat_Server_Frames.py</url>
+          <line>75</line>
+          <option name="timeStamp" value="809" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ShuffleAnalysis.py</url>
+          <line>222</line>
+          <option name="timeStamp" value="822" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ShuffleAnalysis.py</url>
+          <line>223</line>
+          <option name="timeStamp" value="823" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ShuffleAnalysis.py</url>
+          <line>224</line>
+          <option name="timeStamp" value="826" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ShuffleAnalysis.py</url>
+          <line>213</line>
+          <option name="timeStamp" value="827" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Monotonicity.py</url>
+          <line>26</line>
+          <option name="timeStamp" value="835" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Monotonicity.py</url>
+          <line>30</line>
+          <option name="timeStamp" value="836" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Monotonicity.py</url>
+          <line>50</line>
+          <option name="timeStamp" value="837" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ShuffleAnalysis.py</url>
+          <line>203</line>
+          <option name="timeStamp" value="838" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py</url>
+          <line>245</line>
+          <option name="timeStamp" value="840" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py</url>
+          <line>246</line>
+          <option name="timeStamp" value="841" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py</url>
+          <line>248</line>
+          <option name="timeStamp" value="842" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py</url>
+          <line>250</line>
+          <option name="timeStamp" value="843" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py</url>
+          <line>251</line>
+          <option name="timeStamp" value="844" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py</url>
+          <line>148</line>
+          <option name="timeStamp" value="845" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py</url>
+          <line>149</line>
+          <option name="timeStamp" value="846" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py</url>
+          <line>215</line>
+          <option name="timeStamp" value="847" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py</url>
+          <line>231</line>
+          <option name="timeStamp" value="848" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ShuffleAnalysis.py</url>
+          <line>32</line>
+          <option name="timeStamp" value="853" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/StopAnalysis.py</url>
+          <line>365</line>
+          <option name="timeStamp" value="922" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/StopAnalysis.py</url>
+          <line>366</line>
+          <option name="timeStamp" value="923" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/StopAnalysis.py</url>
+          <line>368</line>
+          <option name="timeStamp" value="928" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Control_PostSorting_Analysis.py</url>
+          <line>246</line>
+          <option name="timeStamp" value="929" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/CalculateAcceleration.py</url>
+          <line>322</line>
+          <option name="timeStamp" value="983" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/CalculateAcceleration.py</url>
+          <line>323</line>
+          <option name="timeStamp" value="984" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/CalculateAcceleration.py</url>
+          <line>324</line>
+          <option name="timeStamp" value="989" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/CalculateAcceleration.py</url>
+          <line>281</line>
+          <option name="timeStamp" value="999" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/CalculateAcceleration.py</url>
+          <line>282</line>
+          <option name="timeStamp" value="1000" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Control_PostSorting_Analysis.py</url>
+          <line>286</line>
+          <option name="timeStamp" value="1002" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/MakePlots.py</url>
+          <line>2090</line>
+          <option name="timeStamp" value="1010" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Time_Analysis.py</url>
+          <line>62</line>
+          <option name="timeStamp" value="1019" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Time_Analysis.py</url>
+          <line>108</line>
+          <option name="timeStamp" value="1030" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Time_Analysis.py</url>
+          <line>65</line>
+          <option name="timeStamp" value="1031" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Time_Analysis.py</url>
+          <line>67</line>
+          <option name="timeStamp" value="1032" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Time_Analysis.py</url>
+          <line>101</line>
+          <option name="timeStamp" value="1033" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ThetaModulation.py</url>
+          <line>205</line>
+          <option name="timeStamp" value="1048" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/MakePlots_FiringProperties.py</url>
+          <line>128</line>
+          <option name="timeStamp" value="1057" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/ThetaModulation.py</url>
+          <line>351</line>
+          <option name="timeStamp" value="1058" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/MakePlots.py</url>
+          <line>1614</line>
+          <option name="timeStamp" value="1066" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/MakePlots.py</url>
+          <line>1643</line>
+          <option name="timeStamp" value="1072" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Speed_Analysis.py</url>
+          <line>147</line>
+          <option name="timeStamp" value="1100" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/PeakAnalysis.py</url>
+          <line>33</line>
+          <option name="timeStamp" value="1126" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/PeakAnalysis.py</url>
+          <line>47</line>
+          <option name="timeStamp" value="1131" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/PeakAnalysis.py</url>
+          <line>48</line>
+          <option name="timeStamp" value="1132" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RewardFiring.py</url>
+          <line>161</line>
+          <option name="timeStamp" value="1140" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/RewardFiring.py</url>
+          <line>166</line>
+          <option name="timeStamp" value="1143" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Control_PostSorting_Analysis.py</url>
+          <line>270</line>
+          <option name="timeStamp" value="1146" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py</url>
+          <line>475</line>
+          <option name="timeStamp" value="1149" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py</url>
+          <line>476</line>
+          <option name="timeStamp" value="1151" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/MakePlots.py</url>
+          <line>1431</line>
+          <option name="timeStamp" value="1153" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/MakePlots.py</url>
+          <line>1443</line>
+          <option name="timeStamp" value="1154" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py</url>
+          <line>19</line>
+          <option name="timeStamp" value="1156" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py</url>
+          <line>23</line>
+          <option name="timeStamp" value="1157" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py</url>
+          <line>27</line>
+          <option name="timeStamp" value="1158" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py</url>
+          <line>183</line>
+          <option name="timeStamp" value="1159" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py</url>
+          <line>235</line>
+          <option name="timeStamp" value="1160" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py</url>
+          <line>236</line>
+          <option name="timeStamp" value="1161" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py</url>
+          <line>283</line>
+          <option name="timeStamp" value="1162" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py</url>
+          <line>450</line>
+          <option name="timeStamp" value="1165" />
+        </line-breakpoint>
+      </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+      <option name="time" value="1167" />
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="PythonConfigurationType">
+        <watch expression="data.max" />
+      </configuration>
+    </watches-manager>
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/pickle_writer.py" />
+    <entry file="file://$PROJECT_DIR$/pickle_reader.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="26">
+          <caret line="2" column="0" lean-forward="false" selection-start-line="2" selection-start-column="0" selection-end-line="5" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/lib/python3.7/site-packages/pandas/io/pickle.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1989">
+          <caret line="161" column="0" lean-forward="false" selection-start-line="161" selection-start-column="0" selection-end-line="161" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/SpikeTrainAnalysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2366">
+          <caret line="243" column="26" lean-forward="false" selection-start-line="243" selection-start-column="0" selection-end-line="244" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#27#0" expanded="true" />
+            <element signature="e#292#497#1" expanded="false" />
+            <element signature="e#536#1281#0" expanded="false" />
+            <element signature="e#1284#1979#1" expanded="false" />
+            <element signature="e#5408#6063#0" expanded="false" />
+            <element signature="e#6156#6472#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/RampAnalysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1014">
+          <caret line="79" column="27" lean-forward="false" selection-start-line="79" selection-start-column="0" selection-end-line="80" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/FiringProperties.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="222">
+          <caret line="115" column="39" lean-forward="false" selection-start-line="115" selection-start-column="32" selection-end-line="115" selection-end-column="39" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/RateAnalysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="169">
+          <caret line="43" column="23" lean-forward="false" selection-start-line="43" selection-start-column="4" selection-end-line="43" selection-end-column="23" />
+          <folding>
+            <element signature="e#1#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Monotonicity.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="104">
+          <caret line="8" column="27" lean-forward="false" selection-start-line="8" selection-start-column="27" selection-end-line="8" selection-end-column="27" />
+          <folding>
+            <element signature="e#0#43#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/math_utility.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="195">
+          <caret line="19" column="53" lean-forward="false" selection-start-line="19" selection-start-column="53" selection-end-line="19" selection-end-column="53" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/postsorting_parameters.py" />
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Open_field_make_plots" />
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Bonsai_output.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="286">
+          <caret line="22" column="20" lean-forward="true" selection-start-line="22" selection-start-column="20" selection-end-line="22" selection-end-column="20" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/CrossCorrelateFR_TrialTypes.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1313">
+          <caret line="101" column="42" lean-forward="false" selection-start-line="101" selection-start-column="42" selection-end-line="101" selection-end-column="42" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+            <element signature="e#6913#8470#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/TrialType_Comparison.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="208">
+          <caret line="158" column="38" lean-forward="true" selection-start-line="158" selection-start-column="38" selection-end-line="158" selection-end-column="38" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/StopAnalysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="298">
+          <caret line="256" column="17" lean-forward="false" selection-start-line="256" selection-start-column="17" selection-end-line="256" selection-end-column="17" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+            <element signature="e#230#634#0" expanded="false" />
+            <element signature="e#693#971#0" expanded="false" />
+            <element signature="e#1035#1591#0" expanded="false" />
+            <element signature="e#1643#1974#0" expanded="false" />
+            <element signature="e#2036#2447#0" expanded="false" />
+            <element signature="e#2563#4089#0" expanded="false" />
+            <element signature="e#4171#4470#0" expanded="false" />
+            <element signature="e#4583#5031#0" expanded="false" />
+            <element signature="e#5094#5739#0" expanded="false" />
+            <element signature="e#11260#12042#0" expanded="false" />
+            <element signature="e#13588#14358#0" expanded="false" />
+            <element signature="e#15562#17554#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/SpikeWidth.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="598">
+          <caret line="49" column="25" lean-forward="false" selection-start-line="49" selection-start-column="0" selection-end-line="50" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/Cellar/python/3.7.4_1/Frameworks/Python.framework/Versions/3.7/lib/python3.7/opcode.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="141">
+          <caret line="18" column="0" lean-forward="false" selection-start-line="18" selection-start-column="0" selection-end-line="18" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inSpace.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2964">
+          <caret line="241" column="17" lean-forward="false" selection-start-line="241" selection-start-column="17" selection-end-line="241" selection-end-column="17" />
+          <folding>
+            <element signature="e#1399#1664#0" expanded="false" />
+            <element signature="e#11713#13588#0" expanded="false" />
+            <element signature="e#13708#17113#0" expanded="false" />
+            <element signature="e#17219#18836#0" expanded="false" />
+            <element signature="e#18954#20735#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Extract_Journeys.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="104">
+          <caret line="9" column="55" lean-forward="false" selection-start-line="9" selection-start-column="55" selection-end-line="9" selection-end-column="55" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Create2DHistogram.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="143">
+          <caret line="11" column="0" lean-forward="true" selection-start-line="11" selection-start-column="0" selection-end-line="17" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Speed_Analysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="13">
+          <caret line="83" column="13" lean-forward="false" selection-start-line="83" selection-start-column="13" selection-end-line="83" selection-end-column="13" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6808#7368#0" expanded="false" />
+            <element signature="e#7411#8194#0" expanded="false" />
+            <element signature="e#8353#11382#0" expanded="false" />
+            <element signature="e#11420#11683#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Spike_Time_Analysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="494">
+          <caret line="41" column="26" lean-forward="false" selection-start-line="41" selection-start-column="26" selection-end-line="41" selection-end-column="26" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/CueAnalysis_0100.Rmd">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/BrainRender_EC.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="104">
+          <caret line="8" column="18" lean-forward="false" selection-start-line="8" selection-start-column="18" selection-end-line="8" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/ThetaModulation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="389">
+          <caret line="287" column="49" lean-forward="false" selection-start-line="287" selection-start-column="49" selection-end-line="287" selection-end-column="49" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+            <element signature="e#4450#4567#0" expanded="false" />
+            <element signature="e#4767#5245#0" expanded="false" />
+            <element signature="e#5281#5411#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/MakePlots_FiringProperties.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1431">
+          <caret line="115" column="22" lean-forward="true" selection-start-line="115" selection-start-column="22" selection-end-line="115" selection-end-column="22" />
+          <folding>
+            <element signature="e#411#1896#0" expanded="false" />
+            <element signature="e#3382#3882#1" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/lib/python3.7/site-packages/pandas/tests/window/test_moments.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="145">
+          <caret line="52" column="8" lean-forward="false" selection-start-line="52" selection-start-column="8" selection-end-line="52" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/RewardAnalysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1970">
+          <caret line="164" column="22" lean-forward="false" selection-start-line="164" selection-start-column="0" selection-end-line="165" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/RePackage_Data.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="234">
+          <caret line="18" column="0" lean-forward="true" selection-start-line="18" selection-start-column="0" selection-end-line="18" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/GaussianConvolution_inTime.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="52">
+          <caret line="42" column="31" lean-forward="false" selection-start-line="42" selection-start-column="0" selection-end-line="43" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/ExtractFiringData.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-265">
+          <caret line="132" column="0" lean-forward="false" selection-start-line="132" selection-start-column="0" selection-end-line="132" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/ShuffleStops.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1093">
+          <caret line="86" column="24" lean-forward="false" selection-start-line="86" selection-start-column="24" selection-end-line="86" selection-end-column="24" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/ShuffleAnalysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="167">
+          <caret line="195" column="15" lean-forward="false" selection-start-line="195" selection-start-column="15" selection-end-line="195" selection-end-column="15" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/MakePlots_Behaviour.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3653">
+          <caret line="288" column="18" lean-forward="false" selection-start-line="288" selection-start-column="18" selection-end-line="288" selection-end-column="18" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/FitAnalysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="63">
+          <caret line="126" column="33" lean-forward="true" selection-start-line="126" selection-start-column="33" selection-end-line="126" selection-end-column="33" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/FirstStopAnalysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="288">
+          <caret line="78" column="0" lean-forward="false" selection-start-line="76" selection-start-column="0" selection-end-line="78" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+            <element signature="e#4929#6452#0" expanded="false" />
+            <element signature="e#6492#8805#0" expanded="false" />
+            <element signature="e#8864#10973#0" expanded="false" />
+            <element signature="e#11022#23139#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Curation.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="143">
+          <caret line="12" column="43" lean-forward="false" selection-start-line="12" selection-start-column="43" selection-end-line="12" selection-end-column="43" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Concat_Local_Frames.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="273">
+          <caret line="21" column="115" lean-forward="false" selection-start-line="21" selection-start-column="92" selection-end-line="21" selection-end-column="115" />
+          <folding>
+            <element signature="e#0#9#0" expanded="false" />
+            <element signature="e#1202#1719#1" expanded="false" />
+            <element signature="e#2845#3099#0" expanded="false" />
+            <element signature="e#3147#3899#0" expanded="false" />
+            <element signature="e#6132#10323#0" expanded="false" />
+            <element signature="e#8374#8783#1" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Concat_Server_Frames.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="429">
+          <caret line="33" column="53" lean-forward="false" selection-start-line="33" selection-start-column="53" selection-end-line="33" selection-end-column="53" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+            <element signature="e#1169#3594#0" expanded="false" />
+            <element signature="e#6340#6805#1" expanded="false" />
+            <element signature="e#9307#12255#0" expanded="false" />
+            <element signature="e#10341#10609#1" expanded="false" />
+            <element signature="e#12431#14380#0" expanded="false" />
+            <element signature="e#13180#13617#1" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/PeakAnalysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="184">
+          <caret line="129" column="41" lean-forward="false" selection-start-line="129" selection-start-column="41" selection-end-line="129" selection-end-column="41" />
+          <folding>
+            <element signature="e#1#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/plot_utility.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="185">
+          <caret line="137" column="0" lean-forward="false" selection-start-line="137" selection-start-column="0" selection-end-line="140" selection-end-column="42" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/lib/python3.7/site-packages/numpy/core/_methods.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="128">
+          <caret line="216" column="0" lean-forward="false" selection-start-line="216" selection-start-column="0" selection-end-line="216" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/lib/python3.7/site-packages/numpy/core/_asarray.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="128">
+          <caret line="84" column="0" lean-forward="false" selection-start-line="84" selection-start-column="0" selection-end-line="84" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Add_BrainRegion_Classifier.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="51" column="0" lean-forward="false" selection-start-line="51" selection-start-column="0" selection-end-line="51" selection-end-column="0" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/ConvolveRates_FFT.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="572">
+          <caret line="44" column="0" lean-forward="false" selection-start-line="44" selection-start-column="0" selection-end-line="44" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/CalculateAcceleration.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1014">
+          <caret line="109" column="0" lean-forward="false" selection-start-line="109" selection-start-column="0" selection-end-line="109" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+            <element signature="e#2990#3346#0" expanded="false" />
+            <element signature="e#3415#3721#0" expanded="false" />
+            <element signature="e#3836#4700#0" expanded="false" />
+            <element signature="e#11308#11972#0" expanded="false" />
+            <element signature="e#12061#12970#0" expanded="false" />
+            <element signature="e#13051#14181#0" expanded="false" />
+            <element signature="e#14297#14595#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Control_PostSorting_Analysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="195">
+          <caret line="303" column="126" lean-forward="false" selection-start-line="303" selection-start-column="126" selection-end-line="303" selection-end-column="126" />
+          <folding>
+            <element signature="e#1659#1928#0" expanded="false" />
+            <element signature="e#4308#4619#0" expanded="false" />
+            <element signature="e#4661#5016#0" expanded="false" />
+            <element signature="e#5077#5331#0" expanded="false" />
+            <element signature="e#5397#5764#0" expanded="false" />
+            <element signature="e#5833#6384#0" expanded="false" />
+            <element signature="e#6432#6784#0" expanded="false" />
+            <element signature="e#6832#9600#0" expanded="false" />
+            <element signature="e#9661#10098#0" expanded="false" />
+            <element signature="e#10141#10382#0" expanded="false" />
+            <element signature="e#10444#11422#0" expanded="false" />
+            <element signature="e#11478#13204#0" expanded="false" />
+            <element signature="e#13475#15414#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/LoadDataFrames.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="289">
+          <caret line="78" column="43" lean-forward="true" selection-start-line="78" selection-start-column="43" selection-end-line="78" selection-end-column="43" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+            <element signature="e#73#535#1" expanded="false" />
+            <element signature="e#583#1630#0" expanded="false" />
+            <element signature="e#1686#2705#0" expanded="false" />
+            <element signature="e#4159#4591#0" expanded="false" />
+            <element signature="e#4649#5508#0" expanded="false" />
+            <element signature="e#5563#5967#0" expanded="false" />
+            <element signature="e#6015#8309#0" expanded="false" />
+            <element signature="e#8311#8699#1" expanded="false" />
+            <element signature="e#8755#11687#0" expanded="false" />
+            <element signature="e#11734#12285#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/MakePlots.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="152">
+          <caret line="1934" column="76" lean-forward="true" selection-start-line="1934" selection-start-column="63" selection-end-line="1934" selection-end-column="76" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+            <element signature="e#2805#4659#0" expanded="false" />
+            <element signature="e#4760#8441#0" expanded="false" />
+            <element signature="e#8543#15810#0" expanded="false" />
+            <element signature="e#15913#19492#0" expanded="false" />
+            <element signature="e#19576#21469#0" expanded="false" />
+            <element signature="e#21578#25357#0" expanded="false" />
+            <element signature="e#25467#32061#0" expanded="false" />
+            <element signature="e#32125#32536#0" expanded="false" />
+            <element signature="e#32608#34090#0" expanded="false" />
+            <element signature="e#34177#37751#0" expanded="false" />
+            <element signature="e#37832#39724#0" expanded="false" />
+            <element signature="e#39812#41761#0" expanded="false" />
+            <element signature="e#41856#48338#0" expanded="false" />
+            <element signature="e#48434#55068#0" expanded="false" />
+            <element signature="e#55143#56788#0" expanded="false" />
+            <element signature="e#56856#58446#0" expanded="false" />
+            <element signature="e#58555#61449#0" expanded="false" />
+            <element signature="e#61927#62424#0" expanded="false" />
+            <element signature="e#62495#64479#0" expanded="false" />
+            <element signature="e#64553#66792#0" expanded="false" />
+            <element signature="e#66863#69014#0" expanded="false" />
+            <element signature="e#69084#71236#0" expanded="false" />
+            <element signature="e#71329#73173#0" expanded="false" />
+            <element signature="e#73264#75102#0" expanded="false" />
+            <element signature="e#75348#75448#0" expanded="false" />
+            <element signature="e#77922#78162#0" expanded="false" />
+            <element signature="e#82547#85690#0" expanded="false" />
+            <element signature="e#85773#86576#0" expanded="false" />
+            <element signature="e#86670#95219#0" expanded="false" />
+            <element signature="e#95299#96102#0" expanded="false" />
+            <element signature="e#100709#101512#0" expanded="false" />
+            <element signature="e#106199#108957#0" expanded="false" />
+            <element signature="e#109086#116658#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/Spike_Analysis.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="152">
+          <caret line="109" column="67" lean-forward="true" selection-start-line="109" selection-start-column="67" selection-end-line="109" selection-end-column="67" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#20479#21689#0" expanded="false" />
+            <element signature="e#21761#22514#0" expanded="false" />
+            <element signature="e#29228#34205#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Python_PostSorting/RewardFiring.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="207">
+          <caret line="596" column="62" lean-forward="false" selection-start-line="596" selection-start-column="0" selection-end-line="597" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+            <element signature="e#3186#3839#0" expanded="false" />
+            <element signature="e#6951#13177#0" expanded="false" />
+            <element signature="e#13268#13708#0" expanded="false" />
+            <element signature="e#13802#14238#0" expanded="false" />
+            <element signature="e#14334#14774#0" expanded="false" />
+            <element signature="e#14867#15309#0" expanded="false" />
+            <element signature="e#15415#17163#0" expanded="false" />
+            <element signature="e#17265#19019#0" expanded="false" />
+            <element signature="e#19131#20877#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+  </component>
+</project>

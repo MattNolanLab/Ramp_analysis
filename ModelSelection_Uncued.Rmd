@@ -1,0 +1,389 @@
+---
+title: "Untitled"
+author: "Sarah Tennant"
+date: "21/02/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+###### More complex modellig
+
+### Run model selection
+
+## Linear mixed effect model on all cells
+
+1. Make functions
+
+```{r}
+car_position <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(df[[1]]), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(df[[5]]), Types = as.factor(df[[6]]))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed >= 1 & Types == 1) %>% 
+    mutate(Speed = scale(Speed)) %>% 
+    mutate(Rates = scale(Rates)) %>% 
+    mutate(Position = scale(Position))
+  if(all(is.na(df))) 
+    return(NA) 
+  df_int <- lmer(Rates ~ Position + Speed + Acceleration + Position:Speed + Position:Acceleration + (1|Trials), data = df, na.action=na.exclude, REML=FALSE)
+  prtAnova <- car::Anova(df_int) 
+  return(prtAnova$"Pr(>Chisq)"[1])
+}
+
+car_speed <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(df[[1]]), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(df[[5]]), Types = as.factor(df[[6]]))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed >= 1 & Types == 1) %>% 
+    mutate(Speed = scale(Speed)) %>% 
+    mutate(Rates = scale(Rates)) %>% 
+    mutate(Position = scale(Position))
+  if(all(is.na(df))) 
+    return(NA) 
+  df_int <- lmer(Rates ~ Position + Speed + Acceleration + Position:Speed + Position:Acceleration + (1|Trials), data = df, na.action=na.exclude, REML=FALSE)
+  prtAnova <- car::Anova(df_int) 
+  return(prtAnova$"Pr(>Chisq)"[2])
+}
+
+
+car_accel <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(df[[1]]), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(df[[5]]), Types = as.factor(df[[6]]))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed >= 1 & Types == 1) %>% 
+    mutate(Speed = scale(Speed)) %>% 
+    mutate(Rates = scale(Rates)) %>% 
+    mutate(Position = scale(Position))
+  if(all(is.na(df))) 
+    return(NA) 
+  df_int <- lmer(Rates ~ Position + Speed + Acceleration + Position:Speed + Position:Acceleration + (1|Trials), data = df, na.action=na.exclude, REML=FALSE)
+  prtAnova <- car::Anova(df_int) 
+  return(prtAnova$"Pr(>Chisq)"[3])
+}
+
+car_pos_speed <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(df[[1]]), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(df[[5]]), Types = as.factor(df[[6]]))
+  if(length(df) == 1) 
+    return(NA) 
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed >= 1 & Types == 1) %>% 
+    mutate(Speed = scale(Speed)) %>% 
+    mutate(Rates = scale(Rates)) %>% 
+    mutate(Position = scale(Position))
+  if(all(is.na(df))) 
+    return(NA) 
+  df_int <- lmer(Rates ~ Position + Speed + Acceleration + Position:Speed + Position:Acceleration + (1|Trials), data = df, na.action=na.exclude, REML=FALSE)
+  prtAnova <- car::Anova(df_int) 
+  return(prtAnova$"Pr(>Chisq)"[4])
+}
+
+car_pos_accel <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(df[[1]]), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(df[[5]]), Types = as.factor(df[[6]]))
+  if(length(df) == 1) 
+    return(NA) 
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed >= 1 & Types == 1) %>% 
+    mutate(Speed = scale(Speed)) %>% 
+    mutate(Rates = scale(Rates)) %>% 
+    mutate(Position = scale(Position))
+  if(all(is.na(df))) 
+    return(NA) 
+  df_int <- lmer(Rates ~ Position + Speed + Acceleration + Position:Speed + Position:Acceleration + (1|Trials), data = df, na.action=na.exclude, REML=FALSE)
+  prtAnova <- car::Anova(df_int) 
+  return(prtAnova$"Pr(>Chisq)"[5])
+}
+
+
+
+```
+
+
+2. Run on all cells 
+```{r}
+
+outbound_ramps <- outbound_ramps  %>%
+  mutate(nb_pos = map(spikes_in_time, car_position)) %>%
+  mutate(nb_speed = map(spikes_in_time, car_speed)) %>%
+  mutate(nb_accel = map(spikes_in_time, car_accel)) %>%
+  mutate(nb_pos_speed = map(spikes_in_time, car_pos_speed)) %>%
+  mutate(nb_pos_accel = map(spikes_in_time, car_pos_accel))
+
+```
+
+
+
+
+
+
+
+
+4. Compare models and select best one
+
+```{r}
+
+
+
+
+model_comparison <- function(null_pos, null_speed, null_accel, null_pos_speed, null_pos_accel){
+  pval <- 0.001
+  if( is.na(null_pos) & is.na(null_accel) & is.na(null_pos_speed)) {
+    return( "None" )
+  
+  } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
+    return( "P" )
+    
+  } else if( null_pos > pval & null_accel > pval & null_speed < pval) {
+    return( "S" )
+    
+  } else if( null_pos > pval & null_accel < pval & null_speed > pval) {
+    return( "A" )
+    
+  } else if( null_pos < pval & null_accel > pval & null_speed < pval) {
+    return("PS")
+    
+  } else if( null_pos < pval & null_accel < pval & null_speed > pval) {
+    return( "PA" )
+        
+  } else if( null_pos > pval & null_accel < pval & null_speed < pval) {
+    return("SA")
+
+  } else if( null_pos < pval & null_accel < pval & null_speed < pval) {
+    return("PSA")
+    
+  } else {
+    return("None")
+  }
+}
+
+outbound_ramps <- outbound_ramps  %>%
+    mutate(final_model_multi_nb  = pmap(list(nb_pos, nb_speed, nb_accel, nb_pos_speed, nb_pos_accel), model_comparison))
+             
+```
+
+
+
+
+
+
+
+```{r}
+
+# extracting diff models 
+
+pos <-subset(outbound_ramps, lm_result == "Positive")
+neg <-subset(outbound_ramps, lm_result == "Negative")
+none <-subset(outbound_ramps, lm_result == "None")
+
+```
+
+
+```{r}
+
+P_positive <- nrow(subset(pos, final_model_multi_nb == "P"))/nrow(pos)*100
+P_negative <- nrow(subset(neg, final_model_multi_nb == "P"))/nrow(neg)*100
+P_none <- nrow(subset(none,final_model_multi_nb == "P"))/nrow(none)*100
+
+S_positive <- nrow(subset(pos,final_model_multi_nb == "S"))/nrow(pos)*100
+S_negative <- nrow(subset(neg,final_model_multi_nb == "S"))/nrow(neg)*100
+S_none <- nrow(subset(none,final_model_multi_nb == "S"))/nrow(none)*100
+
+A_positive <- nrow(subset(pos,final_model_multi_nb == "A"))/nrow(pos)*100
+A_negative <- nrow(subset(neg,final_model_multi_nb == "A"))/nrow(neg)*100
+A_none <- nrow(subset(none,final_model_multi_nb == "A"))/nrow(none)*100
+
+P_S_positive <- nrow(subset(pos,final_model_multi_nb == "PS"))/nrow(pos)*100
+P_S_negative <- nrow(subset(neg,final_model_multi_nb == "PS"))/nrow(neg)*100
+P_S_none <- nrow(subset(none,final_model_multi_nb == "PS"))/nrow(none)*100
+
+P_A_positive <- nrow(subset(pos ,final_model_multi_nb == "PA"))/nrow(pos)*100
+P_A_negative <- nrow(subset(neg ,final_model_multi_nb == "PA"))/nrow(neg)*100
+P_A_none <- nrow(subset(none,final_model_multi_nb == "PA"))/nrow(none)*100
+
+S_A_positive <- nrow(subset(pos ,final_model_multi_nb == "SA"))/nrow(pos)*100
+S_A_negative <- nrow(subset(neg ,final_model_multi_nb == "SA"))/nrow(neg)*100
+S_A_none <- nrow(subset(none,final_model_multi_nb == "SA"))/nrow(none)*100
+
+P_S_A_positive <- nrow(subset(pos ,final_model_multi_nb == "PSA"))/nrow(pos)*100
+P_S_A_negative <- nrow(subset(neg ,final_model_multi_nb == "PSA"))/nrow(neg)*100
+P_S_A_none <- nrow(subset(none ,final_model_multi_nb == "PSA"))/nrow(none)*100
+
+NONE_positive <- nrow(subset(pos ,final_model_multi_nb == "None"))/nrow(pos)*100
+NONE_negative <- nrow(subset(neg ,final_model_multi_nb == "None"))/nrow(neg)*100
+NONE_none <- nrow(subset(none ,final_model_multi_nb == "None"))/nrow(none)*100
+
+
+mixed_ramps <- tibble(perc=c(P_positive,P_negative,S_positive, S_negative, A_positive,A_negative, P_S_positive, P_S_negative, P_A_positive, P_A_negative, P_S_A_positive, P_S_A_negative, NONE_positive,NONE_negative), 
+                      
+                      ramp_id= c("P","P", 
+                                 "S", "S", 
+                                 "A", "A", 
+                                 "PS", "PS", 
+                                 "PA", "PA", 
+                                 "PAS", "PAS",
+                                 "None","None"), 
+                      ramp_type= c("Positive", "Negative",  "Positive", "Negative", "Positive", "Negative" ,"Positive", "Negative","Positive", "Negative", "Positive", "Negative",  "Positive", "Negative" ))
+
+
+```
+
+
+
+
+7. Plot model results
+
+```{r}
+# plot data
+level_order <- c("P", "S", "A", "PS", "PA", "PAS", "None")
+ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .7) +
+  labs(y = "Percent of neurons identified using LM") +
+  #scale_fill_brewer(palette= "RdYlBu") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/cell_proportions-lmmodel_nb.png", width = 4, height = 4.5)
+
+
+```
+
+
+
+
+
+
+```{r}
+# positive homebound slopes
+P <-subset(outbound_ramps, final_model_multi == "P")
+S <-subset(outbound_ramps, final_model_multi == "S")
+A <-subset(outbound_ramps, final_model_multi == "A")
+PA <-subset(outbound_ramps, final_model_multi == "PA")
+PS <-subset(outbound_ramps, final_model_multi == "PS")
+PSA <-subset(outbound_ramps, final_model_multi == "PAS")
+None <-subset(outbound_ramps, final_model_multi == "None")
+
+```
+
+
+
+## plot movement from groups
+
+```{r}
+
+pos_s <-nrow(subset(P, final_model_multi_nb == "S"))
+pos_p <-nrow(subset(P, final_model_multi_nb == "P"))
+pos_pa <-nrow(subset(P, final_model_multi_nb == "PA"))
+pos_ps <-nrow(subset(P, final_model_multi_nb == "PS"))
+pos_pas <-nrow(subset(P, final_model_multi_nb == "PAS"))
+pos_a <-nrow(subset(P, final_model_multi_nb == "A"))
+pos_none <-nrow(subset(P, final_model_multi_nb == "None"))
+
+speed_s <-nrow(subset(S, final_model_multi_nb == "S"))
+speed_p <-nrow(subset(S, final_model_multi_nb == "P"))
+speed_pa <-nrow(subset(S, final_model_multi_nb == "PA"))
+speed_ps <-nrow(subset(S, final_model_multi_nb == "PS"))
+speed_pas <-nrow(subset(S, final_model_multi_nb == "PAS"))
+speed_a <-nrow(subset(S, final_model_multi_nb == "A"))
+speed_none <-nrow(subset(S, final_model_multi_nb == "None"))
+
+accel_s <-nrow(subset(A, final_model_multi_nb == "S"))
+accel_p <-nrow(subset(A, final_model_multi_nb == "P"))
+accel_pa <-nrow(subset(A, final_model_multi_nb == "PA"))
+accel_ps <-nrow(subset(A, final_model_multi_nb == "PS"))
+accel_pas <-nrow(subset(A, final_model_multi_nb == "PAS"))
+accel_a <-nrow(subset(A, final_model_multi_nb == "A"))
+accel_none <-nrow(subset(A, final_model_multi_nb == "None"))
+
+pos_accel_s <-nrow(subset(PA, final_model_multi_nb == "S"))
+pos_accel_p <-nrow(subset(PA, final_model_multi_nb == "P"))
+pos_accel_pa <-nrow(subset(PA, final_model_multi_nb == "PA"))
+pos_accel_ps <-nrow(subset(PA, final_model_multi_nb == "PS"))
+pos_accel_pas <-nrow(subset(PA, final_model_multi_nb == "PAS"))
+pos_accel_a <-nrow(subset(PA, final_model_multi_nb == "A"))
+pos_accel_none <-nrow(subset(PA, final_model_multi_nb == "None"))
+
+pos_speed_s <-nrow(subset(PS, final_model_multi_nb == "S"))
+pos_speed_p <-nrow(subset(PS, final_model_multi_nb == "P"))
+pos_speed_pa <-nrow(subset(PS, final_model_multi_nb == "PA"))
+pos_speed_ps <-nrow(subset(PS, final_model_multi_nb == "PS"))
+pos_speed_pas <-nrow(subset(PS, final_model_multi_nb == "PAS"))
+pos_speed_a <-nrow(subset(PS, final_model_multi_nb == "A"))
+pos_speed_none <-nrow(subset(PS, final_model_multi_nb == "None"))
+
+pos_speed_accel_s <-nrow(subset(PSA, final_model_multi_nb == "S"))
+pos_speed_accel_p <-nrow(subset(PSA, final_model_multi_nb == "P"))
+pos_speed_accel_pa <-nrow(subset(PSA, final_model_multi_nb == "PA"))
+pos_speed_accel_ps <-nrow(subset(PSA, final_model_multi_nb == "PS"))
+pos_speed_accel_pas <-nrow(subset(PSA, final_model_multi_nb == "PAS"))
+pos_speed_accel_a <-nrow(subset(PSA, final_model_multi_nb == "A"))
+pos_speed_accel_none <-nrow(subset(PSA, final_model_multi_nb == "None"))
+
+none_s <-nrow(subset(None, final_model_multi_nb == "S"))
+none_p <-nrow(subset(None, final_model_multi_nb == "P"))
+none_pa <-nrow(subset(None, final_model_multi_nb == "PA"))
+none_ps <-nrow(subset(None, final_model_multi_nb == "PS"))
+none_pas <-nrow(subset(None, final_model_multi_nb == "PAS"))
+none_a <-nrow(subset(None, final_model_multi_nb == "A"))
+none_none <-nrow(subset(None, final_model_multi_nb == "None"))
+```
+
+
+
+```{r}
+
+data_long <- tibble(value=c(pos_s,pos_p,pos_ps, pos_pa, pos_pas, pos_a, pos_none, accel_s,accel_p,accel_ps, accel_pa, accel_pas, accel_a, accel_none, speed_s,speed_p,speed_ps, speed_pa, speed_pas, speed_a, speed_none,pos_speed_s, pos_speed_p,pos_speed_ps, pos_speed_pa, pos_speed_pas, pos_speed_a, pos_speed_none, pos_accel_s, pos_accel_p,pos_accel_ps, pos_accel_pa, pos_accel_pas, pos_accel_a, pos_accel_none, pos_speed_accel_s, pos_speed_accel_p,pos_speed_accel_ps, pos_speed_accel_pa, pos_speed_accel_pas, pos_speed_accel_a, pos_speed_accel_none, none_s, none_p, none_ps, none_pa, none_pas, none_a, none_none), 
+                    
+                      source= c("P","P", "P", "P", "P", "P", "P", "A", "A", "A", "A", "A", "A", "A", "S", "S", "S", "S", "S", "S", "S", "PS", "PS", "PS", "PS", "PS", "PS", "PS", "PA", "PA", "PA", "PA", "PA", "PA", "PA", "PSA", "PSA", "PSA", "PSA", "PSA", "PSA", "PSA","none", "none", "none", "none", "none", "none", "none"),
+                    
+                      target= c("Speed","Position", "Position + Speed", "Position + Acceleration", "Position + Speed + Acceleration", "Acceleration", "None","Speed","Position", "Position + Speed", "Position + Acceleration", "Position + Speed + Acceleration", "Acceleration", "None", "Speed","Position", "Position + Speed", "Position + Acceleration", "Position + Speed + Acceleration", "Acceleration", "None", "Speed","Position", "Position + Speed", "Position + Acceleration", "Position + Speed + Acceleration", "Acceleration", "None", "Speed","Position", "Position + Speed", "Position + Acceleration", "Position + Speed + Acceleration", "Acceleration", "None", "Speed","Position", "Position + Speed", "Position + Acceleration", "Position + Speed + Acceleration", "Acceleration", "None","Speed","Position", "Position + Speed", "Position + Acceleration", "Position + Speed + Acceleration", "Acceleration", "None"))
+
+```
+
+
+
+
+
+```{r}
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
+ 
+```
+
+```{r}
+# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+data_long$IDsource=match(data_long$source, nodes$name)-1 
+data_long$IDtarget=match(data_long$target, nodes$name)-1
+```
+
+```{r}
+library(networkD3)
+# prepare colour scale
+ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
+
+# Make the Network
+sankeyNetwork(Links = data_long, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "value", NodeID = "name", LinkGroup='source',
+              sinksRight=FALSE, colourScale=ColourScal,
+              nodeWidth=40, fontSize=13, nodePadding=20)
+#ggsave(file = "plots/model_movement.png", width = 24, height = 18)
+
+```
+

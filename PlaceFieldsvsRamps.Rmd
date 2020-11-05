@@ -1,0 +1,85 @@
+---
+title: "PlaceFieldsvsRamps"
+author: "Matt"
+date: "13/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(cowplot)
+```
+
+
+
+```{r Make Gaussian field}
+x <- 1:1000
+loc <- 500
+sd <- 100
+field <- exp(-1*((x-loc)^2)/(2*sd^2))
+tb <- tibble(x = x, y = field)
+```
+
+Make family of tidy fields
+```{r}
+x_f <- rep(x, 5)
+id <- c(rep(1,1000), rep(2,1000), rep(3,1000), rep(4,1000), rep(5,1000))
+locs <- id*200-100
+fields <- exp(-1*((x_f-locs)^2)/(2*sd^2))
+tb_f <- tibble(x = x_f, y = fields, id = as.factor(id))
+```
+
+
+```{r}
+ggplot(tb, aes(x, y)) +
+  geom_line()
+
+(fields <- ggplot(tb, aes(x, y)) +
+  geom_line() +
+  labs(title = "Discrete place field\n",
+       y = "Firing rate\n",
+       x = "\nLocation") +
+  theme_cowplot() +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position="none", 
+        axis.text.x = element_text(size=0),
+        axis.text.y = element_text(size=0),
+        legend.title = element_blank(),
+        text = element_text(size=14)))
+
+ggsave(file = "Figure1_A.png", width = 4, height = 3.5)
+
+```
+
+Make and plot a ramp
+```{r}
+ramp <- x/1000
+tb_r <- tibble(x = x, y = ramp)
+
+(ramp <- ggplot(tb_r, aes(x, y)) +
+  geom_line() +
+  labs(title = "Continous ramp-like code\n",
+       y = "Firing rate\n",
+       x = "\nLocation") +
+  theme_cowplot() +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position="none", 
+        axis.text.x = element_text(size=0),
+        axis.text.y = element_text(size=0),
+        legend.title = element_blank(),
+        text = element_text(size=14)))
+
+ggsave(file = "Figure1_B.png", width = 4, height = 3.5)
+
+```
+
+Assemble into a figure
+```{r}
+plot_grid(fields, ramp, labels = c("A", "B"), label_size = 18)
+ggsave(file = "Figure1_Schematic.png", width = 10, height = 4)
+
+```
+

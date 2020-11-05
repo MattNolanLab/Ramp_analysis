@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+data/spatial_firing_ramp.pkl
+data/Allmice_alldays_df.pkl
+data/Allmice_alldays_position1_df.pkl
+data/Allmice_alldays_position2_df.pkl
+data/processed_position_data.pkl
+data/spatial_firing_zebra.pkl
