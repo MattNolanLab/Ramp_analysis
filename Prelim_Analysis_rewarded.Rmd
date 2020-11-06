@@ -24,9 +24,6 @@ The aim of this analysis is to identify all ramp cells within a specified datase
 3. Compare firing rates of cells in this group
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ## Import packages
 
@@ -34,12 +31,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(broom)
 library(lme4)
-library(ggplot2)
 library(ggExtra)
 library(ggthemes)
 library(scales)
-library(dplyr)
-library(tidyr)
 library(Hmisc)
 library(Metrics)
 library(plotrix)
@@ -84,12 +78,43 @@ spatial_firing <- read_pickle_file(file.path(dataframe_to_load)) # function to c
 OR 2. load RDa file 
 
 ```{r}
-spatial_firing <- readRDS(file="df_final.Rda")
-saveRDS(spatial_firing_test, file="spatial_firing_test.Rda")
+# spatial_firing <- readRDS(file="df_final.Rda")
+spatial_firing <- readRDS(file="Link to df_final.Rda")
+# Not sure the line below is necessary
+# saveRDS(spatial_firing_test, file="spatial_firing_test.Rda")
 
 ```
+***Warning***
+Spatial firing is a very large object. Even running str takes many minutes.
+Look at how we can fix this?
+
+Find out about spatial firing
+```{r}
+options(max.print = 1000)
+dim(spatial_firing)
+# Things measured
+colnames(spatial_firing)
+# Units
+# row.names(spatial_firing)
+# stop from printing too much if looking at variables
+options(max.print = 10)
+```
+Make a version of spatial_firing that contains only columns needs for subsequent analyses.
+```{r}
+# keep a copy of imported data
+sf_imported <- spatial_firing
+# select columns that are useful
+spatial_firing <- spatial_firing %>%
+  select(rewardedlocations,
+         max_trial_number
+         Rates_averaged_rewarded_b,
+         Rates_averaged_rewarded_nb,
+         Rates_averaged_rewarded_p)
+```
+
 
 ```{r}
+# Not sure about the reason for this
 saveRDS(spatial_firing, file="df_final.Rda")
 ```
 
