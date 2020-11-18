@@ -324,3 +324,76 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
+### -------------------------------------------------------------------------------------------------------------------- ### 
+
+Then we want to correct the pvals of the lm, to account for multiple comparisons
+
+1. put all pvalues into tibble then adjust using p.adjust from - package
+```{r}
+p_vals <- tibble(pvals = spatial_firing$asr_b_rewarded_Pval_o)
+adjusted_vals <- p.adjust(p_vals$pvals, "BH")
+adu_p <- tibble(adjust_pval = adjusted_vals)
+
+```
+
+2. bind new adjusted pvalues to dataframe
+```{r}
+spatial_firing <- cbind(spatial_firing, adu_p)
+```
+
+3. do the same for non-beaconed trials
+```{r}
+p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_rewarded_Pval_o)
+adjusted_vals <- p.adjust(p_vals_nb$pvals, "BH")
+adu_p_nb <- tibble(adjust_pval_nb = adjusted_vals)
+
+spatial_firing <- cbind(spatial_firing, adu_p_nb)
+```
+
+
+3. do the same for probe trials
+```{r}
+p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_Pval_o)
+adjusted_vals <- p.adjust(p_vals_p$pvals, "BH")
+adu_p_p <- tibble(adjust_pval_p = adjusted_vals)
+
+spatial_firing <- cbind(spatial_firing, adu_p_p)
+```
+
+
+# remove duplicate columns from dataframe if needed  _nb should only need if ran the above code twice_
+```{r}
+spatial_firing = spatial_firing[,!duplicated(names(spatial_firing))]
+
+```
+
+
+### -------------------------------------------------------------------------------------------------------------------- ### 
+
+
+Now we want to classify neurons, taking their significance into account
+
+```{r}
+
+
+compare_slopes <- function(min_slope, max_slope, slope, pval){
+  if ( pval > 0.01) {
+    return( "Unclassified" )
+  } else if( slope < min_slope & pval < 0.01) {
+    return( "Negative" )
+  } else if( slope > max_slope & pval < 0.01){
+    return("Positive")
+  } else if( slope > min_slope & slope < max_slope){
+    return("Unclassified")
+  } else {
+    return("Unclassified")
+  }
+}
+
+spatial_firing <- spatial_firing %>%
+  mutate(slope_criteria_pval = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) %>%
+  mutate(slope_criteria_pval_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes)) %>%
+  mutate(slope_criteria_pval_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
+
+```
+
