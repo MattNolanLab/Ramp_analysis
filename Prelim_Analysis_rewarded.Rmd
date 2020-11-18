@@ -80,7 +80,7 @@ OR 2. load RDa file
 ```{r}
 # spatial_firing <- readRDS(file="df_final.Rda")
 spatial_firing <- readRDS(file="Link to df_final.Rda")
-# Not sure the line below is necessary
+# Not sure the line below is necessary # Run if loaded from pandas dataframe to save data as .Rda
 # saveRDS(spatial_firing_test, file="spatial_firing_test.Rda")
 
 ```
