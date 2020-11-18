@@ -397,3 +397,75 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
+
+
+### -------------------------------------------------------------------------------------------------------------------- ### 
+
+
+Now we want to visualise the coefficients of all neurons and all shuffled datasets
+
+1. extract shuffled values into tibble _nb needed because each 1000 shuffled datasets are nested for each neuron_
+```{r}
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unlist(spatial_firing$shuffle_rsquared))
+```
+
+2. plot real and shuffled coefficients 
+```{r}
+ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32") + 
+    coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
+    geom_point(alpha=.4) + 
+    geom_point(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o, color=factor(unlist(slope_criteria_pval)))) +
+    #geom_point(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32") +
+    xlab("\nslope") +
+    ylab("R2") +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey82")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/LMOut_coefficients_pval_05.png", width = 4, height = 5)
+
+```
+
+
+
+Now lets find and plot the proportion of cells that pass criteria according to our classification
+
+1. extract proportion of cells that meet each criteria
+```{r}
+# positive homebound slopes
+start <- nrow(subset(spatial_firing, slope_criteria_pval == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, slope_criteria_pval == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, slope_criteria_pval == "Unclassified"))/nrow(spatial_firing)*100
+
+
+```
+
+2. Put into a tibble 
+```{r}
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+```
+
+3. Plot bar graph of proportions
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=16), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/LMOut_proportions_rewarded.png", width = 3, height = 6)
+
+```
+
