@@ -86,16 +86,17 @@ add_position <- function(df) {
 spatial_firing <- spatial_firing %>%
   mutate(asr_b_rewarded = map(Rates_averaged_rewarded_b, add_position)) %>%
   mutate(asr_nb_rewarded = map(Rates_averaged_rewarded_nb, add_position)) %>%
-  mutate(asr_p_rewarded = map(averaged_rewarded_p, add_position))
+  mutate(asr_p_rewarded = map(Rates_averaged_rewarded_p, add_position))
 
 ```
 
 
 ### ----------------------------------------------------------------------------------------- ###
 
-# Run simple linear model 
+# Run simple linear model to examine relationship between firing rate and position
+_note:for now we are only interested in the outbound region of the track (0 - 60 cm)_
 
-1. make function to run linear model
+1. Make function to run linear model
 ```{r}
 lm_helper <- function(df, bins){
   df_mod <- lm(Rates ~ Position, data = df[bins,], na.action=na.exclude)
@@ -134,13 +135,10 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
-
-
-
+4. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
 ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o)) + 
-    coord_cartesian(xlim = c(-1,1), ylim = c(0,1)) +
-    #geom_point(alpha=.4) + 
+    coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
     geom_point() +
     xlab("\nslope") +
     ylab("R2") +
@@ -153,28 +151,19 @@ ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r
           text = element_text(size=12), 
           legend.text=element_text(size=12), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/shuff_lm1_allcells.png", width = 4, height = 5)
+ggsave(file = "plots/shuff_lm_allcells.png", width = 4, height = 5)
 ```
 
 
 
 ### ----------------------------------------------------------------------------------------- ###
 
-## Identification of ramp cells in dataset (Beaconed trials)
+## Identification of ramp cells in dataset 
 
 Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled datasets
 
 
-1. Write function to run linear model
-```{r}
-lm_helper <- function(df){
-  if(all(is.na(df))) 
-    return(0)
-  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
-}
-```
-
-2. write function to generate 1000 shuffles
+1. write function to generate 1000 shuffles
 - shuffles spikes using sample() function
 - runs lm
 - extracts coefficients
@@ -190,8 +179,8 @@ shuffle_rates <- function(df) {
   x <- 1
   repeat {
   shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
-  shuff_df <- subset(shuff_df, Position >=30 & Position <=90)
-  df_mod <- lm_helper(shuff_df)
+  bins=c(30:90)
+  df_mod <- lm_helper(shuff_df, bins)
   rsquared <- glance(df_mod)$r.squared
   pval<- glance(df_mod)$p.value
   slope <- coefficients(df_mod)[2] # slope
@@ -200,7 +189,7 @@ shuffle_rates <- function(df) {
   df_modified <- rbind(df_modified,data)
 
   x = x+1
-  if (x == 1000){
+  if (x == 100){ # putting 100 here for now for testing as 1000 takes v long time to run
   break
   }
   }
@@ -208,24 +197,26 @@ return(df_modified)
 }
 ```
 
-3. Run on example neuron (beaconed and non-beaconed trials)
+2. Run on example neuron (beaconed and non-beaconed trials)
 ```{r}
 
 spatial_firing <- spatial_firing %>%
-  mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
-  mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
-  mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
+  mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) #%>%
+  #mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
+  #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
 
 ```
 
 
 
 
-### ---------------------------------------------------------------------------------------------------- ### 
+### ---------------------------------------------------------------------------- ### 
 
 ### classify neurons based on shuffle activity
 
-First, extract the limits of shuffled data for each neuron 
+If outside the 95% of the shuffled dataset, a neuron is considered to have ramp like activity along the track. 
+
+First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron 
 
 1. write function to find min and max slope for shuffled datasets 
 ```{r}
@@ -251,27 +242,15 @@ extract_max_shuffle_slopes <- function(df){
 spatial_firing <- spatial_firing %>%
   mutate(shuffle_min_slope = map(shuffle_results, extract_min_shuffle_slopes)) %>%
   mutate(shuffle_max_slope = map(shuffle_results, extract_max_shuffle_slopes)) 
-
-```
-
-3. Do same for non-beaconed/probe trials
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(shuffle_min_slope_nb = map(shuffle_results_nb, extract_min_shuffle_slopes)) %>%
-  mutate(shuffle_max_slope_nb = map(shuffle_results_nb, extract_max_shuffle_slopes)) 
-
-```
-
-3. Do same for non-beaconed/probe trials
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(shuffle_min_slope_p = map(shuffle_results_p, extract_min_shuffle_slopes)) %>%
-  mutate(shuffle_max_slope_p = map(shuffle_results_p, extract_max_shuffle_slopes)) 
+  #mutate(shuffle_min_slope_nb = map(shuffle_results_nb, extract_min_shuffle_slopes)) %>%
+  #mutate(shuffle_max_slope_nb = map(shuffle_results_nb, extract_max_shuffle_slopes)) 
+  #mutate(shuffle_min_slope_p = map(shuffle_results_p, extract_min_shuffle_slopes)) %>%
+  #mutate(shuffle_max_slope_p = map(shuffle_results_p, extract_max_shuffle_slopes)) 
 
 ```
 
 
-We also want to extract all shuffled slopes, r2 and pvalues
+We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
 
 1. Function to extract shuffle results (slopes and r2 for each shuffle)
 
@@ -299,32 +278,16 @@ spatial_firing <- spatial_firing %>%
   mutate(shuffle_slopes = map(shuffle_results, extract_shuffle_slopes)) %>%
   mutate(shuffle_rsquared = map(shuffle_results, extract_shuffle_r2)) %>%
   mutate(shuffle_pval = map(shuffle_results, extract_shuffle_pval)) 
+  #mutate(shuffle_slopes_nb = map(shuffle_results_nb, extract_shuffle_slopes)) %>% # Non beaconed
+  #mutate(shuffle_rsquared_nb = map(shuffle_results_nb, extract_shuffle_r2)) %>%
+  #mutate(shuffle_pval_nb = map(shuffle_results_nb, extract_shuffle_pval)) 
+  #mutate(shuffle_slopes_p = map(shuffle_results_p, extract_shuffle_slopes)) %>% # probe
+  #mutate(shuffle_rsquared_p = map(shuffle_results_p, extract_shuffle_r2)) %>%
+  #mutate(shuffle_pval_p = map(shuffle_results_p, extract_shuffle_pval)) 
 
 
 ```
 
-3. run on all non-beaconed/probe trials
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(shuffle_slopes_nb = map(shuffle_results_nb, extract_shuffle_slopes)) %>%
-  mutate(shuffle_rsquared_nb = map(shuffle_results_nb, extract_shuffle_r2)) %>%
-  mutate(shuffle_pval_nb = map(shuffle_results_nb, extract_shuffle_pval)) 
-
-
-```
-
-4. run on just probe trials
-
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(shuffle_slopes_p = map(shuffle_results_p, extract_shuffle_slopes)) %>%
-  mutate(shuffle_rsquared_p = map(shuffle_results_p, extract_shuffle_r2)) %>%
-  mutate(shuffle_pval_p = map(shuffle_results_p, extract_shuffle_pval)) 
-
-```
-
-
-### -------------------------------------------------------------------------------------------------------------------- ### 
 
 Then we want to correct the pvals of the lm, to account for multiple comparisons
 
@@ -350,7 +313,6 @@ adu_p_nb <- tibble(adjust_pval_nb = adjusted_vals)
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
 ```
 
-
 3. do the same for probe trials
 ```{r}
 p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_Pval_o)
@@ -361,17 +323,17 @@ spatial_firing <- cbind(spatial_firing, adu_p_p)
 ```
 
 
-# remove duplicate columns from dataframe if needed  _nb should only need if ran the above code twice_
+# remove duplicate columns from dataframe if needed  _note should only need if ran the above code twice..._
 ```{r}
 spatial_firing = spatial_firing[,!duplicated(names(spatial_firing))]
 
 ```
 
 
-### -------------------------------------------------------------------------------------------------------------------- ### 
+### ----------------------------------------------------------------------------------------- ### 
 
 
-Now we want to classify neurons, taking their significance into account
+Now we want to classify neurons, taking the adjusted significance into account
 
 ```{r}
 
@@ -391,9 +353,9 @@ compare_slopes <- function(min_slope, max_slope, slope, pval){
 }
 
 spatial_firing <- spatial_firing %>%
-  mutate(slope_criteria_pval = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) %>%
-  mutate(slope_criteria_pval_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes)) %>%
-  mutate(slope_criteria_pval_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
+  mutate(lm_group = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) # %>%
+  #mutate(slope_criteria_pval_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes)) %>%
+  #mutate(slope_criteria_pval_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
 
 ```
 
@@ -438,9 +400,9 @@ Now lets find and plot the proportion of cells that pass criteria according to o
 1. extract proportion of cells that meet each criteria
 ```{r}
 # positive homebound slopes
-start <- nrow(subset(spatial_firing, slope_criteria_pval == "Negative"))/nrow(spatial_firing)*100
-reward <- nrow(subset(spatial_firing, slope_criteria_pval == "Positive"))/nrow(spatial_firing)*100
-nonslope <- nrow(subset(spatial_firing, slope_criteria_pval == "Unclassified"))/nrow(spatial_firing)*100
+start <- nrow(subset(spatial_firing, lm_group == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, lm_group == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, lm_group == "Unclassified"))/nrow(spatial_firing)*100
 
 
 ```
