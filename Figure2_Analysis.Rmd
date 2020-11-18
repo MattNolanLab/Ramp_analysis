@@ -469,3 +469,123 @@ ggsave(file = "plots/LMOut_proportions_rewarded.png", width = 3, height = 6)
 
 ```
 
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+# PLOT HEAT MAPS FOR ALL NEURONS
+
+
+First, reorder the dataframe with ramps according to slope.
+_For start ramps, steepest slope should be negative - thus will have the highest cluster id_
+
+```{r}
+start_ramps<-spatial_firing[order(spatial_firing$asr_b_rewarded_slope_o),]
+start_ramp_number = nrow(start_ramps)
+new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
+start_ramps <- cbind(start_ramps, new_cluster_id)
+```
+
+Then, scale firing rate for all neurons
+
+1. make function to load rates and normalise
+2. Run on dataframe 
+```{r}
+normalise_rates_outbound <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  df <- df %>%
+    filter(Position >=30, Position <= 90)
+  x <- normalit(df$Rates)
+  return(x)
+}
+
+start_ramps <- start_ramps %>%
+  mutate(normalised_rates_o = map(Rates_averaged, normalise_rates_outbound))
+
+```
+
+Add position to normalised rates for plotting
+```{r}
+add_position <- function(df) {
+  df <- tibble(Rates = unlist(df), Position = rep(30:90))
+}
+
+start_ramps <- start_ramps %>%
+  mutate(normalised_rates_o = map(normalised_rates_o, add_position))
+
+```
+
+Extract columns (normalised rates) for plotting into a tibble
+```{r}
+concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o))
+```
+
+
+Extract ramp score for annotating heatmap
+_since its a list of three (outbound/homebound/all) we extract the first one_
+```{r}
+extract_ramp_score <- function(df){
+  dx <- df[[1]]
+  return(dx)
+}
+
+start_ramps <- start_ramps %>%
+  mutate(start_ramp_score = map(ramp_score, extract_ramp_score))
+
+```
+
+Put ramp scores and lm results in tibble for annotating heatmap
+```{r}
+# data for annotating
+ramp_result <- tibble(ramp_score = as.numeric(start_ramps$start_ramp_score))
+brain_region <- tibble(region = as.character(start_ramps$brain_region))
+lm_result <- tibble(result = as.character(start_ramps$lm_result_o_rewarded))
+cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
+```
+
+Plot heatmap with annotations using pheatmap
+```{r}
+#library(pheatmap) # import pheatmap if necessary
+#library(RColorBrewer) # color palette
+
+#convert data to wide format
+wide_DF <- concat_firing_start %>% spread(Position, Rates)
+
+# Generte data (modified the mydf slightly)
+colnames(wide_DF) <- c("new_cluster_id", rep(30:90, times=1))
+rownames(wide_DF) <- paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_")
+
+#remove unused column
+name <- "new_cluster_id"
+wide_DF <- wide_DF %>% select(-one_of(name))
+
+# data for annotation rows in seperate dataframe
+mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), category = lm_result, region = brain_region, ramp_score=ramp_result)
+
+# change the color of annotation to what you want: (eg: "navy", "darkgreen")
+Var1        <- c("violetred2", "black", "chartreuse3")
+names(Var1) <- c("Negative", "None", "Positive")
+
+Var2        <- c("springgreen4", "deepskyblue1", "firebrick")
+names(Var2) <- c("MEC", "PS", "UN")
+
+anno_col <- list(result = Var1, region = Var2, ramp_score = brewer.pal(11,"RdBu"))
+
+#annotation_row = mydf, annotation_colors = anno_col, show_rownames = F, show_colnames = F
+myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, show_rownames = F, show_colnames = F )
+```
+
+Save the headmap (bit of a nightmare here...)
+```{r}
+save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+ 
+save_pheatmap_png(myheatmap, "my_heatmap_all.png")
+```
+
+
