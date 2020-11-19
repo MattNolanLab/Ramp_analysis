@@ -98,8 +98,10 @@ _note:for now we are only interested in the outbound region of the track (0 - 60
 
 1. Make function to run linear model
 ```{r}
-lm_helper <- function(df, bins){
-  df_mod <- lm(Rates ~ Position, data = df[bins,], na.action=na.exclude)
+lm_helper <- function(df){
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90)
+  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
 }
 ```
 
@@ -116,7 +118,7 @@ lm_analysis <- function(df, spike_rate_col, startbin = 30, endbin = 90) {
   slope_name <- sym(paste0(quo_name(out_name), "_slope_o"))
   intercept_name <- sym(paste0(quo_name(out_name), "_intercept_o"))
   df <- df %>%
-    mutate(!!fit_name := map(!!spike_rate_col, bins=c(startbin:endbin), lm_helper),
+    mutate(!!fit_name := map(!!spike_rate_col, lm_helper),
            !!glance_name := map(!!fit_name, glance),
            !!r2_name := map_dbl(!!glance_name, ~.$r.squared),
            !!Pval_name := map_dbl(!!glance_name, ~.$p.value),
@@ -179,8 +181,7 @@ shuffle_rates <- function(df) {
   x <- 1
   repeat {
   shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
-  bins=c(30:90)
-  df_mod <- lm_helper(shuff_df, bins)
+  df_mod <- lm_helper(shuff_df)
   rsquared <- glance(df_mod)$r.squared
   pval<- glance(df_mod)$p.value
   slope <- coefficients(df_mod)[2] # slope
