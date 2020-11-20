@@ -79,7 +79,8 @@ OR 2. load RDa file
 
 ```{r}
 # spatial_firing <- readRDS(file="df_final.Rda")
-spatial_firing <- readRDS(file="Link to df_final.Rda")
+spatial_firing <- readRDS(file="df_allmice.Rda")
+spatial_firing <- readRDS(file="df_final_results.Rda")
 # Not sure the line below is necessary
 # saveRDS(spatial_firing_test, file="spatial_firing_test.Rda")
 
@@ -323,7 +324,7 @@ ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r
           text = element_text(size=12), 
           legend.text=element_text(size=12), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/shuff_lm1_allcells.png", width = 4, height = 5)
+#ggsave(file = "plots/shuff_lm1_allcells.png", width = 4, height = 5)
 ```
 
 
