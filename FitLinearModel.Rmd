@@ -1,0 +1,271 @@
+---
+title: "FitLinearModel"
+author: "Matt"
+date: "17/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Fit linear model.
+
+Modified from 'Prelim_Analysis_rewarded' written by Sarah Tennant. Goal here is to fit a linear model to firing rates as a function of location for each cell. 
+
+
+## Initial code fits data for all cells in the outbound zone??
+
+```{r}
+lm_helper <- function(df, bins){
+  if(all(is.na(df))) 
+    return(0)
+  df <- df  %>% subset(Position > 30 & Position <= 90) %>%  
+    group_by(Position) %>%
+    summarise(Rates = mean(Rates, na.rm = TRUE))  %>% 
+    mutate(Position = c(31:90))
+  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
+}
+```
+
+```{r}
+lm_analysis <- function(df, spike_rate_col, startbin = 30, endbin = 90) {
+  spike_rate_col <- enquo(spike_rate_col)
+  out_name <- sym(paste0(quo_name(spike_rate_col)))
+  sr_unnest_name <- sym(paste0(quo_name(spike_rate_col), "_unnest"))
+  fit_name <- sym(paste0(quo_name(out_name), "_fit"))
+  glance_name <- sym(paste0(quo_name(out_name), "_glance"))
+  r2_name <- sym(paste0(quo_name(out_name), "_r2_o"))
+  Pval_name <- sym(paste0(quo_name(out_name), "_Pval_o"))
+  slope_name <- sym(paste0(quo_name(out_name), "_slope_o"))
+  intercept_name <- sym(paste0(quo_name(out_name), "_intercept_o"))
+  df <- df %>%
+    mutate(!!fit_name := map(!!spike_rate_col, bins=c(startbin:endbin), lm_helper),
+           !!glance_name := map(!!fit_name, glance),
+           !!r2_name := map_dbl(!!glance_name, ~.$r.squared),
+           !!Pval_name := map_dbl(!!glance_name, ~.$p.value),
+           !!slope_name := map_dbl(!!fit_name, ~.$coefficients[2]),
+           !!intercept_name := map_dbl(!!fit_name, ~.$coefficients[1]))
+}
+```
+
+
+3. run lm on rewarded data
+```{r, message=FALSE}
+spatial_firing <- spatial_firing %>%
+  lm_analysis(asr_b_rewarded, 30, 90) %>%
+  lm_analysis(asr_nb_rewarded, 30, 90) %>%
+  lm_analysis(asr_p_rewarded, 30, 90)
+```
+
+
+```{r}
+ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o)) + 
+    coord_cartesian(xlim = c(-1,1), ylim = c(0,1)) +
+    #geom_point(alpha=.4) + 
+    geom_point() +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+#ggsave(file = "plots/shuff_lm1_allcells.png", width = 4, height = 5)
+```
+
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+## Identification of ramp cells in dataset (Beaconed trials)
+
+Here we do this by finding the tails of the shuffled data
+
+1. load slope and r2 from shuffled datasets for all neurons
+
+```{r}
+slopes <- as.numeric(na.omit(spatial_firing_reset$shuff_asr_b_slope_o))
+r2 <- as.numeric(na.omit(spatial_firing_reset$shuff_asr_b_r2_o))
+```
+
+2. find the 95% and 5% percentiles of the shuffled data
+
+```{r}
+min_slope_o <- quantile(slopes, c(.05, .95)) [[1]][1]
+max_slope_o <- quantile(slopes, c(.05, .95)) [[2]][1]
+max_r2_o <- quantile(r2, c(.025, .975)) [[2]][1]
+```
+
+3. Classify neurons based on activity in outbound in relation to shuffled limits
+```{r}
+
+spatial_firing_reset <- spatial_firing_reset %>%
+  mutate(lm_result_o_rewarded = pmap(list(asr_b_rewarded_Pval_o, asr_b_rewarded_r2_o, asr_b_rewarded_slope_o,max_r2_o, max_slope_o, min_slope_o), select_final_lm_result)) %>%
+  mutate(lm_result_o_rewarded_nb = pmap(list(asr_nb_rewarded_Pval_o, asr_nb_rewarded_r2_o, asr_nb_rewarded_slope_o,max_r2_o, max_slope_o, min_slope_o), select_final_lm_result)) %>%
+  mutate(lm_result_o_rewarded_p = pmap(list(asr_p_rewarded_Pval_o, asr_p_rewarded_r2_o, asr_p_rewarded_slope_o,max_r2_o, max_slope_o, min_slope_o), select_final_lm_result))
+
+```
+
+
+## how much of the shuffled dataset is past criteria? 
+
+```{r}
+shuff_ramps <- nrow(subset(spatial_firing,lm_result_o_shuff == "Positive" | lm_result_o_shuff == "Negative" ))/nrow(spatial_firing)*100
+non_shuff_ramps <- nrow(subset(spatial_firing,lm_result_o_shuff == "None" | lm_result_o_shuff == "NoSlope" ))/nrow(spatial_firing)*100
+
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+```{r}
+start_ramps <- spatial_firing %>%
+  filter(asr_b_rewarded_r2_o > max_r2_o)
+```
+
+
+First, reorder the dataframe with ramps according to slope.
+_For start ramps, steepest slope should be negative - thus will have the highest cluster id_
+
+```{r}
+start_ramps<-start_ramps[order(start_ramps$asr_b_rewarded_r2_o),]
+start_ramp_number = nrow(start_ramps)
+new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
+start_ramps <- cbind(start_ramps, new_cluster_id)
+```
+Then we want to look at the distribution of these firing proeprty variables in our ramp cell dataset. 
+_to examine only ramp/distance cells we are looking only at neurons that had slope > 0.15 from using a GLM on firing rate and distance_
+
+Prep data:
+1. Filter dataset for slope to get only ramp cells
+2. Create marker for whether is start or end of track firing cells
+3. Concatenate frames so all ramps are in one frame
+
+```{r}
+to_reward_ramps <- subset(start_ramps, lm_result_o_rewarded == "Positive")
+ramp_id=rep("to_reward", times= nrow(to_reward_ramps))
+binary_ramp_id = rep(4, times= nrow(to_reward_ramps))
+to_reward_ramps <- cbind(to_reward_ramps, ramp_id, binary_ramp_id)
+
+start_ramps <- subset(start_ramps, lm_result_o_rewarded == "Negative")
+ramp_id=rep("start", times= nrow(start_ramps))
+binary_ramp_id = rep(1, times= nrow(start_ramps))
+start_ramps <- cbind(start_ramps, ramp_id, binary_ramp_id)
+
+outbound_ramps <- bind_rows(start_ramps, to_reward_ramps)
+
+```
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+
+### Plot LM results for outbound region
+
+1. make two tibbles with data
+- first tibble contains all data
+- second tibble contains only ramp data as identified by lm
+
+```{r}
+
+#function2 - shuffled and real : beaconed trials
+return_b_shuffle_lm_results <- function(df){
+  tibble(
+    Trial_type = factor(c(rep(c("Real","Shuffled"), each =nrow(df)))),
+    Slopes = c(df$asr_b_rewarded_slope_o, df$shuff_asr_b_slope_o), 
+    r2 = c(df$asr_b_rewarded_r2_o, df$shuff_asr_b_r2_o), 
+    id = c(df$cluster_id, df$cluster_id))
+}
+
+lm_results <- return_b_shuffle_lm_results(spatial_firing)
+
+lm_results_ramps <- tibble(Ramp_type = c(as.character(start_ramps$ramp_id), as.character(to_reward_ramps$ramp_id)),
+    Slopes = c(start_ramps$asr_b_rewarded_slope_o, to_reward_ramps$asr_b_rewarded_slope_o), 
+    r2 = c(start_ramps$asr_b_rewarded_r2_o, to_reward_ramps$asr_b_rewarded_r2_o), 
+    id = c(start_ramps$cluster_id, to_reward_ramps$cluster_id))
+```
+
+2. Plot results, color coded by ramp type
+
+```{r}
+
+
+lm_plot_start <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
+    #geom_point(alpha=.4) +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2, color=factor(Trial_type))) +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type)),alpha=.4) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+lm_plot_start <- lm_plot_start + geom_vline(xintercept = min_slope_o , linetype="dotted", 
+                color = "blue", size=.6)
+lm_plot_start <- lm_plot_start + geom_vline(xintercept = max_slope_o, linetype="dotted", 
+                color = "blue", size=.6)
+lm_plot_start <- lm_plot_start + geom_hline(yintercept = max_r2_o, linetype="dotted", 
+                color = "red", size=.6)
+
+ggsave(file = "plots/shuff_lm1_rewarded.png", width = 4, height = 5)
+
+```
+
+
+# find and plot proportions for ramp types in dataset
+
+```{r}
+# positive homebound slopes
+start <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, lm_result_o_rewarded == "NoSlope" | lm_result_o_rewarded == "None"))/nrow(spatial_firing)*100
+
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), ramp_id= c("Start", "ToReward", "NoSlope"),ramp_type = c("Start", "ToReward", "NoSlope"))
+
+```
+
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("grey62", "violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/LMStart_cellproportions_rewarded.png", width = 3, height = 6)
+
+```
+
+3. get numbers of cells for each lm group (positive/negative/unclassified)
+```{r}
+start <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Negative"))
+reward <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Positive"))
+nonslope <- nrow(subset(spatial_firing, lm_result_o_rewarded == "NoSlope" | lm_result_o_rewarded == "None"))
+
+```
+
+

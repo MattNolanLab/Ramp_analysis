@@ -1,0 +1,59 @@
+---
+title: "SetUp"
+author: "Matt"
+date: "17/11/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+
+Modified from 'Prelim_Analysis_rewarded' written by Sarah Tennant. Goal here is to load data, functions and required packages. 
+
+```{r}
+# Load packages
+library(tidyverse)
+library(broom)
+library(lme4)
+library(ggExtra)
+library(ggthemes)
+library(scales)
+library(Hmisc)
+library(Metrics)
+library(plotrix)
+
+# Import functions
+source("Functions.R")
+source("Functions_Outbound_LMER.R")
+
+# Load data
+# Alternative file names commened out
+# spatial_firing <- readRDS(file="df_final.Rda")
+# spatial_firing <- readRDS(file="df_allmice.Rda")
+spatial_firing <- readRDS(file="df_final_results.Rda")
+```
+
+
+
+***Warning***
+Spatial firing is a very large object. Even running str takes many minutes.
+Look at how we can fix this?
+
+This code chunk can be used to find out about spatial firing
+```{r}
+options(max.print = 1000)
+dim(spatial_firing)
+# Things measured:
+colnames(spatial_firing)
+# Cells:
+# row.names(spatial_firing)
+# stop from printing too much if looking at variables
+
+
+options(max.print = 10)
+```
+
+
