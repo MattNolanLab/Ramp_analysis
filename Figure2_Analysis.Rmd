@@ -22,45 +22,7 @@ The aim of this analysis is to identify all ramp cells within a specified datase
 3. Compare firing rates of cells in this group
 
 
-
-## Import packages
-
-```{r}
-library(tidyverse)
-library(broom)
-library(lme4)
-library(ggExtra)
-library(ggthemes)
-library(scales)
-library(Hmisc)
-library(Metrics)
-library(plotrix)
-#library(plyr)
-#library("plot3D")
-#library(NetworkD3)
-```
-
-
-## Import functions
-
-```{r}
-source("Functions.R")
-source("Functions_Outbound_LMER.R")
-```
-
-### ----------------------------------------------------------------------------------------- ###
-
-## Load the data
-_note : only run if not ran ConvertPickletoRda.Rmd_
-
-```{r}
-# spatial_firing <- readRDS(file="df_final.Rda")
-spatial_firing <- readRDS(file="Link to df_final.Rda")
-# Not sure the line below is necessary # Run if loaded from pandas dataframe to save data as .Rda
-# saveRDS(spatial_firing_test, file="spatial_firing_test.Rda")
-
-```
-
+To set up, including loading packages and data, first run SetUp.Rmd.
 
 
 ### ----------------------------------------------------------------------------------------- ###
