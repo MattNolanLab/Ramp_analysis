@@ -1,0 +1,554 @@
+---
+title: "Figure2_Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+title: "Figure2_Analysis"
+author: "Sarah Tennant"
+date: "18/11/2020"
+output: html_document
+---
+
+## Analysis of neurons recorded from the medial entorhinal cortex during virtual navigation
+
+The aim of this analysis is to identify all ramp cells within a specified dataset (all mice or all days for one mouse) and perform analysis to investigate their firing properties. 
+1. Identify cells that represent location by ramping their firing rate using LM modeling 
+2. Subset data by model fit (r2 value)
+3. Compare firing rates of cells in this group
+
+
+
+## Import packages
+
+```{r}
+library(tidyverse)
+library(broom)
+library(lme4)
+library(ggExtra)
+library(ggthemes)
+library(scales)
+library(Hmisc)
+library(Metrics)
+library(plotrix)
+#library(plyr)
+#library("plot3D")
+#library(NetworkD3)
+```
+
+
+## Import functions
+
+```{r}
+source("Functions.R")
+source("Functions_Outbound_LMER.R")
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Load the data
+_note : only run if not ran ConvertPickletoRda.Rmd_
+
+```{r}
+# spatial_firing <- readRDS(file="df_final.Rda")
+spatial_firing <- readRDS(file="Link to df_final.Rda")
+# Not sure the line below is necessary # Run if loaded from pandas dataframe to save data as .Rda
+# saveRDS(spatial_firing_test, file="spatial_firing_test.Rda")
+
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Average firing rate (for LM modelling)
+
+The linear model uses firing rate data binned in space. For this we want to load average firing rate over trials from the data frame for each cluster. 
+- Map over "Rates_averaged" column and extract averaged rates
+- Add position for each point ( data is binned into 200, 1 cm bins )
+- Insert result back into dataframe
+- Do this for beaconed, nonbeaconed and probe trials
+- Do this for shuffled spike rate (beaconed)
+
+1. Write function to add position
+```{r}
+add_position <- function(df) { 
+  df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
+}
+```
+
+2. Run on dataframe : Average trials with reward
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(asr_b_rewarded = map(Rates_averaged_rewarded_b, add_position)) %>%
+  mutate(asr_nb_rewarded = map(Rates_averaged_rewarded_nb, add_position)) %>%
+  mutate(asr_p_rewarded = map(Rates_averaged_rewarded_p, add_position))
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+# Run simple linear model to examine relationship between firing rate and position
+_note:for now we are only interested in the outbound region of the track (0 - 60 cm)_
+
+1. Make function to run linear model
+```{r}
+lm_helper <- function(df){
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90)
+  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
+}
+```
+
+2. make function to extract linear model output for each neuron
+```{r}
+lm_analysis <- function(df, spike_rate_col, startbin = 30, endbin = 90) {
+  spike_rate_col <- enquo(spike_rate_col)
+  out_name <- sym(paste0(quo_name(spike_rate_col)))
+  sr_unnest_name <- sym(paste0(quo_name(spike_rate_col), "_unnest"))
+  fit_name <- sym(paste0(quo_name(out_name), "_fit"))
+  glance_name <- sym(paste0(quo_name(out_name), "_glance"))
+  r2_name <- sym(paste0(quo_name(out_name), "_r2_o"))
+  Pval_name <- sym(paste0(quo_name(out_name), "_Pval_o"))
+  slope_name <- sym(paste0(quo_name(out_name), "_slope_o"))
+  intercept_name <- sym(paste0(quo_name(out_name), "_intercept_o"))
+  df <- df %>%
+    mutate(!!fit_name := map(!!spike_rate_col, lm_helper),
+           !!glance_name := map(!!fit_name, glance),
+           !!r2_name := map_dbl(!!glance_name, ~.$r.squared),
+           !!Pval_name := map_dbl(!!glance_name, ~.$p.value),
+           !!slope_name := map_dbl(!!fit_name, ~.$coefficients[2]),
+           !!intercept_name := map_dbl(!!fit_name, ~.$coefficients[1]))
+}
+```
+
+3. run lm on all cells
+```{r}
+
+spatial_firing <- spatial_firing %>%
+  lm_analysis(asr_b_rewarded, 30, 90) %>%
+  lm_analysis(asr_nb_rewarded, 30, 90) %>%
+  lm_analysis(asr_p_rewarded, 30, 90)
+
+```
+
+4. Plot coefficients of model (slope and r2 value) for each neuron
+```{r}
+ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o)) + 
+    coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
+    geom_point() +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/shuff_lm_allcells.png", width = 4, height = 5)
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Identification of ramp cells in dataset 
+
+Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled datasets
+
+
+1. write function to generate 1000 shuffles
+- shuffles spikes using sample() function
+- runs lm
+- extracts coefficients
+- stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
+```{r}
+#library(gdata)
+shuffle_rates <- function(df) {
+  df_modified <- data.frame(neuron=as.numeric(),
+                 slope=as.numeric(), 
+                 rsquared=as.numeric(), 
+                 pval=vector())
+  names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
+  x <- 1
+  repeat {
+  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
+  df_mod <- lm_helper(shuff_df)
+  rsquared <- glance(df_mod)$r.squared
+  pval<- glance(df_mod)$p.value
+  slope <- coefficients(df_mod)[2] # slope
+  data <- data.frame(as.numeric(x), slope, rsquared, round(pval,5))
+  names(data) <- c("neuron", "slope", "rsquared", "pval")
+  df_modified <- rbind(df_modified,data)
+
+  x = x+1
+  if (x == 100){ # putting 100 here for now for testing as 1000 takes v long time to run
+  break
+  }
+  }
+return(df_modified)
+}
+```
+
+2. Run on example neuron (beaconed and non-beaconed trials)
+```{r}
+
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) #%>%
+  #mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
+  #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
+
+```
+
+
+
+
+### ---------------------------------------------------------------------------- ### 
+
+### classify neurons based on shuffle activity
+
+If outside the 95% of the shuffled dataset, a neuron is considered to have ramp like activity along the track. 
+
+First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron 
+
+1. write function to find min and max slope for shuffled datasets 
+```{r}
+
+extract_min_shuffle_slopes <- function(df){
+  df <- tibble(slopes = unlist(df[2]), rsquared = unlist(df[3]))
+  min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
+  #max_r2_o <- quantile(as.numeric(unlist(df$rsquared)), c(.025, .975)) [[2]][1]
+  #variables <- c(min_slope_o, max_slope_o, max_r2_o) # return all three criteria
+  return(min_slope_o)
+}
+
+extract_max_shuffle_slopes <- function(df){
+  df <- tibble(slopes = unlist(df[2]), rsquared = unlist(df[3]))
+  max_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[2]][1]
+  return(max_slope_o)
+}
+
+```
+
+2. Run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_min_slope = map(shuffle_results, extract_min_shuffle_slopes)) %>%
+  mutate(shuffle_max_slope = map(shuffle_results, extract_max_shuffle_slopes)) 
+  #mutate(shuffle_min_slope_nb = map(shuffle_results_nb, extract_min_shuffle_slopes)) %>%
+  #mutate(shuffle_max_slope_nb = map(shuffle_results_nb, extract_max_shuffle_slopes)) 
+  #mutate(shuffle_min_slope_p = map(shuffle_results_p, extract_min_shuffle_slopes)) %>%
+  #mutate(shuffle_max_slope_p = map(shuffle_results_p, extract_max_shuffle_slopes)) 
+
+```
+
+
+We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
+
+1. Function to extract shuffle results (slopes and r2 for each shuffle)
+
+```{r} 
+
+extract_shuffle_slopes <- function(df){
+  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
+  return(df$slopes)
+}
+
+extract_shuffle_r2 <- function(df){
+  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
+  return(df$rsquared)
+}
+
+extract_shuffle_pval <- function(df){
+  df <- tibble(pval = unlist(df$pval))
+  return(df$pval)
+}
+```
+
+2. run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_slopes = map(shuffle_results, extract_shuffle_slopes)) %>%
+  mutate(shuffle_rsquared = map(shuffle_results, extract_shuffle_r2)) %>%
+  mutate(shuffle_pval = map(shuffle_results, extract_shuffle_pval)) 
+  #mutate(shuffle_slopes_nb = map(shuffle_results_nb, extract_shuffle_slopes)) %>% # Non beaconed
+  #mutate(shuffle_rsquared_nb = map(shuffle_results_nb, extract_shuffle_r2)) %>%
+  #mutate(shuffle_pval_nb = map(shuffle_results_nb, extract_shuffle_pval)) 
+  #mutate(shuffle_slopes_p = map(shuffle_results_p, extract_shuffle_slopes)) %>% # probe
+  #mutate(shuffle_rsquared_p = map(shuffle_results_p, extract_shuffle_r2)) %>%
+  #mutate(shuffle_pval_p = map(shuffle_results_p, extract_shuffle_pval)) 
+
+
+```
+
+
+Then we want to correct the pvals of the lm, to account for multiple comparisons
+
+1. put all pvalues into tibble then adjust using p.adjust from - package
+```{r}
+p_vals <- tibble(pvals = spatial_firing$asr_b_rewarded_Pval_o)
+adjusted_vals <- p.adjust(p_vals$pvals, "BH")
+adu_p <- tibble(adjust_pval = adjusted_vals)
+
+```
+
+2. bind new adjusted pvalues to dataframe
+```{r}
+spatial_firing <- cbind(spatial_firing, adu_p)
+```
+
+3. do the same for non-beaconed trials
+```{r}
+p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_rewarded_Pval_o)
+adjusted_vals <- p.adjust(p_vals_nb$pvals, "BH")
+adu_p_nb <- tibble(adjust_pval_nb = adjusted_vals)
+
+spatial_firing <- cbind(spatial_firing, adu_p_nb)
+```
+
+3. do the same for probe trials
+```{r}
+p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_Pval_o)
+adjusted_vals <- p.adjust(p_vals_p$pvals, "BH")
+adu_p_p <- tibble(adjust_pval_p = adjusted_vals)
+
+spatial_firing <- cbind(spatial_firing, adu_p_p)
+```
+
+
+# remove duplicate columns from dataframe if needed  _note should only need if ran the above code twice..._
+```{r}
+spatial_firing = spatial_firing[,!duplicated(names(spatial_firing))]
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ### 
+
+
+Now we want to classify neurons, taking the adjusted significance into account
+
+```{r}
+
+
+compare_slopes <- function(min_slope, max_slope, slope, pval){
+  if ( pval > 0.01) {
+    return( "Unclassified" )
+  } else if( slope < min_slope & pval < 0.01) {
+    return( "Negative" )
+  } else if( slope > max_slope & pval < 0.01){
+    return("Positive")
+  } else if( slope > min_slope & slope < max_slope){
+    return("Unclassified")
+  } else {
+    return("Unclassified")
+  }
+}
+
+spatial_firing <- spatial_firing %>%
+  mutate(lm_group = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) # %>%
+  #mutate(slope_criteria_pval_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes)) %>%
+  #mutate(slope_criteria_pval_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
+
+```
+
+
+
+### -------------------------------------------------------------------------------------------------------------------- ### 
+
+
+Now we want to visualise the coefficients of all neurons and all shuffled datasets
+
+1. extract shuffled values into tibble _nb needed because each 1000 shuffled datasets are nested for each neuron_
+```{r}
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unlist(spatial_firing$shuffle_rsquared))
+```
+
+2. plot real and shuffled coefficients 
+```{r}
+ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32") + 
+    coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
+    geom_point(alpha=.4) + 
+    geom_point(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o, color=factor(unlist(slope_criteria_pval)))) +
+    #geom_point(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32") +
+    xlab("\nslope") +
+    ylab("R2") +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey82")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/LMOut_coefficients_pval_05.png", width = 4, height = 5)
+
+```
+
+
+
+Now lets find and plot the proportion of cells that pass criteria according to our classification
+
+1. extract proportion of cells that meet each criteria
+```{r}
+# positive homebound slopes
+start <- nrow(subset(spatial_firing, lm_group == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, lm_group == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, lm_group == "Unclassified"))/nrow(spatial_firing)*100
+
+
+```
+
+2. Put into a tibble 
+```{r}
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+```
+
+3. Plot bar graph of proportions
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=16), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+
+ggsave(file = "plots/LMOut_proportions_rewarded.png", width = 3, height = 6)
+
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+# PLOT HEAT MAPS FOR ALL NEURONS
+
+
+First, reorder the dataframe with ramps according to slope.
+_For start ramps, steepest slope should be negative - thus will have the highest cluster id_
+
+```{r}
+start_ramps<-spatial_firing[order(spatial_firing$asr_b_rewarded_slope_o),]
+start_ramp_number = nrow(start_ramps)
+new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
+start_ramps <- cbind(start_ramps, new_cluster_id)
+```
+
+Then, scale firing rate for all neurons
+
+1. make function to load rates and normalise
+2. Run on dataframe 
+```{r}
+normalise_rates_outbound <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  df <- df %>%
+    filter(Position >=30, Position <= 90)
+  x <- normalit(df$Rates)
+  return(x)
+}
+
+start_ramps <- start_ramps %>%
+  mutate(normalised_rates_o = map(Rates_averaged, normalise_rates_outbound))
+
+```
+
+Add position to normalised rates for plotting
+```{r}
+add_position <- function(df) {
+  df <- tibble(Rates = unlist(df), Position = rep(30:90))
+}
+
+start_ramps <- start_ramps %>%
+  mutate(normalised_rates_o = map(normalised_rates_o, add_position))
+
+```
+
+Extract columns (normalised rates) for plotting into a tibble
+```{r}
+concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o))
+```
+
+
+Extract ramp score for annotating heatmap
+_since its a list of three (outbound/homebound/all) we extract the first one_
+```{r}
+extract_ramp_score <- function(df){
+  dx <- df[[1]]
+  return(dx)
+}
+
+start_ramps <- start_ramps %>%
+  mutate(start_ramp_score = map(ramp_score, extract_ramp_score))
+
+```
+
+Put ramp scores and lm results in tibble for annotating heatmap
+```{r}
+# data for annotating
+ramp_result <- tibble(ramp_score = as.numeric(start_ramps$start_ramp_score))
+brain_region <- tibble(region = as.character(start_ramps$brain_region))
+lm_result <- tibble(result = as.character(start_ramps$lm_result_o_rewarded))
+cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
+```
+
+Plot heatmap with annotations using pheatmap
+```{r}
+#library(pheatmap) # import pheatmap if necessary
+#library(RColorBrewer) # color palette
+
+#convert data to wide format
+wide_DF <- concat_firing_start %>% spread(Position, Rates)
+
+# Generte data (modified the mydf slightly)
+colnames(wide_DF) <- c("new_cluster_id", rep(30:90, times=1))
+rownames(wide_DF) <- paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_")
+
+#remove unused column
+name <- "new_cluster_id"
+wide_DF <- wide_DF %>% select(-one_of(name))
+
+# data for annotation rows in seperate dataframe
+mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), category = lm_result, region = brain_region, ramp_score=ramp_result)
+
+# change the color of annotation to what you want: (eg: "navy", "darkgreen")
+Var1        <- c("violetred2", "black", "chartreuse3")
+names(Var1) <- c("Negative", "None", "Positive")
+
+Var2        <- c("springgreen4", "deepskyblue1", "firebrick")
+names(Var2) <- c("MEC", "PS", "UN")
+
+anno_col <- list(result = Var1, region = Var2, ramp_score = brewer.pal(11,"RdBu"))
+
+#annotation_row = mydf, annotation_colors = anno_col, show_rownames = F, show_colnames = F
+myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, show_rownames = F, show_colnames = F )
+```
+
+Save the headmap (bit of a nightmare here...)
+```{r}
+save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+ 
+save_pheatmap_png(myheatmap, "my_heatmap_all.png")
+```
+
+
