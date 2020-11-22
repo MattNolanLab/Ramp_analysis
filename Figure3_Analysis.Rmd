@@ -29,13 +29,13 @@ source("Functions_Outbound_LMER.R")
 spatial_firing <- spatial_firing  %>%
   mutate(o_pos_b = map(spikes_in_time, car_pos_b)) %>%
   mutate(o_speed_b = map(spikes_in_time, car_speed_b)) %>%
-  mutate(o_accel_b = map(spikes_in_time, car_accel_b)) %>%
-  mutate(o_pos_nb = map(spikes_in_time, car_pos_nb)) %>%
-  mutate(o_speed_nb = map(spikes_in_time, car_speed_nb)) %>%
-  mutate(o_accel_nb = map(spikes_in_time, car_accel_nb)) %>%
-  mutate(o_pos_p = map(spikes_in_time, car_pos_p)) %>%
-  mutate(o_speed_p = map(spikes_in_time, car_speed_p)) %>%
-  mutate(o_accel_p = map(spikes_in_time, car_accel_p))
+  mutate(o_accel_b = map(spikes_in_time, car_accel_b)) #%>%
+  #mutate(o_pos_nb = map(spikes_in_time, car_pos_nb)) %>%
+  #mutate(o_speed_nb = map(spikes_in_time, car_speed_nb)) %>%
+  #mutate(o_accel_nb = map(spikes_in_time, car_accel_nb)) %>%
+  #mutate(o_pos_p = map(spikes_in_time, car_pos_p)) %>%
+  #mutate(o_speed_p = map(spikes_in_time, car_speed_p)) %>%
+  #mutate(o_accel_p = map(spikes_in_time, car_accel_p))
 ```
 
 
@@ -83,9 +83,9 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 2. Run on all cells in dataframe
 ```{r}
 spatial_firing <- spatial_firing  %>%
-    mutate(final_model_o_b  = pmap(list(o_pos_b, o_speed_b, o_accel_b), model_comparison)) %>%
-    mutate(final_model_o_nb  = pmap(list(o_pos_nb, o_speed_nb, o_accel_nb), model_comparison))  %>%
-    mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
+    mutate(final_model_o_b  = pmap(list(o_pos_b, o_speed_b, o_accel_b), model_comparison)) #%>%
+    #mutate(final_model_o_nb  = pmap(list(o_pos_nb, o_speed_nb, o_accel_nb), model_comparison))  %>%
+    #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
 
 ```
 
@@ -186,3 +186,182 @@ ggsave(file = "plots/cell_proportions-lmmodel_beaconed2.png", width = 4, height 
 ```
 
 
+### ----------------------------------------------------------------------------------------- ###
+
+
+
+## ratio of coefficients in CAR model
+```{r}
+
+stdCoef.merMod <- function(object) {
+  sdy <- sd(getME(object,"y"))
+  sdx <- apply(getME(object,"X"), 2, sd)
+  sc <- fixef(object)*sdx/sdy
+  se.fixef <- coef(summary(object))[,"Std. Error"]
+  se <- se.fixef*sdx/sdy
+  return(data.frame(stdcoef=sc, stdse=se))
+}
+
+```
+
+```{r}
+
+coef_ratio_pos <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
+  if(length(df) == 1 | nrow(df) < 3) 
+    return(NA) 
+  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
+  #--> calculate ratio from model parameters
+  #pos = as.numeric(prtAnova$"Pr(>Chisq)"[1])
+  #speed = as.numeric(prtAnova$"Pr(>Chisq)"[2])
+  #p_s_ratio = as.numeric(pos/speed)
+  # standardize parameters first
+  mod <- stdCoef.merMod(df_int) #print(effectsize::standardize_parameters(df_int)) --> alternative way of standardising the coefficients
+  #mod <- sjstats::std_beta(df_int, ci.lvl = 0.95)
+  pos <- abs(mod[2,1])
+  speed <- abs(mod[3,1])
+  accel <- abs(mod[4,1])
+  #print(c((pos/speed), "ratio"))
+  return(pos)
+}
+
+coef_ratio_speed <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
+  if(length(df) == 1 | nrow(df) < 3) 
+    return(NA) 
+  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
+  # standardize parameters first
+  mod <- stdCoef.merMod(df_int) #print(effectsize::standardize_parameters(df_int)) --> alternative way of standardising the coefficients
+  #mod <- sjstats::std_beta(df_int, ci.lvl = 0.95)
+  pos <- abs(mod[2,1])
+  speed <- abs(mod[3,1])
+  accel <- abs(mod[4,1])
+  return(speed)
+}
+
+coef_ratio_accel <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
+  if(length(df) == 1 | nrow(df) < 3) 
+    return(NA) 
+  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
+  # standardize parameters first
+  mod <- stdCoef.merMod(df_int) #print(effectsize::standardize_parameters(df_int)) --> alternative way of standardising the coefficients
+  #mod <- sjstats::std_beta(df_int, ci.lvl = 0.95)
+  #print(mod)
+  pos <- abs(mod[2,1])
+  speed <- abs(mod[3,1])
+  accel <- abs(mod[4,1])
+  return(accel)
+}
+```
+
+
+2. Run on all cells 
+```{r}
+spatial_firing <- spatial_firing  %>%
+  mutate(o_pos_b_ratio = map(spikes_in_time, coef_ratio_pos)) %>%
+  mutate(o_speed_b_ratio = map(spikes_in_time, coef_ratio_speed)) %>%
+  mutate(o_accel_b_ratio = map(spikes_in_time, coef_ratio_accel))
+
+```
+
+# save to csv file 
+```{r}
+spatial_firing_save <- subset(spatial_firing, select = c("session_id", "cluster_id", "o_pos_b_ratio", "o_speed_b_ratio","o_accel_b_ratio", "final_model_o_b", "slope_criteria_pval"))
+
+#"predict_mse", "predict_mse_p","predict_results", "predict_results_p"
+spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id, cluster_id = spatial_firing_save$cluster_id, pos_stdcoef =  as.character(spatial_firing_save$o_pos_b_ratio), speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_ratio), accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_ratio), final_model_o_b =  as.character(spatial_firing_save$final_model_o_b), lm_result_o_rewarded_b =  as.character(spatial_firing_save$slope_criteria_pval))
+
+write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
+```
+
+```{r}
+data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), cluster_id = rep(spatial_firing_save$cluster_id, times=3), coef = c(as.character(spatial_firing_save$o_pos_b_ratio), as.character(spatial_firing_save$o_speed_b_ratio), as.character(spatial_firing_save$o_accel_b_ratio)), group = c(as.character(spatial_firing_save$final_model_o_b), as.character(spatial_firing_save$final_model_o_b), as.character(spatial_firing_save$final_model_o_b)), coef_type = rep(c("P", "S", "A"), each = nrow(spatial_firing_save)), lm_result = rep(as.character(spatial_firing_save$slope_criteria_pval), times=3)) 
+```
+
+```{r}
+level_order <- c("P", "S", "A")
+
+ggplot(data=data_coef, aes(x = factor(coef_type), y = as.numeric(coef))) +
+  coord_cartesian(ylim=c(0,1)) +
+  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_jitter(alpha=0.05) +
+  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
+  labs(y = "std coef \n", x="\n model parameter") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/CoefficientValues_allcells.png", width = 4, height = 4.5)
+  
+```
+
+```{r}
+
+level_order <- c("P", "S", "A")
+pd <- position_dodge(0.4)
+ggplot(data=data_coef, aes(x = factor(coef_type), y = as.numeric(coef))) +
+  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  coord_cartesian(ylim=c(0,1)) +
+  geom_point(alpha=0.05, position = pd) +
+  geom_line(position = pd, aes(group = factor(session_id)), color="black") +
+  labs(y = "std coef \n", x="\n model parameter") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/CoefficientValues_allcells_line.png", width = 4, height = 4.5)
+  
+```
+
+
+```{r}
+
+data_coef_pos <- data_coef %>%
+  subset(group == "P") %>%
+  subset(lm_result == "Unclassified" )
+  #subset(lm_result == "Positive" | lm_result == "Negative")
+
+level_order <- c("P", "S", "A")
+
+ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
+  ggtitle("Position") +
+  coord_cartesian(ylim=c(0,1)) +
+  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_jitter(alpha=0.1) +
+  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
+  labs(y = "std coef \n", x="\n model parameter") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/CoefficientValues_Position_cells_unclassfied.png", width = 4, height = 4.5)
+  
+```
