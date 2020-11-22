@@ -57,7 +57,7 @@ _note : only run if not ran ConvertPickletoRda.Rmd_
 # spatial_firing <- readRDS(file="df_final.Rda")
 spatial_firing <- readRDS(file="Link to df_final.Rda")
 # Not sure the line below is necessary # Run if loaded from pandas dataframe to save data as .Rda
-# saveRDS(spatial_firing_test, file="spatial_firing_test.Rda")
+saveRDS(spatial_firing, file="df_final2.Rda")
 
 ```
 
@@ -190,7 +190,7 @@ shuffle_rates <- function(df) {
   df_modified <- rbind(df_modified,data)
 
   x = x+1
-  if (x == 100){ # putting 100 here for now for testing as 1000 takes v long time to run
+  if (x == 1000){ # putting 100 here for now for testing as 1000 takes v long time to run
   break
   }
   }
@@ -430,6 +430,92 @@ ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id)
 
 ggsave(file = "plots/LMOut_proportions_rewarded.png", width = 3, height = 6)
 
+```
+
+
+We might also want to visualise the coefficients for the real and shuffled dataset as a histogram. 
+
+1. First, make stacked histogram of slope values for real dataset
+```{r}
+level_order <- c("Negative", "Positive", "Unclassified")
+
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(slope_criteria_pval), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+  coord_cartesian(xlim = c(-0.6,0.6)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+  ylab("Proportion") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/LMOut_histogram_slopes.png", width = 4.5, height = 2)
+
+```
+
+2. same as above but for shuffled datasets
+```{r}
+ggplot(data=shuff_slopes, aes(x = slopes)) + 
+    coord_cartesian(xlim = c(-0.6,0.6)) +
+    geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+    labs(x = "Slope (Hz/cm)") +
+    ylab("Proportion") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=14), 
+          legend.text=element_text(size=14), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height = 2)
+```
+
+
+3. Make stacked histogram of rsquared values for real dataset
+
+```{r}
+level_order <- c("Negative", "Positive", "Unclassified")
+
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_r2_o, fill=factor(unlist(slope_criteria_pval), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+  coord_cartesian(xlim = c(0,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+  ylab("Proportion") +
+  xlab("\nrsquared") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/LMOut_histogram_r2.png", width = 4.5, height = 2)
+
+
+```
+
+4. Same as above but for shuffled datasets
+
+```{r}
+ggplot(data=shuff_slopes, aes(x = r2)) + 
+    coord_cartesian(xlim = c(0,1)) +
+    geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+    xlab(expression(R^2)) +
+    ylab("Proportion") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.position="none", 
+          legend.title = element_blank(),
+          text = element_text(size=14), 
+          legend.text=element_text(size=14), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/LMOut_shuffle_r2_datasets_histogram.png", width = 4.5, height = 2)
 ```
 
 
