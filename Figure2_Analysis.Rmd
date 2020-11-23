@@ -57,7 +57,7 @@ _note : only run if not ran ConvertPickletoRda.Rmd_
 # spatial_firing <- readRDS(file="df_final.Rda")
 spatial_firing <- readRDS(file="Link to df_final.Rda")
 # Not sure the line below is necessary # Run if loaded from pandas dataframe to save data as .Rda
-saveRDS(spatial_firing, file="df_final2.Rda")
+saveRDS(spatial_firing, file="df_final3.Rda")
 
 ```
 
@@ -333,7 +333,6 @@ spatial_firing = spatial_firing[,!duplicated(names(spatial_firing))]
 
 ### ----------------------------------------------------------------------------------------- ### 
 
-
 Now we want to classify neurons, taking the adjusted significance into account
 
 ```{r}
@@ -518,6 +517,7 @@ ggplot(data=shuff_slopes, aes(x = r2)) +
 ggsave(file = "plots/LMOut_shuffle_r2_datasets_histogram.png", width = 4.5, height = 2)
 ```
 
+
 Plot distribution of the shuffled data
 
 1. Extract shuffled slopes and rsquared values
@@ -528,12 +528,9 @@ shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unli
 2. Plot in scatter 
 ```{r}
 ggplot(data=shuff_slopes, aes(x = slopes, y = r2)) + 
-    #coord_cartesian(xlim = c(-1,1), ylim = c(0,1)) +
-    #geom_point(alpha=.4) + 
     geom_point() +
     xlab("\nslope") +
     ylab("R2") +
-    #scale_color_manual(values=c("violetred2", "grey82", "chartreuse3")) +
     theme_classic() +
     theme(axis.text.x = element_text(size=12),
           axis.text.y = element_text(size=12),
@@ -576,7 +573,7 @@ normalise_rates_outbound <- function(df){
 }
 
 start_ramps <- start_ramps %>%
-  mutate(normalised_rates_o = map(Rates_averaged, normalise_rates_outbound))
+  mutate(normalised_rates_o = map(Rates_averaged_rewarded_b, normalise_rates_outbound))
 
 ```
 
@@ -615,7 +612,7 @@ Put ramp scores and lm results in tibble for annotating heatmap
 # data for annotating
 ramp_result <- tibble(ramp_score = as.numeric(start_ramps$start_ramp_score))
 brain_region <- tibble(region = as.character(start_ramps$brain_region))
-lm_result <- tibble(result = as.character(start_ramps$lm_result_o_rewarded))
+lm_result <- tibble(result = as.character(start_ramps$lm_group))
 cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
 ```
 
