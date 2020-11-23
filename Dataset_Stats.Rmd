@@ -15,18 +15,18 @@ knitr::opts_chunk$set(echo = TRUE)
 
 1. get numbers of cells for each lm group (positive/negative/unclassified)
 ```{r}
-start <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Negative"))
-reward <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Positive"))
-nonslope <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Unclassified"))
+start <- nrow(subset(spatial_firing, lm_group == "Negative"))
+reward <- nrow(subset(spatial_firing, lm_group == "Positive"))
+nonslope <- nrow(subset(spatial_firing, lm_group == "Unclassified"))
 
 ```
 
 2. find and plot proportions for ramp types in dataset
 ```{r}
 # positive homebound slopes
-start <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Negative"))/nrow(spatial_firing)*100
-reward <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Positive"))/nrow(spatial_firing)*100
-nonslope <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Unclassified"))/nrow(spatial_firing)*100
+start <- nrow(subset(spatial_firing, lm_group == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, lm_group == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, lm_group == "Unclassified"))/nrow(spatial_firing)*100
 
 ```
 
@@ -103,5 +103,33 @@ shuff_negative_ramps_scores <- as.numeric(shuff_negative_ramps$start_ramp_score)
 
 # paired t-test
 t.test(negative_ramps_scores,shuff_negative_ramps_scores) # where y1 & y2 are numeric
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+### How many neurons passed criteria in the linear model ? 
+
+1. number of cells in each group
+```{r}
+P_num <- nrow(subset(spatial_firing, final_model_o_b == "P"))
+PA_num <- nrow(subset(spatial_firing, final_model_o_b == "PA"))
+PS_num <- nrow(subset(spatial_firing, final_model_o_b == "PS"))
+PSA_num <- nrow(subset(spatial_firing, final_model_o_b == "PSA"))
+SA_num <- nrow(subset(spatial_firing, final_model_o_b == "SA"))
+S_num <- nrow(subset(spatial_firing, final_model_o_b == "S"))
+A_num <- nrow(subset(spatial_firing, final_model_o_b == "A"))
+```
+
+2. Proportion of cells in each group
+```{r}
+P_num <- nrow(subset(spatial_firing, final_model_o_b == "P"))/nrow(spatial_firing)*100
+PA_num <- nrow(subset(spatial_firing, final_model_o_b == "PA"))/nrow(spatial_firing)*100
+PS_num <- nrow(subset(spatial_firing, final_model_o_b == "PS"))/nrow(spatial_firing)*100
+PSA_num <- nrow(subset(spatial_firing, final_model_o_b == "PSA"))/nrow(spatial_firing)*100
+SA_num <- nrow(subset(spatial_firing, final_model_o_b == "SA"))/nrow(spatial_firing)*100
+S_num <- nrow(subset(spatial_firing, final_model_o_b == "S"))/nrow(spatial_firing)*100
+A_num <- nrow(subset(spatial_firing, final_model_o_b == "A"))/nrow(spatial_firing)*100
 ```
 
