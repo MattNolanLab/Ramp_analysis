@@ -1,0 +1,107 @@
+---
+title: "DataSet_Stats"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Script performs basic stats (n numbers, ttest etc) on the dataset
+
+### ----------------------------------------------------------------------------------------- ###
+
+### How many neurons passed criteria in the linear model ? 
+
+1. get numbers of cells for each lm group (positive/negative/unclassified)
+```{r}
+start <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Negative"))
+reward <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Positive"))
+nonslope <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Unclassified"))
+
+```
+
+2. find and plot proportions for ramp types in dataset
+```{r}
+# positive homebound slopes
+start <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, lm_result_o_rewarded == "Unclassified"))/nrow(spatial_firing)*100
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+### How much of the shuffled dataset is past criteria? 
+
+1. Proportion of cells in the shuffled datasets that pass criteria
+```{r}
+shuff_ramps <- nrow(subset(spatial_firing,lm_result_o_shuff == "Positive" | lm_result_o_shuff == "Negative" ))/nrow(spatial_firing)*100
+non_shuff_ramps <- nrow(subset(spatial_firing,lm_result_o_shuff == "None" | lm_result_o_shuff == "NoSlope" ))/nrow(spatial_firing)*100
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+### correlate linear model result (i.e. positive/negative/unclassified) with ramp score
+
+1. Extract ramp score 
+_since its a list of three (outbound/homebound/all) we extract the first one_
+```{r}
+extract_ramp_score <- function(df){
+  dx <- df[[1]]
+  return(dx)
+}
+
+spatial_firing <- spatial_firing %>%
+  mutate(start_ramp_score = map(ramp_score, extract_ramp_score))
+
+```
+
+2. find apsolute ramp scores for -ve and +ve slopes
+```{r}
+
+positive_ramps <- subset(spatial_firing, lm_result_o_rewarded == "Positive")
+negative_ramps <- subset(spatial_firing, lm_result_o_rewarded == "Negative")
+
+#shuff_positive_ramps <- subset(spatial_firing, lm_result_o_shuff == "Positive")
+#shuff_negative_ramps <- subset(spatial_firing, lm_result_o_shuff == "Negative")
+
+```
+
+3. find apsolute ramp scores for -ve and +ve slopes
+```{r}
+
+positive_ramps_scores <- tibble(ramp_score = as.numeric(positive_ramps$start_ramp_score))
+negative_ramps_scores <- tibble(ramp_score = as.numeric(negative_ramps$start_ramp_score))
+
+```
+
+4. Find mean of the ramp scores
+```{r}
+abs_pos_ramp <- positive_ramps_scores  %>%
+  summarise(mean(ramp_score, na.rm = TRUE), sd(ramp_score, na.rm = TRUE))
+abs_neg_ramp <- negative_ramps_scores  %>%
+  summarise(mean(ramp_score, na.rm = TRUE), sd(ramp_score, na.rm = TRUE))
+```
+
+
+## perform ttest on ramp scores
+
+```{r}
+positive_ramps_scores <- as.numeric(positive_ramps$start_ramp_score)
+shuff_positive_ramps_scores <- as.numeric(shuff_positive_ramps$start_ramp_score)
+
+# paired t-test
+t.test(positive_ramps_scores,shuff_positive_ramps_scores) # where y1 & y2 are numeric
+
+
+negative_ramps_scores <- as.numeric(negative_ramps$start_ramp_score)
+shuff_negative_ramps_scores <- as.numeric(shuff_negative_ramps$start_ramp_score)
+
+# paired t-test
+t.test(negative_ramps_scores,shuff_negative_ramps_scores) # where y1 & y2 are numeric
+```
+
