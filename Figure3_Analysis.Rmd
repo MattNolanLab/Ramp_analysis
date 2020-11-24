@@ -1,0 +1,454 @@
+---
+title: "Figure3_Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+title: "Figure3_Analysis"
+author: "Sarah Tennant"
+date: "18/11/2020"
+output: html_document
+---
+
+
+
+## Run mixed effect model which examines contribution of speed, acceleration and position on firing rate
+
+1. Load functions to perform linear mixed effect model
+```{r}
+source("Functions_Outbound_LMER.R")
+
+```
+
+2. Run on all cells 
+```{r}
+spatial_firing <- spatial_firing  %>%
+  mutate(o_pos_b = map(spikes_in_time, car_pos_b)) %>%
+  mutate(o_speed_b = map(spikes_in_time, car_speed_b)) %>%
+  mutate(o_accel_b = map(spikes_in_time, car_accel_b)) #%>%
+  #mutate(o_pos_nb = map(spikes_in_time, car_pos_nb)) %>%
+  #mutate(o_speed_nb = map(spikes_in_time, car_speed_nb)) %>%
+  #mutate(o_accel_nb = map(spikes_in_time, car_accel_nb)) %>%
+  #mutate(o_pos_p = map(spikes_in_time, car_pos_p)) %>%
+  #mutate(o_speed_p = map(spikes_in_time, car_speed_p)) %>%
+  #mutate(o_accel_p = map(spikes_in_time, car_accel_p))
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+## Select best model 
+
+1. Write function to perform model selection
+```{r}
+
+model_comparison <- function(null_pos, null_speed, null_accel){
+  pval <- 0.01
+  if( is.na(null_pos) & is.na(null_accel)) {
+    return( "None" )
+  
+  } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
+    return( "P" )
+    
+  } else if( null_pos > pval & null_accel > pval & null_speed < pval) {
+    return( "S" ) 
+    
+  } else if( null_pos > pval & null_accel < pval & null_speed > pval) {
+    return( "A" )
+    
+  } else if( null_pos < pval & null_accel > pval & null_speed < pval) {
+    return("PS")
+    
+  } else if( null_pos < pval & null_accel < pval & null_speed > pval) {
+    return( "PA" )
+        
+  } else if( null_pos > pval & null_accel < pval & null_speed < pval) {
+    return("SA")
+
+  } else if( null_pos < pval & null_accel < pval & null_speed < pval) {
+    return("PSA")
+    
+  } else {
+    return("None")
+  }
+}
+
+```
+
+2. Run on all cells in dataframe
+```{r}
+spatial_firing <- spatial_firing  %>%
+    mutate(final_model_o_b  = pmap(list(o_pos_b, o_speed_b, o_accel_b), model_comparison)) #%>%
+    #mutate(final_model_o_nb  = pmap(list(o_pos_nb, o_speed_nb, o_accel_nb), model_comparison))  %>%
+    #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+### Plot model selection results
+
+
+1. Split data by linear model result
+```{r}
+
+# extracting diff models 
+pos <-subset(spatial_firing, slope_criteria_pval == "Positive")
+neg <-subset(spatial_firing, slope_criteria_pval == "Negative")
+none <-subset(spatial_firing, slope_criteria_pval == "None")
+
+```
+
+2. Split data by mixed effect model result
+```{r}
+
+P_positive <- nrow(subset(pos, final_model_o_b == "P"))/nrow(pos)*100
+P_negative <- nrow(subset(neg, final_model_o_b == "P"))/nrow(neg)*100
+P_none <- nrow(subset(none,final_model_o_b == "P"))/nrow(none)*100
+
+S_positive <- nrow(subset(pos,final_model_o_b == "S"))/nrow(pos)*100
+S_negative <- nrow(subset(neg,final_model_o_b == "S"))/nrow(neg)*100
+S_none <- nrow(subset(none,final_model_o_b == "S"))/nrow(none)*100
+
+A_positive <- nrow(subset(pos,final_model_o_b == "A"))/nrow(pos)*100
+A_negative <- nrow(subset(neg,final_model_o_b == "A"))/nrow(neg)*100
+A_none <- nrow(subset(none,final_model_o_b == "A"))/nrow(none)*100
+
+P_S_positive <- nrow(subset(pos,final_model_o_b == "PS"))/nrow(pos)*100
+P_S_negative <- nrow(subset(neg,final_model_o_b == "PS"))/nrow(neg)*100
+P_S_none <- nrow(subset(none,final_model_o_b == "PS"))/nrow(none)*100
+
+P_A_positive <- nrow(subset(pos ,final_model_o_b == "PA"))/nrow(pos)*100
+P_A_negative <- nrow(subset(neg ,final_model_o_b == "PA"))/nrow(neg)*100
+P_A_none <- nrow(subset(none,final_model_o_b == "PA"))/nrow(none)*100
+
+S_A_positive <- nrow(subset(pos ,final_model_o_b == "SA"))/nrow(pos)*100
+S_A_negative <- nrow(subset(neg ,final_model_o_b == "SA"))/nrow(neg)*100
+S_A_none <- nrow(subset(none,final_model_o_b == "SA"))/nrow(none)*100
+
+P_S_A_positive <- nrow(subset(pos ,final_model_o_b == "PSA"))/nrow(pos)*100
+P_S_A_negative <- nrow(subset(neg ,final_model_o_b == "PSA"))/nrow(neg)*100
+P_S_A_none <- nrow(subset(none ,final_model_o_b == "PSA"))/nrow(none)*100
+
+NONE_positive <- nrow(subset(pos ,final_model_o_b == "None"))/nrow(pos)*100
+NONE_negative <- nrow(subset(neg ,final_model_o_b == "None"))/nrow(neg)*100
+NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
+
+
+```
+
+3. Put data into tibble
+```{r}
+
+
+mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative, S_none, A_positive,A_negative,A_none,  P_S_positive, P_S_negative,P_S_none, P_A_positive, P_A_negative, P_A_none, S_A_positive, S_A_negative, S_A_none,P_S_A_positive, P_S_A_negative, P_S_A_none, NONE_positive,NONE_negative, NONE_none), 
+                      
+                      ramp_id= c("P","P","P", 
+                                 "S", "S", "S", 
+                                 "A", "A", "A",
+                                 "PS", "PS", "PS", 
+                                 "PA", "PA", "PA", 
+                                 "SA", "SA", "SA", 
+                                 "PAS", "PAS","PAS",
+                                 "Null","Null", "Null"), 
+                      ramp_type= c("Positive", "Negative", "Unclassified","Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified","Positive", "Negative" ,"Unclassified","Positive", "Negative","Unclassified","Positive", "Negative","Unclassified", "Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified" ))
+
+```
+
+4. Plot model results
+```{r}
+# plot data
+level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "Null")
+ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .7) +
+  labs(y = "Percent of neurons") +
+  #scale_fill_manual(values=c("deeppink1","indianred3", "steelblue3", "darkred", "orchid", "lightseagreen", "darkgreen", "grey32")) +
+  scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
+  #scale_fill_brewer(palette= "RdYlBu") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/cell_proportions-lmmodel_beaconed2.png", width = 4, height = 4.5)
+
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+
+## Calculate standardized coefficients for position, speed and acceleration in LMER model
+
+1. Function to calculate standardized coefficients for a LMER
+https://stackoverflow.com/questions/25142901/standardized-coefficients-for-lmer-model 
+```{r}
+
+stdCoef.merMod <- function(object) {
+  sdy <- sd(getME(object,"y"))
+  sdx <- apply(getME(object,"X"), 2, sd)
+  sc <- fixef(object)*sdx/sdy
+  se.fixef <- coef(summary(object))[,"Std. Error"]
+  se <- se.fixef*sdx/sdy
+  return(data.frame(stdcoef=sc, stdse=se))
+}
+
+```
+
+2. 
+```{r}
+
+coef_ratio_pos <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
+  if(length(df) == 1 | nrow(df) < 3) 
+    return(NA) 
+  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
+  # standardize parameters first
+  mod <- stdCoef.merMod(df_int) #print(effectsize::standardize_parameters(df_int)) --> alternative way of standardising the coefficients
+  #mod <- sjstats::std_beta(df_int, ci.lvl = 0.95)
+  pos <- mod[2,1]
+  speed <- mod[3,1]
+  accel <- mod[4,1]
+  return(pos)
+}
+
+coef_ratio_speed <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
+  if(length(df) == 1 | nrow(df) < 3) 
+    return(NA) 
+  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
+  # standardize parameters first
+  mod <- stdCoef.merMod(df_int) #print(effectsize::standardize_parameters(df_int)) --> alternative way of standardising the coefficients
+  pos <- mod[2,1]
+  speed <- mod[3,1]
+  accel <- mod[4,1]
+  return(speed)
+}
+
+coef_ratio_accel <- function(df){
+  if(length(df) == 1) 
+    return(NA) 
+  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
+  df <- df %>% 
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
+  if(length(df) == 1 | nrow(df) < 3) 
+    return(NA) 
+  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
+  # standardize parameters first
+  mod <- stdCoef.merMod(df_int) #print(effectsize::standardize_parameters(df_int)) --> alternative way of standardising the coefficients
+  pos <- mod[2,1]
+  speed <- mod[3,1]
+  accel <- mod[4,1]
+  return(accel)
+}
+```
+
+3. Run on all cells 
+```{r}
+spatial_firing <- spatial_firing  %>%
+  mutate(o_pos_b_stdcoef = map(spikes_in_time, coef_ratio_pos)) %>%
+  mutate(o_speed_b_stdcoef = map(spikes_in_time, coef_ratio_speed)) %>%
+  mutate(o_accel_b_stdcoef = map(spikes_in_time, coef_ratio_accel))
+
+```
+
+
+
+
+### plot distribution of coefficients for all cells
+_split by positive and negative sloping neurons_
+
+1. make unique id for each neuron (session_id + cluster_id)
+```{r}
+# First make a function to concatenate session id and cluster id
+make_unique_id <- function(session,cluster) {
+  x <- paste(session, cluster, sep="_")
+  return(as.character(x))
+}
+
+# run on all cells
+spatial_firing <- spatial_firing  %>%
+  mutate(unique_id = map2(session_id, cluster_id, make_unique_id))
+
+```
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save <- subset(spatial_firing, select = c("session_id", "cluster_id", "unique_id", "o_pos_b_stdcoef", "o_speed_b_stdcoef","o_accel_b_stdcoef", "final_model_o_b", "lm_group"))
+
+```
+
+3. save to csv file _this is for matching to plots from python_
+```{r}
+spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id, 
+                              cluster_id = spatial_firing_save$cluster_id, 
+                              unique_id = spatial_firing_save$unique_id, 
+                              pos_stdcoef =  as.character(spatial_firing_save$o_pos_b_stdcoef),
+                              speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_stdcoef), 
+                              accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_stdcoef), 
+                              final_model_o_b =  as.character(spatial_firing_save$final_model_o_b), 
+                              lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group))
+
+#write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
+```
+
+4. put data into a tibble for plotting
+```{r}
+data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
+                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
+                    coef = c(as.character(spatial_firing_save$o_pos_b_stdcoef), as.character(spatial_firing_save$o_speed_b_stdcoef), as.character(spatial_firing_save$o_accel_b_stdcoef)), 
+                    group = c(as.character(spatial_firing_save$final_model_o_b), as.character(spatial_firing_save$final_model_o_b), as.character(spatial_firing_save$final_model_o_b)), 
+                    coef_type = rep(c("P", "S", "A"), each = nrow(spatial_firing_save)), lm_result = rep(as.character(spatial_firing_save$lm_group), times=3)) 
+```
+
+5. Split by positive slope
+```{r}
+data_coef_pos <- data_coef %>%
+  #subset(group == "P") %>%
+  subset(lm_result == "Positive" )
+  #subset(lm_result == "Positive" | lm_result == "Negative")
+
+```
+
+6. Plot coefficients
+```{r}
+level_order <- c("P", "S", "A")
+
+ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
+  #coord_cartesian(ylim=c(0,1)) +
+  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_jitter(alpha=0.05) +
+  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
+  labs(y = "std coef \n", x="\n model parameter") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/CoefficientValues_positivecells.png", width = 4, height = 4.5)
+  
+```
+
+
+5. Split by negative slope
+```{r}
+data_coef_neg <- data_coef %>%
+  #subset(group == "P") %>%
+  subset(lm_result == "Negative" )
+  #subset(lm_result == "Positive" | lm_result == "Negative")
+
+```
+
+6. Plot coefficients
+```{r}
+level_order <- c("P", "S", "A")
+
+ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
+  #coord_cartesian(ylim=c(0,1)) +
+  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_jitter(alpha=0.05) +
+  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
+  labs(y = "std coef \n", x="\n model parameter") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/CoefficientValues_negativecells.png", width = 4, height = 4.5)
+  
+```
+
+
+5. Split by positive slope
+```{r}
+data_coef_pos <- data_coef %>%
+  subset(group == "PA") %>%
+  subset(lm_result == "Positive" )
+  #subset(lm_result == "Positive" | lm_result == "Negative")
+
+```
+
+6. Plot coefficients
+```{r}
+level_order <- c("P", "S", "A")
+
+ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
+  #coord_cartesian(ylim=c(0,1)) +
+  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_jitter(alpha=0.05) +
+  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
+  labs(y = "std coef \n", x="\n model parameter") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/CoefficientValues_PA_positivecells.png", width = 4, height = 4.5)
+  
+```
+
+
+
+7. Split by negative slope
+```{r}
+data_coef_neg <- data_coef %>%
+  subset(group == "PA") %>%
+  subset(lm_result == "Negative" )
+  #subset(lm_result == "Positive" | lm_result == "Negative")
+
+```
+
+8. Plot coefficients
+```{r}
+level_order <- c("P", "S", "A")
+
+ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
+  #coord_cartesian(ylim=c(0,1)) +
+  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_jitter(alpha=0.05) +
+  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
+  labs(y = "std coef \n", x="\n model parameter") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/CoefficientValues_PA_negativecells.png", width = 4, height = 4.5)
+  
+```
