@@ -260,11 +260,11 @@ def main():
         #make_firing_plots(spike_data)
 
         # CURATION (for spike frame only)
-        spike_data= Python_PostSorting.Curation.remove_false_positives(spike_data)
-        spike_data= Python_PostSorting.Curation.curate_data(spike_data)
+        spike_data = Python_PostSorting.Curation.remove_false_positives(spike_data)
+        spike_data = Python_PostSorting.Curation.curate_data(spike_data)
         spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data)
         spike_data = Python_PostSorting.Add_BrainRegion_Classifier.load_brain_region_data_into_frame(spike_data)
-        #spike_data = Python_PostSorting.FitAnalysis.load_Teris_ramp_score_data_into_frame(spike_data)
+        spike_data = Python_PostSorting.FitAnalysis.load_Teris_ramp_score_data_into_frame(spike_data)
 
         #Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm)
         #Python_PostSorting.MakePlots.plot_rewarded_spikes_on_track2(server_path,spike_data)
@@ -277,9 +277,9 @@ def main():
         #spike_data = Python_PostSorting.RewardFiring.package_reward_data_for_r(spike_data)
 
         spike_data = Python_PostSorting.Spike_Analysis.extract_time_binned_firing_rate_per_trialtype(spike_data, prm)
-        spike_data = Python_PostSorting.Spike_Analysis.extract_time_binned_firing_rate(spike_data, prm)
-        spike_data = Python_PostSorting.ShuffleAnalysis.generate_shuffled_data_for_time_binned_data(spike_data) # shuffle spikes that are binned in time
-        spike_data = Python_PostSorting.Spike_Analysis.extract_time_binned_firing_rate_per_trialtype_shuffled(spike_data, prm)
+        #spike_data = Python_PostSorting.Spike_Analysis.extract_time_binned_firing_rate(spike_data, prm)
+        #spike_data = Python_PostSorting.ShuffleAnalysis.generate_shuffled_data_for_time_binned_data(spike_data) # shuffle spikes that are binned in time
+        #spike_data = Python_PostSorting.Spike_Analysis.extract_time_binned_firing_rate_per_trialtype_shuffled(spike_data, prm)
 
         spike_data = Python_PostSorting.CalculateAcceleration.generate_acceleration(spike_data, server_path)
 
@@ -301,7 +301,7 @@ def main():
 
         # SAVE DATAFRAMES
         spike_data = drop_columns_from_frame(spike_data)
-        spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis/WholeFrame/postanalysis/Alldays_cohort_3.pkl')
+        spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis/WholeFrame/postanalysis/Alldays_cohort_1.pkl')
 
 
 
