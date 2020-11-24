@@ -60,9 +60,9 @@ _note:for now we are only interested in the outbound region of the track (0 - 60
 
 1. Make function to run linear model
 ```{r}
-lm_helper <- function(df){
+lm_helper <- function(df, startbin = 30, endbin = 90){
   df <- df %>%
-    subset(Position >= 30 & Position <= 90)
+    subset(Position >= startbin & Position <= endbin)
   df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
 }
 ```
@@ -80,7 +80,7 @@ lm_analysis <- function(df, spike_rate_col, startbin = 30, endbin = 90) {
   slope_name <- sym(paste0(quo_name(out_name), "_slope_o"))
   intercept_name <- sym(paste0(quo_name(out_name), "_intercept_o"))
   df <- df %>%
-    mutate(!!fit_name := map(!!spike_rate_col, lm_helper),
+    mutate(!!fit_name := pmap(list(!!spike_rate_col, startbin, endbin), lm_helper),
            !!glance_name := map(!!fit_name, glance),
            !!r2_name := map_dbl(!!glance_name, ~.$r.squared),
            !!Pval_name := map_dbl(!!glance_name, ~.$p.value),
@@ -162,6 +162,8 @@ return(df_modified)
 
 2. Run on example neuron (beaconed and non-beaconed trials)
 ```{r}
+# Check to see if the column shuffle_results exists. If it does then don't run again.
+
 
 spatial_firing <- spatial_firing %>%
   mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) #%>%
@@ -339,7 +341,7 @@ shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unli
 ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32") + 
     coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
     geom_point(alpha=.4) + 
-    geom_point(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o, color=factor(unlist(slope_criteria_pval)))) +
+    geom_point(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o, color=factor(unlist(lm_group)))) +
     #geom_point(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32") +
     xlab("\nslope") +
     ylab("R2") +
@@ -426,7 +428,7 @@ normalise_rates_outbound <- function(df){
 }
 
 start_ramps <- start_ramps %>%
-  mutate(normalised_rates_o = map(Rates_averaged, normalise_rates_outbound))
+  mutate(normalised_rates_o = map(Rates_averaged_rewarded_b, normalise_rates_outbound))
 
 ```
 
