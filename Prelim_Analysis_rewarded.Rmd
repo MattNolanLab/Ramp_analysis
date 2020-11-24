@@ -100,16 +100,22 @@ colnames(spatial_firing)
 options(max.print = 10)
 ```
 Make a version of spatial_firing that contains only columns needs for subsequent analyses.
-```{r}
-# keep a copy of imported data
-sf_imported <- spatial_firing
-# select columns that are useful
+
 spatial_firing <- spatial_firing %>%
   select(rewardedlocations,
          max_trial_number
          Rates_averaged_rewarded_b,
          Rates_averaged_rewarded_nb,
          Rates_averaged_rewarded_p)
+         
+```{r}
+# keep a copy of imported data
+sf_imported <- spatial_firing
+# select columns that are useful
+spatial_firing <- spatial_firing %>%
+  select(rewarded_locations,
+         max_trial_number,
+         Rates_averaged)
 ```
 
 
