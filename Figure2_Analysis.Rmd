@@ -403,7 +403,7 @@ We might also want to visualise the coefficients for the real and shuffled datas
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(slope_criteria_pval), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
   coord_cartesian(xlim = c(-0.6,0.6)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -444,7 +444,7 @@ ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height 
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_rewarded_r2_o, fill=factor(unlist(slope_criteria_pval), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_r2_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
   coord_cartesian(xlim = c(0,1)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
