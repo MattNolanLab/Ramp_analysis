@@ -24,6 +24,7 @@ library(scales)
 library(Hmisc)
 library(Metrics)
 library(plotrix)
+library(RColorBrewer)
 
 # Import functions
 source("Functions.R")
