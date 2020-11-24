@@ -22,45 +22,7 @@ The aim of this analysis is to identify all ramp cells within a specified datase
 3. Compare firing rates of cells in this group
 
 
-
-## Import packages
-
-```{r}
-library(tidyverse)
-library(broom)
-library(lme4)
-library(ggExtra)
-library(ggthemes)
-library(scales)
-library(Hmisc)
-library(Metrics)
-library(plotrix)
-#library(plyr)
-#library("plot3D")
-#library(NetworkD3)
-```
-
-
-## Import functions
-
-```{r}
-source("Functions.R")
-source("Functions_Outbound_LMER.R")
-```
-
-### ----------------------------------------------------------------------------------------- ###
-
-## Load the data
-_note : only run if not ran ConvertPickletoRda.Rmd_
-
-```{r}
-# spatial_firing <- readRDS(file="df_final.Rda")
-spatial_firing <- readRDS(file="Link to df_final.Rda")
-# Not sure the line below is necessary # Run if loaded from pandas dataframe to save data as .Rda
-saveRDS(spatial_firing, file="df_final3.Rda")
-
-```
-
+To set up, including loading packages and data, first run SetUp.Rmd.
 
 
 ### ----------------------------------------------------------------------------------------- ###
@@ -94,13 +56,13 @@ spatial_firing <- spatial_firing %>%
 ### ----------------------------------------------------------------------------------------- ###
 
 # Run simple linear model to examine relationship between firing rate and position
-_note:for now we are only interested in the outbound region of the track (0 - 60 cm)_
+_note:for now we are only interested in the outbound region of the track (30 - 90 cm)_
 
 1. Make function to run linear model
 ```{r}
-lm_helper <- function(df){
+lm_helper <- function(df, startbin = 30, endbin = 90){
   df <- df %>%
-    subset(Position >= 30 & Position <= 90)
+    subset(Position >= startbin & Position <= endbin)
   df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
 }
 ```
@@ -118,7 +80,7 @@ lm_analysis <- function(df, spike_rate_col, startbin = 30, endbin = 90) {
   slope_name <- sym(paste0(quo_name(out_name), "_slope_o"))
   intercept_name <- sym(paste0(quo_name(out_name), "_intercept_o"))
   df <- df %>%
-    mutate(!!fit_name := map(!!spike_rate_col, lm_helper),
+    mutate(!!fit_name := pmap(list(!!spike_rate_col, startbin, endbin), lm_helper),
            !!glance_name := map(!!fit_name, glance),
            !!r2_name := map_dbl(!!glance_name, ~.$r.squared),
            !!Pval_name := map_dbl(!!glance_name, ~.$p.value),
@@ -200,12 +162,13 @@ return(df_modified)
 
 2. Run on example neuron (beaconed and non-beaconed trials)
 ```{r}
-
-spatial_firing <- spatial_firing %>%
-  mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) #%>%
+# Check to see if the column shuffle_results exists. If it does then don't run again.
+if(!"Rates_averaged_rewarded_b" %in% colnames(spatial_firing)) {
+  spatial_firing <- spatial_firing %>%
+    mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) #%>%
   #mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
   #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
-
+}
 ```
 
 
@@ -325,6 +288,8 @@ spatial_firing <- cbind(spatial_firing, adu_p_p)
 
 
 # remove duplicate columns from dataframe if needed  _note should only need if ran the above code twice..._
+
+MN: What happens here if columns are not identical? Which one is kept? Seems dangerous.
 ```{r}
 spatial_firing = spatial_firing[,!duplicated(names(spatial_firing))]
 
@@ -376,7 +341,7 @@ shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unli
 ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32") + 
     coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
     geom_point(alpha=.4) + 
-    geom_point(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o, color=factor(unlist(slope_criteria_pval)))) +
+    geom_point(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o, color=factor(unlist(lm_group)))) +
     #geom_point(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32") +
     xlab("\nslope") +
     ylab("R2") +
@@ -432,7 +397,7 @@ ggsave(file = "plots/LMOut_proportions_rewarded.png", width = 3, height = 6)
 ```
 
 
-We might also want to visualise the coefficients for the real and shuffled dataset as a histogram. 
+We might also want to visualise the coefficients for the real and shuffled dataset as a histogram.
 
 1. First, make stacked histogram of slope values for real dataset
 ```{r}
@@ -448,8 +413,8 @@ ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(sl
         axis.text.y = element_text(size=14),
         legend.title = element_blank(),
         legend.position = "none",
-        text = element_text(size=14), 
-        legend.text=element_text(size=14), 
+        text = element_text(size=14),
+        legend.text=element_text(size=14),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/LMOut_histogram_slopes.png", width = 4.5, height = 2)
 
@@ -457,7 +422,7 @@ ggsave(file = "plots/LMOut_histogram_slopes.png", width = 4.5, height = 2)
 
 2. same as above but for shuffled datasets
 ```{r}
-ggplot(data=shuff_slopes, aes(x = slopes)) + 
+ggplot(data=shuff_slopes, aes(x = slopes)) +
     coord_cartesian(xlim = c(-0.6,0.6)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
     labs(x = "Slope (Hz/cm)") +
@@ -465,11 +430,11 @@ ggplot(data=shuff_slopes, aes(x = slopes)) +
     theme_classic() +
     theme(axis.text.x = element_text(size=14),
           axis.text.y = element_text(size=14),
-          legend.position="bottom", 
+          legend.position="bottom",
           legend.title = element_blank(),
-          text = element_text(size=14), 
-          legend.text=element_text(size=14), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+          text = element_text(size=14),
+          legend.text=element_text(size=14),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height = 2)
 ```
 
@@ -490,8 +455,8 @@ ggplot(data=spatial_firing, aes(x= asr_b_rewarded_r2_o, fill=factor(unlist(slope
         axis.text.y = element_text(size=14),
         legend.title = element_blank(),
         legend.position = "none",
-        text = element_text(size=14), 
-        legend.text=element_text(size=14), 
+        text = element_text(size=14),
+        legend.text=element_text(size=14),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/LMOut_histogram_r2.png", width = 4.5, height = 2)
 
@@ -501,7 +466,7 @@ ggsave(file = "plots/LMOut_histogram_r2.png", width = 4.5, height = 2)
 4. Same as above but for shuffled datasets
 
 ```{r}
-ggplot(data=shuff_slopes, aes(x = r2)) + 
+ggplot(data=shuff_slopes, aes(x = r2)) +
     coord_cartesian(xlim = c(0,1)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
     xlab(expression(R^2)) +
@@ -509,11 +474,11 @@ ggplot(data=shuff_slopes, aes(x = r2)) +
     theme_classic() +
     theme(axis.text.x = element_text(size=14),
           axis.text.y = element_text(size=14),
-          legend.position="none", 
+          legend.position="none",
           legend.title = element_blank(),
-          text = element_text(size=14), 
-          legend.text=element_text(size=14), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+          text = element_text(size=14),
+          legend.text=element_text(size=14),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 ggsave(file = "plots/LMOut_shuffle_r2_datasets_histogram.png", width = 4.5, height = 2)
 ```
 
@@ -525,20 +490,20 @@ Plot distribution of the shuffled data
 shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unlist(spatial_firing$shuffle_rsquared))
 ```
 
-2. Plot in scatter 
+2. Plot in scatter
 ```{r}
-ggplot(data=shuff_slopes, aes(x = slopes, y = r2)) + 
+ggplot(data=shuff_slopes, aes(x = slopes, y = r2)) +
     geom_point() +
     xlab("\nslope") +
     ylab("R2") +
     theme_classic() +
     theme(axis.text.x = element_text(size=12),
           axis.text.y = element_text(size=12),
-          legend.position="bottom", 
+          legend.position="bottom",
           legend.title = element_blank(),
-          text = element_text(size=12), 
-          legend.text=element_text(size=12), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+          text = element_text(size=12),
+          legend.text=element_text(size=12),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 ggsave(file = "plots/LMOut_shuffle_datasets.png", width = 3, height = 3)
 
 ```
