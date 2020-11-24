@@ -163,13 +163,12 @@ return(df_modified)
 2. Run on example neuron (beaconed and non-beaconed trials)
 ```{r}
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-
-
-spatial_firing <- spatial_firing %>%
-  mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) #%>%
+if(!"Rates_averaged_rewarded_b" %in% colnames(spatial_firing)) {
+  spatial_firing <- spatial_firing %>%
+    mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) #%>%
   #mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
   #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
-
+}
 ```
 
 
