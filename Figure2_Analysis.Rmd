@@ -56,7 +56,7 @@ spatial_firing <- spatial_firing %>%
 ### ----------------------------------------------------------------------------------------- ###
 
 # Run simple linear model to examine relationship between firing rate and position
-_note:for now we are only interested in the outbound region of the track (0 - 60 cm)_
+_note:for now we are only interested in the outbound region of the track (30 - 90 cm)_
 
 1. Make function to run linear model
 ```{r}
@@ -288,6 +288,8 @@ spatial_firing <- cbind(spatial_firing, adu_p_p)
 
 
 # remove duplicate columns from dataframe if needed  _note should only need if ran the above code twice..._
+
+MN: What happens here if columns are not identical? Which one is kept? Seems dangerous.
 ```{r}
 spatial_firing = spatial_firing[,!duplicated(names(spatial_firing))]
 
