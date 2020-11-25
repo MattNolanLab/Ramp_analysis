@@ -100,9 +100,9 @@ spatial_firing <- spatial_firing  %>%
 ```{r}
 
 # extracting diff models 
-pos <-subset(spatial_firing, slope_criteria_pval == "Positive")
-neg <-subset(spatial_firing, slope_criteria_pval == "Negative")
-none <-subset(spatial_firing, slope_criteria_pval == "None")
+pos <-subset(spatial_firing, lm_group == "Positive")
+neg <-subset(spatial_firing, lm_group == "Negative")
+none <-subset(spatial_firing, lm_group == "None")
 
 ```
 
@@ -302,14 +302,13 @@ spatial_firing_save <- subset(spatial_firing, select = c("session_id", "cluster_
 ```{r}
 spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id, 
                               cluster_id = spatial_firing_save$cluster_id, 
-                              unique_id = spatial_firing_save$unique_id, 
                               pos_stdcoef =  as.character(spatial_firing_save$o_pos_b_stdcoef),
                               speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_stdcoef), 
                               accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_stdcoef), 
                               final_model_o_b =  as.character(spatial_firing_save$final_model_o_b), 
                               lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group))
 
-#write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
+write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
 ```
 
 4. put data into a tibble for plotting
@@ -349,7 +348,7 @@ ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
         text = element_text(size=12), 
         legend.text=element_text(size=12), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_positivecells.png", width = 4, height = 4.5)
+ggsave(file = "plots/CoefficientValues_positivecells.png", width = 3, height = 2.5)
   
 ```
 
@@ -382,7 +381,7 @@ ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
         text = element_text(size=12), 
         legend.text=element_text(size=12), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_negativecells.png", width = 4, height = 4.5)
+ggsave(file = "plots/CoefficientValues_negativecells.png", width = 3, height = 2.5)
   
 ```
 
@@ -415,7 +414,7 @@ ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
         text = element_text(size=12), 
         legend.text=element_text(size=12), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_PA_positivecells.png", width = 4, height = 4.5)
+ggsave(file = "plots/CoefficientValues_PA_positivecells.png", width = 3, height = 2.5)
   
 ```
 
@@ -449,6 +448,6 @@ ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
         text = element_text(size=12), 
         legend.text=element_text(size=12), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_PA_negativecells.png", width = 4, height = 4.5)
+ggsave(file = "plots/CoefficientValues_PA_negativecells.png", width = 3, height = 2.5)
   
 ```
