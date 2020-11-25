@@ -32,6 +32,7 @@ import Python_PostSorting.CalculateAcceleration
 import Python_PostSorting.Extract_Journeys
 import Python_PostSorting.Spike_Time_Analysis
 import Python_PostSorting.Spike_Analysis
+import Python_PostSorting.AnalyseRewardedSpikes
 import Python_PostSorting.Add_BrainRegion_Classifier
 import numpy as np
 import pandas as pd
@@ -271,12 +272,13 @@ def main():
         #Python_PostSorting.MakePlots.plot_failed_spikes_on_track2(server_path,spike_data)
         #Python_PostSorting.MakePlots.plot_smoothed_firing_rate_maps_for_rewarded_trials(server_path, spike_data)
         #Python_PostSorting.MakePlots.plot_smoothed_firing_rate_maps_for_failed_trials(server_path, spike_data)
+        #spike_data = Python_PostSorting.MakePlots.plot_color_coded_instant_rates_according_to_segment(server_path, spike_data)
 
         spike_data = Python_PostSorting.RewardFiring.split_time_data_by_reward(spike_data, prm)
         #spike_data = Python_PostSorting.RewardFiring.generate_reward_indicator(spike_data) # for saving data into dataframe for R
         #spike_data = Python_PostSorting.RewardFiring.package_reward_data_for_r(spike_data)
 
-        spike_data = Python_PostSorting.Spike_Analysis.extract_time_binned_firing_rate_per_trialtype(spike_data, prm)
+        spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_rewarded(spike_data, prm)
         #spike_data = Python_PostSorting.Spike_Analysis.extract_time_binned_firing_rate(spike_data, prm)
         #spike_data = Python_PostSorting.ShuffleAnalysis.generate_shuffled_data_for_time_binned_data(spike_data) # shuffle spikes that are binned in time
         #spike_data = Python_PostSorting.Spike_Analysis.extract_time_binned_firing_rate_per_trialtype_shuffled(spike_data, prm)
@@ -297,11 +299,11 @@ def main():
 
         # ANALYSIS FOR R
         #spike_data = run_analysis_for_r(spike_data, server_path)
-        spike_data = make_plots(server_path,spike_data)
+        #spike_data = make_plots(server_path,spike_data)
 
         # SAVE DATAFRAMES
         spike_data = drop_columns_from_frame(spike_data)
-        spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis/WholeFrame/postanalysis/Alldays_cohort_1.pkl')
+        spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_3.pkl')
 
 
 
