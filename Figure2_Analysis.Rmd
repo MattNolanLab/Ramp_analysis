@@ -169,6 +169,8 @@ if(!"shuffle_results" %in% colnames(spatial_firing)) {
   #mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
   #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
 }
+# Uncomment the line below to save spatial firing at this point.
+# saveRDS(spatial_firing, "SpatialFiring_with_shuffles.Rda")
 ```
 
 
