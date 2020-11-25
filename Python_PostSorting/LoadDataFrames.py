@@ -41,7 +41,6 @@ def process_a_dir(recording_folder, prm):
     return spike_data
 
 
-
 def process_a_local_dir(recording_folder, prm):
     #spike_data_frame_path = recording_folder + '/MountainSort/DataFrames/spatial_firing-ramp.pkl'
     spike_data_frame_path = recording_folder + '/MountainSort/DataFrames/spatial_firing.pkl'
@@ -69,7 +68,7 @@ def process_a_local_dir(recording_folder, prm):
 
 
 def process_allmice_dir(recording_folder, prm):
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis/WholeFrame/Alldays_cohort1.pkl'
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort3_dataset.pkl'
     #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis/WholeFrame/tests/noisy_clusters.pkl'
 
     #load individual frames for mice - first stop learning curves

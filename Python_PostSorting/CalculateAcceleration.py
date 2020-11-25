@@ -55,7 +55,6 @@ def generate_acceleration(spike_data, recording_folder):
             #plot_acceleration(recording_folder, spike_data, cluster_index, speed, acceleration)
             #plot_instant_acceleration(recording_folder, spike_data, cluster_index, rates, position, speed, acceleration)
             plot_instant_acceleration_by_segment(recording_folder, spike_data, cluster, cluster_index, np.asarray(rates), np.asarray(position), np.asarray(speed), np.asarray(acceleration))
-            #plot_instant_location_by_acceleration_by_segment(recording_folder, spike_data, cluster, cluster_index, rates, position, speed, acceleration, trials, types)
         else:
             acceleration = np.zeros((speed.size))
         spike_data = store_acceleration(spike_data, cluster, np.asarray(rates), np.asarray(position), np.asarray(speed), np.asarray(acceleration), np.asarray(trials), np.asarray(types))
