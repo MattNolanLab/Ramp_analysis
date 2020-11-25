@@ -133,3 +133,37 @@ S_num <- nrow(subset(spatial_firing, final_model_o_b == "S"))/nrow(spatial_firin
 A_num <- nrow(subset(spatial_firing, final_model_o_b == "A"))/nrow(spatial_firing)*100
 ```
 
+
+## Same as above but for positive and negative sloping neurons
+
+1. Split data by linear model result
+```{r}
+
+# extracting diff models 
+pos <-subset(spatial_firing, lm_group == "Positive")
+neg <-subset(spatial_firing, lm_group == "Negative")
+none <-subset(spatial_firing, lm_group == "None")
+
+```
+
+2. number of cells in each group - positive sloping neurons
+```{r}
+pos_P_num <- nrow(subset(pos, final_model_o_b == "P"))
+pos_PA_num <- nrow(subset(pos, final_model_o_b == "PA"))
+pos_PS_num <- nrow(subset(pos, final_model_o_b == "PS"))
+pos_PSA_num <- nrow(subset(pos, final_model_o_b == "PSA"))
+pos_SA_num <- nrow(subset(pos, final_model_o_b == "SA"))
+pos_S_num <- nrow(subset(pos, final_model_o_b == "S"))
+pos_A_num <- nrow(subset(pos, final_model_o_b == "A"))
+```
+
+3. number of cells in each group - negative sloping neurons
+```{r}
+neg_P_num <- nrow(subset(neg, final_model_o_b == "P"))
+neg_PA_num <- nrow(subset(neg, final_model_o_b == "PA"))
+neg_PS_num <- nrow(subset(neg, final_model_o_b == "PS"))
+neg_PSA_num <- nrow(subset(neg, final_model_o_b == "PSA"))
+neg_SA_num <- nrow(subset(neg, final_model_o_b == "SA"))
+neg_S_num <- nrow(subset(neg, final_model_o_b == "S"))
+neg_A_num <- nrow(subset(neg, final_model_o_b == "A"))
+```
