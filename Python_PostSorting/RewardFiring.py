@@ -129,7 +129,7 @@ def split_trials_by_failure(spike_data, cluster_index):
 def remove_low_speeds(rates, speed, position,trials, types ):
     data = np.vstack((rates, speed, position, trials, types))
     data=data.transpose()
-    data_filtered = data[data[:,1] > 3,:]
+    data_filtered = data[data[:,1] >= 2.3,:]
     return data_filtered
 
 
@@ -242,7 +242,14 @@ def split_time_data_by_reward(spike_data, prm):
         failed_types = types[np.isin(trials,rewarded_trials, invert=True)]
 
         spike_data = drop_nb_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
-        spike_data = extract_time_binned_firing_rate_rewarded(spike_data, cluster, prm)
+        #spike_data = extract_time_binned_firing_rate_rewarded(spike_data, cluster, prm)
+
+
+        rewarded_locations = np.array(spike_data.loc[cluster, 'rewarded_locations'])
+        rewarded_locations = rewarded_locations[~np.isnan(rewarded_locations)]
+        locations = np.array(np.append(rewarded_locations, rewarded_locations[0:14]))
+        spike_data.at[cluster,"rewarded_locations"] = pd.Series(locations)
+        rewarded_locations = np.array(spike_data.loc[cluster, 'rewarded_locations'])
         #spike_data = extract_time_binned_firing_rate_failed(spike_data, cluster, prm)
     return spike_data
 
@@ -448,6 +455,19 @@ def beaconed_failed_plot(spike_data,cluster,  position_array, binned_speed, binn
     plt.close()
 
 
+def nan_helper(y):
+    """Helper to handle indices and logical indices of NaNs.
+
+    Input:
+        - y, 1d numpy array with possible NaNs
+    Output:
+        - nans, logical indices of NaNs
+        - index, a function, with signature indices= index(logical_indices),
+          to convert logical indices of NaNs to 'equivalent' indices
+    """
+    return np.isnan(y), lambda z: z.nonzero()[0]
+
+
 def extract_time_binned_firing_rate_rewarded(spike_data,cluster, prm):
     save_path = prm.get_local_recording_folder_path() + '/Figures/Average_Rates_rewarded'
     if os.path.exists(save_path) is False:
@@ -460,10 +480,10 @@ def extract_time_binned_firing_rate_rewarded(spike_data,cluster, prm):
     types=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[4], dtype= np.int32)
 
     try:
-        rates = Python_PostSorting.ConvolveRates_FFT.convolve_binned_spikes(rates)
-        #speed = Python_PostSorting.ConvolveRates_FFT.convolve_binned_spikes(speed)
-    except TypeError:
-        print("Error")
+        window = signal.gaussian(3, std=2)
+        rates = signal.convolve(rates, window, mode='same')/ sum(window)/sum(window)
+    except (TypeError, ValueError):
+        print("")
 
     data = np.vstack((rates,speed,position,types))
     data=data.transpose()
@@ -481,8 +501,6 @@ def extract_time_binned_firing_rate_rewarded(spike_data,cluster, prm):
         sd_speed = np.nanstd(speed_in_position)
         binned_speed[rowcount] = average_speed
         binned_speed_sd[rowcount] = sd_speed
-    binned_speed = convolve_with_scipy(binned_speed)
-    #binned_speed_sd = convolve_with_scipy(binned_speed_sd)
     spike_data.at[cluster, 'averaged_rewarded_b'] = list(binned_speed)
 
     beaconed_failed_plot(spike_data,cluster,  position_array, binned_speed, binned_speed_sd, save_path)
@@ -503,9 +521,7 @@ def extract_time_binned_firing_rate_rewarded(spike_data,cluster, prm):
 
     data_b = pd.Series(binned_speed,dtype=None, copy=False)
     data_b = data_b.interpolate(method='linear', order=2)
-    data_b = np.asarray(data_b)
-    #binned_speed = convolve_with_scipy(binned_speed)
-    spike_data.at[cluster, 'averaged_rewarded_p'] = list(data_b)
+    spike_data.at[cluster, 'averaged_rewarded_p'] = list(np.asarray(data_b))
 
     data_filtered = data[data[:,3] != 0,:]
     rates = data_filtered[:,0]
@@ -520,7 +536,6 @@ def extract_time_binned_firing_rate_rewarded(spike_data,cluster, prm):
         sd_speed = np.nanstd(speed_in_position)
         binned_speed[rowcount] = average_speed
         binned_speed_sd[rowcount] = sd_speed
-    binned_speed = convolve_with_scipy(binned_speed)
     spike_data.at[cluster, 'averaged_rewarded_nb'] = list(binned_speed)
     return spike_data
 
@@ -596,7 +611,6 @@ def extract_time_binned_firing_rate_failed(spike_data, cluster, prm):
 
 def convolve_with_scipy(rate):
     window = signal.gaussian(2, std=3)
-    #plt.plot(window)
     convolved_rate = signal.convolve(rate, window, mode='same')/ sum(window)
     return convolved_rate
 
