@@ -329,7 +329,7 @@ data_coef_pos <- data_coef %>%
 
 ```
 
-6. Plot coefficients
+6. Plot coefficients _all cells_
 ```{r}
 level_order <- c("P", "S", "A")
 
@@ -353,7 +353,7 @@ ggsave(file = "plots/CoefficientValues_positivecells.png", width = 3, height = 2
 ```
 
 
-5. Split by negative slope
+5. Split by negative slope _all cells_
 ```{r}
 data_coef_neg <- data_coef %>%
   #subset(group == "P") %>%
@@ -386,10 +386,10 @@ ggsave(file = "plots/CoefficientValues_negativecells.png", width = 3, height = 2
 ```
 
 
-5. Split by positive slope
+5. Split by positive slope _PA cells_
 ```{r}
 data_coef_pos <- data_coef %>%
-  subset(group == "PA") %>%
+  subset(group == "A") %>%
   subset(lm_result == "Positive" )
   #subset(lm_result == "Positive" | lm_result == "Negative")
 
@@ -414,7 +414,7 @@ ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
         text = element_text(size=12), 
         legend.text=element_text(size=12), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_PA_positivecells.png", width = 3, height = 2.5)
+ggsave(file = "plots/CoefficientValues_A_positivecells.png", width = 3, height = 2.5)
   
 ```
 
@@ -423,7 +423,7 @@ ggsave(file = "plots/CoefficientValues_PA_positivecells.png", width = 3, height 
 7. Split by negative slope
 ```{r}
 data_coef_neg <- data_coef %>%
-  subset(group == "PA") %>%
+  subset(group == "S") %>%
   subset(lm_result == "Negative" )
   #subset(lm_result == "Positive" | lm_result == "Negative")
 
@@ -448,6 +448,6 @@ ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
         text = element_text(size=12), 
         legend.text=element_text(size=12), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_PA_negativecells.png", width = 3, height = 2.5)
+ggsave(file = "plots/CoefficientValues_S_negativecells.png", width = 3, height = 2.5)
   
 ```
