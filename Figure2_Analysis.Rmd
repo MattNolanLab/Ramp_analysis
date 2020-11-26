@@ -558,13 +558,8 @@ concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rat
 Extract ramp score for annotating heatmap
 _since its a list of three (outbound/homebound/all) we extract the first one_
 ```{r}
-extract_ramp_score <- function(df){
-  dx <- df[[1]]
-  return(dx)
-}
-
 start_ramps <- start_ramps %>%
-  mutate(start_ramp_score = map(ramp_score, extract_ramp_score))
+  mutate(start_ramp_score = map(ramp_score, ~.x[1]))
 
 ```
 

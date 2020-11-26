@@ -100,9 +100,9 @@ spatial_firing <- spatial_firing  %>%
 ```{r}
 
 # extracting diff models 
-pos <-subset(spatial_firing, slope_criteria_pval == "Positive")
-neg <-subset(spatial_firing, slope_criteria_pval == "Negative")
-none <-subset(spatial_firing, slope_criteria_pval == "None")
+pos <-subset(spatial_firing, lm_group == "Positive")
+neg <-subset(spatial_firing, lm_group == "Negative")
+none <-subset(spatial_firing, lm_group == "None")
 
 ```
 
@@ -316,9 +316,15 @@ spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
 ```{r}
 data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
                     cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
-                    coef = c(as.character(spatial_firing_save$o_pos_b_stdcoef), as.character(spatial_firing_save$o_speed_b_stdcoef), as.character(spatial_firing_save$o_accel_b_stdcoef)), 
-                    group = c(as.character(spatial_firing_save$final_model_o_b), as.character(spatial_firing_save$final_model_o_b), as.character(spatial_firing_save$final_model_o_b)), 
-                    coef_type = rep(c("P", "S", "A"), each = nrow(spatial_firing_save)), lm_result = rep(as.character(spatial_firing_save$lm_group), times=3)) 
+                    coef = c(as.character(spatial_firing_save$pos_stdcoef),
+                             as.character(spatial_firing_save$speed_stdcoef),
+                             as.character(spatial_firing_save$accel_stdcoef)), 
+                    group = c(as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b)), 
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save)),
+                    lm_result = rep(as.character(spatial_firing_save$lm_result_o_rewarded_b), times=3)) 
 ```
 
 5. Split by positive slope
