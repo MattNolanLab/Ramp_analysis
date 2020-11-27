@@ -21,21 +21,20 @@ output: html_document
 1. Load functions to perform linear mixed effect model
 ```{r}
 source("Functions_Outbound_LMER.R")
-
 ```
 
 2. Run on all cells 
-```{r}
+```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
-  mutate(o_pos_b = map(spikes_in_time, car_pos_b)) %>%
-  mutate(o_speed_b = map(spikes_in_time, car_speed_b)) %>%
-  mutate(o_accel_b = map(spikes_in_time, car_accel_b)) #%>%
-  #mutate(o_pos_nb = map(spikes_in_time, car_pos_nb)) %>%
-  #mutate(o_speed_nb = map(spikes_in_time, car_speed_nb)) %>%
-  #mutate(o_accel_nb = map(spikes_in_time, car_accel_nb)) %>%
-  #mutate(o_pos_p = map(spikes_in_time, car_pos_p)) %>%
-  #mutate(o_speed_p = map(spikes_in_time, car_speed_p)) %>%
-  #mutate(o_accel_p = map(spikes_in_time, car_accel_p))
+  mutate(o_pos_b = map2(spikes_in_time, 0, car_pos)) %>%
+  mutate(o_speed_b = map(spikes_in_time, 0, car_speed)) %>%
+  mutate(o_accel_b = map(spikes_in_time, 0, car_accel)) #%>%
+  #mutate(o_pos_nb = map(spikes_in_time, 1, car_pos)) %>%
+  #mutate(o_speed_nb = map(spikes_in_time, 1, car_speed)) %>%
+  #mutate(o_accel_nb = map(spikes_in_time, 1, car_accel)) %>%
+  #mutate(o_pos_p = map(spikes_in_time, 2, car_po)) %>%
+  #mutate(o_speed_p = map(spikes_in_time, 2, car_speed)) %>%
+  #mutate(o_accel_p = map(spikes_in_time, 2, car_accel))
 ```
 
 
