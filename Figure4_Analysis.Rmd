@@ -28,20 +28,20 @@ To classify cells into these catagories above, we will use the criteria establis
 
 1. make function to classify cells based on activity in beaconed / non-beaconed&probe trials 
 ```{r}
-mark_neurons <- function(beac, probe){
-  if (is.na(beac) | is.na(probe) ) {
+mark_neurons <- function(beac, nb){
+  if (is.na(beac) | is.na(nb) ) {
     return( "None" )
-  } else if( beac == "Positive" & probe == "Positive") {
+  } else if( beac == "Positive" & nb == "Positive") {
     return( "Positive-PI" )
-  } else if( beac == "Negative" & probe == "Negative") {
+  } else if( beac == "Negative" & nb == "Negative") {
     return( "Negative-PI" )
-  } else if( beac == "Positive" & probe == "Unclassified") {
+  } else if( beac == "Positive" & nb == "Unclassified") {
     return( "Positive-cue" )
-  } else if( beac == "Negative" & probe == "Unclassified") {
+  } else if( beac == "Negative" & nb == "Unclassified") {
     return( "Negative-cue" )
-  } else if( beac == "Unclassified" & probe == "Positive") {
+  } else if( beac == "Unclassified" & nb == "Positive") {
     return( "Positive-onlypi" )
-  } else if( beac == "Unclassified" & probe == "Negative") {
+  } else if( beac == "Unclassified" & nb == "Negative") {
     return( "Negative-onlypi" )
     } else {
     return("None")
@@ -133,7 +133,6 @@ cue_pos <-nrow(subset(ramps, cue_group == "Positive-cue"))/nrow(ramps)*100
 ### -------------------------------------------------------------------------------------------------------- ###
 
 We also want to see the movement of neurons from cue to uncued trials, do this using a Sankey plot
-_note : we focus only on cue independant / path integrating neurons here_
 
 
 1. Subset based on cue dependancy
@@ -155,17 +154,92 @@ cue_pos <-subset(spatial_firing, cue_group == "Positive-cue" )
 
 pi_positive <-subset(spatial_firing, lm_group == "Positive")
 pi_negative <-subset(spatial_firing, lm_group == "Negative")
-pi_none <-subset(spatial_firing, lm_group == "None")
+pi_none <-subset(spatial_firing, lm_group == "Unclassified")
 
 pi_positive_pos <-nrow(subset(pi_positive, lm_group_nb == "Positive"))
 pi_positive_neg <-nrow(subset(pi_positive, lm_group_nb == "Negative"))
-pi_positive_none <-nrow(subset(pi_positive, lm_group_nb == "None"))
+pi_positive_none <-nrow(subset(pi_positive, lm_group_nb == "Unclassified"))
 pi_negative_pos <-nrow(subset(pi_negative, lm_group_nb == "Positive"))
 pi_negative_neg <-nrow(subset(pi_negative, lm_group_nb == "Negative"))
-pi_negative_none <-nrow(subset(pi_negative, lm_group_nb == "None"))
+pi_negative_none <-nrow(subset(pi_negative, lm_group_nb == "Unclassified"))
 pi_none_pos <-nrow(subset(pi_none, lm_group_nb == "Positive"))
 pi_none_neg <-nrow(subset(pi_none, lm_group_nb == "Negative"))
-pi_none_none <-nrow(subset(pi_none, lm_group_nb == "None"))
+pi_none_none <-nrow(subset(pi_none, lm_group_nb == "Unclassified"))
+
+```
+
+3. Put data into a tibble with labels
+```{r}
+
+data_long <- tibble(value=c(pi_positive_pos, pi_positive_neg, pi_positive_none, pi_negative_pos,pi_negative_neg, pi_negative_none, pi_none_pos, pi_none_neg, pi_none_none), 
+                    
+                      source= c("Positive","Positive", "Positive", "Negative", "Negative", "Negative", "Unclassified","Unclassified", "Unclassified"),
+                     target= c(" Positive"," Negative", " Unclassified"," Positive"," Negative", " Unclassified"," Positive"," Negative", " Unclassified"))
+
+
+data_long <- data_long %>% 
+  filter(value > 0)                           
+                    
+```
+
+3. Create a node data frame: it lists every entities involved in the flow
+```{r}
+nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
+ 
+```
+
+4. Reformat dataframe to provide connection using id, not using the real name like in the links dataframe
+```{r}
+data_long$IDsource=match(data_long$source, nodes$name)-1 
+data_long$IDtarget=match(data_long$target, nodes$name)-1
+```
+
+5. Plot sankey diagram
+```{r}
+# prepare colour scale
+ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
+
+# Make the Network
+sankeyNetwork(Links = data_long, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "value", NodeID = "name", LinkGroup='source',
+              sinksRight=FALSE, colourScale=ColourScal,
+              nodeWidth=40, fontSize=0, nodePadding=30)
+#ggsave(file = "plots/model_movement.png", width = 24, height = 18)
+
+```
+
+
+
+
+
+### ------------------------------------------------------------------------------------- ###
+
+_same as above but just for position based cells_
+
+
+2. subset based on position
+```{r}
+position_neurons <-subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+
+2. Subset based on non-beaconed activity
+```{r}
+
+pi_positive <-subset(position_neurons, lm_group == "Positive")
+pi_negative <-subset(position_neurons, lm_group == "Negative")
+pi_none <-subset(position_neurons, lm_group == "Unclassified")
+
+pi_positive_pos <-nrow(subset(pi_positive, lm_group_nb == "Positive"))
+pi_positive_neg <-nrow(subset(pi_positive, lm_group_nb == "Negative"))
+pi_positive_none <-nrow(subset(pi_positive, lm_group_nb == "Unclassified"))
+pi_negative_pos <-nrow(subset(pi_negative, lm_group_nb == "Positive"))
+pi_negative_neg <-nrow(subset(pi_negative, lm_group_nb == "Negative"))
+pi_negative_none <-nrow(subset(pi_negative, lm_group_nb == "Unclassified"))
+pi_none_pos <-nrow(subset(pi_none, lm_group_nb == "Positive"))
+pi_none_neg <-nrow(subset(pi_none, lm_group_nb == "Negative"))
+pi_none_none <-nrow(subset(pi_none, lm_group_nb == "Unclassified"))
 
 ```
 
