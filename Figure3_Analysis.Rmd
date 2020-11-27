@@ -89,6 +89,10 @@ spatial_firing <- spatial_firing  %>%
 
 ```
 
+```{r}
+saveRDS(spatial_firing, file="All_Results.Rda")
+
+```
 
 ### ----------------------------------------------------------------------------------------- ###
 
