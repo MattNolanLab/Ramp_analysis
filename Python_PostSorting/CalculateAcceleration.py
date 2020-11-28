@@ -139,8 +139,8 @@ def plot_instant_acceleration_by_segment(recording_folder, spike_data, cluster, 
     cbar.ax.tick_params(labelsize=16)
     plt.ylabel('Spike rate (hz)', fontsize=16, labelpad = 10)
     plt.xlabel('Acceleration $(cm/s^2)$', fontsize=16, labelpad = 10) # "meters $10^1$"
-    ax.set_xlim(-20, 25)
-    ax.set_ylim(0)
+    #ax.set_xlim(-20, 25)
+    #ax.set_ylim(0)
     ax.tick_params(
         axis='both',  # changes apply to the x-axis
         which='both',  # both major and minor ticks are affected
