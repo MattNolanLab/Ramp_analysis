@@ -44,8 +44,9 @@ def extract_time_binned_firing_rate_rewarded(spike_data, prm):
         types=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[4], dtype= np.int32)
 
         try:
-            window = signal.gaussian(3, std=5)
+            window = signal.gaussian(3, std=2)
             rates = signal.convolve(rates, window, mode='same')/ sum(window)
+            speed = signal.convolve(speed, window, mode='same')/ sum(window)
         except (TypeError, ValueError):
             print("convolve error")
 
@@ -68,7 +69,8 @@ def extract_time_binned_firing_rate_rewarded(spike_data, prm):
                 for bcount, b in enumerate(bins):
                     rate_in_position = np.take(t_rates, np.where(np.logical_and(t_pos >= b, t_pos < b+bin_unit)))
                     average_rates = np.nanmean(rate_in_position)
-                    binned_data[bcount, tcount, type_in_position] = average_rates
+                    binned_data[bcount, tcount, 1] = average_rates
+
 
         #remove nans interpolate
         data_b = pd.DataFrame(binned_data[:,:,0], dtype=None, copy=False)
@@ -106,7 +108,7 @@ def extract_time_binned_firing_rate_rewarded(spike_data, prm):
         spike_data.at[cluster, 'Rates_sd_rewarded_p'] = list(x_sd)
         spike_data.at[cluster, 'Firing_rate_rewarded_p'] = data_p
 
-        #plot_rewarded_firing_rate(spike_data, prm)
+    plot_rewarded_firing_rate(spike_data, prm)
     return spike_data
 
 
