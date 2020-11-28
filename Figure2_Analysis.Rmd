@@ -46,10 +46,10 @@ add_position <- function(df) {
 2. Run on dataframe : Average trials with reward
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(asr_b_rewarded = map(Rates_averaged_rewarded_b, add_position)) %>%
-  mutate(asr_nb_rewarded = map(Rates_averaged_rewarded_nb, add_position)) %>%
-  mutate(asr_p_rewarded = map(Rates_averaged_rewarded_p, add_position))
-
+  mutate(asr_b_rewarded = map(Rates_averaged_rewarded_b, add_position),
+         asr_nb_rewarded = map(Rates_averaged_rewarded_nb, add_position),
+         asr_p_rewarded = map(Rates_averaged_rewarded_p, add_position)
+         )
 ```
 
 
@@ -169,6 +169,10 @@ if(!"shuffle_results" %in% colnames(spatial_firing)) {
   #mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
   #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
 }
+# Uncomment the line below to save spatial firing at this point.
+saveRDS(spatial_firing, "SpatialFiring_with_shuffles.Rda")
+# And use this to save a truncated version. Useful for testing code.
+saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_shuffles_trunc.Rda")
 ```
 
 
@@ -186,7 +190,7 @@ First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron
 ```{r}
 
 extract_min_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df[2]), rsquared = unlist(df[3]))
+  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
   min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
   #max_r2_o <- quantile(as.numeric(unlist(df$rsquared)), c(.025, .975)) [[2]][1]
   #variables <- c(min_slope_o, max_slope_o, max_r2_o) # return all three criteria
@@ -194,7 +198,7 @@ extract_min_shuffle_slopes <- function(df){
 }
 
 extract_max_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df[2]), rsquared = unlist(df[3]))
+  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
   max_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[2]][1]
   return(max_slope_o)
 }
@@ -204,8 +208,8 @@ extract_max_shuffle_slopes <- function(df){
 2. Run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(shuffle_min_slope = map(shuffle_results, extract_min_shuffle_slopes)) %>%
-  mutate(shuffle_max_slope = map(shuffle_results, extract_max_shuffle_slopes)) 
+  mutate(shuffle_min_slope = map(shuffle_results, extract_min_shuffle_slopes),
+         shuffle_max_slope = map(shuffle_results, extract_max_shuffle_slopes))
   #mutate(shuffle_min_slope_nb = map(shuffle_results_nb, extract_min_shuffle_slopes)) %>%
   #mutate(shuffle_max_slope_nb = map(shuffle_results_nb, extract_max_shuffle_slopes)) 
   #mutate(shuffle_min_slope_p = map(shuffle_results_p, extract_min_shuffle_slopes)) %>%
@@ -221,27 +225,24 @@ We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neu
 ```{r} 
 
 extract_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
-  return(df$slopes)
+  return(unlist(df$slope))
 }
 
 extract_shuffle_r2 <- function(df){
-  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
-  return(df$rsquared)
+  return(unlist(df$rsquared))
 }
 
 extract_shuffle_pval <- function(df){
-  df <- tibble(pval = unlist(df$pval))
-  return(df$pval)
+  return(unlist(df$pval))
 }
 ```
 
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(shuffle_slopes = map(shuffle_results, extract_shuffle_slopes)) %>%
-  mutate(shuffle_rsquared = map(shuffle_results, extract_shuffle_r2)) %>%
-  mutate(shuffle_pval = map(shuffle_results, extract_shuffle_pval)) 
+  mutate(shuffle_slopes = map(shuffle_results, extract_shuffle_slopes),
+         shuffle_rsquared = map(shuffle_results, extract_shuffle_r2),
+         shuffle_pval = map(shuffle_results, extract_shuffle_pval))
   #mutate(shuffle_slopes_nb = map(shuffle_results_nb, extract_shuffle_slopes)) %>% # Non beaconed
   #mutate(shuffle_rsquared_nb = map(shuffle_results_nb, extract_shuffle_r2)) %>%
   #mutate(shuffle_pval_nb = map(shuffle_results_nb, extract_shuffle_pval)) 
@@ -258,8 +259,7 @@ Then we want to correct the pvals of the lm, to account for multiple comparisons
 1. put all pvalues into tibble then adjust using p.adjust from - package
 ```{r}
 p_vals <- tibble(pvals = spatial_firing$asr_b_rewarded_Pval_o)
-adjusted_vals <- p.adjust(p_vals$pvals, "BH")
-adu_p <- tibble(adjust_pval = adjusted_vals)
+adu_p <- tibble(adjust_pval = p.adjust(p_vals$pvals, "BH"))
 
 ```
 
@@ -271,8 +271,7 @@ spatial_firing <- cbind(spatial_firing, adu_p)
 3. do the same for non-beaconed trials
 ```{r}
 p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_rewarded_Pval_o)
-adjusted_vals <- p.adjust(p_vals_nb$pvals, "BH")
-adu_p_nb <- tibble(adjust_pval_nb = adjusted_vals)
+adu_p_nb <- tibble(adjust_pval_nb = p.adjust(p_vals_nb$pvals, "BH"))
 
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
 ```
@@ -280,8 +279,7 @@ spatial_firing <- cbind(spatial_firing, adu_p_nb)
 3. do the same for probe trials
 ```{r}
 p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_Pval_o)
-adjusted_vals <- p.adjust(p_vals_p$pvals, "BH")
-adu_p_p <- tibble(adjust_pval_p = adjusted_vals)
+adu_p_p <- tibble(adjust_pval_p = p.adjust(p_vals_p$pvals, "BH"))
 
 spatial_firing <- cbind(spatial_firing, adu_p_p)
 ```
@@ -404,6 +402,7 @@ We might also want to visualise the coefficients for the real and shuffled datas
 level_order <- c("Negative", "Positive", "Unclassified")
 
 ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(lm_group))
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
   coord_cartesian(xlim = c(-0.6,0.6)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -562,13 +561,8 @@ concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rat
 Extract ramp score for annotating heatmap
 _since its a list of three (outbound/homebound/all) we extract the first one_
 ```{r}
-extract_ramp_score <- function(df){
-  dx <- df[[1]]
-  return(dx)
-}
-
 start_ramps <- start_ramps %>%
-  mutate(start_ramp_score = map(ramp_score, extract_ramp_score))
+  mutate(start_ramp_score = map(ramp_score, ~.x[1]))
 
 ```
 
@@ -610,7 +604,7 @@ anno_col <- list(result = Var1, region = Var2, ramp_score = brewer.pal(11,"RdBu"
 myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, show_rownames = F, show_colnames = F )
 ```
 
-Save the headmap (bit of a nightmare here...)
+Save the heatmap (bit of a nightmare here...)
 ```{r}
 save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
   png(filename, width = width, height = height, res = res)
