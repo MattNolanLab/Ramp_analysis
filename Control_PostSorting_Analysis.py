@@ -264,8 +264,8 @@ def main():
         spike_data = Python_PostSorting.Curation.remove_false_positives(spike_data)
         spike_data = Python_PostSorting.Curation.curate_data(spike_data)
         spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data)
-        spike_data = Python_PostSorting.Add_BrainRegion_Classifier.load_brain_region_data_into_frame(spike_data)
-        spike_data = Python_PostSorting.FitAnalysis.load_Teris_ramp_score_data_into_frame(spike_data)
+        #spike_data = Python_PostSorting.Add_BrainRegion_Classifier.load_brain_region_data_into_frame(spike_data)
+        #spike_data = Python_PostSorting.FitAnalysis.load_Teris_ramp_score_data_into_frame(spike_data)
 
         #Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm)
         #Python_PostSorting.MakePlots.plot_rewarded_spikes_on_track2(server_path,spike_data)
@@ -302,8 +302,8 @@ def main():
         #spike_data = make_plots(server_path,spike_data)
 
         # SAVE DATAFRAMES
-        spike_data = drop_columns_from_frame(spike_data)
-        spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_3.pkl')
+        #spike_data = drop_columns_from_frame(spike_data)
+        #spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_1.pkl')
 
 
 
