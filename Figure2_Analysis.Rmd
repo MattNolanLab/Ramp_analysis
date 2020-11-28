@@ -163,7 +163,7 @@ return(df_modified)
 2. Run on example neuron (beaconed and non-beaconed trials)
 ```{r}
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-if(!"Rates_averaged_rewarded_b" %in% colnames(spatial_firing)) {
+if(!"shuffle_results" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) #%>%
   #mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
@@ -319,8 +319,8 @@ compare_slopes <- function(min_slope, max_slope, slope, pval){
 
 spatial_firing <- spatial_firing %>%
   mutate(lm_group = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) # %>%
-  #mutate(slope_criteria_pval_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes)) %>%
-  #mutate(slope_criteria_pval_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
+  #mutate(lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes)) %>%
+  #mutate(lm_group_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
 
 ```
 
@@ -403,7 +403,7 @@ We might also want to visualise the coefficients for the real and shuffled datas
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(slope_criteria_pval), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(lm_group))
   coord_cartesian(xlim = c(-0.6,0.6)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -444,7 +444,7 @@ ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height 
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_rewarded_r2_o, fill=factor(unlist(slope_criteria_pval), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_r2_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(lm_group))
   coord_cartesian(xlim = c(0,1)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -583,9 +583,6 @@ cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
 
 Plot heatmap with annotations using pheatmap
 ```{r}
-#library(pheatmap) # import pheatmap if necessary
-#library(RColorBrewer) # color palette
-
 #convert data to wide format
 wide_DF <- concat_firing_start %>% spread(Position, Rates)
 
@@ -625,4 +622,11 @@ save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
 save_pheatmap_png(myheatmap, "my_heatmap_all.png")
 ```
 
+
+
+
+```{r}
+saveRDS(spatial_firing, file="Fig2Results.Rda")
+
+```
 
