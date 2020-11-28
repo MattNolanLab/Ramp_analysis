@@ -331,7 +331,6 @@ def drop_nb_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i
     return spike_data
 
 
-
 def beaconed_plot(spike_data,cluster,  position_array, binned_speed, binned_speed_sd, save_path):
     cluster_index = spike_data.cluster_id.values[cluster] - 1
     speed_histogram = plt.figure(figsize=(4,3))
@@ -482,6 +481,7 @@ def extract_time_binned_firing_rate_rewarded(spike_data,cluster, prm):
     try:
         window = signal.gaussian(3, std=2)
         rates = signal.convolve(rates, window, mode='same')/ sum(window)/sum(window)
+        speed = signal.convolve(speed, window, mode='same')/ sum(window)/sum(window)
     except (TypeError, ValueError):
         print("")
 
