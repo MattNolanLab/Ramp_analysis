@@ -3,22 +3,11 @@ import Python_PostSorting.MakePlots_Behaviour
 import Python_PostSorting.MakePlots_Shuffled
 import Python_PostSorting.MakePlots_FiringProperties
 import Python_PostSorting.LoadDataFrames
-import Python_PostSorting.RewardFiring
-import Python_PostSorting.SavePickledDataframes
-import Python_PostSorting.FiringProperties
-import Python_PostSorting.FiringProperties
-import Python_PostSorting.ShuffleAnalysis
-import Python_PostSorting.ShuffleStops
-import Python_PostSorting.Concat_Server_Frames
 import Python_PostSorting.parameters
+import Python_PostSorting.RewardFiring
+import Python_PostSorting.FiringProperties
 import Python_PostSorting.Speed_Analysis
 import Python_PostSorting.RampAnalysis
-import Python_PostSorting.GaussianConvolution_inSpace
-import Python_PostSorting.SpikeTrainAnalysis
-import Python_PostSorting.CrossCorrelateFR_TrialTypes
-import Python_PostSorting.TrialType_Comparison
-import Python_PostSorting.FixUnequalTrialNumbers
-import Python_PostSorting.Concat_Local_Frames
 import Python_PostSorting.Curation
 import Python_PostSorting.FirstStopAnalysis
 import Python_PostSorting.StopAnalysis
@@ -26,12 +15,9 @@ import Python_PostSorting.RateAnalysis
 import Python_PostSorting.SpikeWidth
 import Python_PostSorting.RewardAnalysis
 import Python_PostSorting.FitAnalysis
-import Python_PostSorting.ThetaModulation
-import Python_PostSorting.Monotonicity
 import Python_PostSorting.CalculateAcceleration
-import Python_PostSorting.Extract_Journeys
 import Python_PostSorting.Spike_Time_Analysis
-import Python_PostSorting.Spike_Analysis
+import Python_PostSorting.AnalyseSpikes
 import Python_PostSorting.AnalyseRewardedSpikes
 import Python_PostSorting.Add_BrainRegion_Classifier
 import numpy as np
@@ -100,46 +86,32 @@ def load_local_frames(server_path, prm):
 
 def drop_columns_from_frame(spike_data):
     spike_data.drop(['random_snippets'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['avg_b_spike_rate'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['avg_nb_spike_rate'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['avg_p_spike_rate'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['beaconed_trial_number'], axis='columns', inplace=True, errors='ignore')
-    ##spike_data.drop(['nonbeaconed_trial_number'], axis='columns', inplace=True, errors='ignore')
-    #s#3pike_data.drop(['probe_trial_number'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['beaconed_position_cm'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['nonbeaconed_position_cm'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['probe_position_cm'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['x_position_cm'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['trial_numbers'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['trial_types'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['firing_times'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['rewarded_trials'], axis='columns', inplace=True, errors='ignore')
-    spike_data.drop(['rewarded_stop_locations'], axis='columns', inplace=True, errors='ignore')
+    #spike_data.drop(['rewarded_locations'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['stop_location_cm'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['stop_trial_number'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['spike_num_on_trials'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['spike_rate_on_trials'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['spike_rate_on_trials_smoothed'], axis='columns', inplace=True, errors='ignore')
+    spike_data.drop(['spike_num_on_trials'], axis='columns', inplace=True, errors='ignore')
+    spike_data.drop(['spike_rate_on_trials'], axis='columns', inplace=True, errors='ignore')
+    spike_data.drop(['spike_rate_on_trials_smoothed'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['binned_apsolute_elapsed_time'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['binned_speed_ms_per_trial'], axis='columns', inplace=True, errors='ignore')
+    spike_data.drop(['binned_speed_ms_per_trial'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['isolation'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['noise_overlap'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['peak_snr'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['spike_rate_on_trials_smoothed'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['spike_rate_in_time'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['position_rate_in_time'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['speed_rate_in_time'], axis='columns', inplace=True, errors='ignore')
     return spike_data
 
 
-def run_speed_analysis(spike_data):
+def run_behavioural_analysis(spike_data, server_path):
+    #speed amalysis
     Python_PostSorting.Speed_Analysis.extract_time_binned_speed(spike_data, prm) # from data binned in time
     #spike_data = Python_PostSorting.Speed_Analysis.calculate_average_speed(spike_data) # from data binned in space
-    return spike_data
-
-
-def run_behavioural_analysis(spike_data, server_path):
-    spike_data = run_speed_analysis(spike_data)
     # First stop and reward rates (learning curves)
     #spike_data = Python_PostSorting.FirstStopAnalysis.calculate_first_stop(spike_data)
     #spike_data = Python_PostSorting.FirstStopAnalysis.calculate_firststop_learning_curve(spike_data)
@@ -180,12 +152,14 @@ def main():
     #spike_data = Python_PostSorting.RewardFiring.generate_reward_indicator(spike_data) # for saving data into dataframe for R
     #Python_PostSorting.MakePlots.plot_rewarded_spikes_on_track2(server_path,spike_data)
     #Python_PostSorting.MakePlots.plot_failed_spikes_on_track2(server_path,spike_data)
-    Python_PostSorting.MakePlots.plot_smoothed_firing_rate_maps_for_rewarded_trials(server_path, spike_data)
-    Python_PostSorting.MakePlots.plot_smoothed_firing_rate_maps_for_failed_trials(server_path, spike_data)
+    #Python_PostSorting.MakePlots.plot_smoothed_firing_rate_maps_for_rewarded_trials(server_path, spike_data)
+    #Python_PostSorting.MakePlots.plot_smoothed_firing_rate_maps_for_failed_trials(server_path, spike_data)
+
+    #spike_data = Python_PostSorting.AnalyseSpikes.extract_time_binned_firing_rate_overtrial_per_trialtype(spike_data, prm)
 
     spike_data = Python_PostSorting.RewardFiring.split_time_data_by_reward(spike_data, prm)
     spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_rewarded(spike_data, prm)
-    #spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_firing_rate(spike_data, prm)
+    spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_firing_rate(spike_data, prm)
     spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_nb_firing_rate(spike_data, prm)
 
     spike_data = Python_PostSorting.CalculateAcceleration.generate_acceleration(spike_data, server_path)
@@ -201,7 +175,7 @@ def main():
 
     # SAVE DATAFRAMES
     spike_data = drop_columns_from_frame(spike_data)
-    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_1.pkl')
+    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_4.pkl')
 
 
 
