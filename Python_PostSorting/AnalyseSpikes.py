@@ -9,7 +9,7 @@ from scipy import signal
 
 
 def convolve_with_scipy(rate):
-    window = signal.gaussian(3, std=2)
+    window = signal.gaussian(2, std=3)
     #plt.plot(window)
     convolved_rate = signal.convolve(rate, window, mode='same')/ sum(window)
     return convolved_rate
@@ -23,7 +23,6 @@ def bin_data(data):
 
 
 def add_data_to_frame(spike_data):
-
     spike_data["Rates_averaged"] = ""
     spike_data["Rates_averaged_nb"] = ""
     spike_data["Rates_averaged_p"] = ""
@@ -53,7 +52,7 @@ def extract_time_binned_firing_rate_overtrial_per_trialtype(spike_data, prm):
         types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
 
         try:
-            rates = Python_PostSorting.ConvolveRates_FFT.convolve_binned_spikes(rates) # convolve spikes
+            rates = convolve_with_scipy(rates) # convolve spikes
         except TypeError:
             continue
 

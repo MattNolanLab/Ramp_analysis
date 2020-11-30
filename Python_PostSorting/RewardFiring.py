@@ -6,6 +6,7 @@ import matplotlib.pylab as plt
 from scipy import signal
 import Python_PostSorting.ConvolveRates_FFT
 
+
 def create_reward_histogram(spike_data, cluster, max_trial):
     rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
     rewarded_positions = np.array(spike_data.loc[cluster, 'rewarded_locations'])
@@ -129,7 +130,7 @@ def split_trials_by_failure(spike_data, cluster_index):
 def remove_low_speeds(rates, speed, position,trials, types ):
     data = np.vstack((rates, speed, position, trials, types))
     data=data.transpose()
-    data_filtered = data[data[:,1] >= 2.3,:]
+    data_filtered = data[data[:,1] >= 3,:]
     return data_filtered
 
 
@@ -479,9 +480,8 @@ def extract_time_binned_firing_rate_rewarded(spike_data,cluster, prm):
     types=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[4], dtype= np.int32)
 
     try:
-        window = signal.gaussian(3, std=2)
+        window = signal.gaussian(3, std=5)
         rates = signal.convolve(rates, window, mode='same')/ sum(window)/sum(window)
-        speed = signal.convolve(speed, window, mode='same')/ sum(window)/sum(window)
     except (TypeError, ValueError):
         print("")
 
@@ -503,7 +503,8 @@ def extract_time_binned_firing_rate_rewarded(spike_data,cluster, prm):
         binned_speed_sd[rowcount] = sd_speed
     spike_data.at[cluster, 'averaged_rewarded_b'] = list(binned_speed)
 
-    beaconed_failed_plot(spike_data,cluster,  position_array, binned_speed, binned_speed_sd, save_path)
+    #beaconed_failed_plot(spike_data,cluster,  position_array, binned_speed, binned_speed_sd, save_path)
+    #beaconed_plot(spike_data,cluster,  position_array, binned_speed, binned_speed_sd, save_path)
 
     data_filtered = data[data[:,3] == 2,:]
     rates = data_filtered[:,0]
