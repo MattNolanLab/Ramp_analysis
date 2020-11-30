@@ -7,6 +7,14 @@ from scipy import signal
 import Python_PostSorting.ConvolveRates_FFT
 
 
+
+def remove_low_speeds(rates, speed, position,trials, types ):
+    data = np.vstack((rates, speed, position, trials, types))
+    data=data.transpose()
+    data_filtered = data[data[:,1] >= 3,:]
+    return data_filtered
+
+
 def split_time_data_by_reward(spike_data, prm):
     spike_data["spikes_in_time_rewarded"] = ""
     spike_data["spikes_in_time_failed"] = ""
