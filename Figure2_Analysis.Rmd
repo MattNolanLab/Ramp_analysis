@@ -94,8 +94,8 @@ lm_analysis <- function(df, spike_rate_col, startbin = 30, endbin = 90) {
 
 spatial_firing <- spatial_firing %>%
   lm_analysis(asr_b_rewarded, 30, 90) %>%
-  lm_analysis(asr_nb_rewarded, 30, 90) %>%
-  lm_analysis(asr_p_rewarded, 30, 90)
+  lm_analysis(asr_nb_rewarded, 30, 90)
+  #lm_analysis(asr_p_rewarded, 30, 90)
 
 ```
 
@@ -152,7 +152,7 @@ shuffle_rates <- function(df) {
   df_modified <- rbind(df_modified,data)
 
   x = x+1
-  if (x == 1000){ # putting 100 here for now for testing as 1000 takes v long time to run
+  if (x == 100){ # putting 100 here for now for testing as 1000 takes v long time to run
   break
   }
   }
@@ -166,11 +166,11 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-if(!"shuffle_results" %in% colnames(spatial_firing)) {
+if(!"shuffle_results_nb" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) #%>%
-  #mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
-  #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
+    mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
+    mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) #%>%
+    #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
 }
 # Uncomment the line below to save spatial firing at this point.
 # saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
@@ -195,8 +195,6 @@ First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron
 extract_min_shuffle_slopes <- function(df){
   df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
   min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
-  #max_r2_o <- quantile(as.numeric(unlist(df$rsquared)), c(.025, .975)) [[2]][1]
-  #variables <- c(min_slope_o, max_slope_o, max_r2_o) # return all three criteria
   return(min_slope_o)
 }
 
@@ -211,12 +209,12 @@ extract_max_shuffle_slopes <- function(df){
 2. Run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(shuffle_min_slope = map(shuffle_results, extract_min_shuffle_slopes),
-         shuffle_max_slope = map(shuffle_results, extract_max_shuffle_slopes)) 
-  #mutate(shuffle_min_slope_nb = map(shuffle_results_nb, extract_min_shuffle_slopes)) %>%
-  #mutate(shuffle_max_slope_nb = map(shuffle_results_nb, extract_max_shuffle_slopes)) 
+  mutate(shuffle_min_slope = map(shuffle_results, extract_min_shuffle_slopes)) %>%
+  mutate(shuffle_max_slope = map(shuffle_results, extract_max_shuffle_slopes)) %>%
+  mutate(shuffle_min_slope_nb = map(shuffle_results_nb, extract_min_shuffle_slopes)) %>%
+  mutate(shuffle_max_slope_nb = map(shuffle_results_nb, extract_max_shuffle_slopes)) #%>%
   #mutate(shuffle_min_slope_p = map(shuffle_results_p, extract_min_shuffle_slopes)) %>%
-  #mutate(shuffle_max_slope_p = map(shuffle_results_p, extract_max_shuffle_slopes)) 
+  #mutate(shuffle_max_slope_p = map(shuffle_results_p, extract_max_shuffle_slopes))
 
 ```
 
@@ -243,12 +241,12 @@ extract_shuffle_pval <- function(df){
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(shuffle_slopes = map(shuffle_results, extract_shuffle_slopes),
-         shuffle_rsquared = map(shuffle_results, extract_shuffle_r2),
-         shuffle_pval = map(shuffle_results, extract_shuffle_pval)) 
-  #mutate(shuffle_slopes_nb = map(shuffle_results_nb, extract_shuffle_slopes)) %>% # Non beaconed
-  #mutate(shuffle_rsquared_nb = map(shuffle_results_nb, extract_shuffle_r2)) %>%
-  #mutate(shuffle_pval_nb = map(shuffle_results_nb, extract_shuffle_pval)) 
+  mutate(shuffle_slopes = map(shuffle_results, extract_shuffle_slopes)) %>%
+  mutate(shuffle_rsquared = map(shuffle_results, extract_shuffle_r2)) %>%
+  mutate(shuffle_pval = map(shuffle_results, extract_shuffle_pval)) %>% 
+  mutate(shuffle_slopes_nb = map(shuffle_results_nb, extract_shuffle_slopes)) %>% # Non beaconed
+  mutate(shuffle_rsquared_nb = map(shuffle_results_nb, extract_shuffle_r2)) %>%
+  mutate(shuffle_pval_nb = map(shuffle_results_nb, extract_shuffle_pval)) #%>%
   #mutate(shuffle_slopes_p = map(shuffle_results_p, extract_shuffle_slopes)) %>% # probe
   #mutate(shuffle_rsquared_p = map(shuffle_results_p, extract_shuffle_r2)) %>%
   #mutate(shuffle_pval_p = map(shuffle_results_p, extract_shuffle_pval)) 
@@ -288,15 +286,6 @@ spatial_firing <- cbind(spatial_firing, adu_p_p)
 ```
 
 
-# remove duplicate columns from dataframe if needed  _note should only need if ran the above code twice..._
-
-MN: What happens here if columns are not identical? Which one is kept? Seems dangerous.
-```{r}
-spatial_firing = spatial_firing[,!duplicated(names(spatial_firing))]
-
-```
-
-
 ### ----------------------------------------------------------------------------------------- ### 
 
 Now we want to classify neurons, taking the adjusted significance into account
@@ -319,9 +308,9 @@ compare_slopes <- function(min_slope, max_slope, slope, pval){
 }
 
 spatial_firing <- spatial_firing %>%
-  mutate(lm_group = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) # %>%
-  #mutate(slope_criteria_pval_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes)) %>%
-  #mutate(slope_criteria_pval_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
+  mutate(lm_group = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) %>%
+  mutate(lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes))
+  #mutate(lm_group_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
 
 ```
 
@@ -404,6 +393,7 @@ We might also want to visualise the coefficients for the real and shuffled datas
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(lm_group))
 ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
   coord_cartesian(xlim = c(-0.6,0.6)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
@@ -445,7 +435,7 @@ ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height 
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_rewarded_r2_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_r2_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(lm_group))
   coord_cartesian(xlim = c(0,1)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -579,9 +569,6 @@ cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
 
 Plot heatmap with annotations using pheatmap
 ```{r}
-#library(pheatmap) # import pheatmap if necessary
-#library(RColorBrewer) # color palette
-
 #convert data to wide format
 wide_DF <- concat_firing_start %>% spread(Position, Rates)
 
@@ -598,7 +585,7 @@ mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id)
 
 # change the color of annotation to what you want: (eg: "navy", "darkgreen")
 Var1        <- c("violetred2", "black", "chartreuse3")
-names(Var1) <- c("Negative", "None", "Positive")
+names(Var1) <- c("Negative", "Unxlassified", "Positive")
 
 Var2        <- c("springgreen4", "deepskyblue1", "firebrick")
 names(Var2) <- c("MEC", "PS", "UN")
@@ -621,4 +608,11 @@ save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
 save_pheatmap_png(myheatmap, "my_heatmap_all.png")
 ```
 
+
+
+
+```{r}
+saveRDS(spatial_firing, file="Fig2Results.Rda")
+
+```
 

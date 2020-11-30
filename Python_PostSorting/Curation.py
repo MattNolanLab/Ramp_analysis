@@ -23,7 +23,7 @@ def curate_data_by_rewards(df):
         rewards = np.unique(np.array(df.loc[cluster,'rewarded_trials']))
         rewards = rewards[~np.isnan(rewards)]
         df.at[cluster,"number_of_rewards"] = rewards.shape[0]
-    df = df.drop(df[df.number_of_rewards < 10].index)
+    df = df.drop(df[df.number_of_rewards < 30].index)
     return df
 
 
