@@ -317,6 +317,8 @@ ggplot(data=df_neg_cue) +
   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.2) +
   geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sd_nb, ymax = mean_nb + sd_nb), fill = "Red2", alpha=0.05) +
   geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
+  #stat_smooth(aes(y=mean_b, x=Position), color = "Grey32", n = 60, span = 0.5) +
+  #stat_smooth(aes(y=mean_nb, x=Position), color = "Red2", n = 60, span = 0.5) +
   geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)", x = "Position") +
