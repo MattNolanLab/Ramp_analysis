@@ -21,21 +21,20 @@ output: html_document
 1. Load functions to perform linear mixed effect model
 ```{r}
 source("Functions_Outbound_LMER.R")
-
 ```
 
 2. Run on all cells 
-```{r}
+```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
-  mutate(o_pos_b = map(spikes_in_time, car_pos_b)) %>%
-  mutate(o_speed_b = map(spikes_in_time, car_speed_b)) %>%
-  mutate(o_accel_b = map(spikes_in_time, car_accel_b)) #%>%
-  #mutate(o_pos_nb = map(spikes_in_time, car_pos_nb)) %>%
-  #mutate(o_speed_nb = map(spikes_in_time, car_speed_nb)) %>%
-  #mutate(o_accel_nb = map(spikes_in_time, car_accel_nb)) %>%
-  #mutate(o_pos_p = map(spikes_in_time, car_pos_p)) %>%
-  #mutate(o_speed_p = map(spikes_in_time, car_speed_p)) %>%
-  #mutate(o_accel_p = map(spikes_in_time, car_accel_p))
+  mutate(o_pos_b = map2(spikes_in_time, 0, car_pos)) %>%
+  mutate(o_speed_b = map(spikes_in_time, 0, car_speed)) %>%
+  mutate(o_accel_b = map(spikes_in_time, 0, car_accel)) #%>%
+  #mutate(o_pos_nb = map(spikes_in_time, 1, car_pos)) %>%
+  #mutate(o_speed_nb = map(spikes_in_time, 1, car_speed)) %>%
+  #mutate(o_accel_nb = map(spikes_in_time, 1, car_accel)) %>%
+  #mutate(o_pos_p = map(spikes_in_time, 2, car_po)) %>%
+  #mutate(o_speed_p = map(spikes_in_time, 2, car_speed)) %>%
+  #mutate(o_accel_p = map(spikes_in_time, 2, car_accel))
 ```
 
 
@@ -319,9 +318,15 @@ write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, se
 ```{r}
 data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
                     cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
-                    coef = c(as.character(spatial_firing_save$o_pos_b_stdcoef), as.character(spatial_firing_save$o_speed_b_stdcoef), as.character(spatial_firing_save$o_accel_b_stdcoef)), 
-                    group = c(as.character(spatial_firing_save$final_model_o_b), as.character(spatial_firing_save$final_model_o_b), as.character(spatial_firing_save$final_model_o_b)), 
-                    coef_type = rep(c("P", "S", "A"), each = nrow(spatial_firing_save)), lm_result = rep(as.character(spatial_firing_save$lm_group), times=3)) 
+                    coef = c(as.character(spatial_firing_save$pos_stdcoef),
+                             as.character(spatial_firing_save$speed_stdcoef),
+                             as.character(spatial_firing_save$accel_stdcoef)), 
+                    group = c(as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b)), 
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save)),
+                    lm_result = rep(as.character(spatial_firing_save$lm_result_o_rewarded_b), times=3)) 
 ```
 
 5. Split by positive slope
