@@ -24,8 +24,9 @@ library(scales)
 library(Hmisc)
 library(Metrics)
 library(plotrix)
-library(RColorBrewer)
-library(pheatmap)
+library(pheatmap) # this package lets you make nice heatmaps
+library(RColorBrewer) # import color palettes
+library(networkD3) # This package lets you make and plot sankey diagrams
 
 # Import functions
 source("Functions.R")
@@ -33,10 +34,9 @@ source("Functions_Outbound_LMER.R")
 
 # Load data
 # Alternative file names commened out
-# spatial_firing <- readRDS(file="df_final.Rda")
-# spatial_firing <- readRDS(file="df_allmice.Rda")
-# spatial_firing <- readRDS(file="df_final_results.Rda")
 spatial_firing <- readRDS(file="PythonOutput_Concat.Rda")
+spatial_firing <- readRDS(file="All_Results.Rda") 
+
 ```
 
 

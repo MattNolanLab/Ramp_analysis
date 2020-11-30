@@ -128,8 +128,8 @@ saveRDS(spatial_firing, file="df_final.Rda")
 ```{r}
 
 find_reward_number <- function(df) {
-  x <- length(df[!is.na(df)])
-  return(as.numeric(x))
+  x <- length(df)
+  return(as.numeric(x)+15)
 }
 
 
@@ -140,14 +140,14 @@ spatial_firing <- spatial_firing  %>%
 
 
 ```{r}
-spatial_firing <- subset(spatial_firing, number_of_rewards >= 15)
+spatial_firing <- subset(spatial_firing, number_of_rewards >= 30)
 
 ```
 
 
 
 ```{r}
-spatial_firing <- subset(spatial_firing, max_trial_number >= 30)
+spatial_firing <- subset(spatial_firing, max_trial_number > 30)
 
 ```
 

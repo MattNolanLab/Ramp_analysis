@@ -127,7 +127,7 @@ def load_Teris_ramp_score_data_into_frame(spike_data):
     spike_data["ramp_score"] = ""
     spike_data["ramp_score_shuff"] = ""
 
-    fit_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/in_vivo_virtual_reality/data/ramp_score_coeff_export_shuff.csv", header=int())
+    fit_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data/ramp_score_coeff_export.csv", header=int())
 
 
     for cluster in range(len(spike_data)):
@@ -148,19 +148,15 @@ def load_Teris_ramp_score_data_into_frame(spike_data):
         neuron_fits = b_fits[neuron_fits]
 
         # find shuffled/not shuffled ramp score
-        real_neuron_fits = neuron_fits['is_shuffle'] == "False"
+        real_neuron_fits = neuron_fits['is_shuffled'] == False
         real_neuron_fits = neuron_fits[real_neuron_fits]
 
-        shuff_neuron_fits = neuron_fits['is_shuffle'] == "True"
+        shuff_neuron_fits = neuron_fits['is_shuffled'] == True
         shuff_neuron_fits = neuron_fits[shuff_neuron_fits]
 
         try:
             real_ramp_score = real_neuron_fits['ramp_score'].values # extract fit
-            if len(real_ramp_score) == 0:
-                real_ramp_score = "None"
             shuff_ramp_score = shuff_neuron_fits['ramp_score'].values # extract fit
-            if len(shuff_ramp_score) == 0:
-                shuff_ramp_score = "None"
 
             spike_data.at[cluster,"ramp_score"] = real_ramp_score
             spike_data.at[cluster,"ramp_score_shuff"] = shuff_ramp_score
