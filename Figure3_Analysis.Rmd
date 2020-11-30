@@ -106,7 +106,7 @@ saveRDS(spatial_firing, file="All_Results.Rda")
 # extracting diff models 
 pos <-subset(spatial_firing, lm_group == "Positive")
 neg <-subset(spatial_firing, lm_group == "Negative")
-none <-subset(spatial_firing, lm_group == "None")
+none <-subset(spatial_firing, lm_group == "Unclassified")
 
 ```
 
