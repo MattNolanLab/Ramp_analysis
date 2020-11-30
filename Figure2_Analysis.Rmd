@@ -46,10 +46,10 @@ add_position <- function(df) {
 2. Run on dataframe : Average trials with reward
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(asr_b_rewarded = map(Rates_averaged_rewarded_b, add_position)) %>%
-  mutate(asr_nb_rewarded = map(Rates_averaged_rewarded_nb, add_position)) %>%
-  mutate(asr_p_rewarded = map(Rates_averaged_rewarded_p, add_position))
-
+  mutate(asr_b_rewarded = map(Rates_averaged_rewarded_b, add_position),
+         asr_nb_rewarded = map(Rates_averaged_rewarded_nb, add_position),
+         asr_p_rewarded = map(Rates_averaged_rewarded_p, add_position)
+         )
 ```
 
 
@@ -269,8 +269,7 @@ spatial_firing <- cbind(spatial_firing, adu_p)
 3. do the same for non-beaconed trials
 ```{r}
 p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_rewarded_Pval_o)
-adjusted_vals <- p.adjust(p_vals_nb$pvals, "BH")
-adu_p_nb <- tibble(adjust_pval_nb = adjusted_vals)
+adu_p_nb <- tibble(adjust_pval_nb = p.adjust(p_vals_nb$pvals, "BH"))
 
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
 ```
@@ -278,8 +277,7 @@ spatial_firing <- cbind(spatial_firing, adu_p_nb)
 3. do the same for probe trials
 ```{r}
 p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_Pval_o)
-adjusted_vals <- p.adjust(p_vals_p$pvals, "BH")
-adu_p_p <- tibble(adjust_pval_p = adjusted_vals)
+adu_p_p <- tibble(adjust_pval_p = p.adjust(p_vals_p$pvals, "BH"))
 
 spatial_firing <- cbind(spatial_firing, adu_p_p)
 ```
@@ -552,13 +550,8 @@ concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rat
 Extract ramp score for annotating heatmap
 _since its a list of three (outbound/homebound/all) we extract the first one_
 ```{r}
-extract_ramp_score <- function(df){
-  dx <- df[[1]]
-  return(dx)
-}
-
 start_ramps <- start_ramps %>%
-  mutate(start_ramp_score = map(ramp_score, extract_ramp_score))
+  mutate(start_ramp_score = map(ramp_score, ~.x[1]))
 
 ```
 
