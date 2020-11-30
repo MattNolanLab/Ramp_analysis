@@ -43,7 +43,7 @@ def process_a_local_dir(recording_folder, prm):
 
 
 def process_allmice_dir(recording_folder, prm):
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort1_dataset.pkl'
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort4_dataset.pkl'
 
     if os.path.exists(prm.get_output_path()):
         print('I found the output folder.')
@@ -79,19 +79,3 @@ def add_combined_id_to_df(df_all_mice):
     df_all_mice['false_positive_id'] = combined_ids
     return df_all_mice
 
-
-#  this is here for testing
-def main():
-    print('-------------------------------------------------------------')
-    print('-------------------------------------------------------------')
-
-    recording_folder = '/Users/sarahtennant/Work/Analysis/Opto_data/PVCre1/M1_D31_2018-11-01_12-28-25' # test recording
-    local_output_path = '/Users/sarahtennant/Work/Analysis/Opto_data/PVCre1/M1_D31_2018-11-01_12-28-25/'
-    print('Processing ' + str(recording_folder))
-
-    spike_data = process_a_dir(recording_folder, local_output_path)
-
-
-
-if __name__ == '__main__':
-    main()
