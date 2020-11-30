@@ -162,6 +162,9 @@ return(df_modified)
 
 2. Run on example neuron (beaconed and non-beaconed trials)
 ```{r}
+# Uncomment the line below to load pre-saved shuffled data
+# spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
+
 # Check to see if the column shuffle_results exists. If it does then don't run again.
 if(!"shuffle_results" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
@@ -170,9 +173,9 @@ if(!"shuffle_results" %in% colnames(spatial_firing)) {
   #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
 }
 # Uncomment the line below to save spatial firing at this point.
-saveRDS(spatial_firing, "SpatialFiring_with_shuffles.Rda")
+# saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
 # And use this to save a truncated version. Useful for testing code.
-saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_shuffles_trunc.Rda")
+# saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
 ```
 
 
