@@ -34,10 +34,8 @@ source("Functions_Outbound_LMER.R")
 
 # Load data
 # Alternative file names commened out
-# spatial_firing <- readRDS(file="df_final.Rda")
-# spatial_firing <- readRDS(file="df_allmice.Rda")
 spatial_firing <- readRDS(file="PythonOutput_Concat.Rda")
-spatial_firing <- readRDS(file="Fig2Results.Rda")
+spatial_firing <- readRDS(file="All_Results.Rda") 
 
 ```
 
