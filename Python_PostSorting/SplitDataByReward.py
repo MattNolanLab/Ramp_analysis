@@ -7,132 +7,12 @@ from scipy import signal
 import Python_PostSorting.ConvolveRates_FFT
 
 
-def create_reward_histogram(spike_data, cluster, max_trial):
-    rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
-    rewarded_positions = np.array(spike_data.loc[cluster, 'rewarded_locations'])
-    bins = np.arange(0,(200)+1,1)
-    trialrange = np.arange(1,(max_trial+1),1)
-    reward_histogram = Python_PostSorting.Create2DHistogram.create_2dhistogram(rewarded_trials, rewarded_positions, bins, trialrange)
-    return reward_histogram
-
-
-def reshape_reward_histogram(reward_histogram, spike_data, cluster):
-    reshaped_reward_histogram = np.reshape(reward_histogram, (reward_histogram.shape[0]*reward_histogram.shape[1]))
-    spike_data.at[cluster, 'reward_histogram'] = list(reshaped_reward_histogram)
-    return spike_data
-
-
-def find_rewarded_trials(reward_histogram):
-    trial_indicator = np.sum(reward_histogram, axis=1)
-    return trial_indicator
-
-
-def fill_in_binned_trial_indicator(trial_indicator):
-    binned_trial_indicator=[]
-    for row in trial_indicator:
-        trial_reward_indicator = [row]
-        whole_trial_as_indicator = np.repeat(trial_reward_indicator, 200)
-        binned_trial_indicator = np.append(binned_trial_indicator, whole_trial_as_indicator)
-    return binned_trial_indicator
-
-
-def generate_reward_indicator(spike_data):
-    print("generating reward indicator...")
-    spike_data["binned_trial_indicator"] = ""
-    spike_data["reward_histogram"] = ""
-
-    for cluster in range(len(spike_data)):
-        trials=np.max(np.array(spike_data.loc[cluster].spike_rate_on_trials_smoothed[1], dtype= np.int32))
-        reward_histogram = create_reward_histogram(spike_data, cluster, trials)
-        spike_data = reshape_reward_histogram(reward_histogram, spike_data, cluster)
-        trial_indicator = find_rewarded_trials(reward_histogram)
-        binned_trial_indicator = fill_in_binned_trial_indicator(trial_indicator)
-        spike_data.at[cluster,'binned_trial_indicator'] = list(binned_trial_indicator)
-    return spike_data
-
-
-def package_reward_data_for_r(spike_data):
-    print("packaging data for R...")
-    spike_data["R_Reward_data"] = ""
-    for cluster_index in range(len(spike_data)):
-        reward = np.array(spike_data.at[cluster_index, "binned_trial_indicator"], dtype= np.int32)
-        trials=np.array(spike_data.loc[cluster_index].spike_rate_on_trials_smoothed[1], dtype= np.int32)
-        types=np.array(spike_data.loc[cluster_index].spike_rate_on_trials_smoothed[2], dtype= np.int32)
-        rate=np.array(spike_data.loc[cluster_index].spike_rate_on_trials_smoothed[0])
-
-        if reward.shape[0] == trials.shape[0]:
-            sr=[]
-            sr.append(np.array(rate))
-            sr.append(np.array(reward))
-            sr.append(np.array(trials))
-            sr.append(np.array(types))
-            spike_data.at[cluster_index, 'R_Reward_data'] = list(sr)
-        else:
-            print("Arrays are not the same shape")
-    return spike_data
-
-
-def add_columns_to_dataframe(spike_data):
-    spike_data["rewarded_beaconed_position_cm"] = ""
-    spike_data["rewarded_nonbeaconed_position_cm"] = ""
-    spike_data["rewarded_probe_position_cm"] = ""
-    spike_data["rewarded_beaconed_trial_numbers"] = ""
-    spike_data["rewarded_nonbeaconed_trial_numbers"] = ""
-    spike_data["rewarded_probe_trial_numbers"] = ""
-    spike_data["failed_beaconed_position_cm"] = ""
-    spike_data["failed_nonbeaconed_position_cm"] = ""
-    spike_data["failed_probe_position_cm"] = ""
-    spike_data["failed_beaconed_trial_numbers"] = ""
-    spike_data["failed_nonbeaconed_trial_numbers"] = ""
-    spike_data["failed_probe_trial_numbers"] = ""
-    return spike_data
-
-
-def split_trials_by_reward(spike_data, cluster_index):
-    #spike_data = add_columns_to_dataframe(spike_data)
-    beaconed_position_cm, nonbeaconed_position_cm, probe_position_cm, beaconed_trial_number, nonbeaconed_trial_number, probe_trial_number = Python_PostSorting.ExtractFiringData.split_firing_by_trial_type(spike_data, cluster_index)
-
-    rewarded_trials = np.array(spike_data.at[cluster_index, 'rewarded_trials'], dtype=np.int16)
-
-    #take firing locations when on rewarded trials
-    rewarded_beaconed_position_cm = beaconed_position_cm[np.isin(beaconed_trial_number,rewarded_trials)]
-    rewarded_nonbeaconed_position_cm = nonbeaconed_position_cm[np.isin(nonbeaconed_trial_number,rewarded_trials)]
-    rewarded_probe_position_cm = probe_position_cm[np.isin(probe_trial_number,rewarded_trials)]
-
-    #take firing trial numbers when on rewarded trials
-    rewarded_beaconed_trial_numbers = beaconed_trial_number[np.isin(beaconed_trial_number,rewarded_trials)]
-    rewarded_nonbeaconed_trial_numbers = nonbeaconed_trial_number[np.isin(nonbeaconed_trial_number,rewarded_trials)]
-    rewarded_probe_trial_numbers = probe_trial_number[np.isin(probe_trial_number,rewarded_trials)]
-
-    return rewarded_beaconed_position_cm, rewarded_nonbeaconed_position_cm, rewarded_probe_position_cm, rewarded_beaconed_trial_numbers, rewarded_nonbeaconed_trial_numbers, rewarded_probe_trial_numbers
-
-
-def split_trials_by_failure(spike_data, cluster_index):
-    #spike_data = add_columns_to_dataframe(spike_data)
-    beaconed_position_cm, nonbeaconed_position_cm, probe_position_cm, beaconed_trial_number, nonbeaconed_trial_number, probe_trial_number = Python_PostSorting.ExtractFiringData.split_firing_by_trial_type(spike_data, cluster_index)
-
-    rewarded_trials = np.array(spike_data.at[cluster_index, 'rewarded_trials'], dtype=np.int16)
-
-    #take firing locations when on rewarded trials
-    failed_beaconed_position_cm = beaconed_position_cm[np.isin(beaconed_trial_number,rewarded_trials, invert=True)]
-    failed_nonbeaconed_position_cm = nonbeaconed_position_cm[np.isin(nonbeaconed_trial_number,rewarded_trials, invert=True)]
-    failed_probe_position_cm = probe_position_cm[~np.isin(probe_trial_number,rewarded_trials, invert=True)]
-
-    #take firing trial numbers when on rewarded trials
-    failed_beaconed_trial_numbers = beaconed_trial_number[np.isin(beaconed_trial_number,rewarded_trials, invert=True)]
-    failed_nonbeaconed_trial_numbers = nonbeaconed_trial_number[np.isin(nonbeaconed_trial_number,rewarded_trials, invert=True)]
-    failed_probe_trial_numbers = probe_trial_number[np.isin(probe_trial_number,rewarded_trials, invert=True)]
-
-    return failed_beaconed_position_cm, failed_nonbeaconed_position_cm, failed_probe_position_cm, failed_beaconed_trial_numbers, failed_nonbeaconed_trial_numbers, failed_probe_trial_numbers
-
-
 
 def remove_low_speeds(rates, speed, position,trials, types ):
     data = np.vstack((rates, speed, position, trials, types))
     data=data.transpose()
     data_filtered = data[data[:,1] >= 3,:]
     return data_filtered
-
 
 
 def split_time_data_by_reward(spike_data, prm):
@@ -243,7 +123,7 @@ def split_time_data_by_reward(spike_data, prm):
         failed_types = types[np.isin(trials,rewarded_trials, invert=True)]
 
         spike_data = drop_nb_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
-        #spike_data = extract_time_binned_firing_rate_rewarded(spike_data, cluster, prm)
+        spike_data = extract_time_binned_firing_rate_rewarded(spike_data, cluster, prm)
 
 
         rewarded_locations = np.array(spike_data.loc[cluster, 'rewarded_locations'])
@@ -504,7 +384,7 @@ def extract_time_binned_firing_rate_rewarded(spike_data,cluster, prm):
     spike_data.at[cluster, 'averaged_rewarded_b'] = list(binned_speed)
 
     #beaconed_failed_plot(spike_data,cluster,  position_array, binned_speed, binned_speed_sd, save_path)
-    #beaconed_plot(spike_data,cluster,  position_array, binned_speed, binned_speed_sd, save_path)
+    beaconed_plot(spike_data,cluster,  position_array, binned_speed, binned_speed_sd, save_path)
 
     data_filtered = data[data[:,3] == 2,:]
     rates = data_filtered[:,0]

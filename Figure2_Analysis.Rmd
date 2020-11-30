@@ -169,6 +169,10 @@ if(!"shuffle_results_nb" %in% colnames(spatial_firing)) {
     mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) #%>%
     #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
 }
+# Uncomment the line below to save spatial firing at this point.
+saveRDS(spatial_firing, "SpatialFiring_with_shuffles.Rda")
+# And use this to save a truncated version. Useful for testing code.
+saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_shuffles_trunc.Rda")
 ```
 
 
@@ -186,13 +190,13 @@ First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron
 ```{r}
 
 extract_min_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df[2]), rsquared = unlist(df[3]))
+  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
   min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
   return(min_slope_o)
 }
 
 extract_max_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df[2]), rsquared = unlist(df[3]))
+  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
   max_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[2]][1]
   return(max_slope_o)
 }
@@ -219,18 +223,15 @@ We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neu
 ```{r} 
 
 extract_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
-  return(df$slopes)
+  return(unlist(df$slope))
 }
 
 extract_shuffle_r2 <- function(df){
-  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
-  return(df$rsquared)
+  return(unlist(df$rsquared))
 }
 
 extract_shuffle_pval <- function(df){
-  df <- tibble(pval = unlist(df$pval))
-  return(df$pval)
+  return(unlist(df$pval))
 }
 ```
 
@@ -256,8 +257,7 @@ Then we want to correct the pvals of the lm, to account for multiple comparisons
 1. put all pvalues into tibble then adjust using p.adjust from - package
 ```{r}
 p_vals <- tibble(pvals = spatial_firing$asr_b_rewarded_Pval_o)
-adjusted_vals <- p.adjust(p_vals$pvals, "BH")
-adu_p <- tibble(adjust_pval = adjusted_vals)
+adu_p <- tibble(adjust_pval = p.adjust(p_vals$pvals, "BH"))
 
 ```
 
@@ -393,6 +393,7 @@ We might also want to visualise the coefficients for the real and shuffled datas
 level_order <- c("Negative", "Positive", "Unclassified")
 
 ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(lm_group))
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
   coord_cartesian(xlim = c(-0.6,0.6)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -588,7 +589,7 @@ mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id)
 
 # change the color of annotation to what you want: (eg: "navy", "darkgreen")
 Var1        <- c("violetred2", "black", "chartreuse3")
-names(Var1) <- c("Negative", "None", "Positive")
+names(Var1) <- c("Negative", "Unxlassified", "Positive")
 
 Var2        <- c("springgreen4", "deepskyblue1", "firebrick")
 names(Var2) <- c("MEC", "PS", "UN")
@@ -599,7 +600,7 @@ anno_col <- list(result = Var1, region = Var2, ramp_score = brewer.pal(11,"RdBu"
 myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, show_rownames = F, show_colnames = F )
 ```
 
-Save the headmap (bit of a nightmare here...)
+Save the heatmap (bit of a nightmare here...)
 ```{r}
 save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
   png(filename, width = width, height = height, res = res)
