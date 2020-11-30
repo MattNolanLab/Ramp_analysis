@@ -76,6 +76,7 @@ save(spatial_firing,file="data/spatial_firing_ramp.Rda")#save as R dataframe - u
 dataframe_to_load <- "data/Alldays_cohort_1.pkl" # name of the pickled dataframe want to load 
 source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
 spatial_firing1 <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
+#spatial_firing1 <- spatial_firing1[c('Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb')]
 
 dataframe_to_load <- "data/Alldays_cohort_2.pkl" 
 source_python("pickle_reader.py") 
@@ -84,7 +85,7 @@ spatial_firing2 <- read_pickle_file(file.path(dataframe_to_load))
 dataframe_to_load <- "data/Alldays_cohort_3.pkl"  
 source_python("pickle_reader.py") 
 spatial_firing3 <- read_pickle_file(file.path(dataframe_to_load)) 
- 
+
 dataframe_to_load <- "data/Alldays_cohort_4.pkl" 
 source_python("pickle_reader.py") 
 spatial_firing4 <- read_pickle_file(file.path(dataframe_to_load)) 
@@ -94,5 +95,21 @@ spatial_firing4 <- read_pickle_file(file.path(dataframe_to_load))
 2. Concatinate cohorts together
 ```{r}
 spatial_firing <- rbind(spatial_firing1, spatial_firing2, spatial_firing3, spatial_firing4)
+```
+
+```{r}
+saveRDS(spatial_firing, file="PythonOutput_Concat.Rda")
+
+```
+
+
+
+```{r}
+drops <- c('Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb')
+spatial_firing[ , !(names(spatial_firing) %in% drops)]
+
+
+spatial_firing <- select(spatial_firing,-c('Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb'))
+
 ```
 
