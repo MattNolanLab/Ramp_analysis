@@ -94,8 +94,8 @@ lm_analysis <- function(df, spike_rate_col, startbin = 30, endbin = 90) {
 
 spatial_firing <- spatial_firing %>%
   lm_analysis(asr_b_rewarded, 30, 90) %>%
-  lm_analysis(asr_nb_rewarded, 30, 90) %>%
-  lm_analysis(asr_p_rewarded, 30, 90)
+  lm_analysis(asr_nb_rewarded, 30, 90)
+  #lm_analysis(asr_p_rewarded, 30, 90)
 
 ```
 
@@ -152,7 +152,7 @@ shuffle_rates <- function(df) {
   df_modified <- rbind(df_modified,data)
 
   x = x+1
-  if (x == 1000){ # putting 100 here for now for testing as 1000 takes v long time to run
+  if (x == 100){ # putting 100 here for now for testing as 1000 takes v long time to run
   break
   }
   }
@@ -163,11 +163,11 @@ return(df_modified)
 2. Run on example neuron (beaconed and non-beaconed trials)
 ```{r}
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-if(!"shuffle_results" %in% colnames(spatial_firing)) {
+if(!"shuffle_results_nb" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) #%>%
-  #mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
-  #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
+    mutate(shuffle_results = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
+    mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) #%>%
+    #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
 }
 ```
 
@@ -188,8 +188,6 @@ First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron
 extract_min_shuffle_slopes <- function(df){
   df <- tibble(slopes = unlist(df[2]), rsquared = unlist(df[3]))
   min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
-  #max_r2_o <- quantile(as.numeric(unlist(df$rsquared)), c(.025, .975)) [[2]][1]
-  #variables <- c(min_slope_o, max_slope_o, max_r2_o) # return all three criteria
   return(min_slope_o)
 }
 
@@ -205,11 +203,11 @@ extract_max_shuffle_slopes <- function(df){
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(shuffle_min_slope = map(shuffle_results, extract_min_shuffle_slopes)) %>%
-  mutate(shuffle_max_slope = map(shuffle_results, extract_max_shuffle_slopes)) 
-  #mutate(shuffle_min_slope_nb = map(shuffle_results_nb, extract_min_shuffle_slopes)) %>%
-  #mutate(shuffle_max_slope_nb = map(shuffle_results_nb, extract_max_shuffle_slopes)) 
+  mutate(shuffle_max_slope = map(shuffle_results, extract_max_shuffle_slopes)) %>%
+  mutate(shuffle_min_slope_nb = map(shuffle_results_nb, extract_min_shuffle_slopes)) %>%
+  mutate(shuffle_max_slope_nb = map(shuffle_results_nb, extract_max_shuffle_slopes)) #%>%
   #mutate(shuffle_min_slope_p = map(shuffle_results_p, extract_min_shuffle_slopes)) %>%
-  #mutate(shuffle_max_slope_p = map(shuffle_results_p, extract_max_shuffle_slopes)) 
+  #mutate(shuffle_max_slope_p = map(shuffle_results_p, extract_max_shuffle_slopes))
 
 ```
 
@@ -241,10 +239,10 @@ extract_shuffle_pval <- function(df){
 spatial_firing <- spatial_firing %>%
   mutate(shuffle_slopes = map(shuffle_results, extract_shuffle_slopes)) %>%
   mutate(shuffle_rsquared = map(shuffle_results, extract_shuffle_r2)) %>%
-  mutate(shuffle_pval = map(shuffle_results, extract_shuffle_pval)) 
-  #mutate(shuffle_slopes_nb = map(shuffle_results_nb, extract_shuffle_slopes)) %>% # Non beaconed
-  #mutate(shuffle_rsquared_nb = map(shuffle_results_nb, extract_shuffle_r2)) %>%
-  #mutate(shuffle_pval_nb = map(shuffle_results_nb, extract_shuffle_pval)) 
+  mutate(shuffle_pval = map(shuffle_results, extract_shuffle_pval)) %>% 
+  mutate(shuffle_slopes_nb = map(shuffle_results_nb, extract_shuffle_slopes)) %>% # Non beaconed
+  mutate(shuffle_rsquared_nb = map(shuffle_results_nb, extract_shuffle_r2)) %>%
+  mutate(shuffle_pval_nb = map(shuffle_results_nb, extract_shuffle_pval)) #%>%
   #mutate(shuffle_slopes_p = map(shuffle_results_p, extract_shuffle_slopes)) %>% # probe
   #mutate(shuffle_rsquared_p = map(shuffle_results_p, extract_shuffle_r2)) %>%
   #mutate(shuffle_pval_p = map(shuffle_results_p, extract_shuffle_pval)) 
@@ -287,15 +285,6 @@ spatial_firing <- cbind(spatial_firing, adu_p_p)
 ```
 
 
-# remove duplicate columns from dataframe if needed  _note should only need if ran the above code twice..._
-
-MN: What happens here if columns are not identical? Which one is kept? Seems dangerous.
-```{r}
-spatial_firing = spatial_firing[,!duplicated(names(spatial_firing))]
-
-```
-
-
 ### ----------------------------------------------------------------------------------------- ### 
 
 Now we want to classify neurons, taking the adjusted significance into account
@@ -318,8 +307,8 @@ compare_slopes <- function(min_slope, max_slope, slope, pval){
 }
 
 spatial_firing <- spatial_firing %>%
-  mutate(lm_group = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) # %>%
-  #mutate(lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes)) %>%
+  mutate(lm_group = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) %>%
+  mutate(lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes))
   #mutate(lm_group_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
 
 ```
