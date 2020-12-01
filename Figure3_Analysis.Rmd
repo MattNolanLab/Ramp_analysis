@@ -199,79 +199,7 @@ ggsave(file = "plots/cell_proportions-lmmodel_beaconed2.png", width = 4, height 
 source("Functions_StdCoef_lmer.R")
 ```
 
-
-1. Function to calculate standardized coefficients for a LMER
-https://stackoverflow.com/questions/25142901/standardized-coefficients-for-lmer-model 
-```{r}
-
-stdCoef.merMod <- function(object) {
-  sdy <- sd(getME(object,"y"))
-  sdx <- apply(getME(object,"X"), 2, sd)
-  sc <- fixef(object)*sdx/sdy
-  se.fixef <- coef(summary(object))[,"Std. Error"]
-  se <- se.fixef*sdx/sdy
-  return(data.frame(stdcoef=sc, stdse=se))
-}
-
-```
-
-2. 
-```{r}
-
-coef_ratio_pos <- function(df){
-  if(length(df) == 1) 
-    return(NA) 
-  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
-  df <- df %>% 
-    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
-  if(length(df) == 1 | nrow(df) < 3) 
-    return(NA) 
-  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
-  # standardize parameters first
-  mod <- stdCoef.merMod(df_int) #print(effectsize::standardize_parameters(df_int)) --> alternative way of standardising the coefficients
-  #mod <- sjstats::std_beta(df_int, ci.lvl = 0.95)
-  pos <- mod[2,1]
-  speed <- mod[3,1]
-  accel <- mod[4,1]
-  return(pos)
-}
-
-coef_ratio_speed <- function(df){
-  if(length(df) == 1) 
-    return(NA) 
-  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
-  df <- df %>% 
-    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
-  if(length(df) == 1 | nrow(df) < 3) 
-    return(NA) 
-  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
-  # standardize parameters first
-  mod <- stdCoef.merMod(df_int) #print(effectsize::standardize_parameters(df_int)) --> alternative way of standardising the coefficients
-  pos <- mod[2,1]
-  speed <- mod[3,1]
-  accel <- mod[4,1]
-  return(speed)
-}
-
-coef_ratio_accel <- function(df){
-  if(length(df) == 1) 
-    return(NA) 
-  df <- tibble(Rates = as.numeric(Re(df[[1]])), Position = as.numeric(Re(df[[2]])), Acceleration = as.numeric(Re(df[[3]])), Speed = as.numeric(Re(df[[4]])), Trials = as.factor(Re(df[[5]])), Types = as.factor(Re(df[[6]])))
-  df <- df %>% 
-    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == 0)
-  if(length(df) == 1 | nrow(df) < 3) 
-    return(NA) 
-  df_int <- lme4::lmer(Rates ~ Position + Speed + Acceleration + (1|Trials), data = df, na.action=na.exclude)
-  # standardize parameters first
-  mod <- stdCoef.merMod(df_int) #print(effectsize::standardize_parameters(df_int)) --> alternative way of standardising the coefficients
-  pos <- mod[2,1]
-  speed <- mod[3,1]
-  accel <- mod[4,1]
-  return(accel)
-}
-```
-
-3. Run on all cells 
+2. calculate and extract standardized coefficients for position, speed and acceleration
 ```{r}
 spatial_firing <- spatial_firing  %>%
   mutate(o_pos_b_stdcoef = map(spikes_in_time, coef_ratio_pos)) %>%
@@ -279,9 +207,6 @@ spatial_firing <- spatial_firing  %>%
   mutate(o_accel_b_stdcoef = map(spikes_in_time, coef_ratio_accel))
 
 ```
-
-
-
 
 ### plot distribution of coefficients for all cells
 _split by positive and negative sloping neurons_
@@ -306,19 +231,6 @@ spatial_firing_save <- subset(spatial_firing, select = c("session_id", "cluster_
 
 ```
 
-3. save to csv file _this is for matching to plots from python_
-```{r}
-spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id, 
-                              cluster_id = spatial_firing_save$cluster_id, 
-                              pos_stdcoef =  as.character(spatial_firing_save$o_pos_b_stdcoef),
-                              speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_stdcoef), 
-                              accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_stdcoef), 
-                              final_model_o_b =  as.character(spatial_firing_save$final_model_o_b), 
-                              lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group))
-
-write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
-```
-
 4. put data into a tibble for plotting
 ```{r}
 data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
@@ -339,8 +251,6 @@ data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), time
 data_coef_pos <- data_coef %>%
   #subset(group == "P") %>%
   subset(lm_result == "Positive" )
-  #subset(lm_result == "Positive" | lm_result == "Negative")
-
 ```
 
 6. Plot coefficients _all cells_
@@ -464,4 +374,20 @@ ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/CoefficientValues_S_negativecells.png", width = 3, height = 2.5)
   
+```
+
+
+
+
+## Save to csv file _this is for matching to plots from python_
+```{r}
+spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id, 
+                              cluster_id = spatial_firing_save$cluster_id, 
+                              pos_stdcoef =  as.character(spatial_firing_save$o_pos_b_stdcoef),
+                              speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_stdcoef), 
+                              accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_stdcoef), 
+                              final_model_o_b =  as.character(spatial_firing_save$final_model_o_b), 
+                              lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group))
+
+write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
 ```
