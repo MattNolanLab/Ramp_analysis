@@ -274,7 +274,7 @@ adu_p_nb <- tibble(adjust_pval_nb = p.adjust(p_vals_nb$pvals, "BH"))
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
 ```
 
-3. do the same for probe trials
+3. do the same for probe trials (dont run unless youve ran the shuffled for probe trials..)
 ```{r}
 p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_Pval_o)
 adu_p_p <- tibble(adjust_pval_p = p.adjust(p_vals_p$pvals, "BH"))
