@@ -27,11 +27,11 @@ source("Functions_Outbound_LMER.R")
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
   mutate(o_pos_b = map2(spikes_in_time, 0, car_pos)) %>%
-  mutate(o_speed_b = map(spikes_in_time, 0, car_speed)) %>%
-  mutate(o_accel_b = map(spikes_in_time, 0, car_accel)) #%>%
-  #mutate(o_pos_nb = map(spikes_in_time, 1, car_pos)) %>%
-  #mutate(o_speed_nb = map(spikes_in_time, 1, car_speed)) %>%
-  #mutate(o_accel_nb = map(spikes_in_time, 1, car_accel)) %>%
+  mutate(o_speed_b = map2(spikes_in_time, 0, car_speed)) %>%
+  mutate(o_accel_b = map2(spikes_in_time, 0, car_accel)) %>%
+  mutate(o_pos_nb = map2(spikes_in_time, 1, car_pos)) %>%
+  mutate(o_speed_nb = map2(spikes_in_time, 1, car_speed)) %>%
+  mutate(o_accel_nb = map2(spikes_in_time, 1, car_accel))
   #mutate(o_pos_p = map(spikes_in_time, 2, car_po)) %>%
   #mutate(o_speed_p = map(spikes_in_time, 2, car_speed)) %>%
   #mutate(o_accel_p = map(spikes_in_time, 2, car_accel))
@@ -82,8 +82,8 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 2. Run on all cells in dataframe
 ```{r}
 spatial_firing <- spatial_firing  %>%
-    mutate(final_model_o_b  = pmap(list(o_pos_b, o_speed_b, o_accel_b), model_comparison)) #%>%
-    #mutate(final_model_o_nb  = pmap(list(o_pos_nb, o_speed_nb, o_accel_nb), model_comparison))  %>%
+    mutate(final_model_o_b  = pmap(list(o_pos_b, o_speed_b, o_accel_b), model_comparison)) %>%
+    mutate(final_model_o_nb  = pmap(list(o_pos_nb, o_speed_nb, o_accel_nb), model_comparison))#%>%
     #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
 
 ```
@@ -189,11 +189,16 @@ ggsave(file = "plots/cell_proportions-lmmodel_beaconed2.png", width = 4, height 
 ```
 
 
+
 ### ----------------------------------------------------------------------------------------- ###
 
-
-
 ## Calculate standardized coefficients for position, speed and acceleration in LMER model
+
+1. Load functions to calculate and extract standardised coefficients for each variable in the lmer
+```{r}
+source("Functions_StdCoef_lmer.R")
+```
+
 
 1. Function to calculate standardized coefficients for a LMER
 https://stackoverflow.com/questions/25142901/standardized-coefficients-for-lmer-model 
