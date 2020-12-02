@@ -29,7 +29,7 @@ def load_brain_region_data_into_frame(spike_data):
     spike_data["brain_region"] = ""
     spike_data = add_mouse_to_frame(spike_data)
     #print("mouse and day columns added to frame")
-    region_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/in_vivo_virtual_reality/data/tetrode_locations.csv", header=int())
+    region_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data/tetrode_locations.csv", header=int())
 
     for cluster in range(len(spike_data)):
         session_id = spike_data.session_id.values[cluster]
