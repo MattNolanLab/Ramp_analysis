@@ -39,11 +39,9 @@ The linear model uses firing rate data binned in space. For this we want to load
 1. Write function to add position
 ```{r}
 add_position <- function(df) { 
-  if (length(na.omit(unlist(df)))!= length(unlist(df))) {
-    print("Contains NAs")
-    return(-1)
-  }
   df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
+  if(any(is.na(df$Rates))) {print(typeof(df$Rates))}
+  df
 }
 ```
 
@@ -64,10 +62,35 @@ _note:for now we are only interested in the outbound region of the track (30 - 9
 
 1. Make function to run linear model
 ```{r}
-lm_helper <- function(df, startbin = 30, endbin = 90){
+lm_helper <- function(df,
+                      startbin = 30,
+                      endbin = 90) {
+  
+  if (any(is.na(df$Position))) {
+    print("Contains NAs")
+    df <-
+      tibble(
+        r.squared = c(NA),
+        p.value = c(NA),
+        intercept = c(NA),
+        slope = c(NA)
+      )
+    return(df)
+  }
+  
   df <- df %>%
     subset(Position >= startbin & Position <= endbin)
-  df_mod <- glance(lm(Rates ~ Position, data = df, na.action=na.exclude))
+  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
+  
+  # get the model parameters
+  params <- select(glance(df_fit), r.squared, p.value)
+  # get the coefficients
+  coeffs <- tidy(df_fit)
+  # combine the parameters and coefficients
+  params$intercept <- coeffs$estimate[[1]]
+  params$slope <- coeffs$estimate[[2]]
+  
+  return(params)
 }
 ```
 
@@ -77,15 +100,18 @@ Removes any previously generated results (select), fits the data (mutate) and th
 spatial_firing <- spatial_firing %>%
   select(-contains('asr_b_rewarded_fit_')) %>%
   select(-contains('asr_nb_rewarded_fit_')) %>%
+  select(-contains('asr_p_rewarded_fit_')) %>%
   mutate(asr_b_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_helper),
-         asr_nb_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_helper)) %>%
+         asr_nb_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_helper),
+         asr_p_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_helper)) %>%
   unnest_wider(asr_b_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal")
+  unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal") 
 ```
 
 3. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
-ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o)) + 
+ggplot(data=spatial_firing, aes(x = asr_b_rewarded_fit_slope,
+                                y = asr_b_rewarded_fit_adj.r.squared)) + 
     coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
     geom_point() +
     xlab("\nslope") +
@@ -101,7 +127,7 @@ ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 ggsave(file = "plots/shuff_lm_allcells.png", width = 4, height = 5)
 ```
-
+,
 
 
 ### ----------------------------------------------------------------------------------------- ###
