@@ -40,10 +40,10 @@ lm_analysis <- function(df, spike_rate_col, startbin = 110, endbin = 170) {
   sr_unnest_name <- sym(paste0(quo_name(spike_rate_col), "_unnest"))
   fit_name <- sym(paste0(quo_name(out_name), "_fit"))
   glance_name <- sym(paste0(quo_name(out_name), "_glance"))
-  r2_name <- sym(paste0(quo_name(out_name), "_r2_o"))
-  Pval_name <- sym(paste0(quo_name(out_name), "_Pval_o"))
-  slope_name <- sym(paste0(quo_name(out_name), "_slope_o"))
-  intercept_name <- sym(paste0(quo_name(out_name), "_intercept_o"))
+  r2_name <- sym(paste0(quo_name(out_name), "_r2_h"))
+  Pval_name <- sym(paste0(quo_name(out_name), "_Pval_h"))
+  slope_name <- sym(paste0(quo_name(out_name), "_slope_h"))
+  intercept_name <- sym(paste0(quo_name(out_name), "_intercept_h"))
   df <- df %>%
     mutate(!!fit_name := pmap(list(!!spike_rate_col, startbin, endbin), lm_helper),
            !!glance_name := map(!!fit_name, glance),
@@ -66,7 +66,7 @@ spatial_firing <- spatial_firing %>%
 
 4. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
-ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o)) + 
+ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_h, y = asr_b_rewarded_r2_h)) + 
     coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
     geom_point() +
     xlab("\nslope") +
@@ -124,16 +124,16 @@ return(df_modified)
 2. Run on example neuron (beaconed and non-beaconed trials)
 ```{r}
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-if(!"shuffle_results_nb" %in% colnames(spatial_firing)) {
+if(!"shuffle_results_h" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_h = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
     mutate(shuffle_results_h_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) #%>%
     #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
 }
 # Uncomment the line below to save spatial firing at this point.
-saveRDS(spatial_firing, "SpatialFiring_with_shuffles.Rda")
+#saveRDS(spatial_firing, "SpatialFiring_with_shuffles_homebound.Rda")
 # And use this to save a truncated version. Useful for testing code.
-saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_shuffles_trunc.Rda")
+#saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_shuffles_trunc.Rda")
 ```
 
 
@@ -203,13 +203,17 @@ compare_slopes <- function(min_slope, max_slope, slope, pval){
 }
 
 spatial_firing <- spatial_firing %>%
-  mutate(lm_group = pmap(list(shuffle_min_slope_h, shuffle_max_slope_h, asr_b_rewarded_slope_h, adjust_pval_h), compare_slopes)) #%>%
+  mutate(lm_group_p = pmap(list(shuffle_min_slope_h, shuffle_max_slope_h, asr_b_rewarded_slope_h, adjust_pval_h), compare_slopes)) #%>%
   #mutate(lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_h, adjust_pval_nb), compare_slopes))
   #mutate(lm_group_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
 
 ```
 
 
+```{r}
+saveRDS(spatial_firing, file="All_Results_withHomebound.Rda")
+
+```
 
 ### -------------------------------------------------------------------------------------------------------------------- ### 
 
@@ -248,7 +252,7 @@ mark_predict_group <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate( predict_id = map2(slope_criteria_pval, slope_criteria_pval_h, mark_predict_group))
+  mutate( predict_id = map2(lm_group, lm_group_p, mark_predict_group))
 
 ```
 
