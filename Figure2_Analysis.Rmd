@@ -105,7 +105,8 @@ spatial_firing <- spatial_firing %>%
          asr_nb_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_helper),
          asr_p_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_helper)) %>%
   unnest_wider(asr_b_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal") 
+  unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_p_rewarded_fit, names_sep = "_", names_repair = "universal") 
 ```
 
 3. Plot coefficients of model (slope and r2 value) for each neuron
@@ -154,11 +155,8 @@ shuffle_rates <- function(df) {
   repeat {
   shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
   df_mod <- lm_helper(shuff_df)
-  rsquared <- glance(df_mod)$r.squared
-  pval<- glance(df_mod)$p.value
-  slope <- coefficients(df_mod)[2] # slope
-  data <- data.frame(as.numeric(x), slope, rsquared, round(pval,5))
-  names(data) <- c("neuron", "slope", "rsquared", "pval")
+  data <- data.frame(as.numeric(x), df_mod$slope, df_mod$r.squared, df_mod$p.value)
+  names(data) <- c("neuron", "slope", "r.squared", "p.value")
   df_modified <- rbind(df_modified,data)
 
   x = x+1
@@ -176,7 +174,7 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-if(!"shuffle_results_p" %in% colnames(spatial_firing)) {
+if(!"shuffle_results_b" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_b = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
     mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
@@ -203,13 +201,13 @@ First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron
 ```{r}
 
 extract_min_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
+  df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
   min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
   return(min_slope_o)
 }
 
 extract_max_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df$slope), rsquared = unlist(df$rsquared))
+  df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
   max_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[2]][1]
   return(max_slope_o)
 }
@@ -219,49 +217,29 @@ extract_max_shuffle_slopes <- function(df){
 2. Run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(shuffle_min_slope = map(shuffle_results_b, extract_min_shuffle_slopes)) %>%
-  mutate(shuffle_max_slope = map(shuffle_results_b, extract_max_shuffle_slopes)) %>%
-  mutate(shuffle_min_slope_nb = map(shuffle_results_nb, extract_min_shuffle_slopes)) %>%
-  mutate(shuffle_max_slope_nb = map(shuffle_results_nb, extract_max_shuffle_slopes)) %>%
-  mutate(shuffle_min_slope_p = map(shuffle_results_p, extract_min_shuffle_slopes)) %>%
-  mutate(shuffle_max_slope_p = map(shuffle_results_p, extract_max_shuffle_slopes))
+  mutate(shuffle_min_slope_b = map_dbl(shuffle_results_b, extract_min_shuffle_slopes),
+         shuffle_max_slope_b = map_dbl(shuffle_results_b, extract_max_shuffle_slopes),
+         shuffle_min_slope_nb = map_dbl(shuffle_results_nb, extract_min_shuffle_slopes),
+         shuffle_max_slope_nb = map_dbl(shuffle_results_nb, extract_max_shuffle_slopes),
+         shuffle_min_slope_p = map_dbl(shuffle_results_p, extract_min_shuffle_slopes),
+         shuffle_max_slope_p = map_dbl(shuffle_results_p, extract_max_shuffle_slopes))
 
 ```
 
 
 We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
 
-1. Function to extract shuffle results (slopes and r2 for each shuffle)
-
-```{r} 
-
-extract_shuffle_slopes <- function(df){
-  return(unlist(df$slope))
-}
-
-extract_shuffle_r2 <- function(df){
-  return(unlist(df$rsquared))
-}
-
-extract_shuffle_pval <- function(df){
-  return(unlist(df$pval))
-}
-```
+1. Eextract shuffle results (slopes and r2 for each shuffle)
 
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(shuffle_slopes = map(shuffle_results, extract_shuffle_slopes)) %>%
-  mutate(shuffle_rsquared = map(shuffle_results, extract_shuffle_r2)) %>%
-  mutate(shuffle_pval = map(shuffle_results, extract_shuffle_pval)) %>% 
-  mutate(shuffle_slopes_nb = map(shuffle_results_nb, extract_shuffle_slopes)) %>% # Non beaconed
-  mutate(shuffle_rsquared_nb = map(shuffle_results_nb, extract_shuffle_r2)) %>%
-  mutate(shuffle_pval_nb = map(shuffle_results_nb, extract_shuffle_pval)) #%>%
-  #mutate(shuffle_slopes_p = map(shuffle_results_p, extract_shuffle_slopes)) %>% # probe
-  #mutate(shuffle_rsquared_p = map(shuffle_results_p, extract_shuffle_r2)) %>%
-  #mutate(shuffle_pval_p = map(shuffle_results_p, extract_shuffle_pval)) 
-
-
+  select(-contains('shuffle_results_b_')) %>%
+  select(-contains('shuffle_results_nb_')) %>%
+  select(-contains('shuffle_results_p_')) %>%
+  unnest_wider(shuffle_results_b, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(shuffle_results_nb, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(shuffle_results_p, names_sep = "_", names_repair = "universal")
 ```
 
 
@@ -269,19 +247,19 @@ Then we want to correct the pvals of the lm, to account for multiple comparisons
 
 1. put all pvalues into tibble then adjust using p.adjust from - package
 ```{r}
-p_vals <- tibble(pvals = spatial_firing$asr_b_rewarded_Pval_o)
-adu_p <- tibble(adjust_pval = p.adjust(p_vals$pvals, "BH"))
+p_vals_b <- tibble(pvals = spatial_firing$asr_b_rewarded_fit_p.value)
+adu_p_b <- tibble(adjust_pval_b = p.adjust(p_vals_b$pvals, "BH"))
 
 ```
 
 2. bind new adjusted pvalues to dataframe
 ```{r}
-spatial_firing <- cbind(spatial_firing, adu_p)
+spatial_firing <- cbind(spatial_firing, adu_p_b)
 ```
 
 3. do the same for non-beaconed trials
 ```{r}
-p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_rewarded_Pval_o)
+p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_rewarded_fit_p.value)
 adu_p_nb <- tibble(adjust_pval_nb = p.adjust(p_vals_nb$pvals, "BH"))
 
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
@@ -289,7 +267,7 @@ spatial_firing <- cbind(spatial_firing, adu_p_nb)
 
 3. do the same for probe trials
 ```{r}
-p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_Pval_o)
+p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_fit_p.value)
 adu_p_p <- tibble(adjust_pval_p = p.adjust(p_vals_p$pvals, "BH"))
 
 spatial_firing <- cbind(spatial_firing, adu_p_p)
@@ -303,24 +281,25 @@ Now we want to classify neurons, taking the adjusted significance into account
 ```{r}
 
 
-compare_slopes <- function(min_slope, max_slope, slope, pval){
-  if ( pval > 0.01) {
+compare_slopes <- function(min_slope = 1, max_slope = 1, slope = 1, pval = 1){
+  if (pval > 0.01) {
     return( "Unclassified" )
-  } else if( slope < min_slope & pval < 0.01) {
+  } else if(slope < min_slope & pval < 0.01) {
     return( "Negative" )
-  } else if( slope > max_slope & pval < 0.01){
+  } else if(slope > max_slope & pval < 0.01){
     return("Positive")
-  } else if( slope > min_slope & slope < max_slope){
+  } else if(slope > min_slope & slope < max_slope){
     return("Unclassified")
   } else {
     return("Unclassified")
   }
 }
 
+
 spatial_firing <- spatial_firing %>%
-  mutate(lm_group = pmap(list(shuffle_min_slope, shuffle_max_slope, asr_b_rewarded_slope_o, adjust_pval), compare_slopes)) %>%
-  mutate(lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_o, adjust_pval_nb), compare_slopes)) %>%
-  mutate(lm_group_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
+  mutate(lm_group_b = pmap(list(shuffle_min_slope_b, shuffle_max_slope_b, asr_b_rewarded_fit_slope, adjust_pval_b), compare_slopes),
+         lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_fit_slope, adjust_pval_nb), compare_slopes),
+         lm_group_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_fit_slope, adjust_pval_p), compare_slopes))
 
 ```
 
