@@ -81,7 +81,6 @@ spatial_firing <- spatial_firing %>%
          asr_nb_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_helper)) %>%
   unnest_wider(asr_b_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal")
-
 ```
 
 3. Plot coefficients of model (slope and r2 value) for each neuron
