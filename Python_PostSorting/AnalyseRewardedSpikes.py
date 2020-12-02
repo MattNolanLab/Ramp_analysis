@@ -80,9 +80,9 @@ def extract_time_binned_firing_rate_rewarded(spike_data, prm):
 
         #just probe trials
         data_p = pd.DataFrame(binned_data[:,:,2], dtype=None, copy=False)
-        data_p = data_p.interpolate(method='linear', limit=None, limit_direction='both')
         data_p = data_p.dropna(axis = 1, how = "all")
         data_p.reset_index(drop=True, inplace=True)
+        data_p = data_p.interpolate(method='linear', limit=None, limit_direction='both')
         data_p = np.asarray(data_p)
         x = np.reshape(data_p, (data_p.shape[0]*data_p.shape[1]))
         x = signal.convolve(x, window, mode='same')/ sum(window)
