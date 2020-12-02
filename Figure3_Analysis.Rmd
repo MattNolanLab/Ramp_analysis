@@ -27,8 +27,8 @@ source("Functions_Outbound_LMER.R")
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
   mutate(o_pos_b = map2(spikes_in_time, 0, car_pos)) %>%
-  mutate(o_speed_b = map(spikes_in_time, 0, car_speed)) %>%
-  mutate(o_accel_b = map(spikes_in_time, 0, car_accel)) #%>%
+  mutate(o_speed_b = map2(spikes_in_time, 0, car_speed)) %>%
+  mutate(o_accel_b = map2(spikes_in_time, 0, car_accel)) #%>%
   #mutate(o_pos_nb = map(spikes_in_time, 1, car_pos)) %>%
   #mutate(o_speed_nb = map(spikes_in_time, 1, car_speed)) %>%
   #mutate(o_accel_nb = map(spikes_in_time, 1, car_accel)) %>%
