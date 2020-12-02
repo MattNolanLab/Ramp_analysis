@@ -31,47 +31,19 @@ Sys.setenv(RETICULATE_PYTHON = "/usr/local/bin/python/bin/python")
 
 ## ----------------------------------------------------------------------------------------------------------------------------------------------------------- 
 
-### LOAD EXAMPLE DATASET
-
-## ----------------------------------------------------------------------------------------------------------------------------------------------------------- 
-
-
-First, specify the path to the dataframe - this assumes its in your working directory
-
-```{r}
-
-dataframe_to_load <- "data/spatial_firing-2.pkl" # name of the pickled dataframe want to load - should be in your current_directory
-
-```
-
-Then call the python code to load the pickled dataframe and return it to the R project
-
-```{r}
-
-source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
-spatial_firing_test <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
-
-```
-
-Finally, save the loaded dataframe as a .Rda file 
-
-```{r}
-
-save(spatial_firing,file="data/spatial_firing_ramp.Rda")#save as R dataframe - used for testing
-
-```
-
-
-
-## ----------------------------------------------------------------------------------------------------------------------------------------------------------- 
-
 ### LOAD ALL MICE ALL DAYS DATAFRAMES
 
 ## ----------------------------------------------------------------------------------------------------------------------------------------------------------- 
 
 ## Loading dataframe for all mice and days (all curated cells from one animal/multiple animals)
 
-1. Load frame for each cohort
+1. load python code to load pickle dataframe
+```{r}
+source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
+
+```
+
+2. Load frame for each cohort
 ```{r}
 dataframe_to_load <- "data/Alldays_cohort_1.pkl" # name of the pickled dataframe want to load 
 source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
@@ -92,18 +64,19 @@ spatial_firing4 <- read_pickle_file(file.path(dataframe_to_load))
 
 ```
 
-2. Concatinate cohorts together
+3. Concatinate cohorts together
 ```{r}
 spatial_firing <- rbind(spatial_firing1, spatial_firing2, spatial_firing3, spatial_firing4)
 ```
 
+4. Save concatinated dataframes
 ```{r}
 saveRDS(spatial_firing, file="PythonOutput_Concat.Rda")
 
 ```
 
 
-
+## Optional code to load only select columns of the dataframe _Optional_
 ```{r}
 drops <- c('Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb')
 spatial_firing[ , !(names(spatial_firing) %in% drops)]

@@ -274,7 +274,7 @@ adu_p_nb <- tibble(adjust_pval_nb = p.adjust(p_vals_nb$pvals, "BH"))
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
 ```
 
-3. do the same for probe trials
+3. do the same for probe trials (dont run unless youve ran the shuffled for probe trials..)
 ```{r}
 p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_Pval_o)
 adu_p_p <- tibble(adjust_pval_p = p.adjust(p_vals_p$pvals, "BH"))
@@ -499,8 +499,7 @@ ggsave(file = "plots/LMOut_shuffle_datasets.png", width = 3, height = 3)
 ### ----------------------------------------------------------------------------------------- ###
 
 
-# PLOT HEAT MAPS FOR ALL NEURONS
-
+# Plot heat map of firing rate across location for all neurons
 
 First, reorder the dataframe with ramps according to slope.
 _For start ramps, steepest slope should be negative - thus will have the highest cluster id_
@@ -546,8 +545,9 @@ Extract columns (normalised rates) for plotting into a tibble
 concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o))
 ```
 
+Now the firing rates have been normalised and the data in the right format we want to make annotations for the heatmap
 
-Extract ramp score for annotating heatmap
+First, extract ramp score from the dataframe for annotating heatmap
 _since its a list of three (outbound/homebound/all) we extract the first one_
 ```{r}
 start_ramps <- start_ramps %>%
@@ -555,16 +555,15 @@ start_ramps <- start_ramps %>%
 
 ```
 
-Put ramp scores and lm results in tibble for annotating heatmap
+Put ramp scores alongisde lm results and brain region classifier in tibble for annotating heatmap
 ```{r}
-# data for annotating
 ramp_result <- tibble(ramp_score = as.numeric(start_ramps$start_ramp_score))
 brain_region <- tibble(region = as.character(start_ramps$brain_region))
 lm_result <- tibble(result = as.character(start_ramps$lm_group))
 cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
 ```
 
-Plot heatmap with annotations using pheatmap
+Now we can plot the heatmap with annotations using pheatmap
 ```{r}
 #convert data to wide format
 wide_DF <- concat_firing_start %>% spread(Position, Rates)
@@ -578,19 +577,19 @@ name <- "new_cluster_id"
 wide_DF <- wide_DF %>% select(-one_of(name))
 
 # data for annotation rows in seperate dataframe
-mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), category = lm_result, region = brain_region, ramp_score=ramp_result)
+mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), catagory = lm_result, region = brain_region, ramp_score=ramp_result)
 
 # change the color of annotation to what you want: (eg: "navy", "darkgreen")
 Var1        <- c("violetred2", "black", "chartreuse3")
-names(Var1) <- c("Negative", "Unxlassified", "Positive")
+names(Var1) <- c("Negative", "Unclassified", "Positive")
 
-Var2        <- c("springgreen4", "deepskyblue1", "firebrick")
-names(Var2) <- c("MEC", "PS", "UN")
+Var2        <- c("springgreen4", "deepskyblue1", "firebrick", "violetred2" )
+names(Var2) <- c("PS", "UN", "V1", "PreS")
 
 anno_col <- list(result = Var1, region = Var2, ramp_score = brewer.pal(11,"RdBu"))
 
-#annotation_row = mydf, annotation_colors = anno_col, show_rownames = F, show_colnames = F
-myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, show_rownames = F, show_colnames = F )
+#annotation_row = mydf, annotation_colors = anno_col, 
+myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, show_rownames = F, show_colnames = F )
 ```
 
 Save the heatmap (bit of a nightmare here...)
@@ -609,7 +608,7 @@ save_pheatmap_png(myheatmap, "my_heatmap_all.png")
 
 
 ```{r}
-saveRDS(spatial_firing, file="Fig2Results.Rda")
+saveRDS(spatial_firing, file="All_Results.Rda")
 
 ```
 
