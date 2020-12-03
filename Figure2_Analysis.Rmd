@@ -38,9 +38,9 @@ The linear model uses firing rate data binned in space. For this we want to load
 
 1. Write function to add position
 ```{r}
-add_position <- function(df) { 
+add_position <- function(df, session_id, cluster_id) { 
   df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
-  if(any(is.na(df$Rates))) {print(typeof(df$Rates))}
+  if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
   df
 }
 ```
@@ -48,9 +48,9 @@ add_position <- function(df) {
 2. Run on dataframe : Average trials with reward
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(asr_b_rewarded = map(Rates_averaged_rewarded_b, add_position),
-         asr_nb_rewarded = map(Rates_averaged_rewarded_nb, add_position),
-         asr_p_rewarded = map(Rates_averaged_rewarded_p, add_position)
+  mutate(asr_b_rewarded = pmap(list(Rates_averaged_rewarded_b, session_id, cluster_id), add_position),
+         asr_nb_rewarded = pmap(list(Rates_averaged_rewarded_nb, session_id, cluster_id), add_position),
+         asr_p_rewarded = pmap(list(Rates_averaged_rewarded_p, session_id, cluster_id), add_position)
          )
 ```
 
@@ -65,9 +65,8 @@ _note:for now we are only interested in the outbound region of the track (30 - 9
 lm_helper <- function(df,
                       startbin = 30,
                       endbin = 90) {
-  
-  if (any(is.na(df$Position))) {
-    print("Contains NAs")
+ # Check for NAs 
+  if (any(is.na(df$Rates))) {
     df <-
       tibble(
         r.squared = c(NA),
@@ -202,12 +201,18 @@ First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron
 
 extract_min_shuffle_slopes <- function(df){
   df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
+  if (all(is.na(df$slopes))) {
+    return(NA)
+  }
   min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
   return(min_slope_o)
 }
 
 extract_max_shuffle_slopes <- function(df){
   df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
+    if (all(is.na(df$slopes))) {
+    return(NA)
+  }
   max_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[2]][1]
   return(max_slope_o)
 }
@@ -229,7 +234,7 @@ spatial_firing <- spatial_firing %>%
 
 We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
 
-1. Eextract shuffle results (slopes and r2 for each shuffle)
+1. Extract shuffle results (slopes and r2 for each shuffle)
 
 2. run on all neurons
 ```{r}
@@ -279,27 +284,57 @@ spatial_firing <- cbind(spatial_firing, adu_p_p)
 Now we want to classify neurons, taking the adjusted significance into account
 
 ```{r}
-
-
-compare_slopes <- function(min_slope = 1, max_slope = 1, slope = 1, pval = 1){
-  if (pval > 0.01) {
-    return( "Unclassified" )
-  } else if(slope < min_slope & pval < 0.01) {
-    return( "Negative" )
-  } else if(slope > max_slope & pval < 0.01){
-    return("Positive")
-  } else if(slope > min_slope & slope < max_slope){
-    return("Unclassified")
-  } else {
-    return("Unclassified")
+compare_slopes <-
+  function(min_slope = 1,
+           max_slope = 1,
+           slope = 1,
+           pval = 1) {
+    if (any(is.na(list(min_slope, max_slope, slope, pval)))) {
+      return("NAs")
+    }
+    if (pval > 0.01) {
+      return("Unclassified")
+    } else if (slope < min_slope & pval < 0.01) {
+      return("Negative")
+    } else if (slope > max_slope & pval < 0.01) {
+      return("Positive")
+    } else if (slope > min_slope & slope < max_slope) {
+      return("Unclassified")
+    } else {
+      return("Unclassified")
+    }
   }
-}
-
 
 spatial_firing <- spatial_firing %>%
-  mutate(lm_group_b = pmap(list(shuffle_min_slope_b, shuffle_max_slope_b, asr_b_rewarded_fit_slope, adjust_pval_b), compare_slopes),
-         lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_fit_slope, adjust_pval_nb), compare_slopes),
-         lm_group_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_fit_slope, adjust_pval_p), compare_slopes))
+  mutate(
+    lm_group_b = pmap(
+      list(
+        shuffle_min_slope_b,
+        shuffle_max_slope_b,
+        asr_b_rewarded_fit_slope,
+        adjust_pval_b
+      ),
+      compare_slopes
+    ),
+    lm_group_nb = pmap(
+      list(
+        shuffle_min_slope_nb,
+        shuffle_max_slope_nb,
+        asr_nb_rewarded_fit_slope,
+        adjust_pval_nb
+      ),
+      compare_slopes
+    ),
+    lm_group_p = pmap(
+      list(
+        shuffle_min_slope_p,
+        shuffle_max_slope_p,
+        asr_p_rewarded_fit_slope,
+        adjust_pval_p
+      ),
+      compare_slopes
+    )
+  )
 
 ```
 
@@ -312,7 +347,7 @@ Now we want to visualise the coefficients of all neurons and all shuffled datase
 
 1. extract shuffled values into tibble _nb needed because each 1000 shuffled datasets are nested for each neuron_
 ```{r}
-shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unlist(spatial_firing$shuffle_rsquared))
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_slope), r2 = unlist(spatial_firing$shuffle_results_b_r.squared))
 ```
 
 2. plot real and shuffled coefficients 
@@ -320,7 +355,7 @@ shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unli
 ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32") + 
     coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
     geom_point(alpha=.4) + 
-    geom_point(data=spatial_firing, aes(x = asr_b_rewarded_slope_o, y = asr_b_rewarded_r2_o, color=factor(unlist(lm_group)))) +
+    geom_point(data=spatial_firing, aes(x = asr_b_rewarded_fit_slope, y = asr_b_rewarded_fit_r.squared, color=factor(unlist(lm_group_b)))) +
     #geom_point(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32") +
     xlab("\nslope") +
     ylab("R2") +
@@ -344,9 +379,9 @@ Now lets find and plot the proportion of cells that pass criteria according to o
 1. extract proportion of cells that meet each criteria
 ```{r}
 # positive homebound slopes
-start <- nrow(subset(spatial_firing, lm_group == "Negative"))/nrow(spatial_firing)*100
-reward <- nrow(subset(spatial_firing, lm_group == "Positive"))/nrow(spatial_firing)*100
-nonslope <- nrow(subset(spatial_firing, lm_group == "Unclassified"))/nrow(spatial_firing)*100
+start <- nrow(subset(spatial_firing, lm_group_b == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spatial_firing)*100
 
 
 ```
@@ -382,8 +417,7 @@ We might also want to visualise the coefficients for the real and shuffled datas
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(lm_group))
-ggplot(data=spatial_firing, aes(x= asr_b_rewarded_slope_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
   coord_cartesian(xlim = c(-0.6,0.6)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -424,7 +458,7 @@ ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height 
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_rewarded_r2_o, fill=factor(unlist(lm_group), level = level_order))) + #fill=factor(unlist(lm_group))
+ggplot(data=spatial_firing, aes(x= asr_b_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(lm_group))
   coord_cartesian(xlim = c(0,1)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -465,10 +499,7 @@ ggsave(file = "plots/LMOut_shuffle_r2_datasets_histogram.png", width = 4.5, heig
 
 Plot distribution of the shuffled data
 
-1. Extract shuffled slopes and rsquared values
-```{r}
-shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_slopes), r2 = unlist(spatial_firing$shuffle_rsquared))
-```
+1. Extract shuffled slopes and rsquared values. This is already done above.
 
 2. Plot in scatter
 ```{r}
@@ -498,7 +529,7 @@ First, reorder the dataframe with ramps according to slope.
 _For start ramps, steepest slope should be negative - thus will have the highest cluster id_
 
 ```{r}
-start_ramps<-spatial_firing[order(spatial_firing$asr_b_rewarded_slope_o),]
+start_ramps<-spatial_firing[order(spatial_firing$asr_b_rewarded_fit_slope),]
 start_ramp_number = nrow(start_ramps)
 new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
 start_ramps <- cbind(start_ramps, new_cluster_id)
