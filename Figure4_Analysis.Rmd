@@ -21,9 +21,9 @@ _note : focuses on activity in outbound region_
 
 First, we are interested to see what proportion of neurons has the following pattern ramp activity :
 
-1. ramp in both cued and uncued (PI)
-2. ramp in just cued (cue)
-3. ramp in just uncued (onlypi)
+1. ramp in both cued and uncued (cue independant)
+2. ramp in just cued (cue dependant)
+3. ramp in just uncued (only pi)
 
 To classify cells into these catagories above, we will use the criteria established in Figure 2 using linear modelling. 
 
@@ -348,6 +348,9 @@ ggsave(file = "plots/cell_proportions-AllNeurons.png", width = 4, height = 4.5)
 
 ```
 
+
+
+
 ### --------------------------------------------------------------------------------------- ###
 
 Now we want to visualise the average firing rate for each of the groups (cue dependant & cue independant / positive & negative)
@@ -434,7 +437,7 @@ df_pos_pi <- df %>%
 
 ```
 
-5. Plot average rates
+5. Plot average rates                                            **Positive PI**
 
 ```{r}
 ggplot(data=df_pos_pi) +
@@ -468,7 +471,7 @@ df_neg_pi <- df %>%
   
 ```
 
-5. Plot average rates
+5. Plot average rates                                           **Negative PI**
 
 ```{r}
 ggplot(data=df_neg_pi) +
@@ -500,7 +503,7 @@ df_neg_pi <- df %>%
   
 ```
 
-5. Plot average rates
+5. Plot average rates                                             **Negative PI only**
 
 ```{r}
 ggplot(data=df_neg_pi) +
@@ -534,7 +537,7 @@ df_neg_pi <- df %>%
   
 ```
 
-5. Plot average rates
+5. Plot average rates                                            **Positive PI only**
 
 ```{r}
 ggplot(data=df_neg_pi) +
