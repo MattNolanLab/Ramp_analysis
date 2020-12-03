@@ -583,7 +583,7 @@ Put ramp scores and lm results in tibble for annotating heatmap
 # data for annotating
 ramp_result <- tibble(ramp_score = as.numeric(start_ramps$start_ramp_score))
 brain_region <- tibble(region = as.character(start_ramps$brain_region))
-lm_result <- tibble(result = as.character(start_ramps$lm_group))
+lm_result <- tibble(result = as.character(start_ramps$lm_group_b))
 cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
 ```
 
@@ -614,6 +614,8 @@ anno_col <- list(result = Var1, region = Var2, ramp_score = brewer.pal(11,"RdBu"
 
 #annotation_row = mydf, annotation_colors = anno_col, show_rownames = F, show_colnames = F
 myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, show_rownames = F, show_colnames = F )
+
+myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, show_rownames = F, show_colnames = F )
 ```
 
 Save the heatmap (bit of a nightmare here...)
