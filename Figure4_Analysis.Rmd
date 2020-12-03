@@ -53,7 +53,7 @@ mark_neurons <- function(beac, nb){
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(cue_group = map2(lm_group, lm_group_nb, mark_neurons))
+  mutate(cue_group = map2(lm_group_b, lm_group_nb, mark_neurons))
 
 ```
 
@@ -63,7 +63,7 @@ Now I want to visualise the proportion of cells that fit these above criteria. I
 
 1. subset neurons by group _just looking at cue dependant or independant for now_
 ```{r}
-ramps <-subset(spatial_firing, lm_group == "Positive" | lm_group == "Negative")
+ramps <-subset(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
 
 # positive homebound slopes
 pi <-nrow(subset(ramps, cue_group == "Positive-PI" | cue_group == "Negative-PI"))/nrow(ramps)*100
@@ -119,7 +119,7 @@ ggsave(file = "plots/CueComparison_proportions.png", width = 4, height = 4)
 
 4. Also just a quick look at the numbers - how many positive and negative of each (cue/PI)
 ```{r}
-ramps <- subset(spatial_firing, lm_group == "Positive" | lm_group == "Negative")
+ramps <- subset(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
 
 pi_neg <-nrow(subset(ramps, cue_group == "Negative-PI"))/nrow(ramps)*100
 cue_neg <-nrow(subset(ramps, cue_group == "Negative-cue"))/nrow(ramps)*100
