@@ -103,9 +103,9 @@ saveRDS(spatial_firing, file="All_Results.Rda")
 ```{r}
 
 # extracting diff models 
-pos <-subset(spatial_firing, lm_group == "Positive")
-neg <-subset(spatial_firing, lm_group == "Negative")
-none <-subset(spatial_firing, lm_group == "Unclassified")
+pos <-subset(spatial_firing, lm_group_b == "Positive")
+neg <-subset(spatial_firing, lm_group_b == "Negative")
+none <-subset(spatial_firing, lm_group_b == "Unclassified")
 
 ```
 
@@ -200,7 +200,7 @@ source("Functions_StdCoef_lmer.R")
 
 2. calculate and extract standardized coefficients for position, speed and acceleration
 
-2. Run on all cells 
+2. Run on all cells
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
   mutate(o_pos_b_stdcoef = map2(spikes_in_time, 0, coef_pos)) %>%
@@ -233,8 +233,27 @@ spatial_firing <- spatial_firing  %>%
 
 2. take only columns we need for the rest of the analysis
 ```{r}
-spatial_firing_save <- subset(spatial_firing, select = c("session_id", "cluster_id", "unique_id", "o_pos_b_stdcoef", "o_speed_b_stdcoef","o_accel_b_stdcoef", "o_pos_nb_stdcoef", "o_speed_nb_stdcoef","o_accel_nb_stdcoef", "final_model_o_b", "lm_group", "lm_group_nb"))
+spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_pos_b_stdcoef, o_speed_b_stdcoef,o_accel_b_stdcoef, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_pos_b_stdcoef, o_speed_b_stdcoef, o_accel_b_stdcoef,
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble()
 
+```
+
+3. save to csv file _this is for matching to plots from python_
+```{r}
+# spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
+#                               cluster_id = spatial_firing_save$cluster_id,
+#                               unique_id = spatial_firing_save$unique_id,
+#                               pos_stdcoef =  as.character(spatial_firing_save$o_pos_b_stdcoef),
+#                               speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_stdcoef),
+#                               accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_stdcoef),
+#                               final_model_o_b =  as.character(spatial_firing_save$final_model_o_b),
+#                               lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group))
+#
+# write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
+
+write_csv2(spatial_firing_save, "all_results_coefficients.csv")
 ```
 
 4. put data into a tibble for plotting
@@ -243,17 +262,14 @@ data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), time
                     cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
                     coef = c(as.character(spatial_firing_save$o_pos_b_stdcoef),
                              as.character(spatial_firing_save$o_speed_b_stdcoef),
-                             as.character(spatial_firing_save$o_accel_b_stdcoef)), 
-                    coef_nb = c(as.character(spatial_firing_save$o_pos_nb_stdcoef),
-                             as.character(spatial_firing_save$o_speed_nb_stdcoef),
-                             as.character(spatial_firing_save$o_accel_nb_stdcoef)),
+                             as.character(spatial_firing_save$o_accel_b_stdcoef)),
                     group = c(as.character(spatial_firing_save$final_model_o_b),
                               as.character(spatial_firing_save$final_model_o_b),
                               as.character(spatial_firing_save$final_model_o_b)), 
                     coef_type = rep(c("P", "S", "A"),
                                     each = nrow(spatial_firing_save)),
-                    lm_result = rep(as.character(spatial_firing_save$lm_group), times=3), 
-                    lm_result_nb = rep(as.character(spatial_firing_save$lm_group_nb), times=3)) 
+                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
+                    lm_result_nb = rep(as.character(spatial_firing_save$lm_group_nb), times=3))
 ```
 
 _Plot coefficients for all cells_
@@ -384,7 +400,7 @@ ggsave(file = "plots/CoefficientValues_S_negativecells.png", width = 3, height =
 
 _Plot coefficients for just position cells_
 
-7. Split by negative slope 
+7. Split by negative slope
 ```{r}
 data_coef_pos <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
@@ -406,17 +422,17 @@ ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
   theme_classic() +
   theme(axis.text.x = element_text(size=9),
         axis.text.y = element_text(size=9),
-        legend.position="bottom", 
+        legend.position="bottom",
         legend.title = element_blank(),
-        text = element_text(size=9), 
-        legend.text=element_text(size=9), 
+        text = element_text(size=9),
+        legend.text=element_text(size=9),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/CoefficientValues_Positioncells_positive.png", width = 2.7, height = 3)
-  
+
 ```
 
 
-7. Split by negative slope 
+7. Split by negative slope
 ```{r}
 data_coef_neg <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
@@ -438,19 +454,19 @@ ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
   theme_classic() +
   theme(axis.text.x = element_text(size=9),
         axis.text.y = element_text(size=9),
-        legend.position="bottom", 
+        legend.position="bottom",
         legend.title = element_blank(),
-        text = element_text(size=9), 
-        legend.text=element_text(size=9), 
+        text = element_text(size=9),
+        legend.text=element_text(size=9),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/CoefficientValues_Position_negativecells.png", width = 2.7, height = 3)
-  
+
 ```
 
 
 
 
-7. Split by negative slope 
+7. Split by negative slope
 ```{r}
 data_coef_neg <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
@@ -473,16 +489,16 @@ ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
   theme_classic() +
   theme(axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12),
-        legend.position="bottom", 
+        legend.position="bottom",
         legend.title = element_blank(),
-        text = element_text(size=12), 
-        legend.text=element_text(size=12), 
+        text = element_text(size=12),
+        legend.text=element_text(size=12),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/CoefficientValues_Position_unclassifiedcells_pos.png", width = 3, height = 2.8)
-  
+
 ```
 
-7. Split by negative slope 
+7. Split by negative slope
 ```{r}
 data_coef_neg <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
@@ -505,22 +521,22 @@ ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
   theme_classic() +
   theme(axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12),
-        legend.position="bottom", 
+        legend.position="bottom",
         legend.title = element_blank(),
-        text = element_text(size=12), 
-        legend.text=element_text(size=12), 
+        text = element_text(size=12),
+        legend.text=element_text(size=12),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/CoefficientValues_Position_unclassifiedcells_neg.png", width = 3, height = 2.5)
-  
+
 ```
 ## Save to csv file _this is for matching to plots from python_
 ```{r}
-spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id, 
-                              cluster_id = spatial_firing_save$cluster_id, 
+spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
+                              cluster_id = spatial_firing_save$cluster_id,
                               pos_stdcoef =  as.character(spatial_firing_save$o_pos_b_stdcoef),
-                              speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_stdcoef), 
-                              accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_stdcoef), 
-                              final_model_o_b =  as.character(spatial_firing_save$final_model_o_b), 
+                              speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_stdcoef),
+                              accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_stdcoef),
+                              final_model_o_b =  as.character(spatial_firing_save$final_model_o_b),
                               lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group))
 
 write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
