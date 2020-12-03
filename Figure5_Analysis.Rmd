@@ -1,0 +1,459 @@
+---
+title: "Figure5_Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+
+## Script aims to determine if ramp activity resets or is continuous across the reward zone
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+
+### First, we need to classify neurons based on their ramp activity in the homebound region, similar to that done in figure 2 analysis. 
+
+# Run simple linear model to examine relationship between firing rate and position
+_note:for now we are only interested in the homebound region of the track (110 - 170 cm)_
+
+1. Make function to run linear model
+```{r}
+lm_helper <- function(df, startbin = 110, endbin = 170){
+  df <- df %>%
+    subset(Position >= startbin & Position <= endbin)
+  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
+}
+```
+
+2. make function to extract linear model output for each neuron
+```{r}
+lm_analysis <- function(df, spike_rate_col, startbin = 110, endbin = 170) {
+  spike_rate_col <- enquo(spike_rate_col)
+  out_name <- sym(paste0(quo_name(spike_rate_col)))
+  sr_unnest_name <- sym(paste0(quo_name(spike_rate_col), "_unnest"))
+  fit_name <- sym(paste0(quo_name(out_name), "_fit"))
+  glance_name <- sym(paste0(quo_name(out_name), "_glance"))
+  r2_name <- sym(paste0(quo_name(out_name), "_r2_h"))
+  Pval_name <- sym(paste0(quo_name(out_name), "_Pval_h"))
+  slope_name <- sym(paste0(quo_name(out_name), "_slope_h"))
+  intercept_name <- sym(paste0(quo_name(out_name), "_intercept_h"))
+  df <- df %>%
+    mutate(!!fit_name := pmap(list(!!spike_rate_col, startbin, endbin), lm_helper),
+           !!glance_name := map(!!fit_name, glance),
+           !!r2_name := map_dbl(!!glance_name, ~.$r.squared),
+           !!Pval_name := map_dbl(!!glance_name, ~.$p.value),
+           !!slope_name := map_dbl(!!fit_name, ~.$coefficients[2]),
+           !!intercept_name := map_dbl(!!fit_name, ~.$coefficients[1]))
+}
+```
+
+3. run lm on all cells
+```{r}
+
+spatial_firing <- spatial_firing %>%
+  lm_analysis(asr_b_rewarded, 110, 170) %>%
+  lm_analysis(asr_nb_rewarded, 110, 170)
+  #lm_analysis(asr_p_rewarded, 110, 170)
+
+```
+
+4. Plot coefficients of model (slope and r2 value) for each neuron
+```{r}
+ggplot(data=spatial_firing, aes(x = asr_b_rewarded_slope_h, y = asr_b_rewarded_r2_h)) + 
+    coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
+    geom_point() +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/shuff_lm_homebound_allcells.png", width = 4, height = 5)
+```
+
+
+## Identification of homebound ramp cells in dataset 
+
+Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled datasets
+
+1. write function to generate 1000 shuffles
+- shuffles spikes using sample() function
+- runs lm
+- extracts coefficients
+- stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
+```{r}
+#library(gdata)
+shuffle_rates <- function(df) {
+  df_modified <- data.frame(neuron=as.numeric(),
+                 slope=as.numeric(), 
+                 rsquared=as.numeric(), 
+                 pval=vector())
+  names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
+  x <- 1
+  repeat {
+  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
+  df_mod <- lm_helper(shuff_df)
+  rsquared <- glance(df_mod)$r.squared
+  pval<- glance(df_mod)$p.value
+  slope <- coefficients(df_mod)[2] # slope
+  data <- data.frame(as.numeric(x), slope, rsquared, round(pval,5))
+  names(data) <- c("neuron", "slope", "rsquared", "pval")
+  df_modified <- rbind(df_modified,data)
+
+  x = x+1
+  if (x == 100){ # putting 100 here for now for testing as 1000 takes v long time to run
+  break
+  }
+  }
+return(df_modified)
+}
+```
+
+2. Run on example neuron (beaconed and non-beaconed trials)
+```{r}
+# Check to see if the column shuffle_results exists. If it does then don't run again.
+if(!"shuffle_results_h" %in% colnames(spatial_firing)) {
+  spatial_firing <- spatial_firing %>%
+    mutate(shuffle_results_h = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
+    mutate(shuffle_results_h_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) #%>%
+    #mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
+}
+# Uncomment the line below to save spatial firing at this point.
+#saveRDS(spatial_firing, "SpatialFiring_with_shuffles_homebound.Rda")
+# And use this to save a truncated version. Useful for testing code.
+#saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_shuffles_trunc.Rda")
+```
+
+
+### ---------------------------------------------------------------------------- ### 
+
+### classify neurons based on shuffle activity
+
+If outside the 95% of the shuffled dataset, a neuron is considered to have ramp like activity along the track. 
+
+First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron 
+
+1. find min and max slope for shuffled datasets 
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_min_slope_h = map(shuffle_results_h, extract_min_shuffle_slopes)) %>%
+  mutate(shuffle_max_slope_h = map(shuffle_results_h, extract_max_shuffle_slopes)) 
+
+```
+
+
+We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
+
+1. extract shuffle results (slopes and r2 for each shuffle)
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(shuffle_slopes_h = map(shuffle_results_h, extract_shuffle_slopes)) %>%
+  mutate(shuffle_rsquared_h = map(shuffle_results_h, extract_shuffle_r2)) %>%
+  mutate(shuffle_pval_h = map(shuffle_results_h, extract_shuffle_pval)) 
+
+
+```
+
+Then we want to correct the pvals of the lm, to account for multiple comparisons
+
+1. put all pvalues into tibble then adjust using p.adjust from - package
+```{r}
+p_vals <- tibble(pvals_homebound = spatial_firing$asr_b_rewarded_Pval_h)
+adu_p_h <- tibble(adjust_pval_h = p.adjust(p_vals$pvals_homebound, "BH"))
+
+```
+
+2. bind new adjusted pvalues to dataframe
+```{r}
+spatial_firing <- cbind(spatial_firing, adu_p_h)
+```
+
+
+### ----------------------------------------------------------------------------------------- ### 
+
+Now we want to classify neurons, taking the adjusted significance into account
+
+```{r}
+
+
+compare_slopes <- function(min_slope, max_slope, slope, pval){
+  if ( pval > 0.01) {
+    return( "Unclassified" )
+  } else if( slope < min_slope & pval < 0.01) {
+    return( "Negative" )
+  } else if( slope > max_slope & pval < 0.01){
+    return("Positive")
+  } else if( slope > min_slope & slope < max_slope){
+    return("Unclassified")
+  } else {
+    return("Unclassified")
+  }
+}
+
+spatial_firing <- spatial_firing %>%
+  mutate(lm_group_p = pmap(list(shuffle_min_slope_h, shuffle_max_slope_h, asr_b_rewarded_slope_h, adjust_pval_h), compare_slopes)) #%>%
+  #mutate(lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_h, adjust_pval_nb), compare_slopes))
+  #mutate(lm_group_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
+
+```
+
+
+```{r}
+saveRDS(spatial_firing, file="All_Results_withHomebound.Rda")
+
+```
+
+### -------------------------------------------------------------------------------------------------------------------- ### 
+
+
+Now, we can mark cells based on their activity in the outbound and homebound region
+
+i.e. pospos = positive in outbound, positive in homebound
+i.e. posneg = positive in outbound, negative in homebound
+
+1. write function to mark cells based on groups
+```{r}
+mark_predict_group <- function(outbound, homebound){
+  if (is.na(df) ) {
+    return( "None" )
+  } else if( outbound == "Positive" & homebound =="Negative") {
+    return( "posneg" ) 
+  } else if( outbound == "Positive" & homebound =="Positive") {
+    return( "pospos" )
+  } else if( outbound == "Negative" & homebound =="Positive") {
+    return( "negpos" )
+  } else if( outbound == "Negative" & homebound =="Negative") {
+    return( "negneg" )
+  } else if( outbound == "Negative" & homebound =="Unclassified") {
+    return( "negnon" )
+  } else if( outbound == "Positive" & homebound =="Unclassified") {
+    return( "posnon" )
+  } else {
+    return("None")
+  }
+}
+
+```
+
+
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate( predict_id = map2(lm_group, lm_group_p, mark_predict_group))
+
+```
+
+
+Now, we want to know what proportion of cells fit this group 
+_note : we focus on cue independant/path integrating neurons here as classified in Figure 4 (CueAnalysis_0100.Rmd)_
+
+1. Find cue independant cells
+_note: cue_group is defined in Figure4_Analysis.Rmd_
+```{r}
+cueindependant_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+cuedependant_neurons <- subset(spatial_firing, cue_group == "Positive-cue" | cue_group == "Negative-cue")
+
+```
+
+2. find proportion of cue independant cells that fall into groups as catagorised above (pospos, posneg etc)
+```{r}
+# positive homebound slopes
+pospos <-nrow(subset(cueindependant_neurons, predict_id == "pospos"))/nrow(cueindependant_neurons)*100
+posneg <-nrow(subset(cueindependant_neurons, predict_id == "posneg"))/nrow(cueindependant_neurons)*100
+negneg <-nrow(subset(cueindependant_neurons, predict_id == "negneg"))/nrow(cueindependant_neurons)*100
+negpos <-nrow(subset(cueindependant_neurons, predict_id == "negpos"))/nrow(cueindependant_neurons)*100
+
+# positive homebound slopes
+pospos_num <-nrow(subset(cueindependant_neurons, predict_id == "pospos"))
+posneg_num <-nrow(subset(cueindependant_neurons, predict_id == "posneg"))
+negneg_num <-nrow(subset(cueindependant_neurons, predict_id == "negneg"))
+negpos_num <-nrow(subset(cueindependant_neurons, predict_id == "negpos"))
+
+```
+
+3. Same as above but for cue dependant neurons
+```{r}
+# positive homebound slopes
+pospos <-nrow(subset(cuedependant_neurons, predict_id == "pospos"))/nrow(cuedependant_neurons)*100
+posneg <-nrow(subset(cuedependant_neurons, predict_id == "posneg"))/nrow(cuedependant_neurons)*100
+negneg <-nrow(subset(cuedependant_neurons, predict_id == "negneg"))/nrow(cuedependant_neurons)*100
+negpos <-nrow(subset(cuedependant_neurons, predict_id == "negpos"))/nrow(cuedependant_neurons)*100
+
+# positive homebound slopes
+pospos_num <-nrow(subset(cuedependant_neurons, predict_id == "pospos"))
+posneg_num <-nrow(subset(cuedependant_neurons, predict_id == "posneg"))
+negneg_num <-nrow(subset(cuedependant_neurons, predict_id == "negneg"))
+negpos_num <-nrow(subset(cuedependant_neurons, predict_id == "negpos"))
+
+```
+
+4. put proportions into tibble for plotting
+```{r}
+
+proportions_mixed_ramps <- tibble(perc=c(pospos, posneg, negneg, negpos), num=c(pospos_num, posneg_num, negneg_num, negpos_num), ramp_id= c("+ +", "+ -", "- - ", "- +"),ramp_type = c("+ +", "+ -", "- - ", "- +"))
+
+```
+
+5. Plot pie chart of proportions
+```{r}
+
+# Create Data
+data <- data.frame(
+  group=LETTERS[1:4],
+  value=c(pospos,posneg,negneg,negpos)
+)
+
+# Compute the position of labels
+data <- proportions_mixed_ramps %>% 
+  arrange(desc(ramp_id)) %>%
+  mutate(prop = perc) %>%
+  mutate(ypos = cumsum(prop)- 0.5*prop )
+
+# Basic piechart
+ggplot(data, aes(x="", y=prop, fill=ramp_id)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() + 
+  #theme(legend.position="none") +
+  
+  geom_text(aes(y = ypos, label = num), color = "white", size=3) +
+  scale_fill_brewer(palette="Set1")
+
+ggsave(file = "plots/homebound_proportions_cueindependant.png", width = 4, height = 4)
+
+```
+
+
+
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+
+Now, we want to find out if within pospos and negneg groups - are their firing rate reset or continue across the reward region?
+
+To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
+
+
+First, normalise firing rates. 
+
+1. make function to load rates and normalise
+```{r}
+normalise_rates <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  return(x)
+}
+
+```
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
+
+
+```
+
+Then, predict firing rate in hombound region based on fit from real data in outbound region
+
+1. make function to predict firing rate
+```{r}
+lm_predict <- function(df){
+  new.data <- data.frame(Position =df$Position)
+}
+```
+
+3. Function to calculate mean difference in firing rate between real and predicted data
+```{r}
+
+lm_predict_mse_homebound <- function(rate){
+  if(all(is.na(rate))) 
+    return(NA)
+  startbins=c(30:90)
+  df <- tibble(Rates = unlist(rate), Position=rep(1:200))
+
+  lmer <- lm(Rates ~ Position, data = df[startbins,])
+  
+  df_homebound <- df %>% filter(between(Position, 110, 115))
+  new.data <- lm_predict(df_homebound)
+  Rates <- predict(lmer, newdata = new.data)
+  mydata <- cbind(new.data, Rates)
+  
+  mean( df_homebound$Rates - mydata$Rate)
+
+}
+
+```
+
+2. Run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(predict_mean = map(normalised_rates, lm_predict_mse_homebound)) 
+  
+```
+
+
+Now, we can classify cells based on their predicted activity. 
+
+1. Function to classify neurons based on predict mean
+
+```{r}
+mark_color <- function(df, id){
+  if (is.na(df) ) {
+    return( "None" )
+  } else if( id == "posneg" | id == "negpos") {
+    return( "Reset" ) 
+  } else if( id == "posnon" | id == "negnon") {
+    return( "Continuous" ) 
+  } else if( (df > -1 & df < 1) & (id == "pospos" | id == "negneg")) {
+    return( "Continuous" )
+  } else if( (df <= -1 | df >= 1) & (id == "pospos" | id == "negneg")) {
+    return( "Reset" ) 
+    } else {
+    return("None")
+  }
+}
+
+```
+
+
+2. Run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(color_predict = map2(predict_mean, predict_id, mark_color))
+
+```
+
+3. Calculate number of neurons that are in each group as classified above
+```{r}
+path_integrating_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+
+neg_probe <- nrow(subset(spatial_firing, lm_group_nb == "Negative" )) # all neurons that are conciderd ramp like on probe trials
+pos_probe <- nrow(subset(spatial_firing, lm_group_nb == "Positive")) # all neurons that are conciderd ramp like on probe trials
+
+all <- nrow(subset(path_integrating_neurons, slope_criteria_pval_p == "Negative" | slope_criteria_pval_p == "Positive")) # all neurons that are conciderd ramp like on probe trials
+switchers <- nrow(subset(path_integrating_neurons, color_predict_p == "Switch")) # cells that switch slope 
+reset_p <-nrow(subset(path_integrating_neurons, color_predict_p == "Reset"))
+continuous_p <-nrow(subset(path_integrating_neurons, color_predict_p == "Continuous"))
+none_p <-nrow(subset(path_integrating_neurons, predict_id_p == "posnon"| predict_id_p == "negnon"))
+
+```
+
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+

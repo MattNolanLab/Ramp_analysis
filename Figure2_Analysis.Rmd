@@ -38,7 +38,7 @@ The linear model uses firing rate data binned in space. For this we want to load
 
 1. Write function to add position
 ```{r}
-add_position <- function(df, session_id, cluster_id) { 
+add_position <- function(df, session_id, cluster_id) {
   df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
   if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
   df
@@ -65,7 +65,7 @@ _note:for now we are only interested in the outbound region of the track (30 - 9
 lm_helper <- function(df,
                       startbin = 30,
                       endbin = 90) {
- # Check for NAs 
+ # Check for NAs
   if (any(is.na(df$Rates))) {
     df <-
       tibble(
@@ -76,11 +76,11 @@ lm_helper <- function(df,
       )
     return(df)
   }
-  
+
   df <- df %>%
     subset(Position >= startbin & Position <= endbin)
   df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
-  
+
   # get the model parameters
   params <- select(glance(df_fit), r.squared, p.value)
   # get the coefficients
@@ -88,12 +88,12 @@ lm_helper <- function(df,
   # combine the parameters and coefficients
   params$intercept <- coeffs$estimate[[1]]
   params$slope <- coeffs$estimate[[2]]
-  
+
   return(params)
 }
 ```
 
-2. run lm on all cells. 
+2. run lm on all cells.
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
 ```{r}
 spatial_firing <- spatial_firing %>%
@@ -105,13 +105,13 @@ spatial_firing <- spatial_firing %>%
          asr_p_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_helper)) %>%
   unnest_wider(asr_b_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_p_rewarded_fit, names_sep = "_", names_repair = "universal") 
+  unnest_wider(asr_p_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
 
 3. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
 ggplot(data=spatial_firing, aes(x = asr_b_rewarded_fit_slope,
-                                y = asr_b_rewarded_fit_r.squared)) + 
+                                y = asr_b_rewarded_fit_r.squared)) +
     coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
     geom_point() +
     xlab("\nslope") +
@@ -177,7 +177,7 @@ if(!"shuffle_results_b" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_b = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
     mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
-    mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates)) 
+    mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates))
 }
 # Uncomment the line below to save spatial firing at this point.
 # saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
@@ -270,7 +270,7 @@ adu_p_nb <- tibble(adjust_pval_nb = p.adjust(p_vals_nb$pvals, "BH"))
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
 ```
 
-3. do the same for probe trials
+3. do the same for probe trials (dont run unless youve ran the shuffled for probe trials..)
 ```{r}
 p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_fit_p.value)
 adu_p_p <- tibble(adjust_pval_p = p.adjust(p_vals_p$pvals, "BH"))
@@ -522,8 +522,7 @@ ggsave(file = "plots/LMOut_shuffle_datasets.png", width = 3, height = 3)
 ### ----------------------------------------------------------------------------------------- ###
 
 
-# PLOT HEAT MAPS FOR ALL NEURONS
-
+# Plot heat map of firing rate across location for all neurons
 
 First, reorder the dataframe with ramps according to slope.
 _For start ramps, steepest slope should be negative - thus will have the highest cluster id_
@@ -569,8 +568,9 @@ Extract columns (normalised rates) for plotting into a tibble
 concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o))
 ```
 
+Now the firing rates have been normalised and the data in the right format we want to make annotations for the heatmap
 
-Extract ramp score for annotating heatmap
+First, extract ramp score from the dataframe for annotating heatmap
 _since its a list of three (outbound/homebound/all) we extract the first one_
 ```{r}
 start_ramps <- start_ramps %>%
@@ -578,16 +578,15 @@ start_ramps <- start_ramps %>%
 
 ```
 
-Put ramp scores and lm results in tibble for annotating heatmap
+Put ramp scores alongisde lm results and brain region classifier in tibble for annotating heatmap
 ```{r}
-# data for annotating
 ramp_result <- tibble(ramp_score = as.numeric(start_ramps$start_ramp_score))
 brain_region <- tibble(region = as.character(start_ramps$brain_region))
 lm_result <- tibble(result = as.character(start_ramps$lm_group_b))
 cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
 ```
 
-Plot heatmap with annotations using pheatmap
+Now we can plot the heatmap with annotations using pheatmap
 ```{r}
 #convert data to wide format
 wide_DF <- concat_firing_start %>% spread(Position, Rates)
@@ -601,14 +600,14 @@ name <- "new_cluster_id"
 wide_DF <- wide_DF %>% select(-one_of(name))
 
 # data for annotation rows in seperate dataframe
-mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), category = lm_result, region = brain_region, ramp_score=ramp_result)
+mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), catagory = lm_result, region = brain_region, ramp_score=ramp_result)
 
 # change the color of annotation to what you want: (eg: "navy", "darkgreen")
 Var1        <- c("violetred2", "black", "chartreuse3")
-names(Var1) <- c("Negative", "Unxlassified", "Positive")
+names(Var1) <- c("Negative", "Unclassified", "Positive")
 
-Var2        <- c("springgreen4", "deepskyblue1", "firebrick")
-names(Var2) <- c("MEC", "PS", "UN")
+Var2        <- c("springgreen4", "deepskyblue1", "firebrick", "violetred2" )
+names(Var2) <- c("PS", "UN", "V1", "PreS")
 
 anno_col <- list(result = Var1, region = Var2, ramp_score = brewer.pal(11,"RdBu"))
 
@@ -634,7 +633,7 @@ save_pheatmap_png(myheatmap, "my_heatmap_all.png")
 
 
 ```{r}
-saveRDS(spatial_firing, file="Fig2Results.Rda")
+saveRDS(spatial_firing, file="All_Results.Rda")
 
 ```
 

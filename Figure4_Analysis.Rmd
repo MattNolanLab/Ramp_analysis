@@ -15,14 +15,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 _note : focuses on activity in outbound region_
 
+
 ### --------------------------------------------------------------------------------- ###
 
 
 First, we are interested to see what proportion of neurons has the following pattern ramp activity :
 
-1. ramp in both cued and uncued (PI)
-2. ramp in just cued (cue)
-3. ramp in just uncued (onlypi)
+1. ramp in both cued and uncued (cue independant)
+2. ramp in just cued (cue dependant)
+3. ramp in just uncued (only pi)
 
 To classify cells into these catagories above, we will use the criteria established in Figure 2 using linear modelling. 
 
@@ -217,10 +218,19 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 
 _same as above but just for position based cells_
 
+```{r}
+ramp_neurons <-subset(spatial_firing, lm_group == "Positive" | lm_group == "Negative")
+```
+
+```{r}
+unclassified_neurons <-subset(spatial_firing, lm_group == "Unclassified")
+nb_neurons <-subset(unclassified_neurons, lm_group_nb == "Positive" | lm_group_nb == "Negative")
+
+```
 
 2. subset based on position
 ```{r}
-position_neurons <-subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+position_neurons <-subset(nb_neurons, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
 
@@ -286,6 +296,57 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 
 
 
+
+## calculate for the neurons included in the above sankey, what proportion of neurons are in each lmer group
+```{r}
+pi_positive <-subset(position_neurons, lm_group == "Positive")
+pi_negative <-subset(position_neurons, lm_group == "Negative")
+
+pi_unclassified <-subset(position_neurons, lm_group == "Negative")
+pi_unclassified <-subset(pi_unclassified, lm_group_nb == "Negative" | lm_group_nb == "Positive")
+
+```
+
+```{r}
+# calculate propotion of groups
+P_positive <- nrow(subset(pi_positive, final_model_o_b == "P"))/nrow(pi_positive)*100
+PA_positive <- nrow(subset(pi_positive, final_model_o_b == "PA"))/nrow(pi_positive)*100
+PS_positive <- nrow(subset(pi_positive, final_model_o_b == "PS"))/nrow(pi_positive)*100
+PSA_positive <- nrow(subset(pi_positive, final_model_o_b == "PSA"))/nrow(pi_positive)*100
+
+# calculate propotion of groups
+P_negative <- nrow(subset(pi_negative, final_model_o_b == "P"))/nrow(pi_negative)*100
+PA_negative <- nrow(subset(pi_negative, final_model_o_b == "PA"))/nrow(pi_negative)*100
+PS_negative <- nrow(subset(pi_negative, final_model_o_b == "PS"))/nrow(pi_negative)*100
+PSA_negative <- nrow(subset(pi_negative, final_model_o_b == "PSA"))/nrow(pi_negative)*100
+
+```
+2. put data in tibble
+```{r}
+
+data_groups <- tibble(perc=c(P_positive,PA_positive,PS_positive,PSA_positive, P_negative, PA_negative, PS_negative, PSA_negative),ramp_id= c("P","PA","PS", "PSA", "P","PA","PS", "PSA"), ramp_type = c("Positive", "Positive", "Positive", "Positive", "Negative", "Negative", "Negative", "Negative"))
+
+```
+
+3. plot data
+```{r}
+# plot data
+level_order <- c("P", "PS", "PA", "PSA")
+ggplot(data_groups, aes(x = factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .7) +
+  labs(y = "Percent of neurons") +
+  scale_fill_manual(values=c("firebrick1","darkorange", "darkorchid1","darkslategray")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0))) +
+ggsave(file = "plots/cell_proportions-AllNeurons.png", width = 4, height = 4.5)
+
+```
 
 
 
@@ -376,7 +437,7 @@ df_pos_pi <- df %>%
 
 ```
 
-5. Plot average rates
+5. Plot average rates                                            **Positive PI**
 
 ```{r}
 ggplot(data=df_pos_pi) +
@@ -410,7 +471,7 @@ df_neg_pi <- df %>%
   
 ```
 
-5. Plot average rates
+5. Plot average rates                                           **Negative PI**
 
 ```{r}
 ggplot(data=df_neg_pi) +
@@ -442,7 +503,7 @@ df_neg_pi <- df %>%
   
 ```
 
-5. Plot average rates
+5. Plot average rates                                             **Negative PI only**
 
 ```{r}
 ggplot(data=df_neg_pi) +
@@ -476,7 +537,7 @@ df_neg_pi <- df %>%
   
 ```
 
-5. Plot average rates
+5. Plot average rates                                            **Positive PI only**
 
 ```{r}
 ggplot(data=df_neg_pi) +
