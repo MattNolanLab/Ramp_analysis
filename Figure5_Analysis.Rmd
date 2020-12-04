@@ -393,11 +393,29 @@ lm_predict_mse_homebound <- function(rate){
   Rates <- predict(lmer, newdata = new.data)
   mydata <- cbind(new.data, Rates)
   
-  mean( df_homebound$Rates - mydata$Rate)
+  mean(df_homebound$Rates - mydata$Rate)
 
 }
 
 ```
+
+
+Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
+```{r}
+predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 110, predict_end = 115){
+  # check for NAs
+  if(all(is.na(df))) 
+    return(NA)
+  # Make track column
+  df <- tibble(Rates = unlist(df), Position=rep(1:200))
+  model <- lm(Rates ~ Position, data = filter(df, Position >= fit_start, Position <= fit_end))
+  homebound_prediction_pos <- tibble(Position = rep(1:200))
+  homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "confidence") 
+}
+
+
+```
+
 
 2. Run on all neurons
 ```{r}
@@ -405,6 +423,15 @@ spatial_firing <- spatial_firing %>%
   mutate(predict_mean = map(normalised_rates, lm_predict_mse_homebound)) 
   
 ```
+
+or with confidence intervals and using absolute rates rather than normalised rates:
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(predict_mean = map(Rates_averaged_rewarded_b, predict_homebound)) 
+
+```
+
+
 
 
 Now, we can classify cells based on their predicted activity. 
