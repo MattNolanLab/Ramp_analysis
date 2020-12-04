@@ -385,7 +385,7 @@ spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
                               speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_stdcoef),
                               accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_stdcoef),
                               final_model_o_b =  as.character(spatial_firing_save$final_model_o_b),
-                              lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group))
+                              lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group_b))
 
 write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
 ```
