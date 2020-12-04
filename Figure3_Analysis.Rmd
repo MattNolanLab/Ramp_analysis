@@ -242,17 +242,6 @@ spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id,
 
 3. save to csv file _this is for matching to plots from python_
 ```{r}
-# spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
-#                               cluster_id = spatial_firing_save$cluster_id,
-#                               unique_id = spatial_firing_save$unique_id,
-#                               pos_stdcoef =  as.character(spatial_firing_save$o_pos_b_stdcoef),
-#                               speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_stdcoef),
-#                               accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_stdcoef),
-#                               final_model_o_b =  as.character(spatial_firing_save$final_model_o_b),
-#                               lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group))
-#
-# write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
-
 write_csv2(spatial_firing_save, "all_results_coefficients.csv")
 ```
 
@@ -269,22 +258,15 @@ data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), time
                     coef_type = rep(c("P", "S", "A"),
                                     each = nrow(spatial_firing_save)),
                     lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
-                    lm_result_nb = rep(as.character(spatial_firing_save$lm_group_nb), times=3))
 ```
 
 _Plot coefficients for all cells_
 
-5. Split by positive slope
-```{r}
-data_coef_pos <- data_coef %>%
-  subset(lm_result == "Positive" )
-```
 
-6. Plot coefficients _all cells_
+Make function for plotting standardised coefficients
 ```{r}
-level_order <- c("P", "S", "A")
-
-ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
+standard_plot <- function(df) {
+  ggplot(data=df, aes(x = factor(coef_type), y = as.numeric(coef))) +
   #coord_cartesian(ylim=c(0,1)) +
   geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
   stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
@@ -298,37 +280,37 @@ ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
         legend.title = element_blank(),
         text = element_text(size=12), 
         legend.text=element_text(size=12), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_positivecells.png", width = 3, height = 2.5)
-  
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+}
+```
+
+5. Select cells classified in Figure 2 as having positive or negative slopes
+```{r}
+data_coef_pos_neg <- data_coef %>%
+  subset(lm_result == "Positive" || lm_result == "Negative")
+
+(pos_neg_coef_plot <- standard_plot(data_coef_pos_neg) +
+    ggsave(file = "plots/CoefficientValues_positive_negative_cells.png", width = 3, height = 2.5))
+```
+
+
+
+5. Split by positive slope _all cells_
+```{r}
+data_coef_pos <- data_coef %>%
+  subset(lm_result == "Positive" )
+
+(pos_coef_plot <- standard_plot(data_coef_pos) +
+    ggsave(file = "plots/CoefficientValues_positivecells.png", width = 3, height = 2.5))
 ```
 
 5. Split by negative slope _all cells_
 ```{r}
 data_coef_neg <- data_coef %>%
   subset(lm_result == "Negative" )
-```
 
-6. Plot coefficients
-```{r}
-level_order <- c("P", "S", "A")
-
-ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
-  #coord_cartesian(ylim=c(0,1)) +
-  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
-  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  geom_jitter(alpha=0.05) +
-  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
-  labs(y = "std coef \n", x="\n model parameter") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=12), 
-        legend.text=element_text(size=12), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_negativecells.png", width = 3, height = 2.5)
+(neg_coef_plot <- standard_plot(data_coef_neg) +
+ggsave(file = "plots/CoefficientValues_negativecells.png", width = 3, height = 2.5))
   
 ```
 
@@ -336,199 +318,65 @@ _Plot coefficients for all cells_
 
 5. Split by positive slope _PA cells_
 ```{r}
-data_coef_pos <- data_coef %>%
+data_coef_pos_PA <- data_coef %>%
   subset(group == "PA") %>%
   subset(lm_result == "Positive" )
 
-```
-
-6. Plot coefficients
-```{r}
-level_order <- c("P", "S", "A")
-
-ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
-  #coord_cartesian(ylim=c(0,1)) +
-  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
-  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  geom_jitter(alpha=0.05) +
-  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
-  labs(y = "std coef \n", x="\n model parameter") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=12), 
-        legend.text=element_text(size=12), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_A_positivecells.png", width = 3, height = 2.5)
+(pos_PA_coef_plot <- standard_plot(data_coef_pos_PA) +
+ggsave(file = "plots/CoefficientValues_PositivePAcells.png", width = 3, height = 2.5))
   
 ```
 
 7. Split by negative slope
 ```{r}
-data_coef_neg <- data_coef %>%
+data_coef_neg_PA <- data_coef %>%
   subset(group == "PA") %>%
   subset(lm_result == "Negative" )
+
+(neg_PA_coef_plot <- standard_plot(data_coef_neg_PA) +
+ggsave(file = "plots/CoefficientValues_NegativePAcells.png", width = 3, height = 2.5))
+ 
 ```
-
-8. Plot coefficients
-```{r}
-level_order <- c("P", "S", "A")
-
-ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
-  #coord_cartesian(ylim=c(0,1)) +
-  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
-  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  geom_jitter(alpha=0.05) +
-  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
-  labs(y = "std coef \n", x="\n model parameter") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=12), 
-        legend.text=element_text(size=12), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_S_negativecells.png", width = 3, height = 2.5)
-  
-```
-
-
 
 
 _Plot coefficients for just position cells_
 
-7. Split by negative slope
+7a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having signficant fit coefficients for position only.
 ```{r}
-data_coef_pos <- data_coef %>%
+data_coef_pos_P <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
   subset(lm_result == "Positive")
 
-```
-
-8. Plot coefficients
-```{r}
-level_order <- c("P", "S", "A")
-
-ggplot(data=data_coef_pos, aes(x = factor(coef_type), y = as.numeric(coef))) +
-  #coord_cartesian(ylim=c(0,1)) +
-  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
-  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  geom_jitter(alpha=0.05) +
-  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
-  labs(y = "std coef \n", x="\n model parameter") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=9),
-        axis.text.y = element_text(size=9),
-        legend.position="bottom",
-        legend.title = element_blank(),
-        text = element_text(size=9),
-        legend.text=element_text(size=9),
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_Positioncells_positive.png", width = 2.7, height = 3)
+(pos_P_coef_plot <- standard_plot(data_coef_pos_P) +
+ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 3, height = 2.5))
+ 
 
 ```
 
 
-7. Split by negative slope
+7b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having signficant fit coefficients for position only.
 ```{r}
-data_coef_neg <- data_coef %>%
+data_coef_neg_P <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
   subset(lm_result == "Negative")
 
-```
-
-8. Plot coefficients
-```{r}
-level_order <- c("P", "S", "A")
-
-ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
-  #coord_cartesian(ylim=c(0,1)) +
-  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
-  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  geom_jitter(alpha=0.05) +
-  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
-  labs(y = "std coef \n", x="\n model parameter") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=9),
-        axis.text.y = element_text(size=9),
-        legend.position="bottom",
-        legend.title = element_blank(),
-        text = element_text(size=9),
-        legend.text=element_text(size=9),
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_Position_negativecells.png", width = 2.7, height = 3)
+(neg_P_coef_plot <- standard_plot(data_coef_neg_P) +
+ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 3, height = 2.5))
 
 ```
 
 
-
-
-7. Split by negative slope
+7c. Plot coefficients for cells classified in Figure 2 as being unclassified but that have 'signficant' positional coefficients in the mixed effect model.
 ```{r}
-data_coef_neg <- data_coef %>%
+data_coef_UC_PSA <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
-  subset(lm_result == "Unclassified") %>%
-  subset(lm_result_nb == "Positive")
+  subset(lm_result == "Unclassified")
+
+(UC_PSA_coef_plot <- standard_plot(data_coef_UC_PSA) +
+ggsave(file = "plots/CoefficientValues_UCPSAcells.png", width = 3, height = 2.5))
 
 ```
 
-8. Plot coefficients
-```{r}
-level_order <- c("P", "S", "A")
-
-ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
-  #coord_cartesian(ylim=c(0,1)) +
-  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
-  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  geom_jitter(alpha=0.05) +
-  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
-  labs(y = "std coef \n", x="\n model parameter") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.position="bottom",
-        legend.title = element_blank(),
-        text = element_text(size=12),
-        legend.text=element_text(size=12),
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_Position_unclassifiedcells_pos.png", width = 3, height = 2.8)
-
-```
-
-7. Split by negative slope
-```{r}
-data_coef_neg <- data_coef %>%
-  subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
-  subset(lm_result == "Unclassified") %>%
-  subset(lm_result_nb == "Negative")
-
-```
-
-8. Plot coefficients
-```{r}
-level_order <- c("P", "S", "A")
-
-ggplot(data=data_coef_neg, aes(x = factor(coef_type), y = as.numeric(coef))) +
-  #coord_cartesian(ylim=c(0,1)) +
-  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
-  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  geom_jitter(alpha=0.05) +
-  scale_fill_manual(values=c("dodgerblue2", "firebrick1","gold")) +
-  labs(y = "std coef \n", x="\n model parameter") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.position="bottom",
-        legend.title = element_blank(),
-        text = element_text(size=12),
-        legend.text=element_text(size=12),
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/CoefficientValues_Position_unclassifiedcells_neg.png", width = 3, height = 2.5)
-
-```
 ## Save to csv file _this is for matching to plots from python_
 ```{r}
 spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
