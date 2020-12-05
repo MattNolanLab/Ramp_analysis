@@ -100,18 +100,18 @@ spatial_firing <- spatial_firing %>%
   select(-contains('asr_b_rewarded_fit_')) %>%
   select(-contains('asr_nb_rewarded_fit_')) %>%
   select(-contains('asr_p_rewarded_fit_')) %>%
-  mutate(asr_b_rewarded_fit_o = pmap(list(asr_b_rewarded, 30, 90), lm_helper),
-         asr_nb_rewarded_fit_o = pmap(list(asr_nb_rewarded, 30, 90), lm_helper),
-         asr_p_rewarded_fit_o = pmap(list(asr_p_rewarded, 30, 90), lm_helper)) %>%
-  unnest_wider(asr_b_rewarded_fit_o, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_nb_rewarded_fit_o, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_p_rewarded_fit_o, names_sep = "_", names_repair = "universal")
+  mutate(asr_b_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_helper),
+         asr_nb_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_helper),
+         asr_p_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_helper)) %>%
+  unnest_wider(asr_b_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_p_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
 
 3. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
-ggplot(data=spatial_firing, aes(x = asr_b_rewarded_fit_o_slope,
-                                y = asr_b_rewarded_fit_o_r.squared)) +
+ggplot(data=spatial_firing, aes(x = asr_b_rewarded_fit_slope,
+                                y = asr_b_rewarded_fit_r.squared)) +
     coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
     geom_point() +
     xlab("\nslope") +
@@ -159,7 +159,7 @@ shuffle_rates <- function(df) {
   df_modified <- rbind(df_modified,data)
 
   x = x+1
-  if (x == 100){ # putting 100 here for now for testing as 1000 takes v long time to run
+  if (x == 1000){ # putting 100 here for now for testing as 1000 takes v long time to run
   break
   }
   }
