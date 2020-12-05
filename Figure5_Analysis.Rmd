@@ -18,51 +18,59 @@ knitr::opts_chunk$set(echo = TRUE)
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
 
 
-### First, we need to classify neurons based on their ramp activity in the homebound region, similar to that done in figure 2 analysis. 
+### First, we need to classify neurons based on their ramp activity in the homebound region, similar to that done in figure 2 analysis in the outbound region. 
 
-# Run simple linear model to examine relationship between firing rate and position
-_note:for now we are only interested in the homebound region of the track (110 - 170 cm)_
+# Run linear model to examine relationship between firing rate and position
+_note: we are only interested in the homebound region of the track (110 - 170 cm)_
 
 1. Make function to run linear model
 ```{r}
-lm_helper <- function(df, startbin = 110, endbin = 170){
+lm_helper <- function(df,
+                      startbin = 110,
+                      endbin = 170) {
+ # Check for NAs
+  if (any(is.na(df$Rates))) {
+    df <-
+      tibble(
+        r.squared = c(NA),
+        p.value = c(NA),
+        intercept = c(NA),
+        slope = c(NA)
+      )
+    return(df)
+  }
+
   df <- df %>%
     subset(Position >= startbin & Position <= endbin)
-  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
+  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
+
+  # get the model parameters
+  params <- select(glance(df_fit), r.squared, p.value)
+  # get the coefficients
+  coeffs <- tidy(df_fit)
+  # combine the parameters and coefficients
+  params$intercept <- coeffs$estimate[[1]]
+  params$slope <- coeffs$estimate[[2]]
+
+  return(params)
 }
 ```
 
-2. make function to extract linear model output for each neuron
+2. run lm on all cells.
+Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
 ```{r}
-lm_analysis <- function(df, spike_rate_col, startbin = 110, endbin = 170) {
-  spike_rate_col <- enquo(spike_rate_col)
-  out_name <- sym(paste0(quo_name(spike_rate_col)))
-  sr_unnest_name <- sym(paste0(quo_name(spike_rate_col), "_unnest"))
-  fit_name <- sym(paste0(quo_name(out_name), "_fit"))
-  glance_name <- sym(paste0(quo_name(out_name), "_glance"))
-  r2_name <- sym(paste0(quo_name(out_name), "_r2_h"))
-  Pval_name <- sym(paste0(quo_name(out_name), "_Pval_h"))
-  slope_name <- sym(paste0(quo_name(out_name), "_slope_h"))
-  intercept_name <- sym(paste0(quo_name(out_name), "_intercept_h"))
-  df <- df %>%
-    mutate(!!fit_name := pmap(list(!!spike_rate_col, startbin, endbin), lm_helper),
-           !!glance_name := map(!!fit_name, glance),
-           !!r2_name := map_dbl(!!glance_name, ~.$r.squared),
-           !!Pval_name := map_dbl(!!glance_name, ~.$p.value),
-           !!slope_name := map_dbl(!!fit_name, ~.$coefficients[2]),
-           !!intercept_name := map_dbl(!!fit_name, ~.$coefficients[1]))
-}
-```
-
-3. run lm on all cells
-```{r}
-
 spatial_firing <- spatial_firing %>%
-  lm_analysis(asr_b_rewarded, 110, 170) %>%
-  lm_analysis(asr_nb_rewarded, 110, 170)
-  #lm_analysis(asr_p_rewarded, 110, 170)
-
+  select(-contains('asr_b_rewarded_fit_')) %>%
+  select(-contains('asr_nb_rewarded_fit_')) %>%
+  select(-contains('asr_p_rewarded_fit_')) %>%
+  mutate(asr_b_rewarded_fit = pmap(list(asr_b_rewarded, 110, 170), lm_helper),
+         asr_nb_rewarded_fit = pmap(list(asr_nb_rewarded, 110, 170), lm_helper),
+         asr_p_rewarded_fit = pmap(list(asr_p_rewarded, 110, 170), lm_helper)) %>%
+  unnest_wider(asr_b_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_p_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
+
 
 4. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
@@ -393,9 +401,9 @@ classify_reset_group <- function(df, id){
     return( "Reset" ) 
   } else if( id == "posnon" | id == "negnon") {
     return( "Continuous" ) 
-  } else if( (df > -1 & df < 1) & (id == "pospos" | id == "negneg")) {
+  } else if( (df > -0.8 & df < 0.8) & (id == "pospos" | id == "negneg")) {
     return( "Continuous" )
-  } else if( (df <= -1 | df >= 1) & (id == "pospos" | id == "negneg")) {
+  } else if( (df <= -0.8 | df >= 0.8) & (id == "pospos" | id == "negneg")) {
     return( "Reset" ) 
     } else {
     return("None")
@@ -404,7 +412,6 @@ classify_reset_group <- function(df, id){
 
 ```
 
-
 2. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
@@ -412,7 +419,7 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
-3. Calculate number of neurons that are in each group as classified above
+3. Calculate number of neurons that are in each group as classified above _for manuscript_
 ```{r}
 path_integrating_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
 
@@ -547,44 +554,9 @@ ggsave(file = "plots/slope_comparison_reset.png", width = 5, height = 5)
 
 ```
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
-
-
-
-## save new firing rates
-
-```{r}
-
-lm_predict_homebound <- function(df){
-  if(all(is.na(df))) 
-    return(NA)
-  startbins=c(30:90)
-
-  lmer <- lm(Rates ~ Position, data = df[startbins,])
-  
-  df_homebound <- df %>% filter(between(Position, 110, 170))
-  new.data <- lm_predict(df_homebound)
-  Rates <- predict(lmer, newdata = new.data)
-  mydata <- cbind(new.data, Rates)
-  
-}
-
-```
-
-2. Run
-
-```{r}
-
-spatial_firing <- spatial_firing %>%
-  mutate(predict_firingrate = map(asr_b_rewarded, lm_predict_homebound)) 
-  
-```
 
 
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
-
-
-
 
 Now we want to plot population rate across whole track for diff groups so we can visualise the average firing rate
 
@@ -592,6 +564,11 @@ Now we want to plot population rate across whole track for diff groups so we can
 
 ```{r}
 pi_data <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+```
+
+3. subset based on position
+```{r}
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
 2. make tibble with average firing rates and classifications : _just path integration neurons_
@@ -727,7 +704,7 @@ ggplot(data=df_pos_pi) +
         axis.text.y = element_text(size=12),
         legend.title = element_blank(),
         text = element_text(size=12))
-ggsave(file = "plots/pospos_continuous_mean_PI_f.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/pospos_continuous_mean.png", width = 3.5, height = 2.5)
 
 
 ```
@@ -885,10 +862,11 @@ Now we want to plot a sankey diagram showing the slope of neurons in the outboun
 
 1.
 ```{r}
-data <- spatial_firing %>% filter(predict_id == "pospos" | predict_id == "negneg" | predict_id == "posneg"| predict_id == "negpos")
+data <- spatial_firing %>% filter(predict_id == "pospos" | predict_id == "negneg" | predict_id == "posneg"| predict_id == "negpos" | predict_id == "posnon"| predict_id == "negnon")
 
-pi_data <- subset(data, group == "Positive-PI" | group == "Negative-PI")
+pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
 
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
 2. 
@@ -971,41 +949,29 @@ data <- spatial_firing %>% filter(predict_id == "pospos" | predict_id == "negneg
 
 # filter for pi neurons
 ```{r}
-pi_data <- subset(data, group == "Positive-PI" | group == "Negative-PI")
-cue_data <- subset(data,group == "Positive-cue" | group == "Negative-cue")
+pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 
 ```
 
 
 # filter for negative > negative & positive > positive
 ```{r}
-negneg_pineurons <-subset(pi_data, slope_criteria_pval == "Negative" & slope_criteria_pval_h == "Negative")
-posos_pineurons <-subset(pi_data, slope_criteria_pval == "Positive" & slope_criteria_pval_h == "Positive")
-negpos_pineurons<-subset(pi_data, slope_criteria_pval == "Negative" & slope_criteria_pval_h == "Positive")
-posneg_pineurons<-subset(pi_data, slope_criteria_pval == "Positive" & slope_criteria_pval_h == "Negative")
-
-```
-
-# find out proportions of reset and continuous in these groups
-```{r}
-negneg_pineurons_reset <- nrow(subset(negneg_pineurons, color_predict == "Reset"))
-negneg_pineurons_cont <-nrow(subset(negneg_pineurons, color_predict == "Continuous"))
-
-pospos_pineurons_reset <-nrow(subset(posos_pineurons, color_predict == "Reset"))
-pospos_pineurons_cont <-nrow(subset(posos_pineurons, color_predict == "Continuous"))
-
-posneg_pineurons <-nrow(posneg_pineurons)/nrow(posneg_pineurons)*100
-negpos_pineurons <-nrow(negpos_pineurons)/nrow(negpos_pineurons)*100
+negneg_pineurons <-subset(pi_data, lm_group == "Negative" & lm_group_h_b == "Negative")
+posos_pineurons <-subset(pi_data, lm_group == "Positive" & lm_group_h_b == "Positive")
+negpos_pineurons<-subset(pi_data, lm_group == "Negative" & lm_group_h_b == "Positive")
+posneg_pineurons<-subset(pi_data, lm_group == "Positive" & lm_group_h_b == "Negative")
 
 ```
 
 ## raw numbers 
 ```{r}
-negneg_pineurons_reset <- nrow(subset(negneg_pineurons, color_predict == "Reset"))
-negneg_pineurons_cont <-nrow(subset(negneg_pineurons, color_predict == "Continuous"))
+negneg_pineurons_reset <- nrow(subset(negneg_pineurons, reset_group == "Reset"))
+negneg_pineurons_cont <-nrow(subset(negneg_pineurons, reset_group == "Continuous"))
 
-pospos_pineurons_reset <-nrow(subset(posos_pineurons, color_predict == "Reset"))
-pospos_pineurons_cont <-nrow(subset(posos_pineurons, color_predict == "Continuous"))
+pospos_pineurons_reset <-nrow(subset(posos_pineurons, reset_group == "Reset"))
+pospos_pineurons_cont <-nrow(subset(posos_pineurons, reset_group == "Continuous"))
 ```
 
 
