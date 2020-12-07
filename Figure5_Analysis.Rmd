@@ -625,6 +625,19 @@ ggsave(file = "plots/slope_comparison_reset.png", width = 5, height = 5)
 
 Now we want to plot population rate across whole track for diff groups so we can visualise the average firing rate
 
+cue_groups are as follows :
+
+outbound homebound  reset
+    +       +         n
+    +       +         y
+    +       -         -
+    +      non        -
+    -       +         -
+    -       -         n
+    -       -         y
+    -      non        -
+    
+    
 1. Split data based on cue independant/cue dependant
 
 ```{r}
