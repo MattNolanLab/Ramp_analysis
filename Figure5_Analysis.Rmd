@@ -250,7 +250,7 @@ spatial_firing <- spatial_firing %>%
       ),
       compare_slopes
     ),
-    lm_group_nb_h = pmap(
+    lm_group_b_nb_h = pmap(
       list(
         shuffle_min_slope_nb_h,
         shuffle_max_slope_nb_h,
@@ -259,7 +259,7 @@ spatial_firing <- spatial_firing %>%
       ),
       compare_slopes
     ),
-    lm_group_p_h = pmap(
+    lm_group_b_p_h = pmap(
       list(
         shuffle_min_slope_p_h,
         shuffle_max_slope_p_h,
@@ -525,7 +525,7 @@ position_neurons <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "
 
 4. Plot bar charts - positive neurons
 ```{r}
-ggplot(data=subset(position_neurons, lm_group == "Positive"), aes(x = unlist(predict_mean), fill=as.factor(unlist(lm_group)))) +
+ggplot(data=subset(position_neurons, lm_group_b == "Positive"), aes(x = unlist(predict_mean), fill=as.factor(unlist(lm_group_b)))) +
   coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
   geom_histogram(aes(y=..density..), alpha=0.5) +
   scale_fill_manual(values=c( "chartreuse3")) +
@@ -548,7 +548,7 @@ ggsave(file = "plots/PredictHomeboundMean_PIpositive_pi.png",width = 4, height =
 
 ```{r}
 
-ggplot(data=subset(position_neurons,lm_group == "Negative"), aes(x = unlist(predict_mean), fill=as.factor(unlist(lm_group)))) +
+ggplot(data=subset(position_neurons,lm_group_b == "Negative"), aes(x = unlist(predict_mean), fill=as.factor(unlist(lm_group_b)))) +
   coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
   geom_histogram(aes(y=..density..), alpha=0.5) +
   scale_fill_manual(values=c("violetred2")) +
@@ -601,8 +601,8 @@ continuous <- position_neurons %>% filter(reset_group == "Continuous")
 ```{r}
 
 ggplot() + 
-    geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_slope_o)), y = as.numeric(unlist(asr_b_rewarded_slope_h)), color=factor(unlist(lm_group)))) +
-    geom_jitter(data=reset,aes(x = as.numeric(unlist(asr_b_rewarded_slope_o)), y = as.numeric(unlist(asr_b_rewarded_slope_h)), color=factor(unlist(lm_group))), shape=1) +
+    geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
+    geom_jitter(data=reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
     coord_cartesian(ylim = c(-.6,.6), xlim = c(-.6,.6)) +
     xlab("Outbound slope") +
     ylab("Homebound slope") +
@@ -638,7 +638,7 @@ pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | fin
 
 2. make tibble with average firing rates and classifications : _just path integration neurons_
 ```{r}
-df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$Rates_averaged_rewarded_b), Outbound_beaconed = rep(pi_data$lm_group, each=200), Homebound_beaconed = rep(pi_data$lm_group_h_b, each=200), group = rep(as.character(pi_data$reset_group), each=200), predict_mean = rep(as.numeric(pi_data$predict_mean), each=200))
+df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$Rates_averaged_rewarded_b), Outbound_beaconed = rep(pi_data$lm_group_b, each=200), Homebound_beaconed = rep(pi_data$lm_group_b_h, each=200), group = rep(as.character(pi_data$reset_group), each=200), predict_mean = rep(as.numeric(pi_data$predict_mean), each=200))
 
 ```
 
@@ -734,7 +734,7 @@ ggplot(data=df_pos_cue) +
         axis.text.y = element_text(size=12),
         legend.title = element_blank(),
         text = element_text(size=12))
-ggsave(file = "plots/negpos_cells.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/negpos_mean.png", width = 3.5, height = 2.5)
 
 ```
 
@@ -804,7 +804,7 @@ ggplot(data=df_pos_pi) +
         axis.text.y = element_text(size=12),
         legend.title = element_blank(),
         text = element_text(size=12))
-ggsave(file = "plots/pospos_reset_mean_PI_f.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/pospos_reset_mean.png", width = 3.5, height = 2.5)
 
 
 ```
@@ -838,7 +838,7 @@ ggplot(data=df_pos_pi) +
         text = element_text(size=12), 
         panel.grid = element_blank(),
         panel.border = element_blank()) 
-ggsave(file = "plots/posneg_cells.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/posneg_mean.png", width = 3.5, height = 2.5)
 
 
 ```
@@ -873,7 +873,7 @@ ggplot(data=df_pos_pi) +
         panel.grid = element_blank(),
         panel.border = element_blank()) 
 
-ggsave(file = "plots/posnon_cells.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/posnon_mean.png", width = 3.5, height = 2.5)
 
 
 ```
@@ -908,7 +908,7 @@ ggplot(data=df_pos_pi) +
         panel.grid = element_blank(),
         panel.border = element_blank()) 
 
-ggsave(file = "plots/negnon_cells.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/negnon_mean.png", width = 3.5, height = 2.5)
 
 
 ```
@@ -937,29 +937,29 @@ pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | fin
 2. 
 ```{r}
 
-pi_positive <-subset(pi_data, lm_group == "Positive")
-pi_negative <-subset(pi_data, lm_group == "Negative")
-pi_none <-subset(pi_data, lm_group == "Unclassified")
+pi_positive <-subset(pi_data, lm_group_b == "Positive")
+pi_negative <-subset(pi_data, lm_group_b == "Negative")
+pi_none <-subset(pi_data, lm_group_b == "Unclassified")
 
-pi_positive_pos <-nrow(subset(pi_positive, lm_group_h_b == "Positive"))
-pi_positive_neg <-nrow(subset(pi_positive, lm_group_h_b == "Negative"))
-pi_positive_none <-nrow(subset(pi_positive, lm_group_h_b == "Unclassified"))
-pi_negative_pos <-nrow(subset(pi_negative, lm_group_h_b == "Positive"))
-pi_negative_neg <-nrow(subset(pi_negative, lm_group_h_b == "Negative"))
-pi_negative_none <-nrow(subset(pi_negative, lm_group_h_b == "Unclassified"))
-pi_none_pos <-nrow(subset(pi_none, lm_group_h_b == "Positive"))
-pi_none_neg <-nrow(subset(pi_none, lm_group_h_b == "Negative"))
-pi_none_none <-nrow(subset(pi_none, lm_group_h_b == "Unclassified"))
+pi_positive_pos <-nrow(subset(pi_positive, lm_group_b_h == "Positive"))
+pi_positive_neg <-nrow(subset(pi_positive, lm_group_b_h == "Negative"))
+pi_positive_none <-nrow(subset(pi_positive, lm_group_b_h == "Unclassified"))
+pi_negative_pos <-nrow(subset(pi_negative, lm_group_b_h == "Positive"))
+pi_negative_neg <-nrow(subset(pi_negative, lm_group_b_h == "Negative"))
+pi_negative_none <-nrow(subset(pi_negative, lm_group_b_h == "Unclassified"))
+pi_none_pos <-nrow(subset(pi_none, lm_group_b_h == "Positive"))
+pi_none_neg <-nrow(subset(pi_none, lm_group_b_h == "Negative"))
+pi_none_none <-nrow(subset(pi_none, lm_group_b_h == "Unclassified"))
 
-pi_positive_pos_num <-nrow(subset(pi_positive, lm_group_h_b == "Positive"))
-pi_positive_neg_num <-nrow(subset(pi_positive, lm_group_h_b == "Negative"))
-pi_positive_none_num <-nrow(subset(pi_positive, lm_group_h_b == "Unclassified"))
-pi_negative_pos_num <-nrow(subset(pi_negative, lm_group_h_b == "Positive"))
-pi_negative_neg_num <-nrow(subset(pi_negative, lm_group_h_b == "Negative"))
-pi_negative_none_num <-nrow(subset(pi_negative, lm_group_h_b == "Unclassified"))
-pi_none_pos_num <-nrow(subset(pi_none, lm_group_h_b == "Positive"))
-pi_none_neg_num <-nrow(subset(pi_none, lm_group_h_b == "Negative"))
-pi_none_none_num <-nrow(subset(pi_none, lm_group_h_b == "Unclassified"))
+pi_positive_pos_num <-nrow(subset(pi_positive, lm_group_b_h == "Positive"))
+pi_positive_neg_num <-nrow(subset(pi_positive, lm_group_b_h == "Negative"))
+pi_positive_none_num <-nrow(subset(pi_positive, lm_group_b_h == "Unclassified"))
+pi_negative_pos_num <-nrow(subset(pi_negative, lm_group_b_h == "Positive"))
+pi_negative_neg_num <-nrow(subset(pi_negative, lm_group_b_h == "Negative"))
+pi_negative_none_num <-nrow(subset(pi_negative, lm_group_b_h == "Unclassified"))
+pi_none_pos_num <-nrow(subset(pi_none, lm_group_b_h == "Positive"))
+pi_none_neg_num <-nrow(subset(pi_none, lm_group_b_h == "Negative"))
+pi_none_none_num <-nrow(subset(pi_none, lm_group_b_h == "Unclassified"))
 
 ```
 
@@ -1023,10 +1023,10 @@ pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | fin
 
 # filter for negative > negative & positive > positive
 ```{r}
-negneg_pineurons <-subset(pi_data, lm_group == "Negative" & lm_group_h_b == "Negative")
-posos_pineurons <-subset(pi_data, lm_group == "Positive" & lm_group_h_b == "Positive")
-negpos_pineurons<-subset(pi_data, lm_group == "Negative" & lm_group_h_b == "Positive")
-posneg_pineurons<-subset(pi_data, lm_group == "Positive" & lm_group_h_b == "Negative")
+negneg_pineurons <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative")
+posos_pineurons <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
+negpos_pineurons<-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
+posneg_pineurons<-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
 
 ```
 
