@@ -17,31 +17,6 @@ Required columns to concatinate from server:
 """
 
 
-def process_a_local_dir(recording_folder, prm):
-    #spike_data_frame_path = recording_folder + '/MountainSort/DataFrames/spatial_firing-ramp.pkl'
-    spike_data_frame_path = recording_folder + '/MountainSort/DataFrames/spatial_firing.pkl'
-
-    if os.path.exists(recording_folder):
-        print('I found the test file.')
-
-    os.path.isdir(recording_folder)
-    if os.path.exists(spike_data_frame_path):
-        print('I found a firing data frame.')
-        spike_data = pd.read_pickle(spike_data_frame_path)
-
-        '''
-        'session_id' 'cluster_id' 'tetrode' 'number_of_spikes' 'mean_firing_rate' 
-         'isolation' 'noise_overlap' 'peak_snr'  'firing_times' 'avg_b_spike_rate' 
-         'avg_nb_spike_rate' 'avg_p_spike_rate' 'x_position_cm' 'beaconed_trial_number'
-         'spike_num_on_trials' 'b_spike_num_on_trials' 'nb_spike_num_on_trials'
-         'p_spike_num_on_trials' 'spike_rate_on_trials' 'spike_rate_on_trials_smoothed' 
-         'b_spike_rate_on_trials' 'nb_spike_rate_on_trials' 'p_spike_rate_on_trials'
-    
-        '''
-
-    return spike_data
-
-
 def process_allmice_dir(recording_folder, prm):
     spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort4_dataset.pkl'
 
