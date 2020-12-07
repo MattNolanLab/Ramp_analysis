@@ -16,26 +16,74 @@ output: html_document
 
 
 
-## Run mixed effect model which examines contribution of speed, acceleration and position on firing rate
+## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
 
 1. Load functions to perform linear mixed effect model
 ```{r}
 source("Functions_Outbound_LMER.R")
 ```
 
-2. Run on all cells 
-```{r, warning=FALSE}
-spatial_firing <- spatial_firing  %>%
-  mutate(o_pos_b = map2(spikes_in_time, 0, car_pos),
-         o_speed_b = map2(spikes_in_time, 0, car_speed),
-         o_accel_b = map2(spikes_in_time, 0, car_accel),
-         o_pos_nb = map2(spikes_in_time, 1, car_pos),
-         o_speed_nb = map2(spikes_in_time, 1, car_speed),
-         o_accel_nb = map2(spikes_in_time, 1, car_accel))
-  # o_pos_p = map(spikes_in_time, 2, car_po),
-  #o_speed_p = map(spikes_in_time, 2, car_speed),
-  #o_accel_p = map(spikes_in_time, 2, car_accel))
+Function to fit mixed effect models
+```{r}
+mm_fit <- function(df, TT = 0) {
+  if (length(df) == 1)
+    return(NA)
+  df <-
+    tibble(
+      Rates = as.numeric(Re(df[[1]])),
+      Position = as.numeric(Re(df[[2]])),
+      Acceleration = as.numeric(Re(df[[3]])),
+      Speed = as.numeric(Re(df[[4]])),
+      Trials = as.factor(df[[5]]),
+      Types = as.factor(df[[6]])
+    )
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == TT)
+  
+  if (length(df) == 1 | nrow(df) < 3)
+    return(NA)
+  
+  df_int <-
+    lme4::lmer(
+      Rates ~ Position + Speed + Acceleration + (1 |
+                                                   Trials),
+      data = df,
+      na.action = na.exclude
+    )
+
+}
 ```
+
+
+Function to extract P values for each coefficient from the model
+```{r}
+mm_pvalues <- function(mm) {
+    modelAnova <- car::Anova(mm)
+    return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
+                  speed = modelAnova$"Pr(>Chisq)"[[2]],
+                  accel = modelAnova$"Pr(>Chisq)"[[3]])
+}
+
+```
+
+
+2. Run on all cells 
+```{r}
+spatial_firing <- spatial_firing  %>%
+  select(-contains('o_mm_p_b_')) %>%
+  select(-contains('o_mm_p_nb_')) %>%
+  mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit),
+         o_mm_nb = map2(spikes_in_time, 1, mm_fit),
+         o_mm_p_b = map(o_mm_b, mm_pvalues),
+         o_mm_p_nb = map(o_mm_nb, mm_pvalues)) %>%
+  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(o_mm_p_nb, names_sep = "_", names_repair = "universal")
+```
+
+Model p values are stored in:
+spatial_firing$o_mm_p_b_pos
+spatial_firing$o_mm_p_b_accel
+spatial_firing$o_mm_p_b_speed
 
 
 ### ----------------------------------------------------------------------------------------- ###
@@ -43,7 +91,7 @@ spatial_firing <- spatial_firing  %>%
 
 ## Select best model 
 
-1. Write function to perform model selection
+1. Write function to categorise neurons based on significant model coefficients
 ```{r}
 
 model_comparison <- function(null_pos, null_speed, null_accel){
@@ -79,11 +127,12 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 
 ```
 
+
 2. Run on all cells in dataframe
 ```{r}
 spatial_firing <- spatial_firing  %>%
-    mutate(final_model_o_b  = pmap(list(o_pos_b, o_speed_b, o_accel_b), model_comparison),
-           final_model_o_nb  = pmap(list(o_pos_nb, o_speed_nb, o_accel_nb), model_comparison))#%>%
+    mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel), model_comparison),
+           final_model_o_nb  = pmap(list(o_mm_p_nb_pos, o_mm_p_nb_speed, o_mm_p_nb_accel), model_comparison))#%>%
     #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
 
 ```
