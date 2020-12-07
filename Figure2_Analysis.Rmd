@@ -97,21 +97,21 @@ lm_helper <- function(df,
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
 ```{r}
 spatial_firing <- spatial_firing %>%
-  select(-contains('asr_b_rewarded_fit_')) %>%
-  select(-contains('asr_nb_rewarded_fit_')) %>%
-  select(-contains('asr_p_rewarded_fit_')) %>%
-  mutate(asr_b_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_helper),
-         asr_nb_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_helper),
-         asr_p_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_helper)) %>%
-  unnest_wider(asr_b_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_p_rewarded_fit, names_sep = "_", names_repair = "universal")
+  select(-contains('asr_b_o_rewarded_fit_')) %>%
+  select(-contains('asr_nb_o_rewarded_fit_')) %>%
+  select(-contains('asr_p_o_rewarded_fit_')) %>%
+  mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_helper),
+         asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_helper),
+         asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_helper)) %>%
+  unnest_wider(asr_b_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_nb_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_p_o_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
 
 3. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
-ggplot(data=spatial_firing, aes(x = asr_b_rewarded_fit_slope,
-                                y = asr_b_rewarded_fit_r.squared)) +
+ggplot(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope,
+                                y = asr_b_o_rewarded_fit_r.squared)) +
     coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
     geom_point() +
     xlab("\nslope") +
@@ -159,7 +159,7 @@ shuffle_rates <- function(df) {
   df_modified <- rbind(df_modified,data)
 
   x = x+1
-  if (x == 1000){ # putting 100 here for now for testing as 1000 takes v long time to run
+  if (x == 10){ # putting 100 here for now for testing as 1000 takes v long time to run
   break
   }
   }
@@ -173,19 +173,17 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-if(!"shuffle_results_b" %in% colnames(spatial_firing)) {
+if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results_b = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
-    mutate(shuffle_results_nb = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
-    mutate(shuffle_results_p = map(Rates_averaged_rewarded_p, shuffle_rates))
+    mutate(shuffle_results_b_o = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
+    mutate(shuffle_results_nb_o = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
+    mutate(shuffle_results_p_o = map(Rates_averaged_rewarded_p, shuffle_rates))
 }
 # Uncomment the line below to save spatial firing at this point.
 # saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
 # And use this to save a truncated version. Useful for testing code.
 # saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
 ```
-
-
 
 
 ### ---------------------------------------------------------------------------- ### 
@@ -222,12 +220,12 @@ extract_max_shuffle_slopes <- function(df){
 2. Run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(shuffle_min_slope_b = map_dbl(shuffle_results_b, extract_min_shuffle_slopes),
-         shuffle_max_slope_b = map_dbl(shuffle_results_b, extract_max_shuffle_slopes),
-         shuffle_min_slope_nb = map_dbl(shuffle_results_nb, extract_min_shuffle_slopes),
-         shuffle_max_slope_nb = map_dbl(shuffle_results_nb, extract_max_shuffle_slopes),
-         shuffle_min_slope_p = map_dbl(shuffle_results_p, extract_min_shuffle_slopes),
-         shuffle_max_slope_p = map_dbl(shuffle_results_p, extract_max_shuffle_slopes))
+  mutate(shuffle_min_slope_b_o = map_dbl(shuffle_results_b_o, extract_min_shuffle_slopes),
+         shuffle_max_slope_b_o = map_dbl(shuffle_results_b_o, extract_max_shuffle_slopes),
+         shuffle_min_slope_nb_o = map_dbl(shuffle_results_nb_o, extract_min_shuffle_slopes),
+         shuffle_max_slope_nb_o = map_dbl(shuffle_results_nb_o, extract_max_shuffle_slopes),
+         shuffle_min_slope_p_o = map_dbl(shuffle_results_p_o, extract_min_shuffle_slopes),
+         shuffle_max_slope_p_o = map_dbl(shuffle_results_p_o, extract_max_shuffle_slopes))
 
 ```
 
@@ -239,12 +237,12 @@ We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neu
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  select(-contains('shuffle_results_b_')) %>%
-  select(-contains('shuffle_results_nb_')) %>%
-  select(-contains('shuffle_results_p_')) %>%
-  unnest_wider(shuffle_results_b, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(shuffle_results_nb, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(shuffle_results_p, names_sep = "_", names_repair = "universal")
+  select(-contains('shuffle_results_b_o_')) %>%
+  select(-contains('shuffle_results_nb_o_')) %>%
+  select(-contains('shuffle_results_p_o_')) %>%
+  unnest_wider(shuffle_results_b_o, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(shuffle_results_nb_o, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(shuffle_results_p_o, names_sep = "_", names_repair = "universal")
 ```
 
 
@@ -252,8 +250,8 @@ Then we want to correct the pvals of the lm, to account for multiple comparisons
 
 1. put all pvalues into tibble then adjust using p.adjust from - package
 ```{r}
-p_vals_b <- tibble(pvals = spatial_firing$asr_b_rewarded_fit_p.value)
-adu_p_b <- tibble(adjust_pval_b = p.adjust(p_vals_b$pvals, "BH"))
+p_vals_b <- tibble(pvals = spatial_firing$asr_b_o_rewarded_fit_p.value)
+adu_p_b <- tibble(adjust_pval_b_o = p.adjust(p_vals_b$pvals, "BH"))
 
 ```
 
@@ -264,17 +262,15 @@ spatial_firing <- cbind(spatial_firing, adu_p_b)
 
 3. do the same for non-beaconed trials
 ```{r}
-p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_rewarded_fit_p.value)
-adu_p_nb <- tibble(adjust_pval_nb = p.adjust(p_vals_nb$pvals, "BH"))
-
+p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_o_rewarded_fit_p.value)
+adu_p_nb <- tibble(adjust_pval_nb_o = p.adjust(p_vals_nb$pvals, "BH"))
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
 ```
 
-3. do the same for probe trials (dont run unless youve ran the shuffled for probe trials..)
+3. do the same for probe trials 
 ```{r}
-p_vals_p <- tibble(pvals = spatial_firing$asr_p_rewarded_fit_p.value)
-adu_p_p <- tibble(adjust_pval_p = p.adjust(p_vals_p$pvals, "BH"))
-
+p_vals_p <- tibble(pvals = spatial_firing$asr_p_o_rewarded_fit_p.value)
+adu_p_p <- tibble(adjust_pval_p_o = p.adjust(p_vals_p$pvals, "BH"))
 spatial_firing <- cbind(spatial_firing, adu_p_p)
 ```
 
@@ -309,28 +305,28 @@ spatial_firing <- spatial_firing %>%
   mutate(
     lm_group_b = pmap(
       list(
-        shuffle_min_slope_b,
-        shuffle_max_slope_b,
-        asr_b_rewarded_fit_slope,
-        adjust_pval_b
+        shuffle_min_slope_b_o,
+        shuffle_max_slope_b_o,
+        asr_b_o_rewarded_fit_slope,
+        adjust_pval_b_o
       ),
       compare_slopes
     ),
     lm_group_nb = pmap(
       list(
-        shuffle_min_slope_nb,
-        shuffle_max_slope_nb,
-        asr_nb_rewarded_fit_slope,
-        adjust_pval_nb
+        shuffle_min_slope_nb_o,
+        shuffle_max_slope_nb_o,
+        asr_nb_o_rewarded_fit_slope,
+        adjust_pval_nb_o
       ),
       compare_slopes
     ),
     lm_group_p = pmap(
       list(
-        shuffle_min_slope_p,
-        shuffle_max_slope_p,
-        asr_p_rewarded_fit_slope,
-        adjust_pval_p
+        shuffle_min_slope_p_o,
+        shuffle_max_slope_p_o,
+        asr_p_o_rewarded_fit_slope,
+        adjust_pval_p_o
       ),
       compare_slopes
     )
@@ -347,7 +343,7 @@ Now we want to visualise the coefficients of all neurons and all shuffled datase
 
 1. extract shuffled values into tibble _nb needed because each 1000 shuffled datasets are nested for each neuron_
 ```{r}
-shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_slope), r2 = unlist(spatial_firing$shuffle_results_b_r.squared))
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared))
 ```
 
 2. plot real and shuffled coefficients 
@@ -355,7 +351,7 @@ shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_slope), 
 ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32") + 
     coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
     geom_point(alpha=.4) + 
-    geom_point(data=spatial_firing, aes(x = asr_b_rewarded_fit_slope, y = asr_b_rewarded_fit_r.squared, color=factor(unlist(lm_group_b)))) +
+    geom_point(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope, y = asr_b_o_rewarded_fit_r.squared, color=factor(unlist(lm_group_b)))) +
     #geom_point(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32") +
     xlab("\nslope") +
     ylab("R2") +
@@ -368,7 +364,7 @@ ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32"
           text = element_text(size=12), 
           legend.text=element_text(size=12), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/LMOut_coefficients_pval_05.png", width = 4, height = 5)
+ggsave(file = "plots/LMOut_coefficients.png", width = 4, height = 5)
 
 ```
 
@@ -417,7 +413,7 @@ We might also want to visualise the coefficients for the real and shuffled datas
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(slope_criteria_pval))
+ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(lm_group_b))
   coord_cartesian(xlim = c(-0.6,0.6)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -458,7 +454,7 @@ ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height 
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(lm_group))
+ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(lm_group_b))
   coord_cartesian(xlim = c(0,1)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -528,7 +524,7 @@ First, reorder the dataframe with ramps according to slope.
 _For start ramps, steepest slope should be negative - thus will have the highest cluster id_
 
 ```{r}
-start_ramps<-spatial_firing[order(spatial_firing$asr_b_rewarded_fit_slope),]
+start_ramps<-spatial_firing[order(spatial_firing$asr_b_o_rewarded_fit_slope),]
 start_ramp_number = nrow(start_ramps)
 new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
 start_ramps <- cbind(start_ramps, new_cluster_id)
