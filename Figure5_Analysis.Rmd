@@ -276,7 +276,7 @@ spatial_firing <- spatial_firing %>%
 
 
 ```{r}
-saveRDS(spatial_firing, file="All_Results_withHomebound.Rda")
+saveRDS(spatial_firing, file="All_Results_withHomebound2.Rda")
 
 ```
 
@@ -313,10 +313,9 @@ mark_predict_group <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate( predict_id = map2(lm_group, lm_group_h_b, mark_predict_group))
+  mutate( predict_id = map2(lm_group_b, lm_group_b_h, mark_predict_group))
 
 ```
-
 
 Now, we want to know what proportion of cells fit this group 
 _note : we focus on cue independant/path integrating neurons here as classified in Figure 4 (CueAnalysis_0100.Rmd)_
@@ -406,8 +405,6 @@ normalise_rates <- function(df){
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
-
-
 ```
 
 Then, predict firing rate in hombound region based on fit from real data in outbound region
@@ -458,7 +455,6 @@ predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 
 
 ```
 
-
 2. Run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
@@ -499,26 +495,10 @@ mark_color <- function(df, id){
 
 ```
 
-
 2. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(color_predict = map2(predict_mean, predict_id, mark_color))
-
-```
-
-3. Calculate number of neurons that are in each group as classified above
-```{r}
-path_integrating_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
-
-neg_probe <- nrow(subset(spatial_firing, lm_group_nb == "Negative" )) # all neurons that are conciderd ramp like on probe trials
-pos_probe <- nrow(subset(spatial_firing, lm_group_nb == "Positive")) # all neurons that are conciderd ramp like on probe trials
-
-all <- nrow(subset(path_integrating_neurons, slope_criteria_pval_p == "Negative" | slope_criteria_pval_p == "Positive")) # all neurons that are conciderd ramp like on probe trials
-switchers <- nrow(subset(path_integrating_neurons, color_predict_p == "Switch")) # cells that switch slope 
-reset_p <-nrow(subset(path_integrating_neurons, color_predict_p == "Reset"))
-continuous_p <-nrow(subset(path_integrating_neurons, color_predict_p == "Continuous"))
-none_p <-nrow(subset(path_integrating_neurons, predict_id_p == "posnon"| predict_id_p == "negnon"))
+  mutate(reset_group = map2(predict_mean, predict_id, mark_color))
 
 ```
 
