@@ -8,49 +8,59 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------ ### 
 
 
-### Can LM predict firing rate accurately on other part of track?
+## Script aims to determine if ramp activity resets or is continuous across the reward zone in PROBE trials 
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------ ### 
+
+First, classify neurons based on their slope activity in the outbound and homebound region in probe trials (similar to beaconed trials in Figure5_Analysis.Rmd)
 
 
-# Classify neurons based on activity on outbound and homebound
+i.e. pospos = positive in outbound, positive in homebound
+i.e. posneg = positive in outbound, negative in homebound
+
+1. write function to mark cells based on cue_groups
 ```{r}
-mark_predict_group <- function(outbound, homebound){
-
-  if(outbound == "Positive" & homebound == "Negative") {
+mark_track_catagory <- function(outbound, homebound){
+  if( outbound == "Positive" & homebound =="Negative") {
     return( "posneg" ) 
-  } else if(outbound == "Positive" & homebound == "Positive") {
+  } else if( outbound == "Positive" & homebound =="Positive") {
     return( "pospos" )
-  } else if(outbound == "Negative" & homebound == "Positive") {
+  } else if( outbound == "Negative" & homebound =="Positive") {
     return( "negpos" )
-  } else if(outbound == "Negative" & homebound == "Negative") {
+  } else if( outbound == "Negative" & homebound =="Negative") {
     return( "negneg" )
-  } else if(outbound == "Positive" & homebound == "None") {
-    return( "posnon" )
-  } else if(outbound == "Negative" & homebound == "None") {
+  } else if( outbound == "Negative" & homebound =="Unclassified") {
     return( "negnon" )
+  } else if( outbound == "Positive" & homebound =="Unclassified") {
+    return( "posnon" )
   } else {
     return("None")
   }
 }
 
+```
 
+2. run on all cells
+```{r}
 spatial_firing <- spatial_firing %>%
-  mutate( predict_id_p = map2(lm_result_o_rewarded_p, lm_result_h_p, mark_predict_group))
+  mutate( track_catagory_p = map2(lm_cue_group_p, lm_cue_group_p_h, mark_track_catagory))
 
 ```
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------ ### 
 
-## Calculate whether neurons reset or continue across outbound and homebound
+Now, we want to find out if within pospos and negneg cue_groups - are their firing rate reset or continue across the reward region?
 
-1. Normalise firing rate
-2. Run on all cells
+To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
+
+First, normalise firing rates. 
+
+1. make function to load rates and normalise
 ```{r}
 normalise_rates <- function(df){
   df <- tibble(Rates = unlist(df), Position = rep(1:200))
@@ -58,15 +68,17 @@ normalise_rates <- function(df){
   return(x)
 }
 
-spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_p = map(Rates_averaged_p, normalise_rates))
-
 ```
 
-## Predict firing rate in hombound region based on fit from real data in outbound region
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates_p = map(Rates_averaged_rewarded_p, normalise_rates))
+```
+
+Then, predict firing rate in hombound region based on fit from real data in outbound region
 
 1. make function to predict firing rate
-
 ```{r}
 lm_predict <- function(df){
   new.data <- data.frame(Position =df$Position)
@@ -93,16 +105,42 @@ lm_predict_mse_homebound <- function(rate){
   mean( df_homebound$Rates - mydata$Rate, na.rm=TRUE)
 
 }
+```
 
+3. Run on all neurons
+```{r}
 spatial_firing <- spatial_firing %>%
   mutate(predict_mean_p = map(normalised_rates_p, lm_predict_mse_homebound)) 
   
 ```
 
-3. Classify neurons based on apsolute difference between predicted and real as either "Continuous" or "Reset"
 
+Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
 ```{r}
-mark_color <- function(df, id){
+predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 110, predict_end = 115){
+  # check for NAs
+  if(all(is.na(df))) 
+    return(NA)
+  # Make track column
+  df <- tibble(Rates = unlist(df), Position=rep(1:200))
+  model <- lm(Rates ~ Position, data = filter(df, Position >= fit_start, Position <= fit_end))
+  homebound_prediction_pos <- tibble(Position = rep(1:200))
+  homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "confidence") 
+}
+
+
+```
+
+or with confidence intervals and using absolute rates rather than normalised rates:
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(predict_mean_p = map(Rates_averaged_rewarded_b, predict_homebound)) 
+
+```
+
+4. Classify neurons based on apsolute difference between predicted and real as either "Continuous" or "Reset"
+```{r}
+mark_reset_group <- function(df, id){
   if (is.na(df) ) {
     return( "None" )
   } else if( id == "posneg" | id == "negpos") {
@@ -117,95 +155,12 @@ mark_color <- function(df, id){
 }
 
 spatial_firing <- spatial_firing %>%
-  mutate(color_predict_p = map2(predict_mean_p, predict_id_p, mark_color))
-
-```
-
-4. Calculate number of neurons that are in each group as classified above
-```{r}
-path_integrating_neurons <- subset(spatial_firing, group == "Positive-PI" | group == "Negative-PI")
-
-#path_integrating_neurons <- subset(spatial_firing, lm_result_o_rewarded_p == "Positive" | lm_result_o_rewarded_p == "Negative")
-
-all <- nrow(subset(spatial_firing, lm_result_o_rewarded_p == "Negative" | lm_result_o_rewarded_p == "Positive")) # all neurons that are conciderd ramp like on probe trials
-switchers <- nrow(subset(path_integrating_neurons, color_predict_p == "Switch")) # cells that switch slope 
-reset_p <-nrow(subset(path_integrating_neurons, color_predict_p == "Reset"))
-continuous_p <-nrow(subset(path_integrating_neurons, color_predict_p == "Continuous"))
-none_p <-nrow(subset(path_integrating_neurons, predict_id_p == "posnon"| predict_id_p == "negnon"))
-```
-
-6. find proportion of neurons that reset in both beaconed & probe
-```{r}
-reset_both <-subset(path_integrating_neurons, color_predict == "Reset" & color_predict_p == "Reset")
+  mutate(reset_group_p = map2(predict_mean_p, track_catagory_p, mark_color))
 
 ```
 
 
-## Plot a pie chart of proportions of neurons in each group
-
-1. Extract number of cells that fall into catagories:
-- reset in beaconed (reset_b)
-- reset in probe (reset_p)
-- reset in beaconed, continuous in probe 
-- reset in beaconed, reset in probe 
-- continuous in beaconed, reset in probe 
-- continuous in beaconed, continuous in probe 
-
-```{r}
-# positive homebound slopes
-reset_b <-subset(spatial_firing, color_predict == "Reset")
-reset_p <-subset(spatial_firing, color_predict_p == "Reset")
-
-reset_b_p <-nrow(subset(spatial_firing, color_predict_p == "Reset" & color_predict == "Reset"))/nrow(spatial_firing)*100
-reset_b_only <-nrow(subset(spatial_firing, color_predict_p == "Continuous" & color_predict == "Reset"))/nrow(spatial_firing)*100
-reset_p_only <-nrow(subset(spatial_firing, color_predict_p == "Reset" & color_predict == "Continuous"))/nrow(spatial_firing)*100
-reset_b_p_cont <-nrow(subset(spatial_firing, color_predict_p == "Continuous" & color_predict == "Continuous"))/nrow(spatial_firing)*100
-
-reset_b_p_num <-nrow(subset(spatial_firing, color_predict_p == "Reset" & color_predict == "Reset"))
-reset_b_only_num <-nrow(subset(spatial_firing, color_predict_p == "Continuous" & color_predict == "Reset"))
-reset_p_only_num <-nrow(subset(spatial_firing, color_predict_p == "Reset" & color_predict == "Continuous"))
-reset_b_p_cont_num <-nrow(subset(spatial_firing, color_predict_p == "Continuous" & color_predict == "Continuous"))
-
-```
-
-2. put percentages into tibble
-```{r}
-
-proportions_mixed_ramps <- tibble(perc=c(reset_b_p, reset_b_only, reset_p_only, reset_b_p_cont), num=c(reset_b_p_num, reset_b_only_num, reset_p_only_num, reset_b_p_cont_num), ramp_id= c("Reset(B+P)", "Reset(B) Continuous(P)", "Continuous(B) Reset(P)", "Continuous(B+P)"),ramp_type = c("Reset(B+P)", "Reset(B) Continuous(P)", "Continuous(B) Reset(P)", "Continuous(B+P)"))
-
-```
-
-3. Plot as pie chart
-```{r}
-
-# Create Data
-data <- data.frame(
-  group=LETTERS[1:4],
-  value=c(reset_b_p_num,reset_b_only_num,reset_p_only_num, reset_b_p_cont_num)
-)
-
-# Compute the position of labels
-data <- proportions_mixed_ramps %>% 
-  arrange(desc(ramp_id)) %>%
-  mutate(prop = perc) %>%
-  mutate(ypos = cumsum(prop)- 0.5*prop )
-
-# Basic piechart
-ggplot(data, aes(x="", y=prop, fill=ramp_id)) +
-  geom_bar(stat="identity", width=1, color="white") +
-  coord_polar("y", start=0) +
-  theme_void() + 
-  #theme(legend.position="none") +
-  
-  geom_text(aes(y = ypos, label = num), color = "white", size=3) +
-  scale_fill_brewer(palette="Set2")
-
-ggsave(file = "plots/predict_reset_Comparison_proportions.png", width = 4, height = 4)
-
-```
-
-
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------ ### 
 
 ## plot bar chart of mean apsolute difference between predicted and real
 
@@ -215,20 +170,20 @@ ggsave(file = "plots/predict_reset_Comparison_proportions.png", width = 4, heigh
 
 1. extract neurons with slope on outbound
 ```{r}
-data <- spatial_firing %>% filter(predict_id_p == "pospos" | predict_id_p == "negneg" | predict_id_p == "posneg"| predict_id_p == "negpos")
+data <- spatial_firing %>% filter(track_catagory_p == "pospos" | track_catagory_p == "negneg" | track_catagory_p == "posneg"| track_catagory_p == "negpos")
 ```
 
 2. extract only neurons that are driven by path integration (as determined by CueAnalysis.0100.Rmd - i.e. Figure 4)
 ```{r}
-pi_data <- subset(spatial_firing, group == "Positive-PI" | group == "Negative-PI")
-#cue_data <- data %>% filter(group == "Positive-cue" | group == "Negative-cue")
+pi_data <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+#cue_data <- data %>% filter(cue_group == "Positive-cue" | cue_group == "Negative-cue")
 
 ```
 
 3. Plot bar charts 
 ```{r}
 
-ggplot(data=subset(pi_data,lm_result_o_rewarded_p == "Negative"), aes(x = unlist(predict_mean_p), fill=as.factor(unlist(lm_result_o_rewarded_p)))) +
+ggplot(data=subset(pi_data,lm_group_p == "Negative"), aes(x = unlist(predict_mean_p), fill=as.factor(unlist(lm_group_p)))) +
   coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
   geom_histogram(aes(y=..density..), alpha=0.5) +
   scale_fill_manual(values=c("violetred2")) +
@@ -247,7 +202,7 @@ ggplot(data=subset(pi_data,lm_result_o_rewarded_p == "Negative"), aes(x = unlist
 ggsave(file = "plots/PredictProbe_homebound_mean_PInegative_pi.png",width = 4, height = 2)
 
 
-ggplot(data=subset(pi_data, lm_result_o_rewarded_p == "Positive"), aes(x = unlist(predict_mean_p), fill=as.factor(unlist(lm_result_o_rewarded_p)))) +
+ggplot(data=subset(pi_data, lm_group_p == "Positive"), aes(x = unlist(predict_mean_p), fill=as.factor(unlist(lm_group_p)))) +
   coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
   geom_histogram(aes(y=..density..), alpha=0.5) +
   scale_fill_manual(values=c( "chartreuse3")) +
@@ -272,16 +227,16 @@ ggsave(file = "plots/PredictProbe_homebound_mean_PIpositive_pi.png",width = 4, h
 
 1. Extract reset and continuous neurons
 ```{r}
-reset <- pi_data %>% filter(color_predict_p == "Reset")
-continuous <- pi_data %>% filter(color_predict_p == "Continuous")
+reset <- pi_data %>% filter(reset_group_p == "Reset")
+continuous <- pi_data %>% filter(reset_group_p == "Continuous")
 ```
 
 2. Plot scatter of slopes on outbound&homebound
 ```{r}
 
 ggplot() + 
-    geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_p_rewarded_slope_o)), y = as.numeric(unlist(asr_p_rewarded_slope_h)), color=factor(unlist(lm_result_o_rewarded)))) +
-    geom_point(data=reset,aes(x = as.numeric(unlist(asr_p_rewarded_slope_o)), y = as.numeric(unlist(asr_p_rewarded_slope_h)), color=factor(unlist(lm_result_o_rewarded))), shape=1) +
+    geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
+    geom_point(data=reset,aes(x = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
     coord_cartesian(ylim = c(-.7,.7), xlim = c(-.7,.7)) +
     xlab("Outbound slope") +
     ylab("Homebound slope") +
@@ -294,7 +249,7 @@ ggplot() +
           text = element_text(size=16), 
           legend.text=element_text(size=16), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/slope_comparison_probe_reset2_pi.png", width = 5, height = 5)
+ggsave(file = "plots/slope_comparison_probe_reset.png", width = 5, height = 5)
 
 ```
 
@@ -303,9 +258,9 @@ ggsave(file = "plots/slope_comparison_probe_reset2_pi.png", width = 5, height = 
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
 
 
-## Plot average firing rates for each group of neuron
+## Plot average firing rates for each cue_group of neuron
 
-Groups are as follows :
+cue_groups are as follows :
 
 outbound homebound  reset
     +       +         n
@@ -318,15 +273,10 @@ outbound homebound  reset
     -      non        -
 
 
-# go into dataframe and from each average_rates column : all neurons
-```{r}
-df <- tibble(Position = rep(1:200, times=nrow(spatial_firing)), Rates = unlist(spatial_firing$Rates_averaged_p), Outbound_beaconed = rep(spatial_firing$lm_result_o_rewarded_p, each=200), Homebound_beaconed = rep(spatial_firing$lm_result_h_p, each=200),group = rep(as.character(spatial_firing$color_predict_p), each=200))
-
-```
 
 # go into dataframe and from each average_rates column : just path integration neurons
 ```{r}
-df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$Rates_averaged_nb), Outbound_beaconed = rep(pi_data$lm_result_o_rewarded_nb, each=200), Homebound_beaconed = rep(pi_data$lm_result_h_nb, each=200), group = rep(as.character(pi_data$color_predict_p), each=200), predict_mean = rep(as.numeric(pi_data$predict_mean), each=200))
+df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$Rates_averaged_nb), Outbound_beaconed = rep(pi_data$lm_group_p, each=200), Homebound_beaconed = rep(pi_data$lm_group_p_h, each=200), reset_group = rep(as.character(pi_data$reset_group_p), each=200), predict_mean = rep(as.numeric(pi_data$predict_mean), each=200))
 
 ```
 
@@ -334,8 +284,8 @@ df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$
 ```{r}
 df_neg_cue <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
-  subset(group == "Continuous") %>%
-  group_by(Position) %>%
+  subset(reset_group == "Continuous") %>%
+  cue_group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
   
@@ -366,8 +316,8 @@ ggsave(file = "plots/Negneg_cells_all_correct_probe_PI_2.png", width = 3.5, heig
 ```{r}
 df_neg_cue <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
-  subset(group == "Reset") %>%
-  group_by(Position) %>%
+  subset(reset_group == "Reset") %>%
+  cue_group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
   
@@ -397,7 +347,7 @@ ggsave(file = "plots/negneg_cells_all_wrong_probe_PI_2.png", width = 3.5, height
 ```{r}
 df_pos_cue <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
-  group_by(Position) %>%
+  cue_group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
   
@@ -429,8 +379,8 @@ ggsave(file = "plots/negpos_cells_all_wrong_probe_PI_2.png", width = 3.5, height
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
-  subset(group == "Continuous") %>%
-  group_by(Position) %>%
+  subset(reset_group == "Continuous") %>%
+  cue_group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
   
@@ -461,8 +411,8 @@ ggsave(file = "plots/pospos_cells_all_correct_probe_PI_2.png", width = 3.5, heig
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
-  subset(group == "Reset") %>%
-  group_by(Position) %>%
+  subset(reset_group == "Reset") %>%
+  cue_group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
   
@@ -494,7 +444,7 @@ ggsave(file = "plots/pospos_cells_all_wrong_probe_PI_2.png", width = 3.5, height
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
-  group_by(Position) %>%
+  cue_group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
   
@@ -526,7 +476,7 @@ ggsave(file = "plots/posneg_cells_all_wrong_probe_PI2.png", width = 3.5, height 
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "None") %>%
-  group_by(Position) %>%
+  cue_group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
   
@@ -557,7 +507,7 @@ ggsave(file = "plots/posnon_cells_all_wrong_probe_PI_2.png", width = 3.5, height
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "None") %>%
-  group_by(Position) %>%
+  cue_group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
   
@@ -590,34 +540,34 @@ ggsave(file = "plots/negnon_cells_all_wrong_probe_PI2.png", width = 3.5, height 
 
 
 ```{r}
-data <- spatial_firing %>% filter(predict_id_p == "pospos" | predict_id_p == "negneg")
+data <- spatial_firing %>% filter(track_catagory_p == "pospos" | track_catagory_p == "negneg")
 
 ```
 
 # filter for pi neurons
 ```{r}
-pi_data <- subset(data, group == "Positive-PI" | group == "Negative-PI")
-cue_data <- subset(data,group == "Positive-cue" | group == "Negative-cue")
+pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+cue_data <- subset(data,cue_group == "Positive-cue" | cue_group == "Negative-cue")
 
 ```
 
 # filter for negative > negative & positive > positive
 ```{r}
-negneg_pineurons <-subset(pi_data, lm_result_o_rewarded_p == "Negative" & lm_result_h_p == "Negative")
-posos_pineurons <-subset(pi_data, lm_result_o_rewarded_p == "Positive" & lm_result_h_p == "Positive")
-negpos_pineurons<-subset(pi_data, lm_result_o_rewarded_p == "Negative" & lm_result_h_p == "Positive")
-posneg_pineurons<-subset(pi_data, lm_result_o_rewarded_p == "Positive" & lm_result_h_p == "Negative")
+negneg_pineurons <-subset(pi_data, lm_group_p_o == "Negative" & lm_group_p_h == "Negative")
+posos_pineurons <-subset(pi_data, lm_group_p_o == "Positive" & lm_group_p_h == "Positive")
+negpos_pineurons<-subset(pi_data, lm_group_p_o == "Negative" & lm_group_p_h == "Positive")
+posneg_pineurons<-subset(pi_data, lm_group_p_o == "Positive" & lm_group_p_h == "Negative")
 
 ```
 
 
-# find out proportions of reset and continuous in these groups
+# find out proportions of reset and continuous in these cue_groups
 ```{r}
-negneg_pineurons_reset <- nrow(subset(negneg_pineurons, color_predict_p == "Reset"))
-negneg_pineurons_cont <-nrow(subset(negneg_pineurons, color_predict_p == "Continuous"))
+negneg_pineurons_reset <- nrow(subset(negneg_pineurons, reset_group_p == "Reset"))
+negneg_pineurons_cont <-nrow(subset(negneg_pineurons, reset_group_p == "Continuous"))
 
-pospos_pineurons_reset <-nrow(subset(posos_pineurons, color_predict_p == "Reset"))
-pospos_pineurons_cont <-nrow(subset(posos_pineurons, color_predict_p == "Continuous"))
+pospos_pineurons_reset <-nrow(subset(posos_pineurons, reset_group_p == "Reset"))
+pospos_pineurons_cont <-nrow(subset(posos_pineurons, reset_group_p == "Continuous"))
 
 posneg_pineurons <-nrow(posneg_pineurons)/nrow(posneg_pineurons)*100
 negpos_pineurons <-nrow(negpos_pineurons)/nrow(negpos_pineurons)*100
@@ -626,11 +576,11 @@ negpos_pineurons <-nrow(negpos_pineurons)/nrow(negpos_pineurons)*100
 
 ## raw numbers 
 ```{r}
-negneg_pineurons_reset <- nrow(subset(negneg_pineurons, color_predict_p == "Reset"))
-negneg_pineurons_cont <-nrow(subset(negneg_pineurons, color_predict_p == "Continuous"))
+negneg_pineurons_reset <- nrow(subset(negneg_pineurons, reset_group_p == "Reset"))
+negneg_pineurons_cont <-nrow(subset(negneg_pineurons, reset_group_p == "Continuous"))
 
-pospos_pineurons_reset <-nrow(subset(posos_pineurons, color_predict_p == "Reset"))
-pospos_pineurons_cont <-nrow(subset(posos_pineurons, color_predict_p == "Continuous"))
+pospos_pineurons_reset <-nrow(subset(posos_pineurons, reset_group_p == "Reset"))
+pospos_pineurons_cont <-nrow(subset(posos_pineurons, reset_group_p == "Continuous"))
 ```
 
 
@@ -685,7 +635,7 @@ links$IDtarget <- match(links$target, nodes$name)-1
 # Make the Network
 p <- sankeyNetwork(Links = links, Nodes = nodes,
               Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", LinkGroup='source',
+              Value = "value", NodeID = "name", Linkcue_group='source',
               sinksRight=FALSE, colourScale=ColourScal,
               nodeWidth=30, fontSize=13, nodePadding=15)
 
@@ -695,18 +645,18 @@ p
 ```
 
 ```{r}
-data <- spatial_firing %>% filter(predict_id_p == "pospos" | predict_id_p == "negneg" | predict_id_p == "posneg"| predict_id_p == "negpos")
+data <- spatial_firing %>% filter(track_catagory_p == "pospos" | track_catagory_p == "negneg" | track_catagory_p == "posneg"| track_catagory_p == "negpos")
 
-pi_data <- subset(data, group == "Positive-PI" | group == "Negative-PI")
+pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
 
 ```
 
 ```{r}
 
-pi_positive <-subset(pi_data, lm_result_o_rewarded_p == "Positive")
-pi_negative <-subset(pi_data, lm_result_o_rewarded_p == "Negative")
-pi_none <-subset(pi_data, lm_result_o_rewarded_p == "None")
-pi_ramp <-subset(pi_data, lm_result_o_rewarded_p == "Positive" |lm_result_o_rewarded_p == "Negative")
+pi_positive <-subset(pi_data, lm_group_p_o == "Positive")
+pi_negative <-subset(pi_data, lm_group_p_o == "Negative")
+pi_none <-subset(pi_data, lm_group_p_o == "None")
+pi_ramp <-subset(pi_data, lm_group_p_o == "Positive" | lm_group_p_o == "Negative")
 
 pi_positive_pos <-nrow(subset(pi_positive, lm_result_h_p == "Positive"))
 pi_positive_neg <-nrow(subset(pi_positive, lm_result_h_p == "Negative"))
@@ -753,7 +703,7 @@ ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B
 # Make the Network
 sankeyNetwork(Links = data_long, Nodes = nodes,
               Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", LinkGroup='source',
+              Value = "value", NodeID = "name", Linkcue_group='source',
               sinksRight=FALSE, colourScale=ColourScal,
               nodeWidth=40, fontSize=13, nodePadding=20)
 #ggsave(file = "plots/model_movement.png", width = 24, height = 18)
