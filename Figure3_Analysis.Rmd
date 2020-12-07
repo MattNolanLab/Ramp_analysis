@@ -16,26 +16,75 @@ output: html_document
 
 
 
-## Run mixed effect model which examines contribution of speed, acceleration and position on firing rate
+## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
 
 1. Load functions to perform linear mixed effect model
+This might not be needed anymore??
 ```{r}
 source("Functions_Outbound_LMER.R")
 ```
 
-2. Run on all cells 
-```{r, warning=FALSE}
-spatial_firing <- spatial_firing  %>%
-  mutate(o_pos_b = map2(spikes_in_time, 0, car_pos)) %>%
-  mutate(o_speed_b = map2(spikes_in_time, 0, car_speed)) %>%
-  mutate(o_accel_b = map2(spikes_in_time, 0, car_accel)) %>%
-  mutate(o_pos_nb = map2(spikes_in_time, 1, car_pos)) %>%
-  mutate(o_speed_nb = map2(spikes_in_time, 1, car_speed)) %>%
-  mutate(o_accel_nb = map2(spikes_in_time, 1, car_accel))
-  #mutate(o_pos_p = map(spikes_in_time, 2, car_po)) %>%
-  #mutate(o_speed_p = map(spikes_in_time, 2, car_speed)) %>%
-  #mutate(o_accel_p = map(spikes_in_time, 2, car_accel))
+Function to fit mixed effect models
+```{r}
+mm_fit <- function(df, TT = 0) {
+  if (length(df) == 1)
+    return(NA)
+  df <-
+    tibble(
+      Rates = as.numeric(Re(df[[1]])),
+      Position = as.numeric(Re(df[[2]])),
+      Acceleration = as.numeric(Re(df[[3]])),
+      Speed = as.numeric(Re(df[[4]])),
+      Trials = as.factor(df[[5]]),
+      Types = as.factor(df[[6]])
+    )
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == TT)
+  
+  if (length(df) == 1 | nrow(df) < 3)
+    return(NA)
+  
+  df_int <-
+    lme4::lmer(
+      Rates ~ Position + Speed + Acceleration + (1 |
+                                                   Trials),
+      data = df,
+      na.action = na.exclude
+    )
+
+}
 ```
+
+
+Function to extract P values for each coefficient from the model
+```{r}
+mm_pvalues <- function(mm) {
+    modelAnova <- car::Anova(mm)
+    return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
+                  speed = modelAnova$"Pr(>Chisq)"[[2]],
+                  accel = modelAnova$"Pr(>Chisq)"[[3]])
+}
+
+```
+
+
+2. Run on all cells 
+```{r}
+spatial_firing <- spatial_firing  %>%
+  select(-contains('o_mm_p_b_')) %>%
+  select(-contains('o_mm_p_nb_')) %>%
+  mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit),
+         o_mm_nb = map2(spikes_in_time, 1, mm_fit),
+         o_mm_p_b = map(o_mm_b, mm_pvalues),
+         o_mm_p_nb = map(o_mm_nb, mm_pvalues)) %>%
+  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(o_mm_p_nb, names_sep = "_", names_repair = "universal")
+```
+
+Model p values are stored in:
+spatial_firing$o_mm_p_b_pos
+spatial_firing$o_mm_p_b_accel
+spatial_firing$o_mm_p_b_speed
 
 
 ### ----------------------------------------------------------------------------------------- ###
@@ -43,7 +92,7 @@ spatial_firing <- spatial_firing  %>%
 
 ## Select best model 
 
-1. Write function to perform model selection
+1. Write function to categorise neurons based on significant model coefficients
 ```{r}
 
 model_comparison <- function(null_pos, null_speed, null_accel){
@@ -79,17 +128,18 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 
 ```
 
+
 2. Run on all cells in dataframe
 ```{r}
 spatial_firing <- spatial_firing  %>%
-    mutate(final_model_o_b  = pmap(list(o_pos_b, o_speed_b, o_accel_b), model_comparison)) %>%
-    mutate(final_model_o_nb  = pmap(list(o_pos_nb, o_speed_nb, o_accel_nb), model_comparison))#%>%
+    mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel), model_comparison),
+           final_model_o_nb  = pmap(list(o_mm_p_nb_pos, o_mm_p_nb_speed, o_mm_p_nb_accel), model_comparison))#%>%
     #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
 
 ```
 
 ```{r}
-saveRDS(spatial_firing, file="All_Results.Rda")
+#saveRDS(spatial_firing, file="All_Results.Rda")
 
 ```
 
@@ -200,19 +250,30 @@ source("Functions_StdCoef_lmer.R")
 
 2. calculate and extract standardized coefficients for position, speed and acceleration
 
+Function to calculate standardized coefficients from the model fits
+```{r}
+std_coef <- function(mm) {
+  mod <- stdCoef.merMod(mm) 
+  mod_coefs <- tibble(pos = mod[2,1],
+                      speed = mod[3,1],
+                      accel = mod[4,1])
+}
+  
+```
+
 2. Run on all cells
 ```{r, warning=FALSE}
+
 spatial_firing <- spatial_firing  %>%
-  mutate(o_pos_b_stdcoef = map2(spikes_in_time, 0, coef_pos)) %>%
-  mutate(o_speed_b_stdcoef = map2(spikes_in_time, 0, coef_speed)) %>%
-  mutate(o_accel_b_stdcoef = map2(spikes_in_time, 0, coef_accel)) %>%
-  mutate(o_pos_nb_stdcoef = map2(spikes_in_time, 1, coef_pos)) %>%
-  mutate(o_speed_nb_stdcoef = map2(spikes_in_time, 1, coef_speed)) %>%
-  mutate(o_accel_nb_stdcoef = map2(spikes_in_time, 1, coef_accel))
-  #mutate(o_pos_p = map(spikes_in_time, 2, car_po)) %>%
-  #mutate(o_speed_p = map(spikes_in_time, 2, car_speed)) %>%
-  #mutate(o_accel_p = map(spikes_in_time, 2, car_accel))
+  select(-contains('o_b_mod_coefs_')) %>%
+  mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
+  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal")
 ```
+
+Standardized coefficients are in:
+spatial_firing$o_b_mod_coefs_pos
+spatial_firing$o_b_mod_coefs_speed
+spatial_firing$o_b_mod_coefs_accel
 
 ### plot distribution of coefficients for all cells
 _split by positive and negative sloping neurons_
@@ -233,8 +294,8 @@ spatial_firing <- spatial_firing  %>%
 
 2. take only columns we need for the rest of the analysis
 ```{r}
-spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_pos_b_stdcoef, o_speed_b_stdcoef,o_accel_b_stdcoef, final_model_o_b, lm_group_b) %>%
-  unnest(cols = c(unique_id, o_pos_b_stdcoef, o_speed_b_stdcoef, o_accel_b_stdcoef,
+spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
     final_model_o_b, lm_group_b)) %>%
   as.tibble()
 
@@ -249,9 +310,9 @@ write_csv2(spatial_firing_save, "all_results_coefficients.csv")
 ```{r}
 data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
                     cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
-                    coef = c(as.character(spatial_firing_save$o_pos_b_stdcoef),
-                             as.character(spatial_firing_save$o_speed_b_stdcoef),
-                             as.character(spatial_firing_save$o_accel_b_stdcoef)),
+                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
+                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
+                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
                     group = c(as.character(spatial_firing_save$final_model_o_b),
                               as.character(spatial_firing_save$final_model_o_b),
                               as.character(spatial_firing_save$final_model_o_b)), 
@@ -381,9 +442,9 @@ ggsave(file = "plots/CoefficientValues_UCPSAcells.png", width = 3, height = 2.5)
 ```{r}
 spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
                               cluster_id = spatial_firing_save$cluster_id,
-                              pos_stdcoef =  as.character(spatial_firing_save$o_pos_b_stdcoef),
-                              speed_stdcoef =  as.character(spatial_firing_save$o_speed_b_stdcoef),
-                              accel_stdcoef =  as.character(spatial_firing_save$o_accel_b_stdcoef),
+                              pos_stdcoef =  as.character(spatial_firing_save$o_b_mod_coefs_pos),
+                              speed_stdcoef =  as.character(spatial_firing_save$o_b_mod_coefs_speed),
+                              accel_stdcoef =  as.character(spatial_firing_save$o_b_mod_coefs_accel),
                               final_model_o_b =  as.character(spatial_firing_save$final_model_o_b),
                               lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group_b))
 

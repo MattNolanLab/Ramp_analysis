@@ -153,9 +153,9 @@ cue_pos <-subset(spatial_firing, cue_group == "Positive-cue" )
 2. Subset based on non-beaconed activity
 ```{r}
 
-pi_positive <-subset(spatial_firing, lm_group == "Positive")
-pi_negative <-subset(spatial_firing, lm_group == "Negative")
-pi_none <-subset(spatial_firing, lm_group == "Unclassified")
+pi_positive <-subset(spatial_firing, lm_group_b == "Positive")
+pi_negative <-subset(spatial_firing, lm_group_b == "Negative")
+pi_none <-subset(spatial_firing, lm_group_b == "Unclassified")
 
 pi_positive_pos <-nrow(subset(pi_positive, lm_group_nb == "Positive"))
 pi_positive_neg <-nrow(subset(pi_positive, lm_group_nb == "Negative"))
@@ -219,11 +219,11 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 _same as above but just for position based cells_
 
 ```{r}
-ramp_neurons <-subset(spatial_firing, lm_group == "Positive" | lm_group == "Negative")
+ramp_neurons <-subset(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
 ```
 
 ```{r}
-unclassified_neurons <-subset(spatial_firing, lm_group == "Unclassified")
+unclassified_neurons <-subset(spatial_firing, lm_group_b == "Unclassified")
 nb_neurons <-subset(unclassified_neurons, lm_group_nb == "Positive" | lm_group_nb == "Negative")
 
 ```
@@ -237,9 +237,9 @@ position_neurons <-subset(nb_neurons, final_model_o_b == "P" | final_model_o_b =
 2. Subset based on non-beaconed activity
 ```{r}
 
-pi_positive <-subset(position_neurons, lm_group == "Positive")
-pi_negative <-subset(position_neurons, lm_group == "Negative")
-pi_none <-subset(position_neurons, lm_group == "Unclassified")
+pi_positive <-subset(position_neurons, lm_group_b == "Positive")
+pi_negative <-subset(position_neurons, lm_group_b == "Negative")
+pi_none <-subset(position_neurons, lm_group_b == "Unclassified")
 
 pi_positive_pos <-nrow(subset(pi_positive, lm_group_nb == "Positive"))
 pi_positive_neg <-nrow(subset(pi_positive, lm_group_nb == "Negative"))
@@ -299,10 +299,10 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 
 ## calculate for the neurons included in the above sankey, what proportion of neurons are in each lmer group
 ```{r}
-pi_positive <-subset(position_neurons, lm_group == "Positive")
-pi_negative <-subset(position_neurons, lm_group == "Negative")
+pi_positive <-subset(position_neurons, lm_group_b == "Positive")
+pi_negative <-subset(position_neurons, lm_group_b == "Negative")
 
-pi_unclassified <-subset(position_neurons, lm_group == "Negative")
+pi_unclassified <-subset(position_neurons, lm_group_b == "Negative")
 pi_unclassified <-subset(pi_unclassified, lm_group_nb == "Negative" | lm_group_nb == "Positive")
 
 ```

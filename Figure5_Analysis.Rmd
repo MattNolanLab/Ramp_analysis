@@ -446,9 +446,12 @@ predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 
     return(NA)
   # Make track column
   df <- tibble(Rates = unlist(df), Position=rep(1:200))
+  # fit
   model <- lm(Rates ~ Position, data = filter(df, Position >= fit_start, Position <= fit_end))
+  # predict
   homebound_prediction_pos <- tibble(Position = rep(1:200))
   homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "confidence") 
+  as.tibble(homebound_prediction)
 }
 
 
@@ -464,7 +467,9 @@ spatial_firing <- spatial_firing %>%
 or with confidence intervals and using absolute rates rather than normalised rates:
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(predict_mean = map(Rates_averaged_rewarded_b, predict_homebound)) 
+  select(-contains('predict_params_')) %>%
+  mutate(predict_params = map(Rates_averaged_rewarded_b, predict_homebound)) %>%
+  unnest_wider(predict_params, names_sep = "_", names_repair = "universal")
 
 ```
 
