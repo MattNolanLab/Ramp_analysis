@@ -299,10 +299,10 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 
 ## calculate for the neurons included in the above sankey, what proportion of neurons are in each lmer group
 ```{r}
-pi_positive <-subset(position_neurons, lm_group == "Positive")
-pi_negative <-subset(position_neurons, lm_group == "Negative")
+pi_positive <-subset(position_neurons, lm_group_b == "Positive")
+pi_negative <-subset(position_neurons, lm_group_b == "Negative")
 
-pi_unclassified <-subset(position_neurons, lm_group == "Negative")
+pi_unclassified <-subset(position_neurons, lm_group_b == "Negative")
 pi_unclassified <-subset(pi_unclassified, lm_group_nb == "Negative" | lm_group_nb == "Positive")
 
 ```

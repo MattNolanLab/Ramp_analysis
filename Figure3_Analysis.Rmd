@@ -26,15 +26,15 @@ source("Functions_Outbound_LMER.R")
 2. Run on all cells 
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
-  mutate(o_pos_b = map2(spikes_in_time, 0, car_pos)) %>%
-  mutate(o_speed_b = map2(spikes_in_time, 0, car_speed)) %>%
-  mutate(o_accel_b = map2(spikes_in_time, 0, car_accel)) %>%
-  mutate(o_pos_nb = map2(spikes_in_time, 1, car_pos)) %>%
-  mutate(o_speed_nb = map2(spikes_in_time, 1, car_speed)) %>%
-  mutate(o_accel_nb = map2(spikes_in_time, 1, car_accel))
-  #mutate(o_pos_p = map(spikes_in_time, 2, car_po)) %>%
-  #mutate(o_speed_p = map(spikes_in_time, 2, car_speed)) %>%
-  #mutate(o_accel_p = map(spikes_in_time, 2, car_accel))
+  mutate(o_pos_b = map2(spikes_in_time, 0, car_pos),
+         o_speed_b = map2(spikes_in_time, 0, car_speed),
+         o_accel_b = map2(spikes_in_time, 0, car_accel),
+         o_pos_nb = map2(spikes_in_time, 1, car_pos),
+         o_speed_nb = map2(spikes_in_time, 1, car_speed),
+         o_accel_nb = map2(spikes_in_time, 1, car_accel))
+  # o_pos_p = map(spikes_in_time, 2, car_po),
+  #o_speed_p = map(spikes_in_time, 2, car_speed),
+  #o_accel_p = map(spikes_in_time, 2, car_accel))
 ```
 
 
@@ -82,8 +82,8 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 2. Run on all cells in dataframe
 ```{r}
 spatial_firing <- spatial_firing  %>%
-    mutate(final_model_o_b  = pmap(list(o_pos_b, o_speed_b, o_accel_b), model_comparison)) %>%
-    mutate(final_model_o_nb  = pmap(list(o_pos_nb, o_speed_nb, o_accel_nb), model_comparison))#%>%
+    mutate(final_model_o_b  = pmap(list(o_pos_b, o_speed_b, o_accel_b), model_comparison),
+           final_model_o_nb  = pmap(list(o_pos_nb, o_speed_nb, o_accel_nb), model_comparison))#%>%
     #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
 
 ```
@@ -203,12 +203,12 @@ source("Functions_StdCoef_lmer.R")
 2. Run on all cells
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
-  mutate(o_pos_b_stdcoef = map2(spikes_in_time, 0, coef_pos)) %>%
-  mutate(o_speed_b_stdcoef = map2(spikes_in_time, 0, coef_speed)) %>%
-  mutate(o_accel_b_stdcoef = map2(spikes_in_time, 0, coef_accel)) %>%
-  mutate(o_pos_nb_stdcoef = map2(spikes_in_time, 1, coef_pos)) %>%
-  mutate(o_speed_nb_stdcoef = map2(spikes_in_time, 1, coef_speed)) %>%
-  mutate(o_accel_nb_stdcoef = map2(spikes_in_time, 1, coef_accel))
+  mutate(o_pos_b_stdcoef = map2(spikes_in_time, 0, coef_pos),
+         o_speed_b_stdcoef = map2(spikes_in_time, 0, coef_speed),
+         o_accel_b_stdcoef = map2(spikes_in_time, 0, coef_accel),
+         o_pos_nb_stdcoef = map2(spikes_in_time, 1, coef_pos),
+         o_speed_nb_stdcoef = map2(spikes_in_time, 1, coef_speed),
+         o_accel_nb_stdcoef = map2(spikes_in_time, 1, coef_accel))
   #mutate(o_pos_p = map(spikes_in_time, 2, car_po)) %>%
   #mutate(o_speed_p = map(spikes_in_time, 2, car_speed)) %>%
   #mutate(o_accel_p = map(spikes_in_time, 2, car_accel))
