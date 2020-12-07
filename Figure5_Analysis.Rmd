@@ -23,46 +23,55 @@ knitr::opts_chunk$set(echo = TRUE)
 # Run simple linear model to examine relationship between firing rate and position
 _note:for now we are only interested in the homebound region of the track (110 - 170 cm)_
 
+
 1. Make function to run linear model
 ```{r}
-lm_helper <- function(df, startbin = 110, endbin = 170){
+lm_helper <- function(df,
+                      startbin = 110,
+                      endbin = 170) {
+ # Check for NAs
+  if (any(is.na(df$Rates))) {
+    df <-
+      tibble(
+        r.squared = c(NA),
+        p.value = c(NA),
+        intercept = c(NA),
+        slope = c(NA)
+      )
+    return(df)
+  }
+
   df <- df %>%
     subset(Position >= startbin & Position <= endbin)
-  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
+  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
+
+  # get the model parameters
+  params <- select(glance(df_fit), r.squared, p.value)
+  # get the coefficients
+  coeffs <- tidy(df_fit)
+  # combine the parameters and coefficients
+  params$intercept <- coeffs$estimate[[1]]
+  params$slope <- coeffs$estimate[[2]]
+
+  return(params)
 }
 ```
 
-2. make function to extract linear model output for each neuron
+2. run lm on all cells.
+Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
 ```{r}
-lm_analysis <- function(df, spike_rate_col, startbin = 110, endbin = 170) {
-  spike_rate_col <- enquo(spike_rate_col)
-  out_name <- sym(paste0(quo_name(spike_rate_col)))
-  sr_unnest_name <- sym(paste0(quo_name(spike_rate_col), "_unnest"))
-  fit_name <- sym(paste0(quo_name(out_name), "_fit"))
-  glance_name <- sym(paste0(quo_name(out_name), "_glance"))
-  r2_name <- sym(paste0(quo_name(out_name), "_r2_h"))
-  Pval_name <- sym(paste0(quo_name(out_name), "_Pval_h"))
-  slope_name <- sym(paste0(quo_name(out_name), "_slope_h"))
-  intercept_name <- sym(paste0(quo_name(out_name), "_intercept_h"))
-  df <- df %>%
-    mutate(!!fit_name := pmap(list(!!spike_rate_col, startbin, endbin), lm_helper),
-           !!glance_name := map(!!fit_name, glance),
-           !!r2_name := map_dbl(!!glance_name, ~.$r.squared),
-           !!Pval_name := map_dbl(!!glance_name, ~.$p.value),
-           !!slope_name := map_dbl(!!fit_name, ~.$coefficients[2]),
-           !!intercept_name := map_dbl(!!fit_name, ~.$coefficients[1]))
-}
-```
-
-3. run lm on all cells
-```{r}
-
 spatial_firing <- spatial_firing %>%
-  lm_analysis(asr_b_rewarded, 110, 170) %>%
-  lm_analysis(asr_nb_rewarded, 110, 170)
-  #lm_analysis(asr_p_rewarded, 110, 170)
-
+  select(-contains('asr_b_rewarded_fit_')) %>%
+  select(-contains('asr_nb_rewarded_fit_')) %>%
+  select(-contains('asr_p_rewarded_fit_')) %>%
+  mutate(asr_b_rewarded_fit = pmap(list(asr_b_rewarded, 110, 170), lm_helper),
+         asr_nb_rewarded_fit = pmap(list(asr_nb_rewarded, 110, 170), lm_helper),
+         asr_p_rewarded_fit = pmap(list(asr_p_rewarded, 110, 170), lm_helper)) %>%
+  unnest_wider(asr_b_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_p_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
+
 
 4. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
@@ -203,7 +212,7 @@ compare_slopes <- function(min_slope, max_slope, slope, pval){
 }
 
 spatial_firing <- spatial_firing %>%
-  mutate(lm_group_p = pmap(list(shuffle_min_slope_h, shuffle_max_slope_h, asr_b_rewarded_slope_h, adjust_pval_h), compare_slopes)) #%>%
+  mutate(lm_group_h_b = pmap(list(shuffle_min_slope_h, shuffle_max_slope_h, asr_b_rewarded_slope_h, adjust_pval_h), compare_slopes)) #%>%
   #mutate(lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_h, adjust_pval_nb), compare_slopes))
   #mutate(lm_group_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
 
@@ -226,9 +235,7 @@ i.e. posneg = positive in outbound, negative in homebound
 1. write function to mark cells based on groups
 ```{r}
 mark_predict_group <- function(outbound, homebound){
-  if (is.na(df) ) {
-    return( "None" )
-  } else if( outbound == "Positive" & homebound =="Negative") {
+  if( outbound == "Positive" & homebound =="Negative") {
     return( "posneg" ) 
   } else if( outbound == "Positive" & homebound =="Positive") {
     return( "pospos" )
@@ -247,12 +254,10 @@ mark_predict_group <- function(outbound, homebound){
 
 ```
 
-
-
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate( predict_id = map2(lm_group, lm_group_p, mark_predict_group))
+  mutate( predict_id = map2(lm_group, lm_group_h_b, mark_predict_group))
 
 ```
 
@@ -264,8 +269,6 @@ _note : we focus on cue independant/path integrating neurons here as classified 
 _note: cue_group is defined in Figure4_Analysis.Rmd_
 ```{r}
 cueindependant_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
-cuedependant_neurons <- subset(spatial_firing, cue_group == "Positive-cue" | cue_group == "Negative-cue")
-
 ```
 
 2. find proportion of cue independant cells that fall into groups as catagorised above (pospos, posneg etc)
@@ -284,23 +287,7 @@ negpos_num <-nrow(subset(cueindependant_neurons, predict_id == "negpos"))
 
 ```
 
-3. Same as above but for cue dependant neurons
-```{r}
-# positive homebound slopes
-pospos <-nrow(subset(cuedependant_neurons, predict_id == "pospos"))/nrow(cuedependant_neurons)*100
-posneg <-nrow(subset(cuedependant_neurons, predict_id == "posneg"))/nrow(cuedependant_neurons)*100
-negneg <-nrow(subset(cuedependant_neurons, predict_id == "negneg"))/nrow(cuedependant_neurons)*100
-negpos <-nrow(subset(cuedependant_neurons, predict_id == "negpos"))/nrow(cuedependant_neurons)*100
-
-# positive homebound slopes
-pospos_num <-nrow(subset(cuedependant_neurons, predict_id == "pospos"))
-posneg_num <-nrow(subset(cuedependant_neurons, predict_id == "posneg"))
-negneg_num <-nrow(subset(cuedependant_neurons, predict_id == "negneg"))
-negpos_num <-nrow(subset(cuedependant_neurons, predict_id == "negpos"))
-
-```
-
-4. put proportions into tibble for plotting
+3. put proportions into tibble for plotting
 ```{r}
 
 proportions_mixed_ramps <- tibble(perc=c(pospos, posneg, negneg, negpos), num=c(pospos_num, posneg_num, negneg_num, negpos_num), ramp_id= c("+ +", "+ -", "- - ", "- +"),ramp_type = c("+ +", "+ -", "- - ", "- +"))
@@ -332,15 +319,14 @@ ggplot(data, aes(x="", y=prop, fill=ramp_id)) +
   geom_text(aes(y = ypos, label = num), color = "white", size=3) +
   scale_fill_brewer(palette="Set1")
 
-ggsave(file = "plots/homebound_proportions_cueindependant.png", width = 4, height = 4)
+ggsave(file = "plots/Reset_cellproportions_cueindependant.png", width = 4, height = 4)
 
 ```
 
 
 
-
-
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
 
 
 Now, we want to find out if within pospos and negneg groups - are their firing rate reset or continue across the reward region?
@@ -483,4 +469,607 @@ none_p <-nrow(subset(path_integrating_neurons, predict_id_p == "posnon"| predict
 
 
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+## plot bar chart of mean apsolute difference between predicted and real
+
+- do only for neurons that have slopes in outbound zone
+- do this for both negative and positive slopes in the outbound zone
+
+1. extract neurons with slope on outbound & homebound
+```{r}
+data <- subset(spatial_firing, predict_id == "pospos" | predict_id == "negneg" | predict_id == "posneg"| predict_id == "negpos")
+```
+
+2. extract only neurons that are driven by path integration (as determined by Figure 4 Analysis)
+```{r}
+pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+```
+
+3. subset based on position
+```{r}
+position_neurons <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+4. Plot bar charts - positive neurons
+```{r}
+ggplot(data=subset(position_neurons, lm_group == "Positive"), aes(x = unlist(predict_mean), fill=as.factor(unlist(lm_group)))) +
+  coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
+  geom_histogram(aes(y=..density..), alpha=0.5) +
+  scale_fill_manual(values=c( "chartreuse3")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  geom_vline(xintercept = 1, color="black", linetype="dotted") +
+  geom_vline(xintercept = -1, color="black", linetype="dotted") +
+  labs(y="Density", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=10),
+        axis.text.y = element_text(size=10),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=10), 
+        legend.text=element_text(size=10), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/PredictHomeboundMean_PIpositive_pi.png",width = 4, height = 2)
+```
+
+5. Plot bar charts - Negative neurons
+
+```{r}
+
+ggplot(data=subset(position_neurons,lm_group == "Negative"), aes(x = unlist(predict_mean), fill=as.factor(unlist(lm_group)))) +
+  coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
+  geom_histogram(aes(y=..density..), alpha=0.5) +
+  scale_fill_manual(values=c("violetred2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  geom_vline(xintercept = 1, color="black", linetype="dotted") +
+  geom_vline(xintercept = -1, color="black", linetype="dotted") +
+  labs(y="Density", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=10),
+        axis.text.y = element_text(size=10),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=10), 
+        legend.text=element_text(size=10), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/PredictHomeboundMean_PInegative_pi.png",width = 4, height = 2)
+
+```
+
+
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+
+## now plot scatter of slopes for outbound and slopes for homebound with neurons marked accordng to whether they are reset or continuous
+
+1. 
+```{r}
+data <- spatial_firing %>% filter(predict_id == "pospos" | predict_id == "negneg" | predict_id == "posneg"| predict_id == "negpos" | predict_id == "posnon"| predict_id == "negnon")
+```
+
+2. 
+```{r}
+pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+```
+
+3. subset based on position
+```{r}
+position_neurons <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+4. 
+```{r}
+reset <- position_neurons %>% filter(reset_group == "Reset")
+continuous <- position_neurons %>% filter(reset_group == "Continuous")
+```
+
+5. 
+```{r}
+
+ggplot() + 
+    geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_b_rewarded_slope_o)), y = as.numeric(unlist(asr_b_rewarded_slope_h)), color=factor(unlist(lm_group)))) +
+    geom_jitter(data=reset,aes(x = as.numeric(unlist(asr_b_rewarded_slope_o)), y = as.numeric(unlist(asr_b_rewarded_slope_h)), color=factor(unlist(lm_group))), shape=1) +
+    coord_cartesian(ylim = c(-.6,.6), xlim = c(-.6,.6)) +
+    xlab("Outbound slope") +
+    ylab("Homebound slope") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/slope_comparison_reset.png", width = 5, height = 5)
+
+```
+
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+Now we want to plot population rate across whole track for diff groups so we can visualise the average firing rate
+
+1. Split data based on cue independant/cue dependant
+
+```{r}
+pi_data <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+```
+
+3. subset based on position
+```{r}
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. make tibble with average firing rates and classifications : _just path integration neurons_
+```{r}
+df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$Rates_averaged_rewarded_b), Outbound_beaconed = rep(pi_data$lm_group, each=200), Homebound_beaconed = rep(pi_data$lm_group_h_b, each=200), group = rep(as.character(pi_data$reset_group), each=200), predict_mean = rep(as.numeric(pi_data$predict_mean), each=200))
+
+```
+
+3. Subset data by group then average rates for plotting          **Negative Negative Continuous**
+```{r}
+df_neg_cue <- df %>%
+  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
+  subset(group == "Continuous") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+  
+```
+
+5. Plot average rates                                           **Negative Negative Continuous**
+```{r}
+ggplot(data=df_neg_cue) +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
+  geom_line(aes(y=mean_b, x=Position), color = "Black") +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
+  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.title = element_blank(),
+        text = element_text(size=12))
+ggsave(file = "plots/Negneg_contiuous_mean.png", width = 3.5, height = 2.5)
+
+```
+
+
+4. Subset data by group then average rates for plotting          **Negative Negative Reset**
+
+```{r}
+df_neg_cue <- df %>%
+  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
+  subset(group == "Reset") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+  
+```
+
+5. Plot data                                                    **Negative Negative Reset**
+```{r}
+ggplot(data=df_neg_cue) +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
+  geom_line(aes(y=mean_b, x=Position), color = "black") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(5,30,5), expand = c(0, 0)) +
+  theme_classic() +
+  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.title = element_blank(),
+        text = element_text(size=12))
+ggsave(file = "plots/negneg_reset_mean.png", width = 3.5, height = 2.5)
+
+```
+
+
+
+4. Subset data by group then average rates for plotting          **Negative Positive**
+```{r}
+df_pos_cue <- df %>%
+  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+  
+```
+
+5. Plot data
+```{r}
+ggplot(data=df_pos_cue) +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
+  geom_line(aes(y=mean_b, x=Position), color = "black") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
+  theme_classic() +
+  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.title = element_blank(),
+        text = element_text(size=12))
+ggsave(file = "plots/negpos_cells.png", width = 3.5, height = 2.5)
+
+```
+
+
+4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
+  subset(group == "Continuous") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+  
+```
+
+
+5. Plot data                                                    **Positive Positive Continuous**
+```{r}
+ggplot(data=df_pos_pi) +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
+  #geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sd_nb, ymax = mean_nb + sd_nb), fill = "Red2", alpha=0.05) +
+  geom_line(aes(y=mean_b, x=Position), color = "black") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(5,30,10), expand = c(0, 0)) +
+  #geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
+  theme_classic() +
+  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.title = element_blank(),
+        text = element_text(size=12))
+ggsave(file = "plots/pospos_continuous_mean.png", width = 3.5, height = 2.5)
+
+
+```
+
+
+4. Subset data by group then average rates for plotting          **Positive Positive Reset**
+
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
+  subset(group == "Reset") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169))
+  
+```
+
+
+5. Plot data                                                     **Positive Positive Reset**
+```{r}
+ggplot(data=df_pos_pi) +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
+  geom_line(aes(y=mean_b, x=Position), color = "Black") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
+  theme_classic() +
+  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.title = element_blank(),
+        text = element_text(size=12))
+ggsave(file = "plots/pospos_reset_mean_PI_f.png", width = 3.5, height = 2.5)
+
+
+```
+
+4. Subset data by group then average rates for plotting          **Positive Negative**
+
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+```
+
+
+5. Plot data                                                        **Positive Negative**
+```{r}
+ggplot(data=df_pos_pi) +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
+  geom_line(aes(y=mean_b, x=Position), color = "black") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
+  theme_classic() +
+  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        panel.grid = element_blank(),
+        panel.border = element_blank()) 
+ggsave(file = "plots/posneg_cells.png", width = 3.5, height = 2.5)
+
+
+```
+
+
+4. Subset data by group then average rates for plotting          **Positive Unclassified**
+
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+```
+
+5. Plot rates                                                     **Positive Unclassified**
+```{r}
+ggplot(data=df_pos_pi) +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
+  geom_line(aes(y=mean_b, x=Position), color = "black") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
+  theme_classic() +
+  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        panel.grid = element_blank(),
+        panel.border = element_blank()) 
+
+ggsave(file = "plots/posnon_cells.png", width = 3.5, height = 2.5)
+
+
+```
+
+4. Subset data by group then average rates for plotting          **Negative Unclassified**
+
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+  
+```
+
+5. Plot data                                                      **Negative Unclassified**
+```{r}
+ggplot(data=df_pos_pi) +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
+  geom_line(aes(y=mean_b, x=Position), color = "black") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
+  theme_classic() +
+  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        panel.grid = element_blank(),
+        panel.border = element_blank()) 
+
+ggsave(file = "plots/negnon_cells.png", width = 3.5, height = 2.5)
+
+
+```
+
+
+
+
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+
+### Sankey Diagrams
+
+Now we want to plot a sankey diagram showing the slope of neurons in the outbound and homebound region. 
+
+1.
+```{r}
+data <- spatial_firing %>% filter(predict_id == "pospos" | predict_id == "negneg" | predict_id == "posneg"| predict_id == "negpos" | predict_id == "posnon"| predict_id == "negnon")
+
+pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. 
+```{r}
+
+pi_positive <-subset(pi_data, lm_group == "Positive")
+pi_negative <-subset(pi_data, lm_group == "Negative")
+pi_none <-subset(pi_data, lm_group == "Unclassified")
+
+pi_positive_pos <-nrow(subset(pi_positive, lm_group_h_b == "Positive"))
+pi_positive_neg <-nrow(subset(pi_positive, lm_group_h_b == "Negative"))
+pi_positive_none <-nrow(subset(pi_positive, lm_group_h_b == "Unclassified"))
+pi_negative_pos <-nrow(subset(pi_negative, lm_group_h_b == "Positive"))
+pi_negative_neg <-nrow(subset(pi_negative, lm_group_h_b == "Negative"))
+pi_negative_none <-nrow(subset(pi_negative, lm_group_h_b == "Unclassified"))
+pi_none_pos <-nrow(subset(pi_none, lm_group_h_b == "Positive"))
+pi_none_neg <-nrow(subset(pi_none, lm_group_h_b == "Negative"))
+pi_none_none <-nrow(subset(pi_none, lm_group_h_b == "Unclassified"))
+
+pi_positive_pos_num <-nrow(subset(pi_positive, lm_group_h_b == "Positive"))
+pi_positive_neg_num <-nrow(subset(pi_positive, lm_group_h_b == "Negative"))
+pi_positive_none_num <-nrow(subset(pi_positive, lm_group_h_b == "Unclassified"))
+pi_negative_pos_num <-nrow(subset(pi_negative, lm_group_h_b == "Positive"))
+pi_negative_neg_num <-nrow(subset(pi_negative, lm_group_h_b == "Negative"))
+pi_negative_none_num <-nrow(subset(pi_negative, lm_group_h_b == "Unclassified"))
+pi_none_pos_num <-nrow(subset(pi_none, lm_group_h_b == "Positive"))
+pi_none_neg_num <-nrow(subset(pi_none, lm_group_h_b == "Negative"))
+pi_none_none_num <-nrow(subset(pi_none, lm_group_h_b == "Unclassified"))
+
+```
+
+```{r}
+
+data_long <- tibble(value=c(pi_positive_pos, pi_positive_neg, pi_positive_none, pi_negative_pos,pi_negative_neg, pi_negative_none, pi_none_pos, pi_none_neg, pi_none_none), 
+                    
+                      source= c("Positive","Positive", "Positive", "Negative", "Negative", "Negative", "None","None", "None"),
+                     target= c(" Positive"," Negative", " None"," Positive"," Negative", " None"," Positive"," Negative", " None"))
+
+
+data_long <- data_long %>% 
+  filter(value > 0)                           
+                    
+```
+
+```{r}
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
+ 
+```
+
+```{r}
+# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+data_long$IDsource=match(data_long$source, nodes$name)-1 
+data_long$IDtarget=match(data_long$target, nodes$name)-1
+```
+
+```{r}
+# prepare colour scale
+ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
+
+# Make the Network
+sankeyNetwork(Links = data_long, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "value", NodeID = "name", LinkGroup='source',
+              sinksRight=FALSE, colourScale=ColourScal,
+              nodeWidth=40, fontSize=13, nodePadding=20)
+#ggsave(file = "plots/model_movement.png", width = 24, height = 18)
+
+```
+
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+1. 
+```{r}
+data <- spatial_firing %>% filter(predict_id == "pospos" | predict_id == "negneg")
+
+```
+
+# filter for pi neurons
+```{r}
+pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+
+```
+
+
+# filter for negative > negative & positive > positive
+```{r}
+negneg_pineurons <-subset(pi_data, lm_group == "Negative" & lm_group_h_b == "Negative")
+posos_pineurons <-subset(pi_data, lm_group == "Positive" & lm_group_h_b == "Positive")
+negpos_pineurons<-subset(pi_data, lm_group == "Negative" & lm_group_h_b == "Positive")
+posneg_pineurons<-subset(pi_data, lm_group == "Positive" & lm_group_h_b == "Negative")
+
+```
+
+## raw numbers 
+```{r}
+negneg_pineurons_reset <- nrow(subset(negneg_pineurons, reset_group == "Reset"))
+negneg_pineurons_cont <-nrow(subset(negneg_pineurons, reset_group == "Continuous"))
+
+pospos_pineurons_reset <-nrow(subset(posos_pineurons, reset_group == "Reset"))
+pospos_pineurons_cont <-nrow(subset(posos_pineurons, reset_group == "Continuous"))
+```
+
+
+```{r}
+
+data_long <- tibble(value=c(negneg_pineurons_reset, negneg_pineurons_cont, pospos_pineurons_reset, pospos_pineurons_cont), 
+                    
+                      source= c("Negative > Negative","Negative > Negative", "Positive > Positive", "Positive > Positive"),
+                     target= c("Reset", "Continuous", "Reset", "Continuous"))
+
+
+data_long <- data_long %>% 
+  filter(value > 0)                           
+                    
+```
+
+```{r}
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
+ 
+```
+
+```{r}
+# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+data_long$IDsource=match(data_long$source, nodes$name)-1 
+data_long$IDtarget=match(data_long$target, nodes$name)-1
+```
+
+
+```{r}
+# A connection data frame is a list of flows with intensity for each flow
+ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","F56666", "#FDE725FF","#B4DE2CFF" ,"#F56666", "#B4DE2CFF","FDE725FF", "#B4DE2CFF", "#B4DE2CFF"])'
+
+#ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
+
+
+links <- data.frame(
+  source=c("Positive1","Positive1", "Reset1", "Continuous1", "Negative1", "Negative1",  "Reset2", "Continuous2"), 
+  target=c("Reset1","Continuous1", "Positive2", "Positive2", "Reset2", "Continuous2", "Negative2", "Negative2"), 
+  value=c(pospos_pineurons_reset,pospos_pineurons_cont, pospos_pineurons_reset, pospos_pineurons_cont, negneg_pineurons_reset, negneg_pineurons_cont ,negneg_pineurons_reset, negneg_pineurons_cont))
+  
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes <- data.frame(
+  name=c(as.character(links$source), 
+  as.character(links$target)) %>% unique()
+)
+ 
+# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+links$IDsource <- match(links$source, nodes$name)-1 
+links$IDtarget <- match(links$target, nodes$name)-1
+ 
+# Make the Network
+p <- sankeyNetwork(Links = links, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "value", NodeID = "name", LinkGroup='source',
+              sinksRight=FALSE, colourScale=ColourScal,
+              nodeWidth=30, fontSize=13, nodePadding=15)
+
+p
+
+
+```
+
+
 
