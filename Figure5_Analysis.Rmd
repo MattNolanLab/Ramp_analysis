@@ -23,46 +23,55 @@ knitr::opts_chunk$set(echo = TRUE)
 # Run simple linear model to examine relationship between firing rate and position
 _note:for now we are only interested in the homebound region of the track (110 - 170 cm)_
 
+
 1. Make function to run linear model
 ```{r}
-lm_helper <- function(df, startbin = 110, endbin = 170){
+lm_helper <- function(df,
+                      startbin = 110,
+                      endbin = 170) {
+ # Check for NAs
+  if (any(is.na(df$Rates))) {
+    df <-
+      tibble(
+        r.squared = c(NA),
+        p.value = c(NA),
+        intercept = c(NA),
+        slope = c(NA)
+      )
+    return(df)
+  }
+
   df <- df %>%
     subset(Position >= startbin & Position <= endbin)
-  df_mod <- lm(Rates ~ Position, data = df, na.action=na.exclude)
+  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
+
+  # get the model parameters
+  params <- select(glance(df_fit), r.squared, p.value)
+  # get the coefficients
+  coeffs <- tidy(df_fit)
+  # combine the parameters and coefficients
+  params$intercept <- coeffs$estimate[[1]]
+  params$slope <- coeffs$estimate[[2]]
+
+  return(params)
 }
 ```
 
-2. make function to extract linear model output for each neuron
+2. run lm on all cells.
+Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
 ```{r}
-lm_analysis <- function(df, spike_rate_col, startbin = 110, endbin = 170) {
-  spike_rate_col <- enquo(spike_rate_col)
-  out_name <- sym(paste0(quo_name(spike_rate_col)))
-  sr_unnest_name <- sym(paste0(quo_name(spike_rate_col), "_unnest"))
-  fit_name <- sym(paste0(quo_name(out_name), "_fit"))
-  glance_name <- sym(paste0(quo_name(out_name), "_glance"))
-  r2_name <- sym(paste0(quo_name(out_name), "_r2_h"))
-  Pval_name <- sym(paste0(quo_name(out_name), "_Pval_h"))
-  slope_name <- sym(paste0(quo_name(out_name), "_slope_h"))
-  intercept_name <- sym(paste0(quo_name(out_name), "_intercept_h"))
-  df <- df %>%
-    mutate(!!fit_name := pmap(list(!!spike_rate_col, startbin, endbin), lm_helper),
-           !!glance_name := map(!!fit_name, glance),
-           !!r2_name := map_dbl(!!glance_name, ~.$r.squared),
-           !!Pval_name := map_dbl(!!glance_name, ~.$p.value),
-           !!slope_name := map_dbl(!!fit_name, ~.$coefficients[2]),
-           !!intercept_name := map_dbl(!!fit_name, ~.$coefficients[1]))
-}
-```
-
-3. run lm on all cells
-```{r}
-
 spatial_firing <- spatial_firing %>%
-  lm_analysis(asr_b_rewarded, 110, 170) %>%
-  lm_analysis(asr_nb_rewarded, 110, 170)
-  #lm_analysis(asr_p_rewarded, 110, 170)
-
+  select(-contains('asr_b_rewarded_fit_')) %>%
+  select(-contains('asr_nb_rewarded_fit_')) %>%
+  select(-contains('asr_p_rewarded_fit_')) %>%
+  mutate(asr_b_rewarded_fit = pmap(list(asr_b_rewarded, 110, 170), lm_helper),
+         asr_nb_rewarded_fit = pmap(list(asr_nb_rewarded, 110, 170), lm_helper),
+         asr_p_rewarded_fit = pmap(list(asr_p_rewarded, 110, 170), lm_helper)) %>%
+  unnest_wider(asr_b_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_nb_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_p_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
+
 
 4. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
@@ -203,7 +212,7 @@ compare_slopes <- function(min_slope, max_slope, slope, pval){
 }
 
 spatial_firing <- spatial_firing %>%
-  mutate(lm_group_p = pmap(list(shuffle_min_slope_h, shuffle_max_slope_h, asr_b_rewarded_slope_h, adjust_pval_h), compare_slopes)) #%>%
+  mutate(lm_group_h_b = pmap(list(shuffle_min_slope_h, shuffle_max_slope_h, asr_b_rewarded_slope_h, adjust_pval_h), compare_slopes)) #%>%
   #mutate(lm_group_nb = pmap(list(shuffle_min_slope_nb, shuffle_max_slope_nb, asr_nb_rewarded_slope_h, adjust_pval_nb), compare_slopes))
   #mutate(lm_group_p = pmap(list(shuffle_min_slope_p, shuffle_max_slope_p, asr_p_rewarded_slope_o, adjust_pval_p), compare_slopes))
 
@@ -226,9 +235,7 @@ i.e. posneg = positive in outbound, negative in homebound
 1. write function to mark cells based on groups
 ```{r}
 mark_predict_group <- function(outbound, homebound){
-  if (is.na(df) ) {
-    return( "None" )
-  } else if( outbound == "Positive" & homebound =="Negative") {
+  if( outbound == "Positive" & homebound =="Negative") {
     return( "posneg" ) 
   } else if( outbound == "Positive" & homebound =="Positive") {
     return( "pospos" )
@@ -247,12 +254,10 @@ mark_predict_group <- function(outbound, homebound){
 
 ```
 
-
-
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate( predict_id = map2(lm_group, lm_group_p, mark_predict_group))
+  mutate( predict_id = map2(lm_group, lm_group_h_b, mark_predict_group))
 
 ```
 
@@ -264,8 +269,6 @@ _note : we focus on cue independant/path integrating neurons here as classified 
 _note: cue_group is defined in Figure4_Analysis.Rmd_
 ```{r}
 cueindependant_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
-cuedependant_neurons <- subset(spatial_firing, cue_group == "Positive-cue" | cue_group == "Negative-cue")
-
 ```
 
 2. find proportion of cue independant cells that fall into groups as catagorised above (pospos, posneg etc)
@@ -284,23 +287,7 @@ negpos_num <-nrow(subset(cueindependant_neurons, predict_id == "negpos"))
 
 ```
 
-3. Same as above but for cue dependant neurons
-```{r}
-# positive homebound slopes
-pospos <-nrow(subset(cuedependant_neurons, predict_id == "pospos"))/nrow(cuedependant_neurons)*100
-posneg <-nrow(subset(cuedependant_neurons, predict_id == "posneg"))/nrow(cuedependant_neurons)*100
-negneg <-nrow(subset(cuedependant_neurons, predict_id == "negneg"))/nrow(cuedependant_neurons)*100
-negpos <-nrow(subset(cuedependant_neurons, predict_id == "negpos"))/nrow(cuedependant_neurons)*100
-
-# positive homebound slopes
-pospos_num <-nrow(subset(cuedependant_neurons, predict_id == "pospos"))
-posneg_num <-nrow(subset(cuedependant_neurons, predict_id == "posneg"))
-negneg_num <-nrow(subset(cuedependant_neurons, predict_id == "negneg"))
-negpos_num <-nrow(subset(cuedependant_neurons, predict_id == "negpos"))
-
-```
-
-4. put proportions into tibble for plotting
+3. put proportions into tibble for plotting
 ```{r}
 
 proportions_mixed_ramps <- tibble(perc=c(pospos, posneg, negneg, negpos), num=c(pospos_num, posneg_num, negneg_num, negpos_num), ramp_id= c("+ +", "+ -", "- - ", "- +"),ramp_type = c("+ +", "+ -", "- - ", "- +"))
@@ -332,15 +319,14 @@ ggplot(data, aes(x="", y=prop, fill=ramp_id)) +
   geom_text(aes(y = ypos, label = num), color = "white", size=3) +
   scale_fill_brewer(palette="Set1")
 
-ggsave(file = "plots/homebound_proportions_cueindependant.png", width = 4, height = 4)
+ggsave(file = "plots/Reset_cellproportions_cueindependant.png", width = 4, height = 4)
 
 ```
 
 
 
-
-
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
 
 
 Now, we want to find out if within pospos and negneg groups - are their firing rate reset or continue across the reward region?
