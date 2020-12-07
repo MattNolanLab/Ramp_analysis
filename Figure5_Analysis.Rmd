@@ -272,15 +272,14 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
-```
-
 
 ```{r}
 saveRDS(spatial_firing, file="All_Results_withHomebound2.Rda")
 
 ```
 
-### -------------------------------------------------------------------------------------------------------------------- ### 
+
+### ------------------------------------------------------------------------------------------ ### 
 
 
 Now, we can mark cells based on their activity in the outbound and homebound region
@@ -290,7 +289,7 @@ i.e. posneg = positive in outbound, negative in homebound
 
 1. write function to mark cells based on groups
 ```{r}
-mark_predict_group <- function(outbound, homebound){
+mark_track_catagory <- function(outbound, homebound){
   if( outbound == "Positive" & homebound =="Negative") {
     return( "posneg" ) 
   } else if( outbound == "Positive" & homebound =="Positive") {
@@ -313,9 +312,11 @@ mark_predict_group <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate( predict_id = map2(lm_group_b, lm_group_b_h, mark_predict_group))
+  mutate( track_catagory = map2(lm_group_b, lm_group_b_h, mark_track_catagory))
 
 ```
+
+### ------------------------------------------------------------------------------------------ ### 
 
 Now, we want to know what proportion of cells fit this group 
 _note : we focus on cue independant/path integrating neurons here as classified in Figure 4 (CueAnalysis_0100.Rmd)_
@@ -329,16 +330,16 @@ cueindependant_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cu
 2. find proportion of cue independant cells that fall into groups as catagorised above (pospos, posneg etc)
 ```{r}
 # positive homebound slopes
-pospos <-nrow(subset(cueindependant_neurons, predict_id == "pospos"))/nrow(cueindependant_neurons)*100
-posneg <-nrow(subset(cueindependant_neurons, predict_id == "posneg"))/nrow(cueindependant_neurons)*100
-negneg <-nrow(subset(cueindependant_neurons, predict_id == "negneg"))/nrow(cueindependant_neurons)*100
-negpos <-nrow(subset(cueindependant_neurons, predict_id == "negpos"))/nrow(cueindependant_neurons)*100
+pospos <-nrow(subset(cueindependant_neurons, track_catagory == "pospos"))/nrow(cueindependant_neurons)*100
+posneg <-nrow(subset(cueindependant_neurons, track_catagory == "posneg"))/nrow(cueindependant_neurons)*100
+negneg <-nrow(subset(cueindependant_neurons, track_catagory == "negneg"))/nrow(cueindependant_neurons)*100
+negpos <-nrow(subset(cueindependant_neurons, track_catagory == "negpos"))/nrow(cueindependant_neurons)*100
 
 # positive homebound slopes
-pospos_num <-nrow(subset(cueindependant_neurons, predict_id == "pospos"))
-posneg_num <-nrow(subset(cueindependant_neurons, predict_id == "posneg"))
-negneg_num <-nrow(subset(cueindependant_neurons, predict_id == "negneg"))
-negpos_num <-nrow(subset(cueindependant_neurons, predict_id == "negpos"))
+pospos_num <-nrow(subset(cueindependant_neurons, track_catagory == "pospos"))
+posneg_num <-nrow(subset(cueindependant_neurons, track_catagory == "posneg"))
+negneg_num <-nrow(subset(cueindependant_neurons, track_catagory == "negneg"))
+negpos_num <-nrow(subset(cueindependant_neurons, track_catagory == "negpos"))
 
 ```
 
@@ -380,9 +381,7 @@ ggsave(file = "plots/Reset_cellproportions_cueindependant.png", width = 4, heigh
 
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
-
-
+### ------------------------------------------------------------------------------------------ ### 
 
 Now, we want to find out if within pospos and negneg groups - are their firing rate reset or continue across the reward region?
 
@@ -470,14 +469,12 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
-
-
 Now, we can classify cells based on their predicted activity. 
 
 1. Function to classify neurons based on predict mean
 
 ```{r}
-mark_color <- function(df, id){
+mark_reset_group <- function(df, id){
   if (is.na(df) ) {
     return( "None" )
   } else if( id == "posneg" | id == "negpos") {
@@ -498,12 +495,13 @@ mark_color <- function(df, id){
 2. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(reset_group = map2(predict_mean, predict_id, mark_color))
+  mutate(reset_group = map2(predict_mean, track_catagory, mark_reset_group))
 
 ```
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------ ### 
+
 
 ## plot bar chart of mean apsolute difference between predicted and real
 
@@ -512,7 +510,7 @@ spatial_firing <- spatial_firing %>%
 
 1. extract neurons with slope on outbound & homebound
 ```{r}
-data <- subset(spatial_firing, predict_id == "pospos" | predict_id == "negneg" | predict_id == "posneg"| predict_id == "negpos")
+data <- subset(spatial_firing, track_catagory == "pospos" | track_catagory == "negneg" | track_catagory == "posneg"| track_catagory == "negpos")
 ```
 
 2. extract only neurons that are driven by path integration (as determined by Figure 4 Analysis)
@@ -580,7 +578,7 @@ ggsave(file = "plots/PredictHomeboundMean_PInegative_pi.png",width = 4, height =
 
 1. 
 ```{r}
-data <- spatial_firing %>% filter(predict_id == "pospos" | predict_id == "negneg" | predict_id == "posneg"| predict_id == "negpos" | predict_id == "posnon"| predict_id == "negnon")
+data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory == "negneg" | track_catagory == "posneg"| track_catagory == "negpos" | track_catagory == "posnon"| track_catagory == "negnon")
 ```
 
 2. 
@@ -603,7 +601,7 @@ continuous <- position_neurons %>% filter(reset_group == "Continuous")
 ```{r}
 
 ggplot() + 
-    geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_b_rewarded_slope_o)), y = as.numeric(unlist(asr_b_rewarded_slope_h)), color=factor(unlist(lm_group)))) +
+    geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_slope_o)), y = as.numeric(unlist(asr_b_rewarded_slope_h)), color=factor(unlist(lm_group)))) +
     geom_jitter(data=reset,aes(x = as.numeric(unlist(asr_b_rewarded_slope_o)), y = as.numeric(unlist(asr_b_rewarded_slope_h)), color=factor(unlist(lm_group))), shape=1) +
     coord_cartesian(ylim = c(-.6,.6), xlim = c(-.6,.6)) +
     xlab("Outbound slope") +
@@ -929,7 +927,7 @@ Now we want to plot a sankey diagram showing the slope of neurons in the outboun
 
 1.
 ```{r}
-data <- spatial_firing %>% filter(predict_id == "pospos" | predict_id == "negneg" | predict_id == "posneg"| predict_id == "negpos" | predict_id == "posnon"| predict_id == "negnon")
+data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory == "negneg" | track_catagory == "posneg"| track_catagory == "negpos" | track_catagory == "posnon"| track_catagory == "negnon")
 
 pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
 
@@ -1010,7 +1008,7 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 
 1. 
 ```{r}
-data <- spatial_firing %>% filter(predict_id == "pospos" | predict_id == "negneg")
+data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory == "negneg")
 
 ```
 
