@@ -159,7 +159,7 @@ shuffle_rates <- function(df) {
   df_modified <- rbind(df_modified,data)
 
   x = x+1
-  if (x == 10){ # putting 100 here for now for testing as 1000 takes v long time to run
+  if (x == 100){ # putting 100 here for now for testing as 1000 takes v long time to run
   break
   }
   }
