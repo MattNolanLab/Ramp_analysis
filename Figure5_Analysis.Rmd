@@ -25,37 +25,9 @@ _note:for now we are only interested in the homebound region of the track (110 -
 
 
 1. Make function to run linear model
-```{r}
-lm_helper <- function(df,
-                      startbin = 110,
-                      endbin = 170) {
- # Check for NAs
-  if (any(is.na(df$Rates))) {
-    df <-
-      tibble(
-        r.squared = c(NA),
-        p.value = c(NA),
-        intercept = c(NA),
-        slope = c(NA)
-      )
-    return(df)
-  }
 
-  df <- df %>%
-    subset(Position >= startbin & Position <= endbin)
-  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
+Use lm_helper defined in analysis for figure 2.
 
-  # get the model parameters
-  params <- select(glance(df_fit), r.squared, p.value)
-  # get the coefficients
-  coeffs <- tidy(df_fit)
-  # combine the parameters and coefficients
-  params$intercept <- coeffs$estimate[[1]]
-  params$slope <- coeffs$estimate[[2]]
-
-  return(params)
-}
-```
 
 2. run lm on all cells.
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
@@ -98,35 +70,7 @@ ggsave(file = "plots/shuff_lm_homebound_allcells.png", width = 4, height = 5)
 
 Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled datasets
 
-1. write function to generate 1000 shuffles
-- shuffles spikes using sample() function
-- runs lm
-- extracts coefficients
-- stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
-```{r}
-#library(gdata)
-shuffle_rates <- function(df) {
-  df_modified <- data.frame(neuron=as.numeric(),
-                 slope=as.numeric(), 
-                 rsquared=as.numeric(), 
-                 pval=vector())
-  names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
-  x <- 1
-  repeat {
-  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
-  df_mod <- lm_helper(shuff_df)
-  data <- data.frame(as.numeric(x), df_mod$slope, df_mod$r.squared, df_mod$p.value)
-  names(data) <- c("neuron", "slope", "r.squared", "p.value")
-  df_modified <- rbind(df_modified,data)
-
-  x = x+1
-  if (x == 10){ # putting 100 here for now for testing as 1000 takes v long time to run
-  break
-  }
-  }
-return(df_modified)
-}
-```
+1. Use function shuffle_rates define in Figure 2.
 
 2. Run on example neuron (beaconed and non-beaconed trials)
 ```{r}
