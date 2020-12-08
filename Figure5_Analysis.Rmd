@@ -78,11 +78,13 @@ Ramp like cells are identified by whether the coefficients of the linear model l
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
+shuffles <- 10 # Default 1000 but smaller values for testing.
+
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results_b_h = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
-    mutate(shuffle_results_nb_h = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
-    mutate(shuffle_results_p_h = map(Rates_averaged_rewarded_p, shuffle_rates))
+    mutate(shuffle_results_b_h = map2(Rates_averaged_rewarded_b, shuffles, shuffle_rates)) %>%
+    mutate(shuffle_results_nb_h = map2(Rates_averaged_rewarded_nb, shuffles, shuffle_rates)) %>%
+    mutate(shuffle_results_p_h = map2(Rates_averaged_rewarded_p, shuffles, shuffle_rates))
 }
 # Uncomment the line below to save spatial firing at this point.
 # saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")

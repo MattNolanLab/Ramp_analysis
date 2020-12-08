@@ -149,7 +149,8 @@ Ramp like cells are identified by whether the coefficients of the linear model l
 - stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
 ```{r}
 #library(gdata)
-shuffle_rates <- function(df) {
+# shuffles defines the number of shuffes. Use a smaller value for testing.
+shuffle_rates <- function(df, suffles = 1000) {
   df_modified <- data.frame(neuron=as.numeric(),
                  slope=as.numeric(), 
                  rsquared=as.numeric(), 
@@ -164,7 +165,7 @@ shuffle_rates <- function(df) {
   df_modified <- rbind(df_modified,data)
 
   x = x+1
-  if (x == 100){ # putting 100 here for now for testing as 1000 takes v long time to run
+  if (x == suffles){ 
   break
   }
   }
@@ -178,11 +179,12 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
+shuffles <- 10
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results_b_o = map(Rates_averaged_rewarded_b, shuffle_rates)) %>%
-    mutate(shuffle_results_nb_o = map(Rates_averaged_rewarded_nb, shuffle_rates)) %>%
-    mutate(shuffle_results_p_o = map(Rates_averaged_rewarded_p, shuffle_rates))
+    mutate(shuffle_results_b_o = map2(Rates_averaged_rewarded_b, shuffles, shuffle_rates)) %>%
+    mutate(shuffle_results_nb_o = map2(Rates_averaged_rewarded_nb, shuffles, shuffle_rates)) %>%
+    mutate(shuffle_results_p_o = map2(Rates_averaged_rewarded_p, shuffles, shuffle_rates))
 }
 # Uncomment the line below to save spatial firing at this point.
 # saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
