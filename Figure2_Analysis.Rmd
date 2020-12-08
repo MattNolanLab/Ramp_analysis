@@ -150,7 +150,7 @@ Ramp like cells are identified by whether the coefficients of the linear model l
 ```{r}
 #library(gdata)
 # shuffles defines the number of shuffes. Use a smaller value for testing.
-shuffle_rates <- function(df, suffles = 1000) {
+shuffle_rates <- function(df, shuffles = 1000) {
   df_modified <- data.frame(neuron=as.numeric(),
                  slope=as.numeric(), 
                  rsquared=as.numeric(), 
@@ -159,13 +159,13 @@ shuffle_rates <- function(df, suffles = 1000) {
   x <- 1
   repeat {
   shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
-  df_mod <- lm_helper(shuff_df)
+  df_mod <- lm_helper(shuff_df, 30, 90)
   data <- data.frame(as.numeric(x), df_mod$slope, df_mod$r.squared, df_mod$p.value)
   names(data) <- c("neuron", "slope", "r.squared", "p.value")
   df_modified <- rbind(df_modified,data)
 
   x = x+1
-  if (x == suffles){ 
+  if (x == shuffles){ 
   break
   }
   }

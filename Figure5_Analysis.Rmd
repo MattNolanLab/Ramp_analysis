@@ -70,28 +70,7 @@ ggsave(file = "plots/shuff_lm_homebound_allcells.png", width = 4, height = 5)
 
 Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled datasets
 
-1. Use function shuffle_rates define in Figure 2.
-
-2. Run on example neuron (beaconed and non-beaconed trials)
-```{r}
-# Uncomment the line below to load pre-saved shuffled data
-# spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
-
-# Check to see if the column shuffle_results exists. If it does then don't run again.
-shuffles <- 10 # Default 1000 but smaller values for testing.
-
-if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
-  spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results_b_h = map2(Rates_averaged_rewarded_b, shuffles, shuffle_rates)) %>%
-    mutate(shuffle_results_nb_h = map2(Rates_averaged_rewarded_nb, shuffles, shuffle_rates)) %>%
-    mutate(shuffle_results_p_h = map2(Rates_averaged_rewarded_p, shuffles, shuffle_rates))
-}
-# Uncomment the line below to save spatial firing at this point.
-# saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
-# And use this to save a truncated version. Useful for testing code.
-# saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
-
-```
+Beause the homebound zone is the same length as the outbound zone, and as shuffling is across the full track length, we can use the shuffle results generated for Figure 2.
 
 
 ### ---------------------------------------------------------------------------- ### 
@@ -99,35 +78,6 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
 ### classify neurons based on shuffle activity
 
 If outside the 95% of the shuffled dataset, a neuron is considered to have ramp like activity along the track. 
-
-First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron 
-
-1. find min and max slope for shuffled datasets 
-2. Run on all neurons
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(shuffle_min_slope_b_h = map_dbl(shuffle_results_b_h, extract_min_shuffle_slopes),
-         shuffle_max_slope_b_h = map_dbl(shuffle_results_b_h, extract_max_shuffle_slopes),
-         shuffle_min_slope_nb_h = map_dbl(shuffle_results_nb_h, extract_min_shuffle_slopes),
-         shuffle_max_slope_nb_h = map_dbl(shuffle_results_nb_h, extract_max_shuffle_slopes),
-         shuffle_min_slope_p_h = map_dbl(shuffle_results_p_h, extract_min_shuffle_slopes),
-         shuffle_max_slope_p_h = map_dbl(shuffle_results_p_h, extract_max_shuffle_slopes))
-
-```
-
-
-We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
-
-1. extract shuffle results (slopes and r2 for each shuffle)
-```{r}
-spatial_firing <- spatial_firing %>%
-  select(-contains('shuffle_results_b_h_')) %>%
-  select(-contains('shuffle_results_nb_h_')) %>%
-  select(-contains('shuffle_results_p_h_')) %>%
-  unnest_wider(shuffle_results_b_h, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(shuffle_results_nb_h, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(shuffle_results_p_h, names_sep = "_", names_repair = "universal")
-```
 
 
 Then we want to correct the pvals of the lm, to account for multiple comparisons
@@ -162,35 +112,17 @@ spatial_firing <- cbind(spatial_firing, adu_p_p)
 
 Now we want to classify neurons, taking the adjusted significance into account
 
+Uses the function compare_slopes from Figure 2.
+
 ```{r}
 
-compare_slopes <-
-  function(min_slope = 1,
-           max_slope = 1,
-           slope = 1,
-           pval = 1) {
-    if (any(is.na(list(min_slope, max_slope, slope, pval)))) {
-      return("NAs")
-    }
-    if (pval > 0.01) {
-      return("Unclassified")
-    } else if (slope < min_slope & pval < 0.01) {
-      return("Negative")
-    } else if (slope > max_slope & pval < 0.01) {
-      return("Positive")
-    } else if (slope > min_slope & slope < max_slope) {
-      return("Unclassified")
-    } else {
-      return("Unclassified")
-    }
-  }
 
 spatial_firing <- spatial_firing %>%
   mutate(
     lm_group_b_h = pmap(
       list(
-        shuffle_min_slope_b_h,
-        shuffle_max_slope_b_h,
+        shuffle_min_slope_b_o,
+        shuffle_max_slope_b_o,
         asr_b_h_rewarded_fit_slope,
         adjust_pval_b_h
       ),
@@ -198,8 +130,8 @@ spatial_firing <- spatial_firing %>%
     ),
     lm_group_b_nb_h = pmap(
       list(
-        shuffle_min_slope_nb_h,
-        shuffle_max_slope_nb_h,
+        shuffle_min_slope_nb_o,
+        shuffle_max_slope_nb_o,
         asr_nb_h_rewarded_fit_slope,
         adjust_pval_nb_h
       ),
@@ -207,8 +139,8 @@ spatial_firing <- spatial_firing %>%
     ),
     lm_group_b_p_h = pmap(
       list(
-        shuffle_min_slope_p_h,
-        shuffle_max_slope_p_h,
+        shuffle_min_slope_p_o,
+        shuffle_max_slope_p_o,
         asr_p_h_rewarded_fit_slope,
         adjust_pval_p_h
       ),
