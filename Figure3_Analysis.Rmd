@@ -59,6 +59,9 @@ mm_fit <- function(df, TT = 0) {
 Function to extract P values for each coefficient from the model
 ```{r}
 mm_pvalues <- function(mm) {
+  if (is.na(mm)) {
+    return(tibble(pos = NA, speed = NA, accel = NA))
+  }
     modelAnova <- car::Anova(mm)
     return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
                   speed = modelAnova$"Pr(>Chisq)"[[2]],
@@ -69,7 +72,7 @@ mm_pvalues <- function(mm) {
 
 
 2. Run on all cells 
-```{r}
+```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
   select(-contains('o_mm_p_b_')) %>%
   select(-contains('o_mm_p_nb_')) %>%
