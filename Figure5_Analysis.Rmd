@@ -115,8 +115,6 @@ Now we want to classify neurons, taking the adjusted significance into account
 Uses the function compare_slopes from Figure 2.
 
 ```{r}
-
-
 spatial_firing <- spatial_firing %>%
   mutate(
     lm_group_b_h = pmap(
@@ -152,7 +150,7 @@ spatial_firing <- spatial_firing %>%
 
 
 ```{r}
-saveRDS(spatial_firing, file="All_Results_withHomebound2.Rda")
+# saveRDS(spatial_firing, file="All_Results_withHomebound2.Rda")
 
 ```
 
@@ -160,7 +158,7 @@ saveRDS(spatial_firing, file="All_Results_withHomebound2.Rda")
 ### ------------------------------------------------------------------------------------------ ### 
 
 
-Now, we can mark cells based on their activity in the outbound and homebound region
+Now, we can classify cells based on their activity in the outbound and homebound region
 
 i.e. pospos = positive in outbound, positive in homebound
 i.e. posneg = positive in outbound, negative in homebound
@@ -190,34 +188,34 @@ mark_track_catagory <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate( track_catagory = map2(lm_group_b, lm_group_b_h, mark_track_catagory))
+  mutate(track_catagory = map2(lm_group_b, lm_group_b_h, mark_track_catagory))
 
 ```
 
 ### ------------------------------------------------------------------------------------------ ### 
 
 Now, we want to know what proportion of cells fit this group 
-_note : we focus on cue independant/path integrating neurons here as classified in Figure 4 (CueAnalysis_0100.Rmd)_
+_note : we focus on cue-independent neurons here as classified in Figure 4 (CueAnalysis_0100.Rmd)_
 
-1. Find cue independant cells
+1. Find cue independent cells
 _note: cue_group is defined in Figure4_Analysis.Rmd_
 ```{r}
-cueindependant_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+cueindependent_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
 ```
 
-2. find proportion of cue independant cells that fall into groups as catagorised above (pospos, posneg etc)
+2. find proportion of cue independent cells that fall into groups as catagorised above (pospos, posneg etc)
 ```{r}
 # positive homebound slopes
-pospos <-nrow(subset(cueindependant_neurons, track_catagory == "pospos"))/nrow(cueindependant_neurons)*100
-posneg <-nrow(subset(cueindependant_neurons, track_catagory == "posneg"))/nrow(cueindependant_neurons)*100
-negneg <-nrow(subset(cueindependant_neurons, track_catagory == "negneg"))/nrow(cueindependant_neurons)*100
-negpos <-nrow(subset(cueindependant_neurons, track_catagory == "negpos"))/nrow(cueindependant_neurons)*100
+pospos <-nrow(subset(cueindependent_neurons, track_catagory == "pospos"))/nrow(cueindependent_neurons)*100
+posneg <-nrow(subset(cueindependent_neurons, track_catagory == "posneg"))/nrow(cueindependent_neurons)*100
+negneg <-nrow(subset(cueindependent_neurons, track_catagory == "negneg"))/nrow(cueindependent_neurons)*100
+negpos <-nrow(subset(cueindependent_neurons, track_catagory == "negpos"))/nrow(cueindependent_neurons)*100
 
 # positive homebound slopes
-pospos_num <-nrow(subset(cueindependant_neurons, track_catagory == "pospos"))
-posneg_num <-nrow(subset(cueindependant_neurons, track_catagory == "posneg"))
-negneg_num <-nrow(subset(cueindependant_neurons, track_catagory == "negneg"))
-negpos_num <-nrow(subset(cueindependant_neurons, track_catagory == "negpos"))
+pospos_num <-nrow(subset(cueindependent_neurons, track_catagory == "pospos"))
+posneg_num <-nrow(subset(cueindependent_neurons, track_catagory == "posneg"))
+negneg_num <-nrow(subset(cueindependent_neurons, track_catagory == "negneg"))
+negpos_num <-nrow(subset(cueindependent_neurons, track_catagory == "negpos"))
 
 ```
 
@@ -284,7 +282,7 @@ spatial_firing <- spatial_firing %>%
   mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
 ```
 
-Then, predict firing rate in hombound region based on fit from real data in outbound region
+Then, predict firing rate in homebound region based on fit from real data in outbound region
 
 1. make function to predict firing rate
 ```{r}
@@ -293,30 +291,7 @@ lm_predict <- function(df){
 }
 ```
 
-3. Function to calculate mean difference in firing rate between real and predicted data
-```{r}
-
-lm_predict_mse_homebound <- function(rate){
-  if(all(is.na(rate))) 
-    return(NA)
-  startbins=c(30:90)
-  df <- tibble(Rates = unlist(rate), Position=rep(1:200))
-
-  lmer <- lm(Rates ~ Position, data = df[startbins,])
-  
-  df_homebound <- df %>% filter(between(Position, 110, 115))
-  new.data <- lm_predict(df_homebound)
-  Rates <- predict(lmer, newdata = new.data)
-  mydata <- cbind(new.data, Rates)
-  
-  mean(df_homebound$Rates - mydata$Rate)
-
-}
-
-```
-
-
-Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
+3. Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
 ```{r}
 predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 110, predict_end = 115){
   # check for NAs
@@ -328,28 +303,57 @@ predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 
   model <- lm(Rates ~ Position, data = filter(df, Position >= fit_start, Position <= fit_end))
   # predict
   homebound_prediction_pos <- tibble(Position = rep(1:200))
-  homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "confidence") 
+  #homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "confidence")
+  homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "prediction", level = 0.99) 
   as.tibble(homebound_prediction)
 }
 
 
 ```
 
+Test whether data lies outside of confidence intervals
+```{r}
+offset_test <- function(rates, lwr, upr){
+    # check for NAs
+ if(all(is.na(rates))) 
+    return(NA)
+  rates <- mean(as.double(rates[110:115]))
+  upr <- mean(as.double(upr[110:115]))
+  lwr <- mean(as.double(lwr[110:115]))
+ if(rates > upr) {
+   return("Pos")
+ }
+
+ if (rates < lwr) {
+   return("Neg")
+ }
+    return("None")
+
+}
+```
+
+Calculate difference between mean rate and predicted mean rate at the start of the homebound zone
+```{r}
+calc_predict_diff <- function(rates, fit)
+{
+  diff <- mean(as.double(rates[110:115])) - mean(as.double(fit[110:115]))
+  }
+```
+
 2. Run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(predict_mean = map(normalised_rates, lm_predict_mse_homebound)) 
-  
-```
-
-or with confidence intervals and using absolute rates rather than normalised rates:
-```{r}
-spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_')) %>%
-  mutate(predict_params = map(Rates_averaged_rewarded_b, predict_homebound)) %>%
+  mutate(predict_params = map(normalised_rates, predict_homebound)) %>%
   unnest_wider(predict_params, names_sep = "_", names_repair = "universal")
 
+spatial_firing <- spatial_firing %>%
+  mutate(offset = pmap_chr(list(normalised_rates, predict_params_lwr, predict_params_upr), offset_test),
+         predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff))
+
 ```
+
+
 
 
 Now, we can classify cells based on their predicted activity. 
@@ -378,7 +382,7 @@ mark_reset_group <- function(df, id){
 2. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(reset_group = map2(predict_mean, track_catagory, mark_reset_group))
+  mutate(reset_group = map2(predict_diff, track_catagory, mark_reset_group))
 
 ```
 
@@ -408,7 +412,7 @@ position_neurons <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "
 
 4. Plot bar charts - positive neurons
 ```{r}
-ggplot(data=subset(position_neurons, lm_group_b == "Positive"), aes(x = unlist(predict_mean), fill=as.factor(unlist(lm_group_b)))) +
+ggplot(data=subset(position_neurons, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(lm_group_b)))) +
   coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
   geom_histogram(aes(y=..density..), alpha=0.5) +
   scale_fill_manual(values=c( "chartreuse3")) +
@@ -431,7 +435,7 @@ ggsave(file = "plots/PredictHomeboundMean_PIpositive_pi.png",width = 4, height =
 
 ```{r}
 
-ggplot(data=subset(position_neurons,lm_group_b == "Negative"), aes(x = unlist(predict_mean), fill=as.factor(unlist(lm_group_b)))) +
+ggplot(data=subset(position_neurons,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(lm_group_b)))) +
   coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
   geom_histogram(aes(y=..density..), alpha=0.5) +
   scale_fill_manual(values=c("violetred2")) +
@@ -534,7 +538,7 @@ pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | fin
 
 2. make tibble with average firing rates and classifications : _just path integration neurons_
 ```{r}
-df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$Rates_averaged_rewarded_b), Outbound_beaconed = rep(pi_data$lm_group_b, each=200), Homebound_beaconed = rep(pi_data$lm_group_b_h, each=200), group = rep(as.character(pi_data$reset_group), each=200), predict_mean = rep(as.numeric(pi_data$predict_mean), each=200))
+df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$Rates_averaged_rewarded_b), Outbound_beaconed = rep(pi_data$lm_group_b, each=200), Homebound_beaconed = rep(pi_data$lm_group_b_h, each=200), group = rep(as.character(pi_data$reset_group), each=200), predict_diff = rep(as.numeric(pi_data$predict_diff), each=200))
 
 ```
 
