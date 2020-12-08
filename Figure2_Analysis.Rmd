@@ -46,6 +46,11 @@ add_position <- function(df, session_id, cluster_id) {
 ```
 
 2. Run on dataframe : Average trials with reward
+
+input columns: 
+Rates_averaged_rewarded_b = beaconed trials
+Rates_averaged_rewarded_nb = non-beaconed / probe trials
+Rates_averaged_rewarded_p = probe trials
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(asr_b_rewarded = pmap(list(Rates_averaged_rewarded_b, session_id, cluster_id), add_position),
