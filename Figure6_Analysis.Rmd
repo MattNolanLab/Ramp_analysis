@@ -176,11 +176,14 @@ data <- spatial_firing %>% filter(track_catagory_p == "pospos" | track_catagory_
 2. extract only neurons that are driven by path integration (as determined by CueAnalysis.0100.Rmd - i.e. Figure 4)
 ```{r}
 pi_data <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
-#cue_data <- data %>% filter(cue_group == "Positive-cue" | cue_group == "Negative-cue")
-
 ```
 
-3. Plot bar charts 
+3. subset based on position
+```{r}
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+4. Plot bar charts 
 ```{r}
 
 ggplot(data=subset(pi_data,lm_group_p == "Negative"), aes(x = unlist(predict_mean_p), fill=as.factor(unlist(lm_group_p)))) +
@@ -558,25 +561,29 @@ ggsave(file = "plots/negnon_mean_probe.png", width = 3.5, height = 2.5)
 
 ### Plot Sankey Diagrams
 
-
+1.
 ```{r}
 data <- spatial_firing %>% filter(track_catagory_p == "pospos" | track_catagory_p == "negneg")
 
 ```
 
-# filter for pi neurons
+2. filter for pi neurons
 ```{r}
 pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
-cue_data <- subset(data,cue_group == "Positive-cue" | cue_group == "Negative-cue")
 
+```
+
+3. subset based on position
+```{r}
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
 # filter for negative > negative & positive > positive
 ```{r}
-negneg_pineurons <-subset(pi_data, lm_group_p_o == "Negative" & lm_group_p_h == "Negative")
-posos_pineurons <-subset(pi_data, lm_group_p_o == "Positive" & lm_group_p_h == "Positive")
-negpos_pineurons<-subset(pi_data, lm_group_p_o == "Negative" & lm_group_p_h == "Positive")
-posneg_pineurons<-subset(pi_data, lm_group_p_o == "Positive" & lm_group_p_h == "Negative")
+negneg_pineurons <-subset(pi_data, lm_group_p == "Negative" & lm_group_p_h == "Negative")
+posos_pineurons <-subset(pi_data, lm_group_p == "Positive" & lm_group_p_h == "Positive")
+negpos_pineurons<-subset(pi_data, lm_group_p == "Negative" & lm_group_p_h == "Positive")
+posneg_pineurons<-subset(pi_data, lm_group_p == "Positive" & lm_group_p_h == "Negative")
 
 ```
 
@@ -651,42 +658,49 @@ nodes <- data.frame(
 # With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
 links$IDsource <- match(links$source, nodes$name)-1 
 links$IDtarget <- match(links$target, nodes$name)-1
- 
+
 # Make the Network
 p <- sankeyNetwork(Links = links, Nodes = nodes,
               Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", Linkcue_group='source',
+              Value = "value", NodeID = "name", LinkGroup='source',
               sinksRight=FALSE, colourScale=ColourScal,
               nodeWidth=30, fontSize=13, nodePadding=15)
+
 
 p
 
 
 ```
 
+
+
+##
+
 ```{r}
-data <- spatial_firing %>% filter(track_catagory_p == "pospos" | track_catagory_p == "negneg" | track_catagory_p == "posneg"| track_catagory_p == "negpos")
+data <- spatial_firing %>% filter(track_catagory_p == "pospos" | track_catagory_p == "negneg" | track_catagory_p == "posneg"| track_catagory_p == "negpos" | track_catagory_p == "negnon" | track_catagory_p == "posnon")
 
 pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 
 ```
 
 ```{r}
 
-pi_positive <-subset(pi_data, lm_group_p_o == "Positive")
-pi_negative <-subset(pi_data, lm_group_p_o == "Negative")
-pi_none <-subset(pi_data, lm_group_p_o == "None")
-pi_ramp <-subset(pi_data, lm_group_p_o == "Positive" | lm_group_p_o == "Negative")
+pi_positive <-subset(pi_data, lm_group_p == "Positive")
+pi_negative <-subset(pi_data, lm_group_p == "Negative")
+pi_none <-subset(pi_data, lm_group_p == "Unclassified")
+pi_ramp <-subset(pi_data, lm_group_p == "Positive" | lm_group_p == "Negative")
 
-pi_positive_pos <-nrow(subset(pi_positive, lm_result_h_p == "Positive"))
-pi_positive_neg <-nrow(subset(pi_positive, lm_result_h_p == "Negative"))
-pi_positive_none <-nrow(subset(pi_positive, lm_result_h_p == "None"))
-pi_negative_pos <-nrow(subset(pi_negative, lm_result_h_p == "Positive"))
-pi_negative_neg <-nrow(subset(pi_negative, lm_result_h_p == "Negative"))
-pi_negative_none <-nrow(subset(pi_negative, lm_result_h_p == "None"))
-pi_none_pos <-nrow(subset(pi_none, lm_result_h_p == "Positive"))
-pi_none_neg <-nrow(subset(pi_none, lm_result_h_p == "Negative"))
-pi_none_none <-nrow(subset(pi_none, lm_result_h_p == "None"))
+pi_positive_pos <-nrow(subset(pi_positive, lm_group_p_h == "Positive"))
+pi_positive_neg <-nrow(subset(pi_positive, lm_group_p_h == "Negative"))
+pi_positive_none <-nrow(subset(pi_positive, lm_group_p_h == "Unclassified"))
+pi_negative_pos <-nrow(subset(pi_negative, lm_group_p_h == "Positive"))
+pi_negative_neg <-nrow(subset(pi_negative, lm_group_p_h == "Negative"))
+pi_negative_none <-nrow(subset(pi_negative, lm_group_p_h == "Unclassified"))
+pi_none_pos <-nrow(subset(pi_none, lm_group_p_h == "Positive"))
+pi_none_neg <-nrow(subset(pi_none, lm_group_p_h == "Negative"))
+pi_none_none <-nrow(subset(pi_none, lm_group_p_h == "Unclassified"))
 
 
 ```
@@ -723,7 +737,7 @@ ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B
 # Make the Network
 sankeyNetwork(Links = data_long, Nodes = nodes,
               Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", Linkcue_group='source',
+              Value = "value", NodeID = "name", LinkGroup='source',
               sinksRight=FALSE, colourScale=ColourScal,
               nodeWidth=40, fontSize=13, nodePadding=20)
 #ggsave(file = "plots/model_movement.png", width = 24, height = 18)
