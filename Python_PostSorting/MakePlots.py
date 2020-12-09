@@ -6,7 +6,6 @@ import matplotlib.gridspec as gridspec
 import Python_PostSorting.ExtractFiringData
 import math
 import Python_PostSorting.RewardFiring
-import Python_PostSorting.ConvolveRates_FFT
 import pandas as pd
 from scipy import stats
 from scipy import signal
