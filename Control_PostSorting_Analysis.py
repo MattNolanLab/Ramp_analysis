@@ -171,7 +171,7 @@ def main():
 
     # SAVE DATAFRAMES
     spike_data = drop_columns_from_frame(spike_data)
-    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_1.pkl')
+    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_2.pkl')
 
 
 
