@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 1. We want to run this on an example cluster. So make tibble with example cluster manually identified as a distance encoding cell.  
 
 ```{r}
-df <- tibble(Rates = as.numeric(unlist(spatial_firing_2[1,]$spike_rate_in_time)), Speed = as.numeric(unlist(spatial_firing_2[1,]$speed_rate_in_time)), Position = as.numeric(unlist(spatial_firing_2[1,]$position_rate_in_time)))
+df <- tibble(Rates = as.numeric(unlist(predict_reset[12,]$asr_b_rewarded[[1]][1])), Position = as.numeric(unlist(predict_reset[12,]$asr_b_rewarded[[1]][2])))
 
 ```
 
@@ -41,7 +41,7 @@ lm <- lm_encoding_bins(df_start)
 ```{r}
 
 lm_predict <- function(df){
-  new.data <- data.frame(Speed = df$Speed, Position =df$Position)
+  new.data <- data.frame(Position =df$Position)
 }
 
 ```
