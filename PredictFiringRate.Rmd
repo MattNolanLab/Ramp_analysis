@@ -419,7 +419,7 @@ lm_predict_homebound <- function(df){
 ```{r}
 
 spatial_firing <- spatial_firing %>%
-  mutate(predict_firingrate = map(asr_b, lm_predict_homebound)) 
+  mutate(predict_firingrate = map(asr_b_rewarded, lm_predict_homebound)) 
   
 ```
 
@@ -428,24 +428,24 @@ spatial_firing <- spatial_firing %>%
 3. plot predicted and real firing rate
 
 ```{r}
-predict_correct <-subset(spatial_firing, predict_results > -1 &  predict_results < 1 & lm_result_o_b == "Negative" & lm_result_h_b == "Negative")
+predict_reset <-subset(spatial_firing, reset_group == "Reset" & lm_group_b == "Positive" & lm_group_b == "Positive")
 ```
 
 
 ```{r}
 
-slope_comparison <- as.tibble(cbind(cluster_id=predict_correct$cluster_id, 
-                          group = predict_correct$group,
-                          intercept_o = as.numeric(predict_correct$asr_b_intercept_o),
-                          slope_o = as.numeric(predict_correct$asr_b_slope_o),
-                          session_id = predict_correct$session_id, 
-                          firing_rate_in_time = predict_correct$spikes_in_time,
-                          Rates_averaged = predict_correct$asr_b))
+slope_comparison <- as.tibble(cbind(cluster_id=predict_reset$cluster_id, 
+                          group = predict_reset$reset_group,
+                          intercept_o = as.numeric(predict_reset$asr_b_o_rewarded_fit_intercept),
+                          slope_o = as.numeric(predict_reset$asr_b_o_rewarded_fit_slope),
+                          session_id = predict_reset$session_id, 
+                          firing_rate_in_time = predict_reset$spikes_in_time,
+                          Rates_averaged = predict_reset$asr_b_rewarded))
 
-slope_comparison_predict <- as.tibble(cbind(cluster_id=predict_correct$cluster_id, 
-                          group = predict_correct$group,
-                          session_id = predict_correct$session_id, 
-                          predicted_Rates_averaged = predict_correct$predict_firingrate))
+slope_comparison_predict <- as.tibble(cbind(cluster_id=predict_reset$cluster_id, 
+                          group = predict_reset$reset_group,
+                          session_id = predict_reset$session_id, 
+                          predicted_Rates_averaged = predict_reset$predict_firingrate))
 ```
 
 
@@ -476,7 +476,7 @@ ggplot(data=concat_firing_mix) +
     annotate("rect", xmin = 90, xmax = 110, ymin = 0, ymax = 20, color="White", fill="Green", alpha = .2) + 
     annotate("rect", xmin = 0, xmax = 30, ymin = 0, ymax = 20, color="White", fill="Grey", alpha = .2) +
     annotate("rect", xmin = 170, xmax = 200, ymin = 0, ymax = 20, color="White", fill="Grey", alpha = .2) +
-ggsave(file = "plots/facet_predict_correct_negativenegative.png", width = 14, height = 9)
+ggsave(file = "plots/facet_predict_correct.png", width = 14, height = 9)
 ```
 
 
