@@ -316,7 +316,7 @@ df_neg_cue <- df %>%
 
 ```{r}
 ggplot(data=df_neg_cue) +
-  coord_cartesian(ylim = c(5,40)) +
+  coord_cartesian(ylim = c(5,30)) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
@@ -456,7 +456,7 @@ ggplot(data=df_pos_pi) +
         axis.text.y = element_text(size=12),
         legend.title = element_blank(),
         text = element_text(size=12))
-ggsave(file = "plots/Negneg_reset_mean_probe.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/Pospos_reset_mean_probe.png", width = 3.5, height = 2.5)
 
 
 ```
