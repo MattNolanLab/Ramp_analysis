@@ -1,0 +1,291 @@
+---
+title: "Figure7"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+## Differences in spatial firing between hit/rewarded and miss/unrewarded trials
+
+We might want to see differences in the relationship between firing rate and position along the track between rewarded and non rewarded trials (i.e. hit and miss trials)
+
+
+### --------------------------------------------------------------------------------------- ###
+
+## Are neurons influenced by reward?
+
+1. Combine hit and miss trials
+```{r}
+join_rates <- function(hit, miss) {
+  df <- tibble(Rates = c(unlist(hit[31:90]), unlist(miss[31:90])), Reward_indicator = c(rep(1, times=60), rep(0, times=60)), Position = c(rep(31:90), rep(31:90)))
+  return (df)
+}
+spatial_firing <- spatial_firing %>%
+  mutate(both_asr_b = map2(Rates_averaged_rewarded_b,Rates_averaged_failed_b, join_rates))%>%
+  mutate(both_asr_p = map2(Rates_averaged_rewarded_p,Rates_averaged_failed_p, join_rates))
+
+```
+
+2. Run lm and compare models without reward to models with via anova
+
+```{r}
+
+return_slope <- function(df) {
+ # Check for NAs
+  if (any(is.na(df$Rates))) {
+    return(NA)
+  }
+
+  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df, na.action = na.omit) 
+  prtAnova <- car::Anova(fit, type="II")
+  return(prtAnova$"Pr(>Chisq)"[3][1])
+}
+
+return_intercept <- function(df) {
+ # Check for NAs
+  if (any(is.na(df$Rates))) {
+    return(
+          NA)
+  }
+
+  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df, na.action = na.omit) 
+  prtAnova <- car::Anova(fit, type="II")
+  return(prtAnova$"Pr(>Chisq)"[2][1])
+}
+```
+
+
+3. Run lm on all cells and extract anova pval
+
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(pval_slope = map(both_asr_b, return_slope)) %>%
+  mutate(pval_intercept = map(both_asr_b, return_intercept))
+
+```
+
+### tag cells based on significance
+1. make function
+```{r}
+mark_significance <- function(pval){
+ # Check for NAs
+  if (is.na(pval)) {
+    return(NA)
+  }
+
+    if( pval < 0.05) {
+    return( "Significant" )
+  } else if( pval >= 0.05) {
+    return( "Not-Significant" )
+  } else {
+    return("None")
+  }
+}
+
+```
+
+2. run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(sig_slope = map(pval_slope, mark_significance)) %>%
+  mutate(sig_intercept = map(pval_intercept, mark_significance))
+
+```
+
+
+### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+
+5. Plot distribution of slopes with significant and non signifncant ramps
+
+
+4. extract significant ramps
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+outbound_ramps_sig <- subset(ramps, sig_slope == "Significant"| sig_intercept == "Significant")
+
+```
+
+
+```{r}
+
+lm_results <- tibble(Ramp_type = as.character(ramps$lm_result_o_rewarded),
+    Slopes = ramps$asr_b_rewarded_slope_o, 
+    r2 = ramps$asr_b_rewarded_r2_o, 
+    id = ramps$cluster_id)
+
+lm_results_ramps <- tibble(Ramp_type = as.character(outbound_ramps_rewards$lm_result_o_rewarded),
+    Slopes = outbound_ramps_rewards$asr_b_rewarded_slope_o, 
+    r2 = outbound_ramps_rewards$asr_b_rewarded_r2_o, 
+    id = outbound_ramps_rewards$cluster_id)
+
+
+lm_plot_end <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    coord_cartesian(xlim = c(-1,1), ylim = c(0,1)) +
+    geom_point() +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2), color='grey') +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("red", "red", "red")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+ggsave(file = "plots/b_lm_plot_start_rewards.png", width = 5, height = 6)
+```
+
+
+6. find proportions for above.
+
+```{r}
+# extracting diff models 
+pos <-subset(spatial_firing, lm_result_o_rewarded == "Positive")
+neg <-subset(spatial_firing, lm_result_o_rewarded == "Negative")
+none <-subset(spatial_firing, lm_result_o_rewarded == "None")
+
+sig_toreward <- nrow(subset(pos, pval < 0.001 ))/nrow(pos)*100
+notsig_toreward <- nrow(subset(pos, pval >= 0.001 ))/nrow(pos)*100
+
+sig_start <- nrow(subset(neg, pval < 0.001 ))/nrow(neg)*100
+notsig_start <- nrow(subset(neg, pval >= 0.001 ))/nrow(neg)*100
+
+proportions_mixed_ramps <- tibble(perc=c(sig_start, notsig_start, sig_toreward, notsig_toreward), ramp_id= c("Sig", "Not", "Sig", "Not"),ramp_type = c("Negative", "Negative", "Positive", "Positive"))
+
+```
+
+7. Plot results
+
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  coord_cartesian(ylim = c(0,100), xlim=(NULL)) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("grey62", "red")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/LMStart_cellproportions_hitmiss.png", width = 3, height = 6)
+
+```
+
+
+## plot same as above, but with cells colored by their group (P, PA etc)
+
+
+
+```{r}
+
+lm_results <- tibble(Ramp_type = as.character(ramps$lm_result_o_b),
+    Slopes = ramps$asr_b_slope_o, 
+    r2 = ramps$asr_b_r2_o, 
+    id = ramps$cluster_id)
+
+lm_results_ramps <- tibble(Ramp_type = as.character(outbound_ramps_rewards$final_model_o_b),
+    Slopes = outbound_ramps_rewards$asr_b_slope_o, 
+    r2 = outbound_ramps_rewards$asr_b_r2_o, 
+    id = outbound_ramps_rewards$cluster_id)
+
+
+lm_plot_end <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    coord_cartesian(xlim = c(-0.65,0.65), ylim = c(0,1)) +
+    geom_point() +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("deeppink1","indianred3", "steelblue3", "darkred", "orchid", "lightseagreen", "darkgreen", "grey32", "grey32")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+ggsave(file = "plots/b_lm_plot_start_rewards_groups.png", width = 5, height = 6)
+```
+
+
+6. find proportions for above.
+
+```{r}
+# extracting diff models 
+pos <-subset(spatial_firing, final_model_o_b == "P")
+speed <-subset(spatial_firing, final_model_o_b == "S")
+ccel<-subset(spatial_firing, final_model_o_b == "A")
+posspeed <-subset(spatial_firing, final_model_o_b == "PS")
+posaccel <-subset(spatial_firing, final_model_o_b == "PA")
+speedaccel <-subset(spatial_firing, final_model_o_b == "SA")
+posspeedaccel <-subset(spatial_firing, final_model_o_b == "PSA")
+
+
+sig_p <- nrow(subset(pos, pval < 0.01))/nrow(pos)*100
+sig_s <- nrow(subset(speed, pval < 0.01))/nrow(speed)*100
+sig_a <- nrow(subset(ccel, pval < 0.01))/nrow(ccel)*100
+sig_ps <- nrow(subset(posspeed, pval < 0.01))/nrow(posspeed)*100
+sig_pa <- nrow(subset(posaccel, pval < 0.01))/nrow(posaccel)*100
+sig_sa <- nrow(subset(speedaccel, pval < 0.01))/nrow(speedaccel)*100
+sig_psa <- nrow(subset(posspeedaccel, pval < 0.01))/nrow(posspeedaccel)*100
+
+notsig_p <- nrow(subset(pos, pval > 0.01))/nrow(pos)*100
+notsig_s <- nrow(subset(speed, pval > 0.01))/nrow(speed)*100
+notsig_a <- nrow(subset(ccel, pval > 0.01))/nrow(ccel)*100
+notsig_ps <- nrow(subset(posspeed, pval > 0.01))/nrow(posspeed)*100
+notsig_pa <- nrow(subset(posaccel, pval > 0.01))/nrow(posaccel)*100
+notsig_sa <- nrow(subset(speedaccel, pval > 0.01))/nrow(speedaccel)*100
+notsig_psa <- nrow(subset(posspeedaccel, pval > 0.01))/nrow(posspeedaccel)*100
+
+mixed_ramps <- tibble(perc=c(sig_p,notsig_p,sig_s, notsig_s, sig_a,notsig_a,  sig_ps, notsig_ps, sig_pa, notsig_pa, sig_sa, notsig_sa, sig_psa,notsig_psa), 
+                      
+                      ramp_id= c("P","P", 
+                                 "S", "S", 
+                                 "A", "A",
+                                 "PS", "PS", 
+                                 "PA", "PA", 
+                                 "SA", "SA", 
+                                 "PAS", "PAS"), 
+                      ramp_type= c("Sig", "Not Sig","Sig", "Not Sig", "Sig", "Not Sig","Sig", "Not Sig","Sig", "Not Sig","Sig", "Not Sig", "Sig", "Not Sig" ))
+
+
+```
+
+
+7. Plot model results
+
+```{r}
+# plot data
+level_order <- c("P", "S", "A", "PS", "PA", "SA", "PAS", "None")
+ggplot(mixed_ramps, aes(x= factor(ramp_id, level = level_order), y = perc, fill=factor(ramp_type))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .7) +
+  labs(y = "Percent of neurons identified using LM") +
+  scale_fill_manual(values=c("grey","red")) +
+  #scale_fill_brewer(palette= "RdYlBu") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/cell_proportions-lmmodel_signeurons.png", width = 3, height =5)
+
+
+```
+
