@@ -766,9 +766,6 @@ ggsave(file = "plots/LMStart_hitmiss_notsig_PS.png", width = 3.5, height = 3)
 
 
 7. plot distribution of intercept 
-
-
-
 ```{r}
 ggplot(data=outbound_ramps_sig, aes(x=as.numeric(intercept_diff), fill=unlist(lm_result_o_rewarded))) +
   coord_cartesian(xlim=c(-50,50)) +
@@ -813,18 +810,6 @@ ggplot(data=subset(spatial_firing, lm_result_o_b == "Negative"), aes(x=as.numeri
         legend.title = element_blank(),
         text = element_text(size=14))
 ggsave(file = "plots/LMStart_hitmiss_negative_types.png", width = 3, height = 4)
-
-```
-
-
-
-
-
-
-
-# plot for each mouse
-
-```{r}
 
 ```
 
