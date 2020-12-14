@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### --------------------------------------------------------------------------------------- ###
 
 ## Differences in spatial firing between hit/rewarded and miss/unrewarded trials
 
@@ -18,59 +18,97 @@ We might want to see differences in the relationship between firing rate and pos
 
 ### --------------------------------------------------------------------------------------- ###
 
-## Are neurons influenced by reward?
+# 1st method : Trial by trial 
+Here we combine hit and miss trials in a dataframe and mark by reward. Then run a linear mixed effect model which accounts for reward indicator and variation over trials
 
-1. Combine hit and miss trials
+1. Write function to combine hit and miss trials in a dataframe and mark by reward 
 ```{r}
-join_rates <- function(hit, miss) {
-  df <- tibble(Rates = c(unlist(hit[31:90]), unlist(miss[31:90])), Reward_indicator = c(rep(1, times=60), rep(0, times=60)), Position = c(rep(31:90), rep(31:90)))
+join_rates <- function(hit, miss, session_id, cluster_id) {
+  if (ncol(miss) <= 2) { 
+    print(paste0("No failed trials. Session: ", session_id, ". Cluster:", cluster_id))
+    return(
+      df <- tibble(Rates = NA, 
+               Position = NA,
+               Reward_indicator = NA,
+               Trials = NA
+               )
+    )
+  }
+  df <- tibble(Rates = c(as.vector(hit), 
+                         as.vector(miss)), 
+               Position = c(rep(1:200, times = ncol(hit)), 
+                            rep(1:200, times = ncol(miss))),
+               Reward_indicator = c(rep(1, times=ncol(hit)*nrow(hit)), 
+                                    rep(0, times=ncol(miss)*nrow(miss))),
+               Trials = c(rep(1:ncol(hit), times = 200),
+                         rep(1:ncol(miss), times = 200))
+               )
+  
   return (df)
 }
-spatial_firing <- spatial_firing %>%
-  mutate(both_asr_b = map2(Rates_averaged_rewarded_b,Rates_averaged_failed_b, join_rates))%>%
-  mutate(both_asr_p = map2(Rates_averaged_rewarded_p,Rates_averaged_failed_p, join_rates))
 
 ```
 
-2. Run lm and compare models without reward to models with via anova
-
+2. run on all cells _beaconed trials_
 ```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(both_asr_b = pmap(list(Firing_rate_rewarded_b, Firing_rate_failed_b, session_id, cluster_id), join_rates))
+```
 
-return_slope <- function(df) {
+3. Run lmer and compare models without reward to models. Extract pvals using car Anova package.
+_here we are looking to see if the slope is significantly different between rewarded and non rewarded trials_
+```{r}
+return_slope_interaction <- function(df, miss) {
  # Check for NAs
   if (any(is.na(df$Rates))) {
     return(NA)
   }
-
-  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df, na.action = na.omit) 
+  if (ncol(miss) <= 2) { # check if there is 2 or less failed trials
+    return(NA)
+  }
+  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator) + (1|Trials), data = df, na.action = na.omit, REML = FALSE) 
   prtAnova <- car::Anova(fit, type="II")
   return(prtAnova$"Pr(>Chisq)"[3][1])
 }
 
-return_intercept <- function(df) {
+```
+
+4. Run lm on all cells  & extract pvql for slope 
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(pval_slope_interaction = map2(both_asr_b, Firing_rate_failed_b, return_slope_interaction))
+
+```
+
+5. 
+_here we are looking to see if the intercept is significantly different between rewarded and non rewarded trials_
+```{r}
+return_intercept_interaction <- function(df, miss) {
  # Check for NAs
   if (any(is.na(df$Rates))) {
-    return(
-          NA)
+    return(NA)
   }
-
-  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df, na.action = na.omit) 
+  if (ncol(miss) <= 2) { # check if there is 2 or less failed trials
+    return(NA)
+  }
+  # Run lmer
+  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator)+ (1|Trials), data = df, na.action = na.omit, REML = FALSE) 
   prtAnova <- car::Anova(fit, type="II")
   return(prtAnova$"Pr(>Chisq)"[2][1])
 }
 ```
 
-
-3. Run lm on all cells and extract anova pval
-
+6. Run lm on all cells & extract pvql for intercept 
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(pval_slope = map(both_asr_b, return_slope)) %>%
-  mutate(pval_intercept = map(both_asr_b, return_intercept))
+  mutate(pval_intercept_interaction = map2(both_asr_b, Firing_rate_failed_b, return_intercept_interaction))
 
 ```
 
-### tag cells based on significance
+
+### Classify cells based on significance
+Now we want to see which cells have significantly different firing rates between rewarded/notrewarded trials. Taking into account slope and intercept significance 
+
 1. make function
 ```{r}
 mark_significance <- function(pval){
@@ -93,21 +131,349 @@ mark_significance <- function(pval){
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(sig_slope = map(pval_slope, mark_significance)) %>%
-  mutate(sig_intercept = map(pval_intercept, mark_significance))
+  mutate(sig_slope = map(pval_slope_interaction, mark_significance)) %>%
+  mutate(sig_intercept = map(pval_intercept_interaction, mark_significance))
 
 ```
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### -------------------------------------------------------------------------------------------- ###
+
+## Plot distribution of slopes of significant and non signifncant ramps
+
+1. First extract significant ramps
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+significant_ramps <- subset(ramps, sig_slope == "Significant" | sig_intercept == "Significant")
+
+```
+
+2. extract data for all ramp cells in a tibble
+
+```{r}
+lm_results <- tibble(Ramp_type = as.character(ramps$lm_group_b),
+    Slopes = ramps$asr_b_o_rewarded_fit_slope, 
+    r2 = ramps$asr_b_o_rewarded_fit_r.squared, 
+    id = ramps$cluster_id)
+```
+
+3. do the same for significant ramps
+```{r}
+lm_results_ramps <- tibble(Ramp_type = as.character(significant_ramps$lm_group_b),
+    Slopes = significant_ramps$asr_b_o_rewarded_fit_slope, 
+    r2 = significant_ramps$asr_b_o_rewarded_fit_r.squared, 
+    id = significant_ramps$cluster_id)
+```
+
+4. Plot distribution of slope and r.squared values for all data, marked by whether the cells are significantly influenced by reward
+```{r}
+lm_plot_end <- ggplot(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) + 
+    coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
+    geom_point() +
+    geom_point(data=lm_results, aes(x = Slopes, y = r2), color='grey') +
+    geom_point(data=lm_results_ramps, aes(x = Slopes, y = r2, color=factor(Ramp_type))) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    scale_color_manual(values=c("red", "red", "red")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/lm_plot_rewards.png", width = 5, height = 6)
+```
+
+
+## Find proportions for above - significiant and non-significant 
+
+1. extract outbound ramps
+```{r}
+# extracting diff models 
+pos <-subset(spatial_firing, lm_group_b == "Positive")
+neg <-subset(spatial_firing, lm_group_b == "Negative")
+none <-subset(spatial_firing, lm_group_b == "Unclassified")
+
+```
+
+2. extract significant ramps
+```{r}
+sig_positive<- nrow(subset(pos, sig_slope == "Significant" |  sig_intercept == "Significant"))/nrow(pos)*100
+notsig_positive <- nrow(subset(pos, sig_slope != "Significant" &  sig_intercept != "Significant" ))/nrow(pos)*100
+
+sig_negative <- nrow(subset(neg, sig_slope == "Significant" |  sig_intercept == "Significant" ))/nrow(neg)*100
+notsig_negative <- nrow(subset(neg, sig_slope != "Significant" &  sig_intercept != "Significant" ))/nrow(neg)*100
+```
+
+3. Put in tibble
+```{r}
+proportions_mixed_ramps <- tibble(perc=c(sig_negative, notsig_negative, sig_positive, notsig_positive), ramp_id= c("Sig", "Not", "Sig", "Not"),ramp_type = c("Negative", "Negative", "Positive", "Positive"))
+
+```
+
+4. Plot results
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  coord_cartesian(ylim = c(0,100), xlim=(NULL)) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent") +
+  scale_fill_manual(values=c("grey62", "red")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/LMStart_cellproportions_hitmiss.png", width = 3, height = 6)
+
+```
+
+
+## plot same as above, but with cells colored by their group (P, PA etc)
+1. subset by encoding models 
+```{r}
+pos <-subset(spatial_firing, final_model_o_b == "P")
+speed <-subset(spatial_firing, final_model_o_b == "S")
+ccel<-subset(spatial_firing, final_model_o_b == "A")
+posspeed <-subset(spatial_firing, final_model_o_b == "PS")
+posaccel <-subset(spatial_firing, final_model_o_b == "PA")
+speedaccel <-subset(spatial_firing, final_model_o_b == "SA")
+posspeedaccel <-subset(spatial_firing, final_model_o_b == "PSA")
+
+```
+
+2. find proportions.
+```{r}
+# extracting diff models 
+pos <-subset(spatial_firing, final_model_o_b == "P")
+speed <-subset(spatial_firing, final_model_o_b == "S")
+ccel<-subset(spatial_firing, final_model_o_b == "A")
+posspeed <-subset(spatial_firing, final_model_o_b == "PS")
+posaccel <-subset(spatial_firing, final_model_o_b == "PA")
+speedaccel <-subset(spatial_firing, final_model_o_b == "SA")
+posspeedaccel <-subset(spatial_firing, final_model_o_b == "PSA")
+
+
+sig_p <- nrow(subset(pos, pval < 0.01))/nrow(pos)*100
+sig_s <- nrow(subset(speed, pval < 0.01))/nrow(speed)*100
+sig_a <- nrow(subset(ccel, pval < 0.01))/nrow(ccel)*100
+sig_ps <- nrow(subset(posspeed, pval < 0.01))/nrow(posspeed)*100
+sig_pa <- nrow(subset(posaccel, pval < 0.01))/nrow(posaccel)*100
+sig_sa <- nrow(subset(speedaccel, pval < 0.01))/nrow(speedaccel)*100
+sig_psa <- nrow(subset(posspeedaccel, pval < 0.01))/nrow(posspeedaccel)*100
+
+notsig_p <- nrow(subset(pos, pval > 0.01))/nrow(pos)*100
+notsig_s <- nrow(subset(speed, pval > 0.01))/nrow(speed)*100
+notsig_a <- nrow(subset(ccel, pval > 0.01))/nrow(ccel)*100
+notsig_ps <- nrow(subset(posspeed, pval > 0.01))/nrow(posspeed)*100
+notsig_pa <- nrow(subset(posaccel, pval > 0.01))/nrow(posaccel)*100
+notsig_sa <- nrow(subset(speedaccel, pval > 0.01))/nrow(speedaccel)*100
+notsig_psa <- nrow(subset(posspeedaccel, pval > 0.01))/nrow(posspeedaccel)*100
+
+```
+
+3. put into tibble
+```{r}
+mixed_ramps <- tibble(perc=c(sig_p,notsig_p,sig_s, notsig_s, sig_a,notsig_a,  sig_ps, notsig_ps, sig_pa, notsig_pa, sig_sa, notsig_sa, sig_psa,notsig_psa), 
+                      
+                      ramp_id= c("P","P", 
+                                 "S", "S", 
+                                 "A", "A",
+                                 "PS", "PS", 
+                                 "PA", "PA", 
+                                 "SA", "SA", 
+                                 "PAS", "PAS"), 
+                      ramp_type= c("Sig", "Not Sig","Sig", "Not Sig", "Sig", "Not Sig","Sig", "Not Sig","Sig", "Not Sig","Sig", "Not Sig", "Sig", "Not Sig" ))
+
+
+```
+
+4. Plot model results
+```{r}
+# plot data
+level_order <- c("P", "S", "A", "PS", "PA", "SA", "PAS", "None")
+ggplot(mixed_ramps, aes(x= factor(ramp_id, level = level_order), y = perc, fill=factor(ramp_type))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .7) +
+  labs(y = "Percent of neurons identified using LM") +
+  scale_fill_manual(values=c("grey","red")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/cell_proportions-lmmodel_signeurons.png", width = 3, height =5)
+
+
+```
+
+
+
+We might also want to visualise the coefficients for the real and shuffled dataset as a histogram.
+
+1. First seperate significant and non significant ramps
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+significant_ramps <- subset(ramps, sig_slope == "Significant" | sig_intercept == "Significant")
+nonsignificant_ramps <- subset(ramps, sig_slope != "Significant" & sig_intercept != "Significant")
+
+```
+
+2. Then make stacked histogram of slope values for significant dataset
+```{r}
+ggplot(data=significant_ramps, aes(x= asr_b_o_rewarded_fit_slope, fill="red")) +
+  coord_cartesian(xlim = c(-0.6,0.6)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+  ylab("Proportion") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=14),
+        legend.text=element_text(size=14),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/Histogram_sig_slopes.png", width = 4.5, height = 2)
+
+```
+
+3. same as above but for not significant datasets
+```{r}
+ggplot(data=nonsignificant_ramps, aes(x= asr_b_o_rewarded_fit_slope, fill="Grey")) +
+  coord_cartesian(xlim = c(-0.6,0.6)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+    labs(x = "Slope (Hz/cm)") +
+    ylab("Proportion") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.position="bottom",
+          legend.title = element_blank(),
+          text = element_text(size=14),
+          legend.text=element_text(size=14),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height = 2)
+```
+
+
+4. Make stacked histogram of rsquared values for significant dataset
+```{r}
+ggplot(data=significant_ramps, aes(x= asr_b_o_rewarded_fit_r.squared, fill="red")) +
+  coord_cartesian(xlim = c(-0.6,0.6)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+  ylab("Proportion") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=14),
+        legend.text=element_text(size=14),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+ggsave(file = "plots/sig_r2_histogram.png", width = 4.5, height = 2)
+
+
+```
+
+4. Same as above but for shuffled datasets
+
+```{r}
+ggplot(data=nonsignificant_ramps, aes(x= asr_b_o_rewarded_fit_r.squared, fill="Grey")) +
+  coord_cartesian(xlim = c(-0.6,0.6)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+    labs(x = "Slope (Hz/cm)") +
+    ylab("Proportion") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.position="bottom",
+          legend.title = element_blank(),
+          text = element_text(size=14),
+          legend.text=element_text(size=14),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/nonsig_r2_histogram.png", width = 4.5, height = 2)
+```
+
+
+### -------------------------------------------------------------------------------------------- ###
+
+## Method 2 : Run average rates and compare hit and miss via an anova 
+
+
+
+1. Combine hit and miss trials
+
+```{r}
+join_rates <- function(hit, miss) {
+  df <- tibble(Rates = c(unlist(hit[31:90]), unlist(miss[31:90])), Reward_indicator = c(rep(1, times=60), rep(0, times=60)), Position = c(rep(31:90), rep(31:90)))
+  return (df)
+}
+spatial_firing <- spatial_firing %>%
+  mutate(avg_both_asr_b = map2(Rates_averaged_rewarded_b,Rates_averaged_failed_b, join_rates))
+
+```
+
+2. Run lm and compare models without reward to models with via anova
+```{r}
+
+compare_models_slope <- function(df1){
+  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df1, na.action = na.omit) # more complicated model
+  prtAnova <- car::Anova(fit, type="II")
+  return (prtAnova$"Pr(>Chisq)"[3][1])
+}
+
+compare_models_intercept <- function(df1){
+  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df1, na.action = na.omit) # more complicated model
+  prtAnova <- car::Anova(fit, type="II")
+  return (prtAnova$"Pr(>Chisq)"[2][1])
+}
+```
+
+3. Run lm on all cells and extract anova pval
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(pval_slope = map(avg_both_asr_b, compare_models_slope)) %>%
+  mutate(pval_intercept = map(avg_both_asr_b, compare_models_intercept))
+
+```
+
+
+### tag cells based on significance
+1. make function
+2. run on all neurons
+```{r}
+mark_neurons_sig <- function(pval){
+  if( pval < 0.05) {
+    return( "Significant" )
+  } else if( pval >= 0.05) {
+    return( "Not-Significant" )
+  } else {
+    return("None")
+  }
+}
+
+spatial_firing_rewarded <- spatial_firing_rewarded %>%
+  mutate(reward_interaction_slope = map(pval_slope, mark_neurons_sig)) %>%
+  mutate(reward_interaction_intercept = map(pval_intercept, mark_neurons_sig))
+
+```
+
+
+### --------------------------------------------------------------------------------------------- ###
 
 5. Plot distribution of slopes with significant and non signifncant ramps
 
 
 4. extract significant ramps
 ```{r}
-ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-outbound_ramps_sig <- subset(ramps, sig_slope == "Significant"| sig_intercept == "Significant")
+ramps <- subset(spatial_firing_rewarded, lm_result_o_rewarded == "Negative" | lm_result_o_rewarded == "Positive")
+outbound_ramps_sig <- subset(ramps, reward_interaction_slope == "Significant"| reward_interaction_intercept == "Significant")
 
 ```
 
@@ -183,9 +549,6 @@ ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id)
 ggsave(file = "plots/LMStart_cellproportions_hitmiss.png", width = 3, height = 6)
 
 ```
-
-
-## plot same as above, but with cells colored by their group (P, PA etc)
 
 
 
@@ -288,4 +651,6 @@ ggsave(file = "plots/cell_proportions-lmmodel_signeurons.png", width = 3, height
 
 
 ```
+
+
 
