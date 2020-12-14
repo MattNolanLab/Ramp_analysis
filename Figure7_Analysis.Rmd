@@ -30,8 +30,7 @@ join_rates <- function(hit, miss, session_id, cluster_id) {
       df <- tibble(Rates = NA, 
                Position = NA,
                Reward_indicator = NA,
-               Trials = NA
-               )
+               Trials = NA)
     )
   }
   df <- tibble(Rates = c(as.vector(hit), 
@@ -49,13 +48,13 @@ join_rates <- function(hit, miss, session_id, cluster_id) {
 
 ```
 
-2. run on all cells _beaconed trials_
+2. run on all cells _just beaconed trials_
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(both_asr_b = pmap(list(Firing_rate_rewarded_b, Firing_rate_failed_b, session_id, cluster_id), join_rates))
 ```
 
-3. Run lmer and compare models without reward to models. Extract pvals using car Anova package.
+3. Run lmer and extract slope significance / pvals using car Anova package.
 _here we are looking to see if the slope is significantly different between rewarded and non rewarded trials_
 ```{r}
 return_slope_interaction <- function(df, miss) {
@@ -80,7 +79,7 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
-5. 
+5. Run lmer and extract intercept significance / pvals using car Anova package.
 _here we are looking to see if the intercept is significantly different between rewarded and non rewarded trials_
 ```{r}
 return_intercept_interaction <- function(df, miss) {
@@ -138,6 +137,7 @@ spatial_firing <- spatial_firing %>%
 
 
 ### -------------------------------------------------------------------------------------------- ###
+
 
 ## Plot distribution of slopes of significant and non signifncant ramps
 
@@ -248,31 +248,21 @@ posspeedaccel <-subset(spatial_firing, final_model_o_b == "PSA")
 
 2. find proportions.
 ```{r}
-# extracting diff models 
-pos <-subset(spatial_firing, final_model_o_b == "P")
-speed <-subset(spatial_firing, final_model_o_b == "S")
-ccel<-subset(spatial_firing, final_model_o_b == "A")
-posspeed <-subset(spatial_firing, final_model_o_b == "PS")
-posaccel <-subset(spatial_firing, final_model_o_b == "PA")
-speedaccel <-subset(spatial_firing, final_model_o_b == "SA")
-posspeedaccel <-subset(spatial_firing, final_model_o_b == "PSA")
+sig_p <- nrow(subset(pos, sig_slope == "Significant" |  sig_intercept == "Significant" ))/nrow(pos)*100
+sig_s <- nrow(subset(speed, sig_slope == "Significant" |  sig_intercept == "Significant" ))/nrow(speed)*100
+sig_a <- nrow(subset(ccel, sig_slope == "Significant" |  sig_intercept == "Significant" ))/nrow(ccel)*100
+sig_ps <- nrow(subset(posspeed,sig_slope == "Significant" |  sig_intercept == "Significant" ))/nrow(posspeed)*100
+sig_pa <- nrow(subset(posaccel, sig_slope == "Significant" |  sig_intercept == "Significant" ))/nrow(posaccel)*100
+sig_sa <- nrow(subset(speedaccel, sig_slope == "Significant" |  sig_intercept == "Significant" ))/nrow(speedaccel)*100
+sig_psa <- nrow(subset(posspeedaccel,sig_slope == "Significant" |  sig_intercept == "Significant" ))/nrow(posspeedaccel)*100
 
-
-sig_p <- nrow(subset(pos, pval < 0.01))/nrow(pos)*100
-sig_s <- nrow(subset(speed, pval < 0.01))/nrow(speed)*100
-sig_a <- nrow(subset(ccel, pval < 0.01))/nrow(ccel)*100
-sig_ps <- nrow(subset(posspeed, pval < 0.01))/nrow(posspeed)*100
-sig_pa <- nrow(subset(posaccel, pval < 0.01))/nrow(posaccel)*100
-sig_sa <- nrow(subset(speedaccel, pval < 0.01))/nrow(speedaccel)*100
-sig_psa <- nrow(subset(posspeedaccel, pval < 0.01))/nrow(posspeedaccel)*100
-
-notsig_p <- nrow(subset(pos, pval > 0.01))/nrow(pos)*100
-notsig_s <- nrow(subset(speed, pval > 0.01))/nrow(speed)*100
-notsig_a <- nrow(subset(ccel, pval > 0.01))/nrow(ccel)*100
-notsig_ps <- nrow(subset(posspeed, pval > 0.01))/nrow(posspeed)*100
-notsig_pa <- nrow(subset(posaccel, pval > 0.01))/nrow(posaccel)*100
-notsig_sa <- nrow(subset(speedaccel, pval > 0.01))/nrow(speedaccel)*100
-notsig_psa <- nrow(subset(posspeedaccel, pval > 0.01))/nrow(posspeedaccel)*100
+notsig_p <- nrow(subset(pos, sig_slope != "Significant" &  sig_intercept != "Significant"))/nrow(pos)*100
+notsig_s <- nrow(subset(speed, sig_slope != "Significant" &  sig_intercept != "Significant"))/nrow(speed)*100
+notsig_a <- nrow(subset(ccel, sig_slope != "Significant" &  sig_intercept != "Significant"))/nrow(ccel)*100
+notsig_ps <- nrow(subset(posspeed, sig_slope != "Significant" &  sig_intercept != "Significant"))/nrow(posspeed)*100
+notsig_pa <- nrow(subset(posaccel, sig_slope != "Significant" &  sig_intercept != "Significant"))/nrow(posaccel)*100
+notsig_sa <- nrow(subset(speedaccel,sig_slope != "Significant" &  sig_intercept != "Significant"))/nrow(speedaccel)*100
+notsig_psa <- nrow(subset(posspeedaccel, sig_slope != "Significant" &  sig_intercept != "Significant"))/nrow(posspeedaccel)*100
 
 ```
 
@@ -314,8 +304,11 @@ ggsave(file = "plots/cell_proportions-lmmodel_signeurons.png", width = 3, height
 ```
 
 
+### -------------------------------------------------------------------------------------------- ###
 
-We might also want to visualise the coefficients for the real and shuffled dataset as a histogram.
+
+
+We might also want to visualise the coefficients for the significant and non significant datasets as a histogram.
 
 1. First seperate significant and non significant ramps
 ```{r}
@@ -399,7 +392,13 @@ ggsave(file = "plots/nonsig_r2_histogram.png", width = 4.5, height = 2)
 ```
 
 
+
+
 ### -------------------------------------------------------------------------------------------- ###
+
+### -------------------------------------------------------------------------------------------- ###
+
+
 
 ## Method 2 : Run average rates and compare hit and miss via an anova 
 
