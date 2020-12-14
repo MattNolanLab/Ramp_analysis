@@ -465,9 +465,9 @@ mark_neurons_sig <- function(pval){
   if (any(is.na(pval))) {
     return(NA)
   }
-  if( pval < 0.05) {
+  if( pval < 0.01) {
     return( "Significant" )
-  } else if( pval >= 0.05) {
+  } else if( pval >= 0.01) {
     return( "Not-Significant" )
   } else {
     return("None")
@@ -483,6 +483,31 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
+
+
+### overall tag - regardless of slope or intercept
+1. make function
+```{r}
+mark_neurons_sig <- function(slope, intercept){
+  if (any(is.na(slope))) {
+    return(NA)
+  }
+  if( slope == "Significant" | intercept == "Significant") {
+    return( "Significant" )
+  } else if( slope != "Significant" & intercept != "Significant" ) {
+    return( "Not-Significant" )
+  } else {
+    return("None")
+  }
+}
+```
+
+2. run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(reward_interaction_id = map2(avg_sig_slope, avg_sig_intercept, mark_neurons_sig))
+
+```
 
 ### --------------------------------------------------------------------------------------------- ###
 
@@ -740,3 +765,152 @@ ggsave(file = "plots/nonsig_r2_histogram_m2.png", width = 4.5, height = 2)
 
 
 
+### ----------------------------------------------------------------------------- ###
+
+## extract slope, r.squared vlaue and pval for failed trials
+
+----------------------------------------------------------------------------------------- ###
+
+# Run simple linear model to examine relationship between firing rate and position in failed trials
+_note:for now we are only interested in the outbound region of the track (30 - 90 cm)_
+
+## Average firing rate (for LM modelling)
+1. Write function to add position
+```{r}
+add_position <- function(df, session_id, cluster_id) {
+  df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
+  if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
+  df
+}
+```
+
+2. Run on dataframe : Average trials with reward
+
+input columns: 
+Rates_averaged_failed_b = beaconed trials
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(asr_b_failed = pmap(list(Rates_averaged_failed_b, session_id, cluster_id), add_position)
+         )
+```
+
+3. Make function to run linear model
+```{r}
+lm_helper <- function(df,
+                      startbin = 30,
+                      endbin = 90) {
+ # Check for NAs
+  if (any(is.na(df$Rates))) {
+    df <-
+      tibble(
+        r.squared = c(NA),
+        p.value = c(NA),
+        intercept = c(NA),
+        slope = c(NA)
+      )
+    return(df)
+  }
+
+  df <- df %>%
+    subset(Position >= startbin & Position <= endbin)
+  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
+
+  # get the model parameters
+  params <- select(glance(df_fit), r.squared, p.value)
+  # get the coefficients
+  coeffs <- tidy(df_fit)
+  # combine the parameters and coefficients
+  params$intercept <- coeffs$estimate[[1]]
+  params$slope <- coeffs$estimate[[2]]
+  return(params)
+}
+```
+
+4. run lm on all cells.
+Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('asr_b_o_failed_fit_')) %>%
+  mutate(asr_b_o_failed_fit = pmap(list(asr_b_failed, 30, 90), lm_helper)) %>%
+  unnest_wider(asr_b_o_failed_fit, names_sep = "_", names_repair = "universal")
+
+```
+
+Linear model results are stored in:
+spatial_firing$asr_b_o_failed_fit_pval
+spatial_firing$asr_b_o_failed_fit_slope
+spatial_firing$asr_b_o_failed_fit_r.squared
+
+3. extract ramps
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+```
+
+4. Plot coefficients of model (slope and r2 value) for each neuron
+```{r}
+ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
+                                y = asr_b_o_failed_fit_slope, 
+                                fill = factor(unlist(reward_interaction_id)),
+                                color = factor(unlist(reward_interaction_id)))) +
+    #coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0-0.7,0.7)) +
+    geom_point(alpha=0.3) +
+    scale_fill_manual(values=c("grey", "red")) +
+    scale_color_manual(values=c("grey", "red")) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/reward_vs_failed_slope_rampcells.png", width = 5, height = 5)
+```
+,
+
+4. Plot coefficients of model (slope and r2 value) for just slope significant neurons
+```{r}
+ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
+                                y = asr_b_o_failed_fit_slope, 
+                                fill = factor(unlist(avg_sig_slope)),
+                                color = factor(unlist(avg_sig_slope)))) +
+    #coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0-0.7,0.7)) +
+    geom_point(alpha=0.3) +
+    scale_fill_manual(values=c("grey", "red")) +
+    scale_color_manual(values=c("grey", "red")) +
+    xlab("\nslope") +
+    ylab("slope") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/reward_vs_failed_slope_slopesignificantcells.png", width = 5, height = 5)
+```
+4. Plot coefficients of model (slope and r2 value) for just intercept significant neurons
+```{r}
+ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_intercept,
+                                y = asr_b_o_failed_fit_intercept, 
+                                fill = factor(unlist(avg_sig_intercept)),
+                                color = factor(unlist(avg_sig_intercept)))) +
+    #coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0-0.7,0.7)) +
+    geom_point(alpha=0.3) +
+    scale_fill_manual(values=c("grey", "red")) +
+    scale_color_manual(values=c("grey", "red")) +
+    xlab("\nintercept") +
+    ylab("intercept") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/reward_vs_failed_slope_interceptsignificantcells.png", width = 5, height = 5)
+```
