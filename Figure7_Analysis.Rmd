@@ -393,6 +393,65 @@ ggsave(file = "plots/nonsig_r2_histogram.png", width = 4.5, height = 2)
 
 
 
+Plot distribution of significant data
+
+1. Extract shuffled slopes and rsquared values. This is already done above.
+
+2. Plot in scatter
+```{r}
+ggplot(data=significant_ramps, aes(x = asr_b_o_rewarded_fit_slope, 
+                                   y = asr_b_o_rewarded_fit_r.squared)) +
+    geom_point() +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom",
+          legend.title = element_blank(),
+          text = element_text(size=12),
+          legend.text=element_text(size=12),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/Sigramps_coefficient_distribution.png", width = 3, height = 3)
+
+```
+
+3. same as above but for the nonsignificant ramps
+```{r}
+ggplot(data=nonsignificant_ramps, aes(x = asr_b_o_rewarded_fit_slope, 
+                                   y = asr_b_o_rewarded_fit_r.squared)) +
+    geom_point() +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom",
+          legend.title = element_blank(),
+          text = element_text(size=12),
+          legend.text=element_text(size=12),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/NonSigramps_coefficient_distribution.png", width = 3, height = 3)
+
+```
+```{r}
+ggplot(data=significant_ramps, aes(x = asr_b_o_rewarded_fit_slope, 
+                                   y = asr_b_o_rewarded_fit_r.squared, 
+                                   fill = as.factor(unlist(final_model_o_b)))) +
+    geom_point() +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom",
+          legend.title = element_blank(),
+          text = element_text(size=12),
+          legend.text=element_text(size=12),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/Sigramps_coefficient_distribution.png", width = 3, height = 3)
+
+```
 
 ### -------------------------------------------------------------------------------------------- ###
 
