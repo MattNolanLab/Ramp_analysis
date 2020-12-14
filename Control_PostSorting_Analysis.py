@@ -5,15 +5,10 @@ import Python_PostSorting.MakePlots_FiringProperties
 import Python_PostSorting.LoadDataFrames
 import Python_PostSorting.parameters
 import Python_PostSorting.RewardFiring
-import Python_PostSorting.FiringProperties
 import Python_PostSorting.Speed_Analysis
-import Python_PostSorting.RampAnalysis
 import Python_PostSorting.Curation
-import Python_PostSorting.FirstStopAnalysis
 import Python_PostSorting.StopAnalysis
-import Python_PostSorting.RateAnalysis
 import Python_PostSorting.SpikeWidth
-import Python_PostSorting.RewardAnalysis
 import Python_PostSorting.FitAnalysis
 import Python_PostSorting.CalculateAcceleration
 import Python_PostSorting.Spike_Time_Analysis
@@ -159,8 +154,9 @@ def main():
 
     spike_data = Python_PostSorting.RewardFiring.split_time_data_by_reward(spike_data, prm)
     spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_rewarded(spike_data, prm)
-    spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_firing_rate(spike_data, prm)
-    spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_nb_firing_rate(spike_data, prm)
+    spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_failed(spike_data, prm)
+    #spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_firing_rate(spike_data, prm)
+    #spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_nb_firing_rate(spike_data, prm)
 
     spike_data = Python_PostSorting.CalculateAcceleration.generate_acceleration(spike_data, server_path)
 
@@ -175,7 +171,7 @@ def main():
 
     # SAVE DATAFRAMES
     spike_data = drop_columns_from_frame(spike_data)
-    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_4.pkl')
+    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_2.pkl')
 
 
 

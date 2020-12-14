@@ -1,6 +1,5 @@
 import os
 import matplotlib.pylab as plt
-import Python_PostSorting.ConvolveRates_FFT
 import numpy as np
 import cmath
 import pandas as pd

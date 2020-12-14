@@ -5,7 +5,7 @@ import matplotlib.pylab as plt
 import Python_PostSorting.plot_utility
 import math
 from scipy import signal
-import Python_PostSorting.ConvolveRates_FFT
+
 
 def extract_speed_data(spike_data, cluster):
     speed = np.array(spike_data.at[cluster, "binned_speed_ms_per_trial"])

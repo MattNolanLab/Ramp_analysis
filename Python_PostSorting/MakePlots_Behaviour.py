@@ -3,7 +3,6 @@ import matplotlib.pylab as plt
 import Python_PostSorting.plot_utility
 import Python_PostSorting.Speed_Analysis
 import numpy as np
-import matplotlib.gridspec as gridspec
 import Python_PostSorting.ExtractFiringData
 import math
 

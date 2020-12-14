@@ -4,7 +4,6 @@ import Python_PostSorting.plot_utility
 import numpy as np
 import matplotlib.gridspec as gridspec
 import Python_PostSorting.ExtractFiringData
-import Python_PostSorting.ShuffleAnalysis
 
 """
 
