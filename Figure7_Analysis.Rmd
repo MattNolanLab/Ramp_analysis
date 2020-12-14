@@ -65,6 +65,8 @@ return_slope_interaction <- function(df, miss) {
   if (ncol(miss) <= 2) { # check if there is 2 or less failed trials
     return(NA)
   }
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90)
   fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator) + (1|Trials), data = df, na.action = na.omit, REML = FALSE) 
   prtAnova <- car::Anova(fit, type="II")
   return(prtAnova$"Pr(>Chisq)"[3][1])
@@ -91,6 +93,8 @@ return_intercept_interaction <- function(df, miss) {
     return(NA)
   }
   # Run lmer
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90)
   fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator)+ (1|Trials), data = df, na.action = na.omit, REML = FALSE) 
   prtAnova <- car::Anova(fit, type="II")
   return(prtAnova$"Pr(>Chisq)"[2][1])
@@ -392,67 +396,6 @@ ggsave(file = "plots/nonsig_r2_histogram.png", width = 4.5, height = 2)
 ```
 
 
-
-Plot distribution of significant data
-
-1. Extract shuffled slopes and rsquared values. This is already done above.
-
-2. Plot in scatter
-```{r}
-ggplot(data=significant_ramps, aes(x = asr_b_o_rewarded_fit_slope, 
-                                   y = asr_b_o_rewarded_fit_r.squared)) +
-    geom_point() +
-    xlab("\nslope") +
-    ylab("R2") +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=12),
-          axis.text.y = element_text(size=12),
-          legend.position="bottom",
-          legend.title = element_blank(),
-          text = element_text(size=12),
-          legend.text=element_text(size=12),
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/Sigramps_coefficient_distribution.png", width = 3, height = 3)
-
-```
-
-3. same as above but for the nonsignificant ramps
-```{r}
-ggplot(data=nonsignificant_ramps, aes(x = asr_b_o_rewarded_fit_slope, 
-                                   y = asr_b_o_rewarded_fit_r.squared)) +
-    geom_point() +
-    xlab("\nslope") +
-    ylab("R2") +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=12),
-          axis.text.y = element_text(size=12),
-          legend.position="bottom",
-          legend.title = element_blank(),
-          text = element_text(size=12),
-          legend.text=element_text(size=12),
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/NonSigramps_coefficient_distribution.png", width = 3, height = 3)
-
-```
-```{r}
-ggplot(data=significant_ramps, aes(x = asr_b_o_rewarded_fit_slope, 
-                                   y = asr_b_o_rewarded_fit_r.squared, 
-                                   fill = as.factor(unlist(final_model_o_b)))) +
-    geom_point() +
-    xlab("\nslope") +
-    ylab("R2") +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=12),
-          axis.text.y = element_text(size=12),
-          legend.position="bottom",
-          legend.title = element_blank(),
-          text = element_text(size=12),
-          legend.text=element_text(size=12),
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/Sigramps_coefficient_distribution.png", width = 3, height = 3)
-
-```
-
 ### -------------------------------------------------------------------------------------------- ###
 
 ### -------------------------------------------------------------------------------------------- ###
@@ -462,16 +405,22 @@ ggsave(file = "plots/Sigramps_coefficient_distribution.png", width = 3, height =
 ## Method 2 : Run average rates and compare hit and miss via an anova 
 
 
-
 1. Combine hit and miss trials
-
 ```{r}
-join_rates <- function(hit, miss) {
+join_rates <- function(hit, miss, session_id, cluster_id) {
+  if (any(is.na(miss))) { 
+    print(paste0("No failed trials. Session: ", session_id, ". Cluster:", cluster_id))
+    return(
+      df <- tibble(Rates = NA, 
+               Position = NA,
+               Reward_indicator = NA)
+    )
+  }
   df <- tibble(Rates = c(unlist(hit[31:90]), unlist(miss[31:90])), Reward_indicator = c(rep(1, times=60), rep(0, times=60)), Position = c(rep(31:90), rep(31:90)))
   return (df)
 }
 spatial_firing <- spatial_firing %>%
-  mutate(avg_both_asr_b = map2(Rates_averaged_rewarded_b,Rates_averaged_failed_b, join_rates))
+  mutate(avg_both_asr_b = pmap(list(Rates_averaged_rewarded_b,Rates_averaged_failed_b, session_id, cluster_id), join_rates))
 
 ```
 
