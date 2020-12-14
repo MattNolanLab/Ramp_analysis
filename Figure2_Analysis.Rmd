@@ -179,7 +179,7 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-shuffles <- 10
+shuffles <- 1000
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_b_o = map2(Rates_averaged_rewarded_b, shuffles, shuffle_rates)) %>%
