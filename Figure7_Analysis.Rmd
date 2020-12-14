@@ -345,27 +345,26 @@ ggsave(file = "plots/Histogram_sig_slopes.png", width = 4.5, height = 2)
 
 3. same as above but for not significant datasets
 ```{r}
-ggplot(data=nonsignificant_ramps, aes(x= asr_b_o_rewarded_fit_slope, fill="Grey")) +
+ggplot(data=nonsignificant_ramps, aes(x= asr_b_o_rewarded_fit_slope, fill="grey")) +
   coord_cartesian(xlim = c(-0.6,0.6)) +
-  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
-    labs(x = "Slope (Hz/cm)") +
-    ylab("Proportion") +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=14),
-          axis.text.y = element_text(size=14),
-          legend.position="bottom",
-          legend.title = element_blank(),
-          text = element_text(size=14),
-          legend.text=element_text(size=14),
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height = 2)
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, fill="Grey") +
+  ylab("Proportion") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=14),
+        legend.text=element_text(size=14),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/Histogram_notsig_slopes.png", width = 4.5, height = 2)
 ```
 
 
 4. Make stacked histogram of rsquared values for significant dataset
 ```{r}
 ggplot(data=significant_ramps, aes(x= asr_b_o_rewarded_fit_r.squared, fill="red")) +
-  coord_cartesian(xlim = c(-0.6,0.6)) +
+  coord_cartesian(xlim = c(0,1)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
   theme_classic() +
@@ -385,18 +384,17 @@ ggsave(file = "plots/sig_r2_histogram.png", width = 4.5, height = 2)
 
 ```{r}
 ggplot(data=nonsignificant_ramps, aes(x= asr_b_o_rewarded_fit_r.squared, fill="Grey")) +
-  coord_cartesian(xlim = c(-0.6,0.6)) +
-  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
-    labs(x = "Slope (Hz/cm)") +
-    ylab("Proportion") +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=14),
-          axis.text.y = element_text(size=14),
-          legend.position="bottom",
-          legend.title = element_blank(),
-          text = element_text(size=14),
-          legend.text=element_text(size=14),
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+  coord_cartesian(xlim = c(0,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, fill="Grey") +
+  ylab("Proportion") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=14),
+        legend.text=element_text(size=14),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/nonsig_r2_histogram.png", width = 4.5, height = 2)
 ```
 
