@@ -202,7 +202,7 @@ ggplot(data=subset(pi_data,lm_group_p == "Negative"), aes(x = unlist(predict_mea
         text = element_text(size=10), 
         legend.text=element_text(size=10), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/PredictProbe_homebound_mean_PInegative_pi.png",width = 4, height = 2)
+ggsave(file = "plots/PredictProbe_homebound_mean_PInegative_pi.png",width = 4, height = 2.5)
 
 
 ggplot(data=subset(pi_data, lm_group_p == "Positive"), aes(x = unlist(predict_mean_p), fill=as.factor(unlist(lm_group_p)))) +
@@ -221,7 +221,7 @@ ggplot(data=subset(pi_data, lm_group_p == "Positive"), aes(x = unlist(predict_me
         text = element_text(size=10), 
         legend.text=element_text(size=10), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/PredictProbe_homebound_mean_PIpositive_pi.png",width = 4, height = 2)
+ggsave(file = "plots/PredictProbe_homebound_mean_PIpositive_pi.png",width = 4, height = 2.5)
 
 ```
 

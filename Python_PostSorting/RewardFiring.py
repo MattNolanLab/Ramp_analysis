@@ -4,7 +4,6 @@ import Python_PostSorting.Create2DHistogram
 import os
 import matplotlib.pylab as plt
 from scipy import signal
-import Python_PostSorting.ConvolveRates_FFT
 
 
 def create_reward_histogram(spike_data, cluster, max_trial):

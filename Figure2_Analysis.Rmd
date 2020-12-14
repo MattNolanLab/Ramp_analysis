@@ -93,7 +93,6 @@ lm_helper <- function(df,
   # combine the parameters and coefficients
   params$intercept <- coeffs$estimate[[1]]
   params$slope <- coeffs$estimate[[2]]
-
   return(params)
 }
 ```
@@ -112,6 +111,12 @@ spatial_firing <- spatial_firing %>%
   unnest_wider(asr_nb_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_p_o_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
+
+Linear model results are stored in:
+spatial_firing$asr_b_o_rewarded_fit_pval
+spatial_firing$asr_b_o_rewarded_fit_slope
+spatial_firing$asr_b_o_rewarded_fit_r.squared
+
 
 3. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
@@ -341,6 +346,11 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
+
+Linear model classification is stored in:
+spatial_firing$lm_group_b
+spatial_firing$lm_group_nb
+spatial_firing$lm_group_p
 
 
 ### -------------------------------------------------------------------------------------------------------------------- ### 

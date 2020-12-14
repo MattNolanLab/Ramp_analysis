@@ -44,6 +44,11 @@ spatial_firing <- spatial_firing %>%
   unnest_wider(asr_p_h_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
 
+Linear model results are stored in:
+spatial_firing$asr_b_h_rewarded_fit_pval
+spatial_firing$asr_b_h_rewarded_fit_slope
+spatial_firing$asr_b_h_rewarded_fit_r.squared
+
 
 4. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
@@ -119,26 +124,26 @@ spatial_firing <- spatial_firing %>%
   mutate(
     lm_group_b_h = pmap(
       list(
-        shuffle_min_slope_b_o,
-        shuffle_max_slope_b_o,
+        shuffle_min_slope_b_h,
+        shuffle_max_slope_b_h,
         asr_b_h_rewarded_fit_slope,
         adjust_pval_b_h
       ),
       compare_slopes
     ),
-    lm_group_b_nb_h = pmap(
+    lm_group_nb_h = pmap(
       list(
-        shuffle_min_slope_nb_o,
-        shuffle_max_slope_nb_o,
+        shuffle_min_slope_nb_h,
+        shuffle_max_slope_nb_h,
         asr_nb_h_rewarded_fit_slope,
         adjust_pval_nb_h
       ),
       compare_slopes
     ),
-    lm_group_b_p_h = pmap(
+    lm_group_p_h = pmap(
       list(
-        shuffle_min_slope_p_o,
-        shuffle_max_slope_p_o,
+        shuffle_min_slope_p_h,
+        shuffle_max_slope_p_h,
         asr_p_h_rewarded_fit_slope,
         adjust_pval_p_h
       ),
@@ -147,6 +152,11 @@ spatial_firing <- spatial_firing %>%
   )
 
 ```
+
+Linear model classification is stored in:
+spatial_firing$lm_group_b_h
+spatial_firing$lm_group_nb_h
+spatial_firing$lm_group_p_h
 
 
 ```{r}
