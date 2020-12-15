@@ -44,6 +44,8 @@ mark_neurons <- function(beac, nb){
     return( "Positive-onlypi" )
   } else if( beac == "Unclassified" & nb == "Negative") {
     return( "Negative-onlypi" )
+  } else if( beac == "Unclassified" & nb == "Unclassified") {
+    return( "Unclassified" )
     } else {
     return("None")
   }
@@ -54,7 +56,7 @@ mark_neurons <- function(beac, nb){
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(cue_group_b = map2(lm_group_b, lm_group_nb, mark_neurons))
+  mutate(cue_group_o = map2(lm_group_b, lm_group_nb, mark_neurons))
 
 ```
 
@@ -74,28 +76,31 @@ calc_props_cue_dep <- function(cue_group){
   pi_num <- length(which(cue_group == "Positive-PI" | cue_group == "Negative-PI"))
   cue_num <- length(which(cue_group == "Positive-cue" | cue_group == "Negative-cue"))
   pionly_num <- length(which(cue_group == "Positive-onlypi" | cue_group == "Negative-onlypi"))
-  none_num <- length(which(cue_group == "None" | cue_group == "None"))
+  uc_num <- length(which(cue_group == "Unclassified"))
+  none_num <- length(which(cue_group == "None"))
   
   pi <- pi_num / num_cells
   cue <- cue_num / num_cells
-  pionly <- pi_num / num_cells
+  pionly <- pionly_num / num_cells
+  uc <-uc_num / num_cells
   none <- none_num / num_cells
 
-proportions_mixed_ramps <- tibble(perc=c(pi, cue, pionly, none), num=c(pi_num, cue_num, pionly_num, none_num), ramp_id= c("Cue-independent", "Cue-dependant", "Path-Integration-only", "None"),ramp_type = c("Cue-independent", "Cue-dependant", "Path-Integration-only", "None"))
+proportions_mixed_ramps <- tibble(perc=c(pi, cue, pionly, uc, none), num=c(pi_num, cue_num, pionly_num, uc_num, none_num), ramp_id= c("Cue-independent", "Cue-dependant", "Path-Integration-only", "Unclassified", "None"),ramp_type = c("Cue-independent", "Cue-dependant", "Path-Integration-only", "Unclassified", "None"))
 }
 ```
 
 Calculate proportions for neurons with +/- ramps on beaconed trials.
 ```{r}
-proportions_mixed_ramps <- calc_props_cue_dep(spatial_firing$cue_group_b)
+proportions_mixed_ramps <- calc_props_cue_dep(spatial_firing$cue_group_o)
 ```
 
 
 3. Plot a pie chart of results, 
 _note : pie segments represent the proportions with real values in text_
 ```{r}
-# Compute the position of labels
-data <- proportions_mixed_ramps %>% 
+proportions_mixed_ramps_pi_maker <- function(df){
+  # Compute the position of labels
+data <- df %>% 
   arrange(desc(ramp_id)) %>%
   mutate(prop = perc) %>%
   mutate(ypos = cumsum(prop)- 0.5*prop )
@@ -109,7 +114,9 @@ ggplot(data, aes(x="", y=prop, fill=ramp_id)) +
   
   geom_text(aes(y = ypos, label = num), color = "white", size=3) +
   scale_fill_brewer(palette="Set1")
+}
 
+proportions_mixed_ramps_pi_maker(proportions_mixed_ramps)
 # ggsave(file = "plots/CueComparison_proportions.png", width = 4, height = 4)
 
 ```
@@ -204,17 +211,13 @@ position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b
 ```
 
 
-<!-- ```{r} -->
-<!-- unclassified_neurons <-subset(spatial_firing, lm_group_b == "Unclassified") -->
-<!-- nb_neurons <-subset(unclassified_neurons, lm_group_nb == "Positive" | lm_group_nb == "Negative") -->
 
-<!-- ``` -->
+Calculate proportions for neurons with +/- ramps on beaconed trials.
+```{r}
+proportions_pos_mixed_ramps <- calc_props_cue_dep(position_neurons$cue_group_o)
 
-<!-- 2. subset based on position -->
-<!-- ```{r} -->
-<!-- position_neurons <-subset(nb_neurons, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") -->
-<!-- ``` -->
-
+proportions_mixed_ramps_pi_maker(proportions_pos_mixed_ramps)
+```
 
 2. Subset based on non-beaconed activity
 ```{r}
