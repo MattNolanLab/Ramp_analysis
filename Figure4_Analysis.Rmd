@@ -243,43 +243,42 @@ sankeyNetwork(Links = data_long_pos, Nodes = nodes_pos,
 
 ```
 
+## For the neurons in the above Sankey plot that have positive or negative slopes on the non-beaconed/probe trials, calculate the proportion in each model group
 
-## calculate for the neurons included in the above sankey, what proportion of neurons are in each model group
+A function to calculate neurons in each group. Groups are:
+P, PA, PS, PSA for NB+ and NB- slopes.
 ```{r}
-pi_positive <-subset(position_neurons, lm_group_b == "Positive")
-pi_negative <-subset(position_neurons, lm_group_b == "Negative")
-
-pi_unclassified <-subset(position_neurons, lm_group_b == "Negative")
-pi_unclassified <-subset(pi_unclassified, lm_group_nb == "Negative" | lm_group_nb == "Positive")
-
+calc_pos_groups <- function(lmgroup, final_model) {
+  total_plus_neurons <-  length(which(lmgroup == "Positive"))
+  total_neg_neurons <-  length(which(lmgroup == "Negative"))
+  data_groups <- tibble(perc = c(
+    length(which(lmgroup == "Positive" & final_model == "P"))/total_plus_neurons,
+    length(which(lmgroup == "Positive" & final_model == "PA"))/total_plus_neurons,
+    length(which(lmgroup == "Positive" & final_model == "PS"))/total_plus_neurons,
+    length(which(lmgroup == "Positive" & final_model == "PSA"))/total_plus_neurons,
+    length(which(lmgroup == "Negative" & final_model == "P"))/total_neg_neurons,
+    length(which(lmgroup == "Negative" & final_model == "PA"))/total_neg_neurons,
+    length(which(lmgroup == "Negative" & final_model == "PS"))/total_neg_neurons,
+    length(which(lmgroup == "Negative" & final_model == "PSA"))/total_neg_neurons
+  ),
+  ramp_id= c("P","PA","PS", "PSA", "P","PA","PS", "PSA"),
+  ramp_type = c("Positive", "Positive", "Positive", "Positive", "Negative", "Negative", "Negative", "Negative"))
+  data_groups$perc <- data_groups$perc*100
+  return(data_groups)
+}
 ```
 
+
+Calculate distribution of groups on non-beaconed trials.
 ```{r}
-# calculate propotion of groups
-P_positive <- nrow(subset(pi_positive, final_model_o_b == "P"))/nrow(pi_positive)*100
-PA_positive <- nrow(subset(pi_positive, final_model_o_b == "PA"))/nrow(pi_positive)*100
-PS_positive <- nrow(subset(pi_positive, final_model_o_b == "PS"))/nrow(pi_positive)*100
-PSA_positive <- nrow(subset(pi_positive, final_model_o_b == "PSA"))/nrow(pi_positive)*100
-
-# calculate propotion of groups
-P_negative <- nrow(subset(pi_negative, final_model_o_b == "P"))/nrow(pi_negative)*100
-PA_negative <- nrow(subset(pi_negative, final_model_o_b == "PA"))/nrow(pi_negative)*100
-PS_negative <- nrow(subset(pi_negative, final_model_o_b == "PS"))/nrow(pi_negative)*100
-PSA_negative <- nrow(subset(pi_negative, final_model_o_b == "PSA"))/nrow(pi_negative)*100
-
-```
-2. put data in tibble
-```{r}
-
-data_groups <- tibble(perc=c(P_positive,PA_positive,PS_positive,PSA_positive, P_negative, PA_negative, PS_negative, PSA_negative),ramp_id= c("P","PA","PS", "PSA", "P","PA","PS", "PSA"), ramp_type = c("Positive", "Positive", "Positive", "Positive", "Negative", "Negative", "Negative", "Negative"))
-
+pos_groups <- calc_pos_groups(position_neurons$lm_group_nb, position_neurons$final_model_o_b)
 ```
 
 3. plot data
 ```{r}
 # plot data
 level_order <- c("P", "PS", "PA", "PSA")
-ggplot(data_groups, aes(x = factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
+ggplot(pos_groups, aes(x = factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
   geom_bar(stat="identity",width = 0.9, alpha = .7) +
   labs(y = "Percent of neurons") +
   scale_fill_manual(values=c("firebrick1","darkorange", "darkorchid1","darkslategray")) +
