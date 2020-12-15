@@ -21,13 +21,13 @@ _note : focuses on activity in outbound region_
 
 First, we are interested to see what proportion of neurons has the following pattern ramp activity :
 
-1. ramp in both cued and uncued (cue independant)
-2. ramp in just cued (cue dependant)
+1. ramp in both cued and uncued (cue independent)
+2. ramp in just cued (cue dependent)
 3. ramp in just uncued (only pi)
 
-To classify cells into these catagories above, we will use the criteria established in Figure 2 using linear modelling. 
+To classify cells into these categories above, we will use the classification established in Figure 2. This requires that Figure 2 analyses have been run for B and NB groups.
 
-1. make function to classify cells based on activity in beaconed / non-beaconed&probe trials 
+1. make function to classify cells based on activity in beaconed / non-beaconed & probe trials 
 ```{r}
 mark_neurons <- function(beac, nb){
   if (is.na(beac) | is.na(nb) ) {
@@ -54,38 +54,42 @@ mark_neurons <- function(beac, nb){
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(cue_group = map2(lm_group_b, lm_group_nb, mark_neurons))
+  mutate(cue_group_b = map2(lm_group_b, lm_group_nb, mark_neurons))
 
 ```
 
 
 
-Now I want to visualise the proportion of cells that fit these above criteria. I'm going to do this by plotting a pie chart. 
+Visualise the proportion of cells that fit the above criteria.  
 
-1. subset neurons by group _just looking at cue dependant or independant for now_
+We will focus here only on neurons classified as having a positive or negative slope in Figure 2. A problem with this analysis is that it includes neurons that in Figure 3 are shown to be modulated by speed or acceleration but not position. The analysis below will address this.
+
+
+Function to return a tibble with proportions of neurons classified as cue-dependent, cue-independent or path integration only.
 ```{r}
-ramps <-subset(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
+calc_props_cue_dep <- function(cue_group){
+  cue_group <- as.character(cue_group)
+  num_cells <- length(cue_group)
+  
+  pi_num <- length(which(cue_group == "Positive-PI" | cue_group == "Negative-PI"))
+  cue_num <- length(which(cue_group == "Positive-cue" | cue_group == "Negative-cue"))
+  pionly_num <- length(which(cue_group == "Positive-onlypi" | cue_group == "Negative-onlypi"))
+  none_num <- length(which(cue_group == "None" | cue_group == "None"))
+  
+  pi <- pi_num / num_cells
+  cue <- cue_num / num_cells
+  pionly <- pi_num / num_cells
+  none <- none_num / num_cells
 
-# positive homebound slopes
-pi <-nrow(subset(ramps, cue_group == "Positive-PI" | cue_group == "Negative-PI"))/nrow(ramps)*100
-cue <-nrow(subset(ramps, cue_group == "Positive-cue" | cue_group == "Negative-cue"))/nrow(ramps)*100
-pionly <-nrow(subset(spatial_firing, cue_group == "Positive-onlypi" | cue_group == "Negative-onlypi"))/nrow(spatial_firing)*100
-none <-nrow(subset(spatial_firing, cue_group == "None" | cue_group == "None"))/nrow(spatial_firing)*100
-
-# positive homebound slopes
-pi_num <-nrow(subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI"))
-cue_num <-nrow(subset(spatial_firing, cue_group == "Positive-cue" | cue_group == "Negative-cue"))
-pionly_num <-nrow(subset(spatial_firing, cue_group == "Positive-onlypi" | cue_group == "Negative-onlypi"))
-none_num <-nrow(subset(spatial_firing, cue_group == "None" | cue_group == "None"))
-
+proportions_mixed_ramps <- tibble(perc=c(pi, cue, pionly, none), num=c(pi_num, cue_num, pionly_num, none_num), ramp_id= c("Cue-independent", "Cue-dependant", "Path-Integration-only", "None"),ramp_type = c("Cue-independent", "Cue-dependant", "Path-Integration-only", "None"))
+}
 ```
 
-2. Put results into tibble
+Calculate proportions for neurons with +/- ramps on beaconed trials.
 ```{r}
-
-proportions_mixed_ramps <- tibble(perc=c(pi, cue, pionly, none), num=c(pi_num, cue_num, pionly_num, none_num), ramp_id= c("Cue-independant", "Cue-dependant", "Path-Integration-only", "None"),ramp_type = c("Cue-independant", "Cue-dependant", "Path-Integration-only", "None"))
-
+proportions_mixed_ramps <- calc_props_cue_dep(spatial_firing$cue_group_b)
 ```
+
 
 3. Plot a pie chart of results, 
 _note : pie segments represent the proportions with real values in text_
@@ -136,7 +140,7 @@ cue_pos <-nrow(subset(ramps, cue_group == "Positive-cue"))/nrow(ramps)*100
 We also want to see the movement of neurons from cue to uncued trials, do this using a Sankey plot
 
 
-1. Subset based on cue dependancy
+1. Subset based on cue dependency
 ```{r}
 # positive homebound slopes
 pi <-subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
@@ -297,7 +301,7 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 
 
 
-## calculate for the neurons included in the above sankey, what proportion of neurons are in each lmer group
+## calculate for the neurons included in the above sankey, what proportion of neurons are in each model group
 ```{r}
 pi_positive <-subset(position_neurons, lm_group_b == "Positive")
 pi_negative <-subset(position_neurons, lm_group_b == "Negative")
@@ -353,7 +357,7 @@ ggsave(file = "plots/cell_proportions-AllNeurons.png", width = 4, height = 4.5)
 
 ### --------------------------------------------------------------------------------------- ###
 
-Now we want to visualise the average firing rate for each of the groups (cue dependant & cue independant / positive & negative)
+Now we want to visualise the average firing rate for each of the groups (cue dependant & cue independent / positive & negative)
 
 1. Extract all data into tibble 
 ```{r}
