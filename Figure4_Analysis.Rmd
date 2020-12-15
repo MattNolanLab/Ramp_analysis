@@ -119,41 +119,7 @@ ggplot(data, aes(x="", y=prop, fill=ramp_id)) +
 
 ### -------------------------------------------------------------------------------------------------------- ###
 
-We also want to see the movement of neurons from cue to uncued trials, do this using a Sankey plot
-
-
-1. Subset based on cue dependency
-```{r}
-# positive homebound slopes
-pi <-subset(spatial_firing, cue_group_b == "Positive-PI" | cue_group_b == "Negative-PI")
-cue <-subset(spatial_firing, cue_group_b == "Positive-cue" | cue_group_b == "Negative-cue")
-pionly <-subset(spatial_firing, cue_group_b == "Positive-onlypi" | cue_group_b == "Negative-onlypi")
-
-pi_neg <-subset(spatial_firing, cue_group_b == "Negative-PI")
-cue_neg <-subset(spatial_firing,  cue_group_b == "Negative-cue")
-pi_pos <-subset(spatial_firing, cue_group_b == "Positive-PI" )
-cue_pos <-subset(spatial_firing, cue_group_b == "Positive-cue" )
-
-```
-
-2. Subset based on non-beaconed activity
-```{r}
-
-pi_positive <-subset(spatial_firing, lm_group_b == "Positive")
-pi_negative <-subset(spatial_firing, lm_group_b == "Negative")
-pi_none <-subset(spatial_firing, lm_group_b == "Unclassified")
-
-pi_positive_pos <-nrow(subset(pi_positive, lm_group_nb == "Positive"))
-pi_positive_neg <-nrow(subset(pi_positive, lm_group_nb == "Negative"))
-pi_positive_none <-nrow(subset(pi_positive, lm_group_nb == "Unclassified"))
-pi_negative_pos <-nrow(subset(pi_negative, lm_group_nb == "Positive"))
-pi_negative_neg <-nrow(subset(pi_negative, lm_group_nb == "Negative"))
-pi_negative_none <-nrow(subset(pi_negative, lm_group_nb == "Unclassified"))
-pi_none_pos <-nrow(subset(pi_none, lm_group_nb == "Positive"))
-pi_none_neg <-nrow(subset(pi_none, lm_group_nb == "Negative"))
-pi_none_none <-nrow(subset(pi_none, lm_group_nb == "Unclassified"))
-
-```
+We also want to compare the classification of neurons between cued and uncued trials. We will do this using a Sankey plot
 
 We need a pair of vectors called 'value' that contain the number of cells for each group transition between 'source' and 'target', which are categories for slopes the beaconed and the non-beaconed trials.
 The transitions will be ordered as:
