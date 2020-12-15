@@ -379,12 +379,13 @@ mean_SD_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
 
 These data are not in position neurons so make a new data frame containing these neurons.
 ```{r}
-
+unclassified_neurons <- filter(spatial_firing, lm_group_b == "Unclassified")
 ```
 
 
+
 ```{r}
-(UCNeg_plot <- mean_SD_plots(position_neurons, "Unclassified", "Negative"))
+(UCNeg_plot <- mean_SD_plots(unclassified_neurons, "Unclassified", "Negative"))
 # ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
 ```
 
@@ -392,14 +393,14 @@ These data are not in position neurons so make a new data frame containing these
 4. Subset data by group then average rates for plotting          **Positive PI only**
 
 ```{r}
-(UCPos_plot <- mean_SD_plots(position_neurons, "Unclassified", "Positive"))
+(UCPos_plot <- mean_SD_plots(unclassified_neurons, "Unclassified", "Positive"))
 # ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
 ```
 
 ### ---------------------------------------------------------------------------------------- ### 
 
 
-Now, i want to visualise cue dependent and indepedent on the same plot so i can compare them
+Now, i want to visualise cue dependent and independent on the same plot so i can compare them
 
 1. Subset data by group then average rates for plotting          **Negative slopes only**
 
