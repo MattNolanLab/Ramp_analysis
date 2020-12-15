@@ -299,214 +299,107 @@ ggsave(file = "plots/cell_proportions-AllNeurons.png", width = 4, height = 4.5)
 
 ### --------------------------------------------------------------------------------------- ###
 
-Now we want to visualise the average firing rate for each of the groups (cue dependant & cue independent / positive & negative)
+Now we want to visualise the average firing rate for each of the groups (cue dependant & cue independent / positive & negative).
 
-1. Extract all data into tibble 
+We will again focus exclusively on neurons that have a +/- slope (Figure 2) and are position modulated (Figure 3). To do so we will use the frame position_neurons generated above.
+
+Function to plot data mean and SD of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
 ```{r}
-df <- tibble(Position = rep(1:200, times=nrow(position_neurons)), Rates = unlist(position_neurons$Rates_averaged_rewarded_b),Rates_nb = unlist(position_neurons$Rates_averaged_rewarded_nb), lm_group_beaconed = rep(position_neurons$lm_group, each=200), lm_group_nonbeaconed = rep(position_neurons$lm_group_nb, each=200), group = rep(as.character(position_neurons$cue_group), each=200))
-
-```
-
-2. Subset data by group then average rates for plotting          **Negative Cue**
-```{r}
-df_neg_cue <- df %>%
-  subset(lm_group_beaconed == "Negative" & lm_group_nonbeaconed == "Unclassified") %>%
-  group_by(Position) %>%
-  subset(Position >= 30 & Position <= 90) %>%
-  summarise(mean_b = mean(Rates,na.rm = TRUE), mean_nb = mean(Rates_nb,na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE), sd_nb = std.error(Rates_nb, na.rm = TRUE)) %>%
-  mutate(Position = rep(0:60)) # rewriting position for plot because its easier than doing it ggplot
-  
-```
-
-5. Plot average beaconed and non-beaconed rates                 **Negative Cue**
-```{r}
-ggplot(data=df_neg_cue) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sd_nb, ymax = mean_nb + sd_nb), fill = "Red2", alpha=0.05) +
+mean_SD_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
+  df <- df %>%
+    filter(lm_group_b == group_b,
+           lm_group_nb == group_nb) %>%
+    select(Rates_averaged_rewarded_b, Rates_averaged_rewarded_nb, cue_group_o) %>%
+    unnest(c(Rates_averaged_rewarded_b, Rates_averaged_rewarded_nb))
+ df$Rates_averaged_rewarded_b <- as.double(df$Rates_averaged_rewarded_b)
+ df$Rates_averaged_rewarded_nb <- as.double(df$Rates_averaged_rewarded_nb)
+ df$cue_group_o <- as.character(df$cue_group_o)
+ numcells <- length(df$Rates_averaged_rewarded_nb)/200
+ df$Position <- rep(1:200, times = numcells)
+ 
+ df <- df %>%
+   group_by(cue_group_o, Position) %>%
+   summarise(mean_b = mean(Rates_averaged_rewarded_b, na.rm = TRUE),
+             mean_nb = mean(Rates_averaged_rewarded_nb, na.rm = TRUE),
+             se_b = std.error(Rates_averaged_rewarded_b, na.rm = TRUE),
+             se_nb = std.error(Rates_averaged_rewarded_nb, na.rm = TRUE))
+ 
+ ggplot(data=df) +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b), fill = "grey70", alpha=0.2) +
+  geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - se_nb, ymax = mean_nb + se_nb), fill = "Red2", alpha=0.05) +
   geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
   #stat_smooth(aes(y=mean_b, x=Position), color = "Grey32", n = 60, span = 0.5) +
   #stat_smooth(aes(y=mean_nb, x=Position), color = "Red2", n = 60, span = 0.5) +
   geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)", x = "Position") +
+   xlim(x_start, x_end) +
   theme(axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12),
         legend.title = element_blank(),
         text = element_text(size=12))
-ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
+}
+```
 
+
+
+2. Subset data by group then average rates for plotting          **Negative Cue**
+```{r}
+(NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Unclassified"))
+# ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
 ```
 
 
 4. Subset data by group then average rates for plotting          **Positive Cue**
-
 ```{r}
-df_pos_cue <- df %>%
-  subset(lm_group_beaconed == "Positive" & lm_group_nonbeaconed == "Unclassified") %>%
-  group_by(Position) %>%
-  subset(Position >= 30 & Position <= 90) %>%
-  summarise(mean_b = mean(Rates,na.rm = TRUE), mean_nb = mean(Rates_nb,na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE), sd_nb = std.error(Rates_nb, na.rm = TRUE)) %>%
-  mutate(Position = rep(0:60))
-  
+(PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Unclassified"))
+# ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
 ```
-
-5. Plot average rates                                            **Positive Cue**
-```{r}
-ggplot(data=df_pos_cue) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sd_nb, ymax = mean_nb + sd_nb), fill = "Red2", alpha=0.05) +
-  geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
-  geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
-
-
-```
-
 
 
 
 4. Subset data by group then average rates for plotting          **Positive PI**
 
 ```{r}
-df_pos_pi <- df %>%
-  subset(lm_group_beaconed == "Positive" & lm_group_nonbeaconed == "Positive") %>%
-  group_by(Position) %>%
-  subset(Position >= 30 & Position <= 90) %>%
-  summarise(mean_b = mean(Rates,na.rm = TRUE), mean_nb = mean(Rates_nb,na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE), sd_nb = std.error(Rates_nb, na.rm = TRUE)) %>%
-  mutate(Position = rep(0:60))
-
+(PosPos_plot <- mean_SD_plots(position_neurons, "Positive", "Positive"))
+# ggsave(file = "plots/AverageRates_PositionCells_PosPI.png", width = 3.5, height = 2.5)
 ```
-
-5. Plot average rates                                            **Positive PI**
-
-```{r}
-ggplot(data=df_pos_pi) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sd_nb, ymax = mean_nb + sd_nb), fill = "Red2", alpha=0.05) +
-  geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
-  geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-ggsave(file = "plots/AverageRates_PositionCells_NegPI.png", width = 3.5, height = 2.5)
-
-
-```
-
 
 
 
 4. Subset data by group then average rates for plotting          **Negative PI**
 
 ```{r}
-df_neg_pi <- df %>%
-  subset(lm_group_beaconed == "Negative" & lm_group_nonbeaconed == "Negative") %>%
-  group_by(Position) %>%
-  subset(Position >= 30 & Position <= 90) %>%
-  summarise(mean_b = mean(Rates,na.rm = TRUE), mean_nb = mean(Rates_nb,na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE), sd_nb = std.error(Rates_nb, na.rm = TRUE)) %>%
-  mutate(Position = rep(0:60))
-  
-```
-
-5. Plot average rates                                           **Negative PI**
-
-```{r}
-ggplot(data=df_neg_pi) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sd_nb, ymax = mean_nb + sd_nb), fill = "Red2", alpha=0.05) +
-  geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
-  geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
-  theme_classic()  +
-  labs(y = "Mean firing rate (Hz)", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-ggsave(file = "plots/AverageRates_PositionCells_PosPI.png", width = 3.5, height = 2.5)
-
-
+(NegNeg_plot <- mean_SD_plots(position_neurons, "Negative", "Negative"))
+# ggsave(file = "plots/AverageRates_PositionCells_NegPI.png", width = 3.5, height = 2.5)
 ```
 
 
 4. Subset data by group then average rates for plotting          **Negative PI only**
 
+These data are not in position neurons so make a new data frame containing these neurons.
 ```{r}
-df_neg_pi <- df %>%
-  subset(lm_group_beaconed == "Unclassified" & lm_group_nonbeaconed == "Negative") %>%
-  group_by(Position) %>%
-  subset(Position >= 30 & Position <= 90) %>%
-  summarise(mean_b = mean(Rates,na.rm = TRUE), mean_nb = mean(Rates_nb,na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE), sd_nb = std.error(Rates_nb, na.rm = TRUE)) %>%
-  mutate(Position = rep(0:60))
-  
-```
-
-5. Plot average rates                                             **Negative PI only**
-
-```{r}
-ggplot(data=df_neg_pi) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sd_nb, ymax = mean_nb + sd_nb), fill = "Red2", alpha=0.05) +
-  geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
-  geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
-  theme_classic()  +
-  labs(y = "Mean firing rate (Hz)", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
-
 
 ```
 
 
+```{r}
+(UCNeg_plot <- mean_SD_plots(position_neurons, "Unclassified", "Negative"))
+# ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
+```
 
 
 4. Subset data by group then average rates for plotting          **Positive PI only**
 
 ```{r}
-df_neg_pi <- df %>%
-  subset(lm_group_beaconed == "Unclassified" & lm_group_nonbeaconed == "Positive") %>%
-  group_by(Position) %>%
-  subset(Position >= 30 & Position <= 90) %>%
-  summarise(mean_b = mean(Rates,na.rm = TRUE), mean_nb = mean(Rates_nb,na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE), sd_nb = std.error(Rates_nb, na.rm = TRUE)) %>%
-  mutate(Position = rep(0:60))
-  
+(UCPos_plot <- mean_SD_plots(position_neurons, "Unclassified", "Positive"))
+# ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
 ```
-
-5. Plot average rates                                            **Positive PI only**
-
-```{r}
-ggplot(data=df_neg_pi) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sd_nb, ymax = mean_nb + sd_nb), fill = "Red2", alpha=0.05) +
-  geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
-  geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
-  theme_classic()  +
-  labs(y = "Mean firing rate (Hz)", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-ggsave(file = "plots/AverageRates_PositionCells_PosPIonly.png", width = 3.5, height = 2.5)
-
-
-```
-
 
 ### ---------------------------------------------------------------------------------------- ### 
 
 
-Now, i want to visualise cue dependant and indpedant on the same plot so i can compare them
+Now, i want to visualise cue dependent and indepedent on the same plot so i can compare them
 
 1. Subset data by group then average rates for plotting          **Negative slopes only**
 
