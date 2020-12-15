@@ -192,7 +192,9 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
     mutate(shuffle_results_p_o = map2(Rates_averaged_rewarded_p, shuffles, shuffle_rates))
 }
 # Uncomment the line below to save spatial firing at this point.
-# saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
+saveRDS(spatial_firing, "SpatialFiring_with_100_shuffles.Rda")
+# To reload use
+#spatial_firing <- readRDS("SpatialFiring_with_100_shuffles.Rda")
 # And use this to save a truncated version. Useful for testing code.
 # saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
 ```

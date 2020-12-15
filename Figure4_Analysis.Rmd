@@ -94,13 +94,6 @@ proportions_mixed_ramps <- calc_props_cue_dep(spatial_firing$cue_group_b)
 3. Plot a pie chart of results, 
 _note : pie segments represent the proportions with real values in text_
 ```{r}
-
-# Create Data
-data <- data.frame(
-  group=LETTERS[1:4],
-  value=c(pi,cue,pionly,none)
-)
-
 # Compute the position of labels
 data <- proportions_mixed_ramps %>% 
   arrange(desc(ramp_id)) %>%
@@ -121,17 +114,6 @@ ggsave(file = "plots/CueComparison_proportions.png", width = 4, height = 4)
 
 ```
 
-
-4. Also just a quick look at the numbers - how many positive and negative of each (cue/PI)
-```{r}
-ramps <- subset(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
-
-pi_neg <-nrow(subset(ramps, cue_group == "Negative-PI"))/nrow(ramps)*100
-cue_neg <-nrow(subset(ramps, cue_group == "Negative-cue"))/nrow(ramps)*100
-pi_pos <-nrow(subset(ramps, cue_group == "Positive-PI"))/nrow(ramps)*100
-cue_pos <-nrow(subset(ramps, cue_group == "Positive-cue"))/nrow(ramps)*100
-
-```
 
 
 
@@ -222,20 +204,24 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 
 _same as above but just for position based cells_
 
-```{r}
-ramp_neurons <-subset(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
-```
+We want to focus the analysis exclusively on neurons that have a +/- slope (Figure 2) and are position modulated (Figure 3).
 
 ```{r}
-unclassified_neurons <-subset(spatial_firing, lm_group_b == "Unclassified")
-nb_neurons <-subset(unclassified_neurons, lm_group_nb == "Positive" | lm_group_nb == "Negative")
-
+position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative",
+                           final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
-2. subset based on position
-```{r}
-position_neurons <-subset(nb_neurons, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
+
+<!-- ```{r} -->
+<!-- unclassified_neurons <-subset(spatial_firing, lm_group_b == "Unclassified") -->
+<!-- nb_neurons <-subset(unclassified_neurons, lm_group_nb == "Positive" | lm_group_nb == "Negative") -->
+
+<!-- ``` -->
+
+<!-- 2. subset based on position -->
+<!-- ```{r} -->
+<!-- position_neurons <-subset(nb_neurons, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") -->
+<!-- ``` -->
 
 
 2. Subset based on non-beaconed activity
