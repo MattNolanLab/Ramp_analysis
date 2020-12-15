@@ -218,59 +218,23 @@ proportions_pos_mixed_ramps <- calc_props_cue_dep(position_neurons$cue_group_o)
 
 proportions_mixed_ramps_pi_maker(proportions_pos_mixed_ramps)
 ```
-
-2. Subset based on non-beaconed activity
+Make a data frame that contains numbers to be used for the Sankey plot.
 ```{r}
+data_long_pos <- calc_transitions(position_neurons$lm_group_b, position_neurons$lm_group_nb)
 
-pi_positive <-subset(position_neurons, lm_group_b == "Positive")
-pi_negative <-subset(position_neurons, lm_group_b == "Negative")
-pi_none <-subset(position_neurons, lm_group_b == "Unclassified")
-
-pi_positive_pos <-nrow(subset(pi_positive, lm_group_nb == "Positive"))
-pi_positive_neg <-nrow(subset(pi_positive, lm_group_nb == "Negative"))
-pi_positive_none <-nrow(subset(pi_positive, lm_group_nb == "Unclassified"))
-pi_negative_pos <-nrow(subset(pi_negative, lm_group_nb == "Positive"))
-pi_negative_neg <-nrow(subset(pi_negative, lm_group_nb == "Negative"))
-pi_negative_none <-nrow(subset(pi_negative, lm_group_nb == "Unclassified"))
-pi_none_pos <-nrow(subset(pi_none, lm_group_nb == "Positive"))
-pi_none_neg <-nrow(subset(pi_none, lm_group_nb == "Negative"))
-pi_none_none <-nrow(subset(pi_none, lm_group_nb == "Unclassified"))
+# Probably a more elegant way to do this as already made in calc_transitions
+nodes_pos <- data.frame(name=c(as.character(data_long_pos$source), as.character(data_long_pos$target)) %>% unique())
 
 ```
 
-3. Put data into a tibble with labels
-```{r}
 
-data_long <- tibble(value=c(pi_positive_pos, pi_positive_neg, pi_positive_none, pi_negative_pos,pi_negative_neg, pi_negative_none, pi_none_pos, pi_none_neg, pi_none_none), 
-                    
-                      source= c("Positive","Positive", "Positive", "Negative", "Negative", "Negative", "None","None", "None"),
-                     target= c(" Positive"," Negative", " None"," Positive"," Negative", " None"," Positive"," Negative", " None"))
-
-
-data_long <- data_long %>% 
-  filter(value > 0)                           
-                    
-```
-
-3. Create a node data frame: it lists every entities involved in the flow
-```{r}
-nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
- 
-```
-
-4. Reformat dataframe to provide connection using id, not using the real name like in the links dataframe
-```{r}
-data_long$IDsource=match(data_long$source, nodes$name)-1 
-data_long$IDtarget=match(data_long$target, nodes$name)-1
-```
-
-5. Plot sankey diagram
+5. Plot Sankey diagram
 ```{r}
 # prepare colour scale
 ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
 
 # Make the Network
-sankeyNetwork(Links = data_long, Nodes = nodes,
+sankeyNetwork(Links = data_long_pos, Nodes = nodes_pos,
               Source = "IDsource", Target = "IDtarget",
               Value = "value", NodeID = "name", LinkGroup='source',
               sinksRight=FALSE, colourScale=ColourScal,
@@ -278,8 +242,6 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 #ggsave(file = "plots/model_movement.png", width = 24, height = 18)
 
 ```
-
-
 
 
 ## calculate for the neurons included in the above sankey, what proportion of neurons are in each model group
