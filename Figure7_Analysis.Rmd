@@ -790,17 +790,7 @@ ggsave(file = "plots/nonsig_r2_histogram_m2.png", width = 4.5, height = 2)
 # Run simple linear model to examine relationship between firing rate and position in failed trials
 _note:for now we are only interested in the outbound region of the track (30 - 90 cm)_
 
-## Average firing rate (for LM modelling)
-1. Write function to add position
-```{r}
-add_position <- function(df, session_id, cluster_id) {
-  df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
-  if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
-  df
-}
-```
-
-2. Run on dataframe : Average trials with reward
+1. Average trials with no reward
 
 input columns: 
 Rates_averaged_failed_b = beaconed trials
@@ -900,6 +890,7 @@ ggplot(data=ramps,
 ggsave(file = "plots/reward_vs_failed_slope_interceptsignificantcells.png", width = 5, height = 5)
 ```
 
+
 ### ----------------------------------------------------------------------------------------- ###
 
 ## Now we want to examine if there are differences in the reset activity between failed and rewarded trials
@@ -913,17 +904,16 @@ mean_SD_plots <- function(df, group_b, group_nb, track_group, x_start = 30, x_en
     filter(lm_group_b == group_b,
            lm_group_nb == group_nb, 
            reset_group == track_group) %>%
-    select(Rates_averaged_rewarded_b, Rates_averaged_failed_b, cue_group_o) %>%
+    select(Rates_averaged_rewarded_b, Rates_averaged_failed_b) %>%
     unnest(c(Rates_averaged_rewarded_b, Rates_averaged_failed_b))
  df$Rates_averaged_rewarded_b <- as.double(df$Rates_averaged_rewarded_b)
  df$Rates_averaged_failed_b <- as.double(df$Rates_averaged_failed_b)
- df$cue_group_o <- as.character(df$cue_group_o)
  numcells <- length(df$Rates_averaged_failed_b)/200
  df$Position <- rep(1:200, times = numcells)
  
  df <- df %>%
-   group_by(cue_group_o, Position) %>%
-   summarise(mean_b = mean(Rates_averaged_rewarded_b, na.rm = TRUE),
+   group_by(Position) %>%
+   dplyr::summarise(mean_b = mean(Rates_averaged_rewarded_b, na.rm = TRUE),
              mean_failed = mean(Rates_averaged_failed_b, na.rm = TRUE),
              se_b = std.error(Rates_averaged_rewarded_b, na.rm = TRUE),
              se_failed = std.error(Rates_averaged_failed_b, na.rm = TRUE))
@@ -951,24 +941,25 @@ position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b
 
 2. Subset data by group then average rates for plotting          **Negative Negative Continuous**
 ```{r}
-(NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Unclassified", "Continuous",  0, 200))
-# ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
+(NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Negative", "Continuous",  0, 200))
+ggsave(file = "plots/AverageRates_NegNeg_Continuous_failed.png", width = 3.5, height = 2.5)
 ```
 2. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Unclassified", "Reset",  0, 200))
-# ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
+(NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Negative", "Reset",  0, 200))
+ggsave(file = "plots/AverageRates_NegNeg_Reset_failed.png", width = 3.5, height = 2.5)
 ```
 
 4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
 ```{r}
 (PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Positive", "Continuous", 0, 200))
-# ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/AverageRates_PosPos_Continuous_failed.png", width = 3.5, height = 2.5)
 ```
+
 4. Subset data by group then average rates for plotting          **Positive Positive Reset**
 ```{r}
 (PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Positive", "Reset", 0, 200))
-# ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/AverageRates_PosPos_Reset_failed.png", width = 3.5, height = 2.5)
 ```
 
 
