@@ -609,41 +609,52 @@ ggsave(file = "plots/LMStart_cellproportions_hitmiss_m2.png", width = 3, height 
 
 
 ## plot same as above, but with cells colored by their group (P, PA etc)
-1. subset by encoding models 
+
+
+Function to return a tibble with proportions of neurons classified as significant or none-significant.
 ```{r}
-pos <-subset(spatial_firing, final_model_o_b == "P")
-speed <-subset(spatial_firing, final_model_o_b == "S")
-ccel<-subset(spatial_firing, final_model_o_b == "A")
-posspeed <-subset(spatial_firing, final_model_o_b == "PS")
-posaccel <-subset(spatial_firing, final_model_o_b == "PA")
-speedaccel <-subset(spatial_firing, final_model_o_b == "SA")
-posspeedaccel <-subset(spatial_firing, final_model_o_b == "PSA")
+calc_props_sig_dep <- function(reward_group, encoding_group){
+  reward_group <- as.character(reward_group)
+  encoding_group <- as.character(encoding_group)
+  num_cellsP <- length(which(encoding_group == "P"))
+  num_cellsA <- length(which(encoding_group == "A"))
+  num_cellsS <- length(which(encoding_group == "S"))
+  num_cellsPS <- length(which(encoding_group == "PS"))
+  num_cellsPA <- length(which(encoding_group == "PA"))
+  num_cellsSA <- length(which(encoding_group == "SA"))
+  num_cellsPSA <- length(which(encoding_group == "PSA"))
 
-```
+  sig_P_num <- length(which(reward_group == "Significant" & encoding_group == "P"))
+  sig_A_num <- length(which(reward_group == "Significant" & encoding_group == "A"))
+  sig_S_num <- length(which(reward_group == "Significant" & encoding_group == "S"))
+  sig_SA_num <- length(which(reward_group == "Significant" & encoding_group == "SA"))
+  sig_PA_num <- length(which(reward_group == "Significant" & encoding_group == "PA"))
+  sig_PS_num <- length(which(reward_group == "Significant" & encoding_group == "PS"))
+  sig_PSA_num <- length(which(reward_group == "Significant" & encoding_group == "PSA"))
+  notsig_P_num <- length(which(reward_group != "Significant" & encoding_group == "P"))
+  notsig_A_num <- length(which(reward_group != "Significant" & encoding_group == "A"))
+  notsig_S_num <- length(which(reward_group != "Significant" & encoding_group == "S"))
+  notsig_SA_num <- length(which(reward_group != "Significant" & encoding_group == "SA"))
+  notsig_PA_num <- length(which(reward_group != "Significant" & encoding_group == "PA"))
+  notsig_PS_num <- length(which(reward_group != "Significant" & encoding_group == "PS"))
+  notsig_PSA_num <- length(which(reward_group != "Significant" & encoding_group == "PSA"))
 
-2. find proportions.
-```{r}
-sig_p <- nrow(subset(pos, avg_sig_slope == "Significant" |  avg_sig_intercept == "Significant" ))/nrow(pos)*100
-sig_s <- nrow(subset(speed, avg_sig_slope == "Significant" |  avg_sig_intercept == "Significant" ))/nrow(speed)*100
-sig_a <- nrow(subset(ccel, avg_sig_slope == "Significant" |  avg_sig_intercept == "Significant" ))/nrow(ccel)*100
-sig_ps <- nrow(subset(posspeed,avg_sig_slope == "Significant" |  avg_sig_intercept == "Significant" ))/nrow(posspeed)*100
-sig_pa <- nrow(subset(posaccel, avg_sig_slope == "Significant" |  avg_sig_intercept == "Significant" ))/nrow(posaccel)*100
-sig_sa <- nrow(subset(speedaccel, avg_sig_slope == "Significant" |  avg_sig_intercept == "Significant" ))/nrow(speedaccel)*100
-sig_psa <- nrow(subset(posspeedaccel,avg_sig_slope == "Significant" |  avg_sig_intercept == "Significant" ))/nrow(posspeedaccel)*100
-
-notsig_p <- nrow(subset(pos, avg_sig_slope != "Significant" &  avg_sig_intercept != "Significant"))/nrow(pos)*100
-notsig_s <- nrow(subset(speed, avg_sig_slope != "Significant" &  avg_sig_intercept != "Significant"))/nrow(speed)*100
-notsig_a <- nrow(subset(ccel, avg_sig_slope != "Significant" &  avg_sig_intercept != "Significant"))/nrow(ccel)*100
-notsig_ps <- nrow(subset(posspeed, avg_sig_slope != "Significant" &  avg_sig_intercept != "Significant"))/nrow(posspeed)*100
-notsig_pa <- nrow(subset(posaccel, avg_sig_slope != "Significant" &  avg_sig_intercept != "Significant"))/nrow(posaccel)*100
-notsig_sa <- nrow(subset(speedaccel,avg_sig_slope != "Significant" &  avg_sig_intercept != "Significant"))/nrow(speedaccel)*100
-notsig_psa <- nrow(subset(posspeedaccel, avg_sig_slope != "Significant" &  avg_sig_intercept != "Significant"))/nrow(posspeedaccel)*100
-
-```
-
-3. put into tibble
-```{r}
-mixed_ramps <- tibble(perc=c(sig_p,notsig_p,sig_s, notsig_s, sig_a,notsig_a,  sig_ps, notsig_ps, sig_pa, notsig_pa, sig_sa, notsig_sa, sig_psa,notsig_psa), 
+  sig_P <- (sig_P_num / num_cellsP) *100
+  sig_A <- (sig_A_num / num_cellsA) *100
+  sig_S <- (sig_S_num / num_cellsS) *100
+  sig_PA <- (sig_PA_num / num_cellsPA) *100
+  sig_PS <- (sig_PS_num / num_cellsPS) *100
+  sig_SA <- (sig_SA_num / num_cellsSA) *100
+  sig_PSA <- (sig_PSA_num / num_cellsPSA) *100
+  nonsig_P <- (notsig_P_num / num_cellsP) *100
+  nonsig_A <- (notsig_A_num / num_cellsA) *100
+  nonsig_S <- (notsig_S_num / num_cellsS) *100
+  nonsig_PA <- (notsig_PA_num / num_cellsPA) *100
+  nonsig_PS <- (notsig_PS_num / num_cellsPS) *100
+  nonsig_SA <- (notsig_SA_num / num_cellsSA) *100
+  nonsig_PSA <- (notsig_PSA_num / num_cellsPSA) *100
+  
+mixed_ramps <- tibble(perc=c(sig_P,nonsig_P,sig_S, nonsig_S, sig_A, nonsig_A, sig_PS, nonsig_PS, sig_PA, nonsig_PA, sig_SA, nonsig_SA, sig_PSA, nonsig_PSA), 
                       
                       ramp_id= c("P","P", 
                                  "S", "S", 
@@ -654,8 +665,14 @@ mixed_ramps <- tibble(perc=c(sig_p,notsig_p,sig_s, notsig_s, sig_a,notsig_a,  si
                                  "PAS", "PAS"), 
                       ramp_type= c("Sig", "Not Sig","Sig", "Not Sig", "Sig", "Not Sig","Sig", "Not Sig","Sig", "Not Sig","Sig", "Not Sig", "Sig", "Not Sig" ))
 
-
+}
 ```
+
+Calculate proportions for neurons with +/- ramps on beaconed trials.
+```{r}
+mixed_ramps <- calc_props_sig_dep(spatial_firing$reward_interaction_id, spatial_firing$final_model_o_b)
+```
+
 
 4. Plot model results
 ```{r}
@@ -688,14 +705,11 @@ We might also want to visualise the coefficients for the significant and non sig
 1. First seperate significant and non significant ramps
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-significant_ramps <- subset(ramps, avg_sig_slope == "Significant" | avg_sig_intercept == "Significant")
-nonsignificant_ramps <- subset(ramps, avg_sig_slope != "Significant" & avg_sig_intercept != "Significant")
-
 ```
 
 2. Then make stacked histogram of slope values for significant dataset
 ```{r}
-ggplot(data=significant_ramps, aes(x= asr_b_o_rewarded_fit_slope, fill="red")) +
+ggplot(data=subset(ramps, reward_interaction_id == "Significant" ), aes(x= asr_b_o_rewarded_fit_slope, fill="red")) +
   coord_cartesian(xlim = c(-0.6,0.6)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -713,7 +727,7 @@ ggsave(file = "plots/Histogram_sig_slopes_m2.png", width = 4.5, height = 2)
 
 3. same as above but for not significant datasets
 ```{r}
-ggplot(data=nonsignificant_ramps, aes(x= asr_b_o_rewarded_fit_slope, fill="grey")) +
+ggplot(data=subset(ramps, reward_interaction_id == "Significant"), aes(x= asr_b_o_rewarded_fit_slope, fill="grey")) +
   coord_cartesian(xlim = c(-0.6,0.6)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, fill="Grey") +
   ylab("Proportion") +
@@ -731,7 +745,7 @@ ggsave(file = "plots/Histogram_notsig_slopes_m2.png", width = 4.5, height = 2)
 
 4. Make stacked histogram of rsquared values for significant dataset
 ```{r}
-ggplot(data=significant_ramps, aes(x= asr_b_o_rewarded_fit_r.squared, fill="red")) +
+ggplot(data=subset(ramps, reward_interaction_id == "Significant"), aes(x= asr_b_o_rewarded_fit_r.squared, fill="red")) +
   coord_cartesian(xlim = c(0,1)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -745,13 +759,12 @@ ggplot(data=significant_ramps, aes(x= asr_b_o_rewarded_fit_r.squared, fill="red"
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/sig_r2_histogram_m2.png", width = 4.5, height = 2)
 
-
 ```
 
 4. Same as above but for shuffled datasets
 
 ```{r}
-ggplot(data=nonsignificant_ramps, aes(x= asr_b_o_rewarded_fit_r.squared, fill="Grey")) +
+ggplot(data=subset(ramps, reward_interaction_id == "Significant"), aes(x= asr_b_o_rewarded_fit_r.squared, fill="Grey")) +
   coord_cartesian(xlim = c(0,1)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, fill="Grey") +
   ylab("Proportion") +
