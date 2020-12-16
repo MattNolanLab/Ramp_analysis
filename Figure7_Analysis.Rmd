@@ -394,6 +394,7 @@ ggsave(file = "plots/nonsig_r2_histogram.png", width = 4.5, height = 2)
 ```
 
 
+
 ### -------------------------------------------------------------------------------------------- ###
 
 ### -------------------------------------------------------------------------------------------- ###
@@ -403,11 +404,10 @@ ggsave(file = "plots/nonsig_r2_histogram.png", width = 4.5, height = 2)
 ## Method 2 : Run average rates and compare hit and miss via an anova 
 
 
-1. Combine hit and miss trials
+1. first combine hit and miss trials together with an indicator of rewarded/not rewarded
 ```{r}
 join_rates <- function(hit, miss, session_id, cluster_id) {
   if (any(is.na(miss))) { 
-    #print(paste0("No failed trials. Session: ", session_id, ". Cluster:", cluster_id))
     return(
       df <- tibble(Rates = NA, 
                Position = NA,
@@ -425,6 +425,7 @@ spatial_firing <- spatial_firing %>%
 
 2. Run lm and compare models without reward to models with via anova
 _extract both slope and intercept significance_
+matt : this could probably be reduced to one function using your unnest_wider function. 
 ```{r}
 compare_models_slope <- function(df, miss){
  # Check for NAs
@@ -441,7 +442,7 @@ compare_models_intercept <- function(df, miss){
   if (any(is.na(miss))) {
     return(NA)
   }
-  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df, na.action = na.omit, REML = FALSE) # more complicated model
+  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df, na.action = na.omit, REML = FALSE) 
   prtAnova <- car::Anova(fit, type="II")
   return (prtAnova$"Pr(>Chisq)"[2][1])
 }
@@ -456,7 +457,7 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
-### tag cells based on significance
+### tag cells based on either slope or intercept significance
 1. make function
 ```{r}
 mark_neurons_sig <- function(pval){
@@ -481,9 +482,7 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
-
-
-### overall tag - regardless of slope or intercept
+### overall tag - tag whether cells are significant regardless of slope or intercept
 1. make function
 ```{r}
 mark_neurons_sig <- function(slope, intercept){
@@ -507,11 +506,12 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
+
 ### --------------------------------------------------------------------------------------------- ###
 
 ## Plot distribution of slopes of significant and non signifncant ramps
 
-1. First extract significant ramps
+1. First extract all ramps, and then selectively significant ramps into different dataframes
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
 significant_ramps <- subset(ramps, avg_sig_slope == "Significant" | sig_intercept == "Significant")
@@ -519,7 +519,6 @@ significant_ramps <- subset(ramps, avg_sig_slope == "Significant" | sig_intercep
 ```
 
 2. extract data for all ramp cells in a tibble
-
 ```{r}
 lm_results <- tibble(Ramp_type = as.character(ramps$lm_group_b),
     Slopes = ramps$asr_b_o_rewarded_fit_slope, 
@@ -527,7 +526,7 @@ lm_results <- tibble(Ramp_type = as.character(ramps$lm_group_b),
     id = ramps$cluster_id)
 ```
 
-3. do the same for significant ramps
+3. do the same for just significant ramps
 ```{r}
 lm_results_ramps <- tibble(Ramp_type = as.character(significant_ramps$lm_group_b),
     Slopes = significant_ramps$asr_b_o_rewarded_fit_slope, 
@@ -557,33 +556,39 @@ ggsave(file = "plots/lm_plot_rewards_m2.png", width = 5, height = 6)
 ```
 
 
-## Find proportions for above - significiant and non-significant 
+5. Visualise the proportion of cells that fit the above criteria.  
 
-1. extract outbound ramps
+We will focus here only on neurons classified as having a positive or negative slope in Figure 2. 
+
+Function to return a tibble with proportions of neurons classified as significant or none-significant.
 ```{r}
-# extracting diff models 
-pos <-subset(spatial_firing, lm_group_b == "Positive")
-neg <-subset(spatial_firing, lm_group_b == "Negative")
-none <-subset(spatial_firing, lm_group_b == "Unclassified")
+calc_props_sig_dep <- function(reward_group, outbound){
+  cue_group <- as.character(reward_group)
+  num_positive_cells <- length(which(outbound == "Positive"))
+  num_negative_cells <- length(which(outbound == "Negative"))
 
+  sig_positive_num <- length(which(reward_group == "Significant" & outbound == "Positive"))
+  sig_negative_num <- length(which(reward_group == "Significant" & outbound == "Negative"))
+  notsig_positive_num <- length(which(reward_group != "Significant" & outbound == "Positive"))
+  notsig_negative_num <- length(which(reward_group != "Significant" & outbound == "Negative"))
+  
+  sig_pos <- (sig_positive_num / num_positive_cells) *100
+  sig_neg <- (sig_negative_num / num_negative_cells) *100
+  notsig_pos <- (notsig_positive_num / num_positive_cells) *100
+  notsig_neg <- (notsig_negative_num / num_negative_cells) *100
+
+proportions_mixed_ramps <- tibble(perc=c(sig_neg, notsig_neg, sig_pos, notsig_pos), 
+                                  ramp_id= c("Sig", "Not", "Sig", "Not"),
+                                  ramp_type = c("Negative", "Negative", "Positive", "Positive"))
+}
 ```
 
-2. extract significant ramps
+Calculate proportions for neurons with +/- ramps on beaconed trials.
 ```{r}
-sig_positive<- nrow(subset(pos, avg_sig_slope == "Significant" |  avg_sig_intercept == "Significant"))/nrow(pos)*100
-notsig_positive <- nrow(subset(pos, avg_sig_slope != "Significant" &  avg_sig_intercept != "Significant" ))/nrow(pos)*100
-
-sig_negative <- nrow(subset(neg, avg_sig_slope == "Significant" |  avg_sig_intercept == "Significant" ))/nrow(neg)*100
-notsig_negative <- nrow(subset(neg, avg_sig_slope != "Significant" &  avg_sig_intercept != "Significant" ))/nrow(neg)*100
+proportions_mixed_ramps <- calc_props_sig_dep(spatial_firing$reward_interaction_id, spatial_firing$lm_group_b)
 ```
 
-3. Put in tibble
-```{r}
-proportions_mixed_ramps <- tibble(perc=c(sig_negative, notsig_negative, sig_positive, notsig_positive), ramp_id= c("Sig", "Not", "Sig", "Not"),ramp_type = c("Negative", "Negative", "Positive", "Positive"))
-
-```
-
-4. Plot results
+6. Plot results
 ```{r}
 ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
   coord_cartesian(ylim = c(0,100), xlim=(NULL)) +
@@ -767,7 +772,7 @@ ggsave(file = "plots/nonsig_r2_histogram_m2.png", width = 4.5, height = 2)
 
 ## extract slope, r.squared vlaue and pval for failed trials
 
------------------------------------------------------------------------------------------ ###
+### ----------------------------------------------------------------------------------------- ###
 
 # Run simple linear model to examine relationship between firing rate and position in failed trials
 _note:for now we are only interested in the outbound region of the track (30 - 90 cm)_
@@ -792,39 +797,7 @@ spatial_firing <- spatial_firing %>%
          )
 ```
 
-3. Make function to run linear model
-```{r}
-lm_helper <- function(df,
-                      startbin = 30,
-                      endbin = 90) {
- # Check for NAs
-  if (any(is.na(df$Rates))) {
-    df <-
-      tibble(
-        r.squared = c(NA),
-        p.value = c(NA),
-        intercept = c(NA),
-        slope = c(NA)
-      )
-    return(df)
-  }
-
-  df <- df %>%
-    subset(Position >= startbin & Position <= endbin)
-  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
-
-  # get the model parameters
-  params <- select(glance(df_fit), r.squared, p.value)
-  # get the coefficients
-  coeffs <- tidy(df_fit)
-  # combine the parameters and coefficients
-  params$intercept <- coeffs$estimate[[1]]
-  params$slope <- coeffs$estimate[[2]]
-  return(params)
-}
-```
-
-4. run lm on all cells.
+3. run lm on all cells.
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
 ```{r}
 spatial_firing <- spatial_firing %>%
@@ -839,18 +812,17 @@ spatial_firing$asr_b_o_failed_fit_pval
 spatial_firing$asr_b_o_failed_fit_slope
 spatial_firing$asr_b_o_failed_fit_r.squared
 
-3. extract ramps
+4. subset by outbound ramps
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
 ```
 
-4. Plot coefficients of model (slope and r2 value) for each neuron
+5. Plot slope coefficient from linear model for both failed and rewarded trials
 ```{r}
 ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
                                 y = asr_b_o_failed_fit_slope, 
                                 fill = factor(unlist(reward_interaction_id)),
                                 color = factor(unlist(reward_interaction_id)))) +
-    #coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0-0.7,0.7)) +
     geom_point(alpha=0.3) +
     scale_fill_manual(values=c("grey", "red")) +
     scale_color_manual(values=c("grey", "red")) +
@@ -868,13 +840,14 @@ ggsave(file = "plots/reward_vs_failed_slope_rampcells.png", width = 5, height = 
 ```
 ,
 
-4. Plot coefficients of model (slope and r2 value) for just slope significant neurons
+6. Plot slope coefficient from linear model for both failed and rewarded trials
+_just looking at neurons that are significant for slope between rewarded/failed_
 ```{r}
-ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
-                                y = asr_b_o_failed_fit_slope, 
-                                fill = factor(unlist(avg_sig_slope)),
-                                color = factor(unlist(avg_sig_slope)))) +
-    #coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0-0.7,0.7)) +
+ggplot(data=ramps, 
+       aes(x = asr_b_o_rewarded_fit_slope,
+           y = asr_b_o_failed_fit_slope, 
+           fill = factor(unlist(avg_sig_slope)),
+           color = factor(unlist(avg_sig_slope)))) +
     geom_point(alpha=0.3) +
     scale_fill_manual(values=c("grey", "red")) +
     scale_color_manual(values=c("grey", "red")) +
@@ -890,13 +863,14 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 ggsave(file = "plots/reward_vs_failed_slope_slopesignificantcells.png", width = 5, height = 5)
 ```
-4. Plot coefficients of model (slope and r2 value) for just intercept significant neurons
+
+7. Plot coefficients of model (slope and r2 value) for just intercept significant neurons
 ```{r}
-ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_intercept,
-                                y = asr_b_o_failed_fit_intercept, 
-                                fill = factor(unlist(avg_sig_intercept)),
-                                color = factor(unlist(avg_sig_intercept)))) +
-    #coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0-0.7,0.7)) +
+ggplot(data=ramps, 
+       aes(x = asr_b_o_rewarded_fit_intercept,
+           y = asr_b_o_failed_fit_intercept, 
+           fill = factor(unlist(avg_sig_intercept)),
+           color = factor(unlist(avg_sig_intercept)))) +
     geom_point(alpha=0.3) +
     scale_fill_manual(values=c("grey", "red")) +
     scale_color_manual(values=c("grey", "red")) +
@@ -913,403 +887,104 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_intercept,
 ggsave(file = "plots/reward_vs_failed_slope_interceptsignificantcells.png", width = 5, height = 5)
 ```
 
-### run lm on failed trials
-1. Write function to add position
+### ----------------------------------------------------------------------------------------- ###
+
+## Now we want to examine if there are differences in the reset activity between failed and rewarded trials
+
+To do this, we can plot population rate for rewarded and failed trials across whole track 
+
+Function to plot data mean and SD of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
 ```{r}
-add_position <- function(df, session_id, cluster_id) {
-  df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
-  if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
-  df
-}
-```
-
-2. Run on dataframe : Average trials with reward
-
-input columns: 
-Rates_averaged_rewarded_b = beaconed trials
-Rates_averaged_rewarded_nb = non-beaconed / probe trials
-Rates_averaged_rewarded_p = probe trials
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(asr_b_failed = pmap(list(Rates_averaged_failed_b, session_id, cluster_id), add_position),
-         asr_nb_failed = pmap(list(Rates_averaged_failed_nb, session_id, cluster_id), add_position),
-         asr_p_failed = pmap(list(Rates_averaged_failed_p, session_id, cluster_id), add_position)
-         )
-```
-
-
-3. Make function to run linear model
-```{r}
-lm_helper <- function(df,
-                      startbin = 110,
-                      endbin = 170) {
- # Check for NAs
-  if (any(is.na(df$Rates))) {
-    df <-
-      tibble(
-        r.squared = c(NA),
-        p.value = c(NA),
-        intercept = c(NA),
-        slope = c(NA)
-      )
-    return(df)
-  }
-
+mean_SD_plots <- function(df, group_b, group_nb, track_group, x_start = 30, x_end = 90){
   df <- df %>%
-    subset(Position >= startbin & Position <= endbin)
-  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
-
-  # get the model parameters
-  params <- select(glance(df_fit), r.squared, p.value)
-  # get the coefficients
-  coeffs <- tidy(df_fit)
-  # combine the parameters and coefficients
-  params$intercept <- coeffs$estimate[[1]]
-  params$slope <- coeffs$estimate[[2]]
-  return(params)
+    filter(lm_group_b == group_b,
+           lm_group_nb == group_nb, 
+           reset_group == track_group) %>%
+    select(Rates_averaged_rewarded_b, Rates_averaged_failed_b, cue_group_o) %>%
+    unnest(c(Rates_averaged_rewarded_b, Rates_averaged_failed_b))
+ df$Rates_averaged_rewarded_b <- as.double(df$Rates_averaged_rewarded_b)
+ df$Rates_averaged_failed_b <- as.double(df$Rates_averaged_failed_b)
+ df$cue_group_o <- as.character(df$cue_group_o)
+ numcells <- length(df$Rates_averaged_failed_b)/200
+ df$Position <- rep(1:200, times = numcells)
+ 
+ df <- df %>%
+   group_by(cue_group_o, Position) %>%
+   summarise(mean_b = mean(Rates_averaged_rewarded_b, na.rm = TRUE),
+             mean_failed = mean(Rates_averaged_failed_b, na.rm = TRUE),
+             se_b = std.error(Rates_averaged_rewarded_b, na.rm = TRUE),
+             se_failed = std.error(Rates_averaged_failed_b, na.rm = TRUE))
+ 
+ ggplot(data=df) +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b), fill = "grey70", alpha=0.2) +
+  geom_ribbon(aes(x=Position, y=mean_failed, ymin = mean_failed - se_failed, ymax = mean_failed + se_failed), fill = "Red2", alpha=0.05) +
+  geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
+  geom_line(aes(y=mean_failed, x=Position), color = "Red2") +
+  theme_classic() +
+  labs(y = "Mean firing rate (Hz)", x = "Position") +
+   xlim(x_start, x_end) +
+  theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.title = element_blank(),
+        text = element_text(size=12))
 }
 ```
 
-4. run lm on all cells.
-Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
+1. Split data based on cue independant/cue dependant (cue_groups are as described in Figure5) and encoding group
 ```{r}
-spatial_firing <- spatial_firing %>%
-  select(-contains('asr_b_h_failed_fit_')) %>%
-  mutate(asr_b_h_failed_fit = pmap(list(asr_b_failed, 110, 170), lm_helper)) %>%
-  unnest_wider(asr_b_h_failed_fit, names_sep = "_", names_repair = "universal")
-
+position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative",
+                           final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
-
-#### predict reset activity for failed and rewarded trials
-
-
-
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
-
-Now we want to plot population rate across whole track for diff groups so we can visualise the average firing rate
-
-cue_groups are as follows :
-
-outbound homebound  reset
-    +       +         n
-    +       +         y
-    +       -         -
-    +      non        -
-    -       +         -
-    -       -         n
-    -       -         y
-    -      non        -
-    
-    
-1. Split data based on cue independant/cue dependant
-
+2. Subset data by group then average rates for plotting          **Negative Negative Continuous**
 ```{r}
-pi_data <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+(NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Unclassified", "Continuous",  0, 200))
+# ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
 ```
-
-3. subset based on position
+2. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-pi_data <-subset(spatial_firing, final_model_o_b == "S" | final_model_o_b == "A")
-
-#| final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA"
+(NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Unclassified", "Reset",  0, 200))
+# ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
 ```
-
-3. subset based on speed/acceleration
-```{r}
-pi_data <-subset(spatial_firing, final_model_o_b == "S" | final_model_o_b == "A" | final_model_o_b == "SA")
-```
-
-
-2. make tibble with average firing rates and classifications : _just path integration neurons_
-```{r}
-df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$Rates_averaged_rewarded_b), Failed_rates = unlist(pi_data$Rates_averaged_failed_b),Outbound_beaconed = rep(pi_data$lm_group_b, each=200), Homebound_beaconed = rep(pi_data$lm_group_b_h, each=200), group = rep(as.character(pi_data$reset_group), each=200), predict_diff = rep(as.numeric(pi_data$predict_diff), each=200))
-
-```
-
-3. Subset data by group then average rates for plotting          **Negative Negative Continuous**
-```{r}
-df_neg_cue <- df %>%
-  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
-  subset(group == "Continuous") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates), mean_b_f = mean(Failed_rates), sd_b_f = std.error(Failed_rates)) %>%
-  mutate(Position = rep(-30:169))
-  
-```
-
-5. Plot average rates                                           **Negative Negative Continuous**
-```{r}
-ggplot(data=df_neg_cue) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b_f, ymin = mean_b_f - sd_b_f, ymax = mean_b_f + sd_b_f), fill = "red", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.3) +
-  geom_line(aes(y=mean_b, x=Position), color = "Black") +
-  geom_line(aes(y=mean_b_f, x=Position), color = "Red") +
-  theme_classic() +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-ggsave(file = "plots/Negneg_contiuous_mean_failed_pcells.png", width = 3.5, height = 2.5)
-
-```
-
-
-4. Subset data by group then average rates for plotting          **Negative Negative Reset**
-
-```{r}
-df_neg_cue <- df %>%
-  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
-  subset(group == "Reset") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, rm.na = TRUE), 
-                   sd_b = std.error(Rates), mean_b_f = mean(Failed_rates, rm.na = TRUE), sd_b_f = std.error(Failed_rates)) %>%
-  mutate(Position = rep(-30:169))
-  
-```
-
-5. Plot data                                                    **Negative Negative Reset**
-```{r}
-ggplot(data=df_neg_cue) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b_f, ymin = mean_b_f - sd_b_f, ymax = mean_b_f + sd_b_f), fill = "red", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.3) +
-  geom_line(aes(y=mean_b, x=Position), color = "Black") +
-  geom_line(aes(y=mean_b_f, x=Position), color = "Red") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,30,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-ggsave(file = "plots/negneg_reset_mean_failed_pcells.png", width = 3.5, height = 2.5)
-
-```
-
-
-
-4. Subset data by group then average rates for plotting          **Negative Positive**
-```{r}
-df_pos_cue <- df %>%
-  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm =TRUE), sd_b = std.error(Rates, na.rm =TRUE), mean_b_f = mean(Failed_rates, na.rm =TRUE), sd_b_f = std.error(Failed_rates, na.rm =TRUE)) %>%
-  mutate(Position = rep(-30:169))
-  
-```
-
-5. Plot data
-```{r}
-ggplot(data=df_pos_cue) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b_f, ymin = mean_b_f - sd_b_f, ymax = mean_b_f + sd_b_f), fill = "red", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.3) +
-  geom_line(aes(y=mean_b, x=Position), color = "Black") +
-  geom_line(aes(y=mean_b_f, x=Position), color = "Red") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-ggsave(file = "plots/negpos_mean_failed_pcells.png", width = 3.5, height = 2.5)
-
-```
-
 
 4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
 ```{r}
-df_pos_pi <- df %>%
-  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
-  subset(group == "Continuous") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates), mean_b_f = mean(Failed_rates), sd_b_f = std.error(Failed_rates)) %>%
-  mutate(Position = rep(-30:169))
-  
+(PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Positive", "Continuous", 0, 200))
+# ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
 ```
-
-
-5. Plot data                                                    **Positive Positive Continuous**
-```{r}
-ggplot(data=df_pos_pi) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b_f, ymin = mean_b_f - sd_b_f, ymax = mean_b_f + sd_b_f), fill = "red", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.3) +
-  geom_line(aes(y=mean_b, x=Position), color = "Black") +
-  geom_line(aes(y=mean_b_f, x=Position), color = "Red") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,30,10), expand = c(0, 0)) +
-  #geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-ggsave(file = "plots/pospos_continuous_mean_failed_pcells.png", width = 3.5, height = 2.5)
-
-
-```
-
-
 4. Subset data by group then average rates for plotting          **Positive Positive Reset**
-
 ```{r}
-df_pos_pi <- df %>%
-  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
-  subset(group == "Reset") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm =TRUE), sd_b = std.error(Rates, na.rm =TRUE), mean_b_f = mean(Failed_rates, na.rm =TRUE), sd_b_f = std.error(Failed_rates, na.rm =TRUE)) %>%
-  mutate(Position = rep(-30:169))
-  
-```
-
-
-5. Plot data                                                     **Positive Positive Reset**
-```{r}
-ggplot(data=df_pos_pi) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b_f, ymin = mean_b_f - sd_b_f, ymax = mean_b_f + sd_b_f), fill = "red", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.3) +
-  geom_line(aes(y=mean_b, x=Position), color = "Black") +
-  geom_line(aes(y=mean_b_f, x=Position), color = "Red") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-ggsave(file = "plots/pospos_reset_mean_failed_pcells.png", width = 3.5, height = 2.5)
-
-
-```
-
-4. Subset data by group then average rates for plotting          **Positive Negative**
-
-```{r}
-df_pos_pi <- df %>%
-  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm =TRUE), sd_b = std.error(Rates, na.rm =TRUE), mean_b_f = mean(Failed_rates, na.rm =TRUE), sd_b_f = std.error(Failed_rates, na.rm =TRUE)) %>%
-  mutate(Position = rep(-30:169))
-```
-
-
-5. Plot data                                                        **Positive Negative**
-```{r}
-ggplot(data=df_pos_pi) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b_f, ymin = mean_b_f - sd_b_f, ymax = mean_b_f + sd_b_f), fill = "red", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.3) +
-  geom_line(aes(y=mean_b, x=Position), color = "Black") +
-  geom_line(aes(y=mean_b_f, x=Position), color = "Red") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12), 
-        panel.grid = element_blank(),
-        panel.border = element_blank()) 
-ggsave(file = "plots/posneg_mean_failed_pcells.png", width = 3.5, height = 2.5)
-
-
+(PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Positive", "Reset", 0, 200))
+# ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
 ```
 
 
 4. Subset data by group then average rates for plotting          **Positive Unclassified**
-
 ```{r}
-df_pos_pi <- df %>%
-  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Unclassified") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm =TRUE), sd_b = std.error(Rates, na.rm =TRUE), mean_b_f = mean(Failed_rates, na.rm =TRUE), sd_b_f = std.error(Failed_rates, na.rm =TRUE)) %>%
-  mutate(Position = rep(-30:169))
-```
-
-5. Plot rates                                                     **Positive Unclassified**
-```{r}
-ggplot(data=df_pos_pi) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b_f, ymin = mean_b_f - sd_b_f, ymax = mean_b_f + sd_b_f), fill = "red", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.3) +
-  geom_line(aes(y=mean_b, x=Position), color = "Black") +
-  geom_line(aes(y=mean_b_f, x=Position), color = "Red") +
-
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12), 
-        panel.grid = element_blank(),
-        panel.border = element_blank()) 
-
-ggsave(file = "plots/posnon_mean_failed_pcells.png", width = 3.5, height = 2.5)
-
-
+(PosPos_plot <- mean_SD_plots(position_neurons, "Positive", "Unclassified", "Reset", 0, 200))
+# ggsave(file = "plots/AverageRates_PositionCells_PosPI.png", width = 3.5, height = 2.5)
 ```
 
 4. Subset data by group then average rates for plotting          **Negative Unclassified**
-
 ```{r}
-df_pos_pi <- df %>%
-  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Unclassified") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm =TRUE), sd_b = std.error(Rates, na.rm =TRUE), mean_b_f = mean(Failed_rates, na.rm =TRUE), sd_b_f = std.error(Failed_rates, na.rm =TRUE)) %>%
-  mutate(Position = rep(-30:169))
-  
+(NegNeg_plot <- mean_SD_plots(position_neurons, "Negative", "Unclassifid", "Reset", 0, 200))
+# ggsave(file = "plots/AverageRates_PositionCells_NegPI.png", width = 3.5, height = 2.5)
 ```
 
-5. Plot data                                                      **Negative Unclassified**
+
+4. Subset data by group then average rates for plotting          **Negative PI only**
+These data are not in position neurons so make a new data frame containing these neurons.
 ```{r}
-ggplot(data=df_pos_pi) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
-  geom_line(aes(y=mean_b, x=Position), color = "black") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12), 
-        panel.grid = element_blank(),
-        panel.border = element_blank()) 
-
-ggsave(file = "plots/negnon_mean.png", width = 3.5, height = 2.5)
-
-
+unclassified_neurons <- filter(spatial_firing, lm_group_b == "Unclassified")
 ```
 
+```{r}
+(UCNeg_plot <- mean_SD_plots(unclassified_neurons, "Unclassified", "Negative", 0, 200))
+# ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
+```
+
+4. Subset data by group then average rates for plotting          **Positive PI only**
+```{r}
+(UCPos_plot <- mean_SD_plots(unclassified_neurons, "Unclassified", "Positive", 0, 200))
+# ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
+```
