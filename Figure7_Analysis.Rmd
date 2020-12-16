@@ -310,8 +310,6 @@ ggsave(file = "plots/cell_proportions-lmmodel_signeurons.png", width = 3, height
 
 ### -------------------------------------------------------------------------------------------- ###
 
-
-
 We might also want to visualise the coefficients for the significant and non significant datasets as a histogram.
 
 1. First seperate significant and non significant ramps
