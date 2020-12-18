@@ -46,9 +46,7 @@ source_python("pickle_reader.py") # run python script which loads the dataframes
 2. Load frame for each cohort
 ```{r}
 dataframe_to_load <- "data/Alldays_cohort_1.pkl" # name of the pickled dataframe want to load 
-source_python("pickle_reader.py") # run python script which loads the dataframes - should be in working directory
 spatial_firing1 <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
-#spatial_firing1 <- spatial_firing1[c('Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb')]
 
 dataframe_to_load <- "data/Alldays_cohort_2.pkl" 
 source_python("pickle_reader.py") 
