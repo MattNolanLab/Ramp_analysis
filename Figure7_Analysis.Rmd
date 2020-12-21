@@ -156,6 +156,7 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
                                 y = asr_b_run_fit_slope, 
                                 fill = factor(unlist(reward_interaction_id)),
                                 color = factor(unlist(reward_interaction_id)))) +
+    coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
     geom_point(alpha=0.3) +
     scale_fill_manual(values=c("grey", "red", "blue")) +
     scale_color_manual(values=c("grey", "red", "blue")) +
@@ -169,7 +170,7 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=12), 
           legend.text=element_text(size=12), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_run.png", width = 5, height = 5)
+ggsave(file = "plots/SlopeScatter_reward_vs_run.png", width = 4, height = 4)
 ```
 ,5. Plot slope coefficient from linear model for both failed and rewarded trials
 ```{r}
@@ -177,6 +178,7 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
                                 y = asr_b_try_fit_slope, 
                                 fill = factor(unlist(reward_interaction_id)),
                                 color = factor(unlist(reward_interaction_id)))) +
+    coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
     geom_point(alpha=0.3) +
     scale_fill_manual(values=c("grey", "red", "blue")) +
     scale_color_manual(values=c("grey", "red", "blue")) +
@@ -190,7 +192,7 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=12), 
           legend.text=element_text(size=12), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_try.png", width = 5, height = 5)
+ggsave(file = "plots/SlopeScatter_reward_vs_try.png", width = 4, height = 4)
 ```
 
 ### ----------------------------------------------------------------------------------------- ###
@@ -201,8 +203,7 @@ To do this, we can plot population rate for rewarded and failed trials across wh
 
 1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
-position_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI",
-                          )
+position_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA" )
 ```
 ## final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA"
 Function to plot data mean and SD of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
@@ -245,24 +246,24 @@ mean_SD_plots <- function(df, group_b, group_h, track_group, x_start = 30, x_end
 2. Subset data by group then average rates for plotting          **Negative Negative Continuous**
 ```{r}
 (NegNegC_plot <- mean_SD_plots(position_neurons, "Negative", "Negative", "Continuous",  0, 200))
-ggsave(file = "plots/NegNeg_Continuous_failed_PI.png", width = 4.5, height = 2.5)
+ggsave(file = "plots/NegNeg_Continuous_failed_PI_speed.png", width = 4.5, height = 2.5)
 ```
 2. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
 (NegNegR_plot <- mean_SD_plots(position_neurons, "Negative", "Negative", "Reset",  0, 200))
-ggsave(file = "plots/NegNeg_Reset_failed_PI.png", width = 4.5, height = 2.5)
+ggsave(file = "plots/NegNeg_Reset_failed_PI_speed.png", width = 4.5, height = 2.5)
 ```
 
 4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
 ```{r}
 (PosPosC_plot <- mean_SD_plots(position_neurons, "Positive", "Positive", "Continuous", 0, 200))
-ggsave(file = "plots/PosPos_Continuous_failed_PI.png", width = 4.5, height = 2.5)
+ggsave(file = "plots/PosPos_Continuous_failed_PI_speed.png", width = 4.5, height = 2.5)
 ```
 
 4. Subset data by group then average rates for plotting          **Positive Positive Reset**
 ```{r}
 (PosPosR_plot <- mean_SD_plots(position_neurons, "Positive", "Positive", "Reset", 0, 200))
-ggsave(file = "plots/PosPos_Reset_failed_PI.png", width = 4.5, height = 2.5)
+ggsave(file = "plots/PosPos_Reset_failed_PI_speed.png", width = 4.5, height = 2.5)
 ```
 
 
@@ -305,11 +306,109 @@ mean_SD_plots <- function(df, group_b, group_h, x_start = 30, x_end = 90){
 4. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
 (PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Negative", 0, 200))
-ggsave(file = "plots/PosNeg_failed_PI.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/PosNeg_failed_PI_speed.png", width = 4.5, height = 2.5)
 ```
 4. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
 (NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Positive", 0, 200))
-ggsave(file = "plots/NegPos_failed_PI.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/NegPos_failed_PI_speed.png", width = 4.5, height = 2.5)
 ```
 
+
+
+
+
+### ------------------------------------------------------------------------------------ ###
+
+## average speed vs location
+
+First average speed for each cluster
+
+```{r}
+
+average_speed <- function(df, TT=0) {
+  df <-
+    tibble(
+      Rates = as.numeric(Re(df[[1]])),
+      Position = as.integer(Re(df[[2]])),
+      Acceleration = as.numeric(Re(df[[3]])),
+      Speed = as.numeric(Re(df[[4]])),
+      Trials = as.factor(df[[5]]),
+      Types = as.factor(df[[6]]))
+  
+
+  df <- df %>%
+    subset(Speed > 2 & Types == TT) %>%
+    select(Position, Speed ) %>%
+    group_by(Position) %>%
+    dplyr::summarise(mean_b = mean(Speed, na.rm=TRUE), sd_b = std.error(Speed, na.rm=TRUE))
+  return(df)
+  
+}
+```
+
+
+```{r}
+spatial_firing <- spatial_firing  %>%
+  mutate(mean_speed = map2(spikes_in_time, 0, average_speed))
+
+```
+
+Then average over selected neurons 
+
+1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in these neurons here
+```{r}
+position_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA" )
+```
+## final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA"
+Function to plot data mean and SD of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
+```{r}
+mean_speed_plots <- function(df, x_start = 30, x_end = 90){
+
+ df <- df %>%
+   select(mean_speed) %>%
+   unnest(c(mean_speed))
+ 
+ df <- df %>%
+   group_by(Position) %>%
+   dplyr::summarise(mean_b = mean(mean_b, na.rm = TRUE),
+             se_b = std.error(mean_b, na.rm = TRUE))
+ 
+ ggplot(data=df) +
+  coord_cartesian(ylim=c(0,100)) +
+  annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b), alpha=0.1) +
+   geom_smooth(aes(y=mean_b, x=Position), alpha=0.5, n= 100, span=0.2) +
+   scale_fill_manual(values=c("black", "red", "blue")) +
+   scale_color_manual(values=c("black", "red", "blue")) +
+   theme_classic() +
+   labs(y = "Mean speed (cm/s)", x = "Position") +
+   xlim(x_start, x_end) +
+   theme(axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        legend.title = element_blank(),
+        text = element_text(size=12))
+ 
+}
+```
+
+2. Subset data by group then average rates for plotting          
+```{r}
+(Pos_speed_plot <- mean_speed_plots(position_neurons,  0, 200))
+ggsave(file = "plots/PI_speed.png", width = 4.5, height = 2.5)
+```
+
+
+
+1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in these neurons here
+```{r}
+speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "A" | final_model_o_b == "SA")
+```
+
+2. Subset data by group then average rates for plotting          
+```{r}
+(Speed_speed_plot <- mean_speed_plots(speed_neurons,  0, 200))
+ggsave(file = "plots/Sp_speed.png", width = 4.5, height = 2.5)
+```
