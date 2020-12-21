@@ -26,9 +26,9 @@ We might want to see differences in the relationship between firing rate and pos
 join_rates <- function(hit, run, try, session_id, cluster_id) {
   if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
     return(
-      df <- tibble(Rates = NA, 
-               Position = NA,
-               Reward_indicator = NA)
+      df <- tibble(Rates = rep(NA, times=600), 
+               Position = rep(NA, times=600),
+               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)))
     )
   }
   df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try)), Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)), Position = c(rep(1:200), rep(1:200), rep(1:200)))
@@ -100,11 +100,14 @@ _note:for now we are only interested in the outbound region of the track (30 - 9
 1. Write function to add position
 ```{r}
 add_position <- function(df, session_id, cluster_id) {
-  #print(length(df))
-  if(length(df) <1){print("All NAs. Session: ")}
+  if(all(is.na(df))){
+    print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))
+    df <- tibble(Rates = rep(NA, times=200), 
+                 Position = rep(NA, times=200))
+    return(df)
+    }
   df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
-  if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
-  df
+  return(df)
 }
 ```
 input columns: 
@@ -199,16 +202,16 @@ To do this, we can plot population rate for rewarded and failed trials across wh
 1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
 position_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI",
-                           final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+                          )
 ```
-
+## final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA"
 Function to plot data mean and SD of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
 ```{r}
-mean_SD_plots <- function(df, group_b, group_nb, track_group, x_start = 30, x_end = 90){
+mean_SD_plots <- function(df, group_b, group_h, track_group, x_start = 30, x_end = 90){
 
  df <- df %>%
   filter(lm_group_b == group_b,
-         lm_group_nb == group_nb, 
+         lm_group_b_h == group_h, 
          reset_group == track_group) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b))
@@ -264,11 +267,12 @@ ggsave(file = "plots/PosPos_Reset_failed_PI.png", width = 4.5, height = 2.5)
 
 
 ```{r}
-mean_SD_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
+mean_SD_plots <- function(df, group_b, group_h, x_start = 30, x_end = 90){
+ print(length(df))
 
  df <- df %>%
   filter(lm_group_b == group_b,
-         lm_group_nb == group_nb) %>%
+         lm_group_b_h == group_h) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b))
  
@@ -306,6 +310,6 @@ ggsave(file = "plots/PosNeg_failed_PI.png", width = 3.5, height = 2.5)
 4. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
 (NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Positive", 0, 200))
-ggsave(file = "plots/AverageRates_NegPos_failed_PI.png", width = 3.5, height = 2.5)
+ggsave(file = "plots/NegPos_failed_PI.png", width = 3.5, height = 2.5)
 ```
 
