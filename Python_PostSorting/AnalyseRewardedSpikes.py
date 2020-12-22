@@ -96,7 +96,6 @@ def extract_time_binned_firing_rate_rewarded(spike_data, prm):
     return spike_data
 
 
-
 def plot_rewarded_firing_rate(spike_data, prm):
     save_path = prm.get_local_recording_folder_path() + '/Figures/Average_Rates_rewarded'
     if os.path.exists(save_path) is False:
@@ -213,9 +212,6 @@ def plot_rewarded_rates(spike_data, prm):
     spike_data = plot_rewarded_firing_rate(spike_data, prm)
     spike_data = plot_rewarded_nb_firing_rate(spike_data, prm)
     return spike_data
-
-
-
 
 
 

@@ -155,72 +155,28 @@ def calculate_speed_from_position(spike_data, recording_folder):
 
 
 
-
-### --------------------------------------------------------------------------------------- ###
-
-
-
-### FOR R ####
-
-def package_speed_data_for_r(spike_data):
-    for cluster_index in range(len(spike_data)):
-        spike_data["speed_data"] = ""
-        speed = np.array(spike_data.at[cluster_index, "binned_speed_ms_per_trial"])
-        trials=np.array(spike_data.loc[cluster_index].spike_num_on_trials[1], dtype= np.int32)
-        types=np.array(spike_data.loc[cluster_index].spike_num_on_trials[2], dtype= np.int32)
-
-        sr=[]
-        sr.append(np.array(speed))
-        sr.append(np.array(trials))
-        sr.append(np.array(types))
-        spike_data.at[cluster_index, 'speed_data'] = list(sr)
-    return spike_data
-
-
-def package_data_for_r(spike_data):
-    spike_data["R_LM_data"] = ""
-    for cluster_index in range(len(spike_data)):
-        speed = np.array(spike_data.at[cluster_index, "binned_speed_ms_per_trial"])
-        trials=np.array(spike_data.loc[cluster_index].spike_rate_on_trials[1], dtype= np.int32)
-        types=np.array(spike_data.loc[cluster_index].spike_rate_on_trials[2], dtype= np.int32)
-        rate=np.array(spike_data.loc[cluster_index].spike_rate_on_trials[0])
-        time = np.array(spike_data.at[cluster_index, "binned_time_ms_per_trial"])
-
-        sr=[]
-        sr.append(np.array(rate))
-        sr.append(np.array(speed))
-        sr.append(np.array(time))
-        sr.append(np.array(trials))
-        sr.append(np.array(types))
-        spike_data.at[cluster_index, 'R_LM_data'] = list(sr)
-    return spike_data
-
-
-
-
-
-
 ### ----------------------------------------------------------------------------------------- ###
 
 
-def extract_time_binned_speed(spike_data, prm):
-    spike_data["Speed_averaged"] = ""
+def extract_time_binned_speed(spike_data):
+    spike_data["Speed_mean"] = ""
     for cluster in range(len(spike_data)):
-        speed = np.array(spike_data.at[cluster, "speed_rate_in_time"])
-        position = np.array(spike_data.at[cluster, "position_rate_in_time"])
+        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1])
+        position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2])
 
         position_array = np.arange(1,201,1)
         binned_speed = np.zeros((position_array.shape))
         binned_speed_sd = np.zeros((position_array.shape))
         for rowcount, row in enumerate(position_array):
-            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position <= rowcount+1)))
+            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position < rowcount+1)))
             average_speed = np.nanmean(speed_in_position)
             sd_speed = np.nanstd(speed_in_position)
-            binned_speed[rowcount] = average_speed/1000
+            binned_speed[rowcount] = average_speed
             binned_speed_sd[rowcount] = sd_speed
-        spike_data.at[cluster, 'Speed_averaged'] = list(binned_speed)
+        binned_speed = convolve_with_scipy(binned_speed)
+        spike_data.at[cluster, 'Speed_mean'] = list(binned_speed)
 
-
+        """
         ##print('plotting speed histogram...', cluster)
         save_path = prm.get_local_recording_folder_path() + '/Figures/behaviour/speed'
         if os.path.exists(save_path) is False:
@@ -264,17 +220,78 @@ def extract_time_binned_speed(spike_data, prm):
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
         plt.savefig(save_path + '/time_binned_speed_histogram_' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + '.png', dpi=200)
         plt.close()
+        """
+
+    return spike_data
+
+
+
+def extract_time_binned_speed_split(spike_data):
+    spike_data["Speed_mean_try"] = ""
+    spike_data["Speed_mean_runthru"] = ""
+    spike_data["Speed_mean_rewarded"] = ""
+    for cluster in range(len(spike_data)):
+        speed=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[1])
+        position=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[2])
+
+        data = np.vstack((speed,position))
+        data=data.transpose()
+        data_filtered = data[data[:,0] > 0,:]
+        speed = data_filtered[:,0]
+        position = data_filtered[:,1]
+        speed = convolve_with_scipy(speed)
+
+        position_array = np.arange(1,201,1)
+        binned_speed = np.zeros((position_array.shape))
+        binned_speed_sd = np.zeros((position_array.shape))
+        for rowcount, row in enumerate(position_array):
+            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position < rowcount+1)))
+            average_speed = np.nanmean(speed_in_position)
+            sd_speed = np.nanstd(speed_in_position)
+            binned_speed[rowcount] = average_speed/40
+            binned_speed_sd[rowcount] = sd_speed
+        binned_speed = convolve_with_scipy(binned_speed)
+        spike_data.at[cluster, 'Speed_mean_try'] = list(binned_speed)
+
+
+        speed=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[1])
+        position=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[2])
+
+        position_array = np.arange(1,201,1)
+        binned_speed = np.zeros((position_array.shape))
+        binned_speed_sd = np.zeros((position_array.shape))
+        for rowcount, row in enumerate(position_array):
+            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position < rowcount+1)))
+            average_speed = np.nanmean(speed_in_position)
+            sd_speed = np.nanstd(speed_in_position)
+            binned_speed[rowcount] = average_speed/40
+            binned_speed_sd[rowcount] = sd_speed
+        binned_speed = convolve_with_scipy(binned_speed)
+        spike_data.at[cluster, 'Speed_mean_runthru'] = list(binned_speed)
+
+
+        speed=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded_b[1])
+        position=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded_b[2])
+
+        position_array = np.arange(1,201,1)
+        binned_speed = np.zeros((position_array.shape))
+        binned_speed_sd = np.zeros((position_array.shape))
+        for rowcount, row in enumerate(position_array):
+            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position < rowcount+1)))
+            average_speed = np.nanmean(speed_in_position)
+            sd_speed = np.nanstd(speed_in_position)
+            binned_speed[rowcount] = average_speed/40
+            binned_speed_sd[rowcount] = sd_speed
+        binned_speed = convolve_with_scipy(binned_speed)
+        spike_data.at[cluster, 'Speed_mean_rewarded'] = list(binned_speed)
 
     return spike_data
 
 
 def convolve_with_scipy(rate):
-    window = signal.gaussian(20, std=3)
-    #plt.plot(window)
+    window = signal.gaussian(7, std=5)
     convolved_rate = signal.convolve(rate, window, mode='same')
-    #filtered_time = signal.convolve(time, window, mode='same')
-    #convolved_rate = (filtered/filtered_time)
-    return (convolved_rate/10)
+    return (convolved_rate/ sum(window))
 
 
 
