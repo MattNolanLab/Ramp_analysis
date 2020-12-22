@@ -246,7 +246,7 @@ mean_SD_plots_with_reset <- function(df, group_b, group_h, track_group, x_start 
 (NegNegC_plot <- mean_SD_plots_with_reset(position_neurons, "Negative", "Negative", "Continuous",  0, 200))
 ggsave(file = "plots/NegNeg_Continuous_failed_PI_justposition.png", width = 4.5, height = 2.5)
 ```
-2. Subset data by group then average rates for plotting          **Negative Negative Reset**
+3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
 (NegNegR_plot <- mean_SD_plots_with_reset(position_neurons, "Negative", "Negative", "Reset",  0, 200))
 ggsave(file = "plots/NegNeg_Reset_failed_PI_justposition.png", width = 4.5, height = 2.5)
@@ -258,7 +258,7 @@ ggsave(file = "plots/NegNeg_Reset_failed_PI_justposition.png", width = 4.5, heig
 ggsave(file = "plots/PosPos_Continuous_failed_PI_justposition.png", width = 4.5, height = 2.5)
 ```
 
-4. Subset data by group then average rates for plotting          **Positive Positive Reset**
+5. Subset data by group then average rates for plotting          **Positive Positive Reset**
 ```{r}
 (PosPosR_plot <- mean_SD_plots_with_reset(position_neurons, "Positive", "Positive", "Reset", 0, 200))
 ggsave(file = "plots/PosPos_Reset_failed_PI_justposition.png", width = 4.5, height = 2.5)
@@ -301,12 +301,12 @@ mean_SD_plots <- function(df, group_b, group_h, x_start = 30, x_end = 90){
 }
 ```
 
-4. Subset data by group then average rates for plotting          **Positive Unclassified**
+6. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
 (PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Negative", 0, 200))
 ggsave(file = "plots/PosNeg_failed_PI_justposition.png", width = 4.5, height = 2.5)
 ```
-4. Subset data by group then average rates for plotting          **Positive Unclassified**
+7. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
 (NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Positive", 0, 200))
 ggsave(file = "plots/NegPos_failed_PI_justposition.png", width = 4.5, height = 2.5)
@@ -326,7 +326,7 @@ speed_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group
 (NegNegC_plot <- mean_SD_plots_with_reset(speed_neurons, "Negative", "Negative", "Continuous",  0, 200))
 ggsave(file = "plots/NegNeg_Continuous_failed_PI_justspeed.png", width = 4.5, height = 2.5)
 ```
-2. Subset data by group then average rates for plotting          **Negative Negative Reset**
+3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
 (NegNegR_plot <- mean_SD_plots_with_reset(speed_neurons, "Negative", "Negative", "Reset",  0, 200))
 ggsave(file = "plots/NegNeg_Reset_failed_PI_justspeed.png", width = 4.5, height = 2.5)
@@ -338,18 +338,18 @@ ggsave(file = "plots/NegNeg_Reset_failed_PI_justspeed.png", width = 4.5, height 
 ggsave(file = "plots/PosPos_Continuous_failed_PI_justspeed.png", width = 4.5, height = 2.5)
 ```
 
-4. Subset data by group then average rates for plotting          **Positive Positive Reset**
+5. Subset data by group then average rates for plotting          **Positive Positive Reset**
 ```{r}
 (PosPosR_plot <- mean_SD_plots_with_reset(speed_neurons, "Positive", "Positive", "Reset", 0, 200))
 ggsave(file = "plots/PosPos_Reset_failed_PI_justspeed.png", width = 4.5, height = 2.5)
 ```
 
-4. Subset data by group then average rates for plotting          **Positive Unclassified**
+6. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
 (PosUC_plot <- mean_SD_plots(speed_neurons, "Positive", "Negative", 0, 200))
 ggsave(file = "plots/PosNeg_failed_PI_justspeed.png", width = 4.5, height = 2.5)
 ```
-4. Subset data by group then average rates for plotting          **Positive Unclassified**
+7. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
 (NegUC_plot <- mean_SD_plots(speed_neurons, "Negative", "Positive", 0, 200))
 ggsave(file = "plots/NegPos_failed_PI_justspeed.png", width = 4.5, height = 2.5)
@@ -360,7 +360,7 @@ ggsave(file = "plots/NegPos_failed_PI_justspeed.png", width = 4.5, height = 2.5)
 
 ## plot average speed vs location for groups of neurons (P, S)
 
-1. Write function to add position
+1. Write function to add position to speed
 ```{r}
 add_position <- function(hit, try, run) {
   df <- tibble(Speed = c(unlist(hit), unlist(try), unlist(run)), 
@@ -373,9 +373,9 @@ add_position <- function(hit, try, run) {
 2. Run on dataframe : Average across trial types
 
 input columns: 
-Speed_mean_rewarded = rewarded beaconed trials
-Speed_mean_try =  try beaconed trials
-Speed_mean_runthru = run through trials
+Speed_mean_rewarded = speed on rewarded beaconed trials
+Speed_mean_try =  speed ontry beaconed trials
+Speed_mean_runthru = speed on run through trials
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(Speed_avg = pmap(list(Speed_mean_rewarded, Speed_mean_try, Speed_mean_runthru), add_position))
