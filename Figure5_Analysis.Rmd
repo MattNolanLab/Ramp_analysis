@@ -84,7 +84,6 @@ Beause the homebound zone is the same length as the outbound zone, and as shuffl
 
 If outside the 95% of the shuffled dataset, a neuron is considered to have ramp like activity along the track. 
 
-
 Then we want to correct the pvals of the lm, to account for multiple comparisons
 
 1. put all pvalues into tibble then adjust using p.adjust from - package
@@ -120,12 +119,13 @@ Now we want to classify neurons, taking the adjusted significance into account
 Uses the function compare_slopes from Figure 2.
 
 ```{r}
+
 spatial_firing <- spatial_firing %>%
   mutate(
     lm_group_b_h = pmap(
       list(
-        shuffle_min_slope_b_h,
-        shuffle_max_slope_b_h,
+        shuffle_min_slope_b_o,
+        shuffle_max_slope_b_o,
         asr_b_h_rewarded_fit_slope,
         adjust_pval_b_h
       ),
@@ -133,8 +133,8 @@ spatial_firing <- spatial_firing %>%
     ),
     lm_group_nb_h = pmap(
       list(
-        shuffle_min_slope_nb_h,
-        shuffle_max_slope_nb_h,
+        shuffle_min_slope_nb_o,
+        shuffle_max_slope_nb_o,
         asr_nb_h_rewarded_fit_slope,
         adjust_pval_nb_h
       ),
@@ -142,8 +142,8 @@ spatial_firing <- spatial_firing %>%
     ),
     lm_group_p_h = pmap(
       list(
-        shuffle_min_slope_p_h,
-        shuffle_max_slope_p_h,
+        shuffle_min_slope_p_o,
+        shuffle_max_slope_p_o,
         asr_p_h_rewarded_fit_slope,
         adjust_pval_p_h
       ),
@@ -159,12 +159,6 @@ spatial_firing$lm_group_nb_h
 spatial_firing$lm_group_p_h
 
 
-```{r}
-# saveRDS(spatial_firing, file="All_Results_withHomebound2.Rda")
-
-```
-
-
 ### ------------------------------------------------------------------------------------------ ### 
 
 
@@ -176,17 +170,19 @@ i.e. posneg = positive in outbound, negative in homebound
 1. write function to mark cells based on groups
 ```{r}
 mark_track_catagory <- function(outbound, homebound){
-  if( outbound == "Positive" & homebound =="Negative") {
+  if (is.na(outbound) ) {
+    return( "None" )  
+  } else if( outbound == "Positive" & homebound == "Negative") {
     return( "posneg" ) 
-  } else if( outbound == "Positive" & homebound =="Positive") {
+  } else if( outbound == "Positive" & homebound == "Positive") {
     return( "pospos" )
-  } else if( outbound == "Negative" & homebound =="Positive") {
+  } else if( outbound == "Negative" & homebound == "Positive") {
     return( "negpos" )
-  } else if( outbound == "Negative" & homebound =="Negative") {
+  } else if( outbound == "Negative" & homebound == "Negative") {
     return( "negneg" )
-  } else if( outbound == "Negative" & homebound =="Unclassified") {
+  } else if( outbound == "Negative" & homebound == "Unclassified") {
     return( "negnon" )
-  } else if( outbound == "Positive" & homebound =="Unclassified") {
+  } else if( outbound == "Positive" & homebound == "Unclassified") {
     return( "posnon" )
   } else {
     return("None")
@@ -375,17 +371,18 @@ mark_reset_group <- function(df, id){
   if (is.na(df) ) {
     return( "None" )
   } else if( id == "posneg" | id == "negpos") {
-    return( "Reset" ) 
+    return( "Switch" ) 
   } else if( id == "posnon" | id == "negnon") {
-    return( "Continuous" ) 
+    return( "Switch" ) 
   } else if( (df > -1 & df < 1) & (id == "pospos" | id == "negneg")) {
     return( "Continuous" )
   } else if( (df <= -1 | df >= 1) & (id == "pospos" | id == "negneg")) {
     return( "Reset" ) 
-    } else {
+  } else {
     return("None")
   }
 }
+
 
 ```
 
@@ -538,12 +535,12 @@ outbound homebound  reset
 1. Split data based on cue independant/cue dependant
 
 ```{r}
-pi_data <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+position_neurons <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 3. subset based on position
 ```{r}
-pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+pi_data <-subset(position_neurons, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
 2. make tibble with average firing rates and classifications : _just path integration neurons_

@@ -68,8 +68,8 @@ _note:for now we are only interested in the outbound region of the track (30 - 9
 1. Make function to run linear model
 ```{r}
 lm_helper <- function(df,
-                      startbin = 30,
-                      endbin = 90) {
+                      startbin,
+                      endbin) {
  # Check for NAs
   if (any(is.na(df$Rates))) {
     df <-
@@ -155,7 +155,7 @@ Ramp like cells are identified by whether the coefficients of the linear model l
 ```{r}
 #library(gdata)
 # shuffles defines the number of shuffes. Use a smaller value for testing.
-shuffle_rates <- function(df, shuffles = 1000) {
+shuffle_rates <- function(df, startbin, endbin, shuffles = 1000) {
   df_modified <- data.frame(neuron=as.numeric(),
                  slope=as.numeric(), 
                  rsquared=as.numeric(), 
@@ -164,7 +164,7 @@ shuffle_rates <- function(df, shuffles = 1000) {
   x <- 1
   repeat {
   shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
-  df_mod <- lm_helper(shuff_df, 30, 90)
+  df_mod <- lm_helper(shuff_df, startbin, endbin)
   data <- data.frame(as.numeric(x), df_mod$slope, df_mod$r.squared, df_mod$p.value)
   names(data) <- c("neuron", "slope", "r.squared", "p.value")
   df_modified <- rbind(df_modified,data)
@@ -184,12 +184,12 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-shuffles <- 100
+shuffles <- 10
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results_b_o = map2(Rates_averaged_rewarded_b, shuffles, shuffle_rates)) %>%
-    mutate(shuffle_results_nb_o = map2(Rates_averaged_rewarded_nb, shuffles, shuffle_rates)) %>%
-    mutate(shuffle_results_p_o = map2(Rates_averaged_rewarded_p, shuffles, shuffle_rates))
+    mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_nb_o = pmap(list(Rates_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
 }
 # Uncomment the line below to save spatial firing at this point.
 saveRDS(spatial_firing, "SpatialFiring_with_100_shuffles.Rda")
@@ -643,8 +643,6 @@ save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
  
 save_pheatmap_png(myheatmap, "my_heatmap_all.png")
 ```
-
-
 
 
 ```{r}
