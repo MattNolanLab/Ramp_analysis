@@ -4,71 +4,7 @@ import Python_PostSorting.Create2DHistogram
 import os
 import matplotlib.pylab as plt
 from scipy import signal
-
-
-def create_reward_histogram(spike_data, cluster, max_trial):
-    rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
-    rewarded_positions = np.array(spike_data.loc[cluster, 'rewarded_locations'])
-    bins = np.arange(0,(200)+1,1)
-    trialrange = np.arange(1,(max_trial+1),1)
-    reward_histogram = Python_PostSorting.Create2DHistogram.create_2dhistogram(rewarded_trials, rewarded_positions, bins, trialrange)
-    return reward_histogram
-
-
-def reshape_reward_histogram(reward_histogram, spike_data, cluster):
-    reshaped_reward_histogram = np.reshape(reward_histogram, (reward_histogram.shape[0]*reward_histogram.shape[1]))
-    spike_data.at[cluster, 'reward_histogram'] = list(reshaped_reward_histogram)
-    return spike_data
-
-
-def find_rewarded_trials(reward_histogram):
-    trial_indicator = np.sum(reward_histogram, axis=1)
-    return trial_indicator
-
-
-def fill_in_binned_trial_indicator(trial_indicator):
-    binned_trial_indicator=[]
-    for row in trial_indicator:
-        trial_reward_indicator = [row]
-        whole_trial_as_indicator = np.repeat(trial_reward_indicator, 200)
-        binned_trial_indicator = np.append(binned_trial_indicator, whole_trial_as_indicator)
-    return binned_trial_indicator
-
-
-def generate_reward_indicator(spike_data):
-    print("generating reward indicator...")
-    spike_data["binned_trial_indicator"] = ""
-    spike_data["reward_histogram"] = ""
-
-    for cluster in range(len(spike_data)):
-        trials=np.max(np.array(spike_data.loc[cluster].spike_rate_on_trials_smoothed[1], dtype= np.int32))
-        reward_histogram = create_reward_histogram(spike_data, cluster, trials)
-        spike_data = reshape_reward_histogram(reward_histogram, spike_data, cluster)
-        trial_indicator = find_rewarded_trials(reward_histogram)
-        binned_trial_indicator = fill_in_binned_trial_indicator(trial_indicator)
-        spike_data.at[cluster,'binned_trial_indicator'] = list(binned_trial_indicator)
-    return spike_data
-
-
-def package_reward_data_for_r(spike_data):
-    print("packaging data for R...")
-    spike_data["R_Reward_data"] = ""
-    for cluster_index in range(len(spike_data)):
-        reward = np.array(spike_data.at[cluster_index, "binned_trial_indicator"], dtype= np.int32)
-        trials=np.array(spike_data.loc[cluster_index].spike_rate_on_trials_smoothed[1], dtype= np.int32)
-        types=np.array(spike_data.loc[cluster_index].spike_rate_on_trials_smoothed[2], dtype= np.int32)
-        rate=np.array(spike_data.loc[cluster_index].spike_rate_on_trials_smoothed[0])
-
-        if reward.shape[0] == trials.shape[0]:
-            sr=[]
-            sr.append(np.array(rate))
-            sr.append(np.array(reward))
-            sr.append(np.array(trials))
-            sr.append(np.array(types))
-            spike_data.at[cluster_index, 'R_Reward_data'] = list(sr)
-        else:
-            print("Arrays are not the same shape")
-    return spike_data
+from scipy import stats
 
 
 def add_columns_to_dataframe(spike_data):
@@ -133,8 +69,7 @@ def remove_low_speeds(rates, speed, position,trials, types ):
     return data_filtered
 
 
-
-def split_time_data_by_reward(spike_data, prm):
+def add_columns(spike_data):
     spike_data["spikes_in_time_rewarded"] = ""
     spike_data["spikes_in_time_failed"] = ""
     spike_data["spikes_in_time_rewarded_b"] = ""
@@ -149,98 +84,65 @@ def split_time_data_by_reward(spike_data, prm):
     spike_data["averaged_failed_nb"] = ""
     spike_data["averaged_rewarded_p"] = ""
     spike_data["averaged_failed_p"] = ""
+    return spike_data
+
+
+def extract_data_from_frame(spike_data, cluster):
+    rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
+    rewarded_trials = rewarded_trials[~np.isnan(rewarded_trials)]
+    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10
+    speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
+    position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
+    types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
+    trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
+    data = remove_low_speeds(rates, speed, position, trials, types )
+    return rewarded_trials, data
+
+
+def split_trials(data, rewarded_trials):
+    rates = data[:,0]
+    speed = data[:,1]
+    position = data[:,2]
+    trials = data[:,3]
+    types = data[:,4]
+
+    rewarded_rates = rates[np.isin(trials,rewarded_trials)]
+    rewarded_speed = speed[np.isin(trials,rewarded_trials)]
+    rewarded_position = position[np.isin(trials,rewarded_trials)]
+    reward_trials = trials[np.isin(trials,rewarded_trials)]
+    reward_types = types[np.isin(trials,rewarded_trials)]
+    failed_rates = rates[np.isin(trials,rewarded_trials, invert=True)]
+    failed_speed = speed[np.isin(trials,rewarded_trials, invert=True)]
+    failed_position = position[np.isin(trials,rewarded_trials, invert=True)]
+    failed_trials = trials[np.isin(trials,rewarded_trials, invert=True)]
+    failed_types = types[np.isin(trials,rewarded_trials, invert=True)]
+
+    return rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types
+
+
+def split_time_data_by_reward(spike_data, prm):
+    spike_data = add_columns(spike_data)
 
     for cluster in range(len(spike_data)):
-        rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
-        rewarded_trials = rewarded_trials[~np.isnan(rewarded_trials)]
-        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10
-        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
-        position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
-        types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
-        trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
-        data = remove_low_speeds(rates, speed, position, trials, types )
+        rewarded_trials, data = extract_data_from_frame(spike_data, cluster)
 
         ## for all trials
-        rates = data[:,0]
-        speed = data[:,1]
-        position = data[:,2]
-        trials = data[:,3]
-        types = data[:,4]
-
-        rewarded_rates = rates[np.isin(trials,rewarded_trials)]
-        rewarded_speed = speed[np.isin(trials,rewarded_trials)]
-        rewarded_position = position[np.isin(trials,rewarded_trials)]
-        reward_trials = trials[np.isin(trials,rewarded_trials)]
-        reward_types = types[np.isin(trials,rewarded_trials)]
-        failed_rates = rates[np.isin(trials,rewarded_trials, invert=True)]
-        failed_speed = speed[np.isin(trials,rewarded_trials, invert=True)]
-        failed_position = position[np.isin(trials,rewarded_trials, invert=True)]
-        failed_trials = trials[np.isin(trials,rewarded_trials, invert=True)]
-        failed_types = types[np.isin(trials,rewarded_trials, invert=True)]
-
-        spike_data = drop_all_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
+        rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data, rewarded_trials)
+        spike_data = drop_alldata_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
 
         ## for beaconed trials
         data_filtered = data[data[:,4] == 0,:] # filter data for beaconed trials
-        rates = data_filtered[:,0]
-        speed = data_filtered[:,1]
-        position = data_filtered[:,2]
-        trials = data_filtered[:,3]
-        types = data_filtered[:,4]
-
-        rewarded_rates = rates[np.isin(trials,rewarded_trials)]
-        rewarded_speed = speed[np.isin(trials,rewarded_trials)]
-        rewarded_position = position[np.isin(trials,rewarded_trials)]
-        reward_trials = trials[np.isin(trials,rewarded_trials)]
-        reward_types = types[np.isin(trials,rewarded_trials)]
-        failed_rates = rates[np.isin(trials,rewarded_trials, invert=True)]
-        failed_speed = speed[np.isin(trials,rewarded_trials, invert=True)]
-        failed_position = position[np.isin(trials,rewarded_trials, invert=True)]
-        failed_trials = trials[np.isin(trials,rewarded_trials, invert=True)]
-        failed_types = types[np.isin(trials,rewarded_trials, invert=True)]
-
+        rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data_filtered, rewarded_trials)
         spike_data = drop_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
 
         ## for probe trials
         data_filtered = data[data[:,4] == 2,:] # filter data for probe trials & nonbeaconed
-        rates = data_filtered[:,0]
-        speed = data_filtered[:,1]
-        position = data_filtered[:,2]
-        trials = data_filtered[:,3]
-        types = data_filtered[:,4]
-
-        rewarded_rates = rates[np.isin(trials,rewarded_trials)]
-        rewarded_speed = speed[np.isin(trials,rewarded_trials)]
-        rewarded_position = position[np.isin(trials,rewarded_trials)]
-        reward_trials = trials[np.isin(trials,rewarded_trials)]
-        reward_types = types[np.isin(trials,rewarded_trials)]
-        failed_rates = rates[np.isin(trials,rewarded_trials, invert=True)]
-        failed_speed = speed[np.isin(trials,rewarded_trials, invert=True)]
-        failed_position = position[np.isin(trials,rewarded_trials, invert=True)]
-        failed_trials = trials[np.isin(trials,rewarded_trials, invert=True)]
-        failed_types = types[np.isin(trials,rewarded_trials, invert=True)]
-
+        rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data_filtered, rewarded_trials)
         spike_data = drop_probe_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
 
         ## for probe & nonbeaconed trials
         data_filtered = data[data[:,4] != 0,:] # filter data for nonbeaconed trials
-        rates = data_filtered[:,0]
-        speed = data_filtered[:,1]
-        position = data_filtered[:,2]
-        trials = data_filtered[:,3]
-        types = data_filtered[:,4]
-
-        rewarded_rates = rates[np.isin(trials,rewarded_trials)]
-        rewarded_speed = speed[np.isin(trials,rewarded_trials)]
-        rewarded_position = position[np.isin(trials,rewarded_trials)]
-        reward_trials = trials[np.isin(trials,rewarded_trials)]
-        reward_types = types[np.isin(trials,rewarded_trials)]
-        failed_rates = rates[np.isin(trials,rewarded_trials, invert=True)]
-        failed_speed = speed[np.isin(trials,rewarded_trials, invert=True)]
-        failed_position = position[np.isin(trials,rewarded_trials, invert=True)]
-        failed_trials = trials[np.isin(trials,rewarded_trials, invert=True)]
-        failed_types = types[np.isin(trials,rewarded_trials, invert=True)]
-
+        rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data_filtered, rewarded_trials)
         spike_data = drop_nb_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
         #spike_data = extract_time_binned_firing_rate_rewarded(spike_data, cluster, prm)
 
@@ -252,6 +154,26 @@ def split_time_data_by_reward(spike_data, prm):
         rewarded_locations = np.array(spike_data.loc[cluster, 'rewarded_locations'])
         #spike_data = extract_time_binned_firing_rate_failed(spike_data, cluster, prm)
     return spike_data
+
+
+def drop_alldata_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i, j):
+    sn=[]
+    sn.append(a) # rate
+    sn.append(b) # speed
+    sn.append(c) # position
+    sn.append(d) # trials
+    sn.append(e) # trials
+    spike_data.at[cluster_index, 'spikes_in_time_rewarded'] = list(sn)
+
+    sn=[]
+    sn.append(f) # rate
+    sn.append(g) # speed
+    sn.append(h) # position
+    sn.append(i) # trials
+    sn.append(j) # trials
+    spike_data.at[cluster_index, 'spikes_in_time_failed'] = list(sn)
+    return spike_data
+
 
 
 
@@ -271,25 +193,6 @@ def drop_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i, j
     sn.append(i) # trials
     sn.append(j) # trials
     spike_data.at[cluster_index, 'spikes_in_time_failed_b'] = list(sn)
-    return spike_data
-
-
-def drop_all_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i, j):
-    sn=[]
-    sn.append(a) # rate
-    sn.append(b) # speed
-    sn.append(c) # position
-    sn.append(d) # trials
-    sn.append(e) # trials
-    spike_data.at[cluster_index, 'spikes_in_time_rewarded'] = list(sn)
-
-    sn=[]
-    sn.append(f) # rate
-    sn.append(g) # speed
-    sn.append(h) # position
-    sn.append(i) # trials
-    sn.append(j) # trials
-    spike_data.at[cluster_index, 'spikes_in_time_failed'] = list(sn)
     return spike_data
 
 
@@ -614,4 +517,235 @@ def convolve_with_scipy(rate):
     convolved_rate = signal.convolve(rate, window, mode='same')/ sum(window)
     return convolved_rate
 
+
+def find_avg_speed_in_reward_zone(data):
+    trialids = np.array(np.unique(np.array(data[:,3])))
+    trial_id = np.zeros((trialids.shape[0]))
+    for trialcount, trial in enumerate(trialids):
+        trial_data = data[data[:,3] == trial,:]# get data only for each trial
+        data_in_position = trial_data[trial_data[:,2] > 80,:]
+        data_in_position = data_in_position[data_in_position[:,2] < 110,:]
+        trial_id[trialcount] = np.nanmean(data_in_position[:,1])
+    return trial_id, trialids
+
+
+def find_confidence_interval(trial_id):
+    mean, sigma = np.mean(trial_id), np.std(trial_id)
+    interval = stats.norm.interval(0.90, loc=mean, scale=sigma)
+    upper = interval[1]
+    lower = interval[0]
+
+    #plt.plot(trial_id)
+    #plt.show()
+    return upper, lower
+
+
+def catagorise_failed_trials(speed_array_failed, trialids_failed, upper, lower):
+    trial_id = np.zeros((speed_array_failed.shape[0]))
+    trial_id_runthrough = []
+    trial_id_try = []
+
+    for rowcount, row in enumerate(speed_array_failed):
+        speed = speed_array_failed[rowcount]
+        trial = trialids_failed[rowcount]
+
+        if (speed <= upper and speed >= lower):
+            trial_id_try = np.append(trial_id_try, trial)
+        else :
+            trial_id_runthrough = np.append(trial_id_runthrough, trial)
+        trial_id[rowcount] == id
+    return trial_id_try, trial_id_runthrough
+
+
+"""
+    rates = data[:,0]
+    speed = data[:,1]
+    position = data[:,2]
+    trials = data[:,3]
+    types = data[:,4]
+"""
+
+
+def split_time_data_by_speed(spike_data, prm):
+    spike_data["run_through_trialid"] = ""
+    spike_data["try_trialid"] = ""
+    spike_data["spikes_in_time_try_b"] = ""
+    spike_data["spikes_in_time_runthru_b"] = ""
+
+    for cluster in range(len(spike_data)):
+        rewarded_trials, data = extract_data_from_frame(spike_data, cluster)
+
+        ## for beaconed trials
+        data_filtered = data[data[:,4] == 0,:] # filter data for beaconed trials
+        rates, speed , position, trials, types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data_filtered, rewarded_trials)
+
+        data = np.vstack((rates, speed, position, trials, types))
+        data=data.transpose()
+
+        speed_array_rewarded, trialids_rewarded = find_avg_speed_in_reward_zone(data)
+        upper, lower = find_confidence_interval(speed_array_rewarded)
+
+        data = np.vstack((failed_rates, failed_speed, failed_position, failed_trials , failed_types))
+        data=data.transpose()
+
+        speed_array_failed, trialids_failed = find_avg_speed_in_reward_zone(data)
+        trial_id, trial_id2 = catagorise_failed_trials(speed_array_failed, trialids_failed, upper, lower)
+
+        spike_data.at[cluster,"run_through_trialid"] = pd.Series(trial_id2)
+        spike_data.at[cluster,"try_trialid"] = pd.Series(trial_id)
+
+        spike_data = split_and_save_data(spike_data)
+
+    return spike_data
+
+
+
+def split_and_save_data(spike_data):
+    for cluster in range(len(spike_data)):
+        try_trials = np.array(spike_data.loc[cluster, 'try_trialid'])
+        runthru_trials = np.array(spike_data.loc[cluster, 'run_through_trialid'])
+
+        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10
+        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
+        position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
+        types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
+        trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
+
+        rewarded_rates = rates[np.isin(trials,try_trials)]
+        rewarded_speed = speed[np.isin(trials,try_trials)]
+        rewarded_position = position[np.isin(trials,try_trials)]
+        reward_trials = trials[np.isin(trials,try_trials)]
+        reward_types = types[np.isin(trials,try_trials)]
+        failed_rates = rates[np.isin(trials,runthru_trials)]
+        failed_speed = speed[np.isin(trials,runthru_trials)]
+        failed_position = position[np.isin(trials,runthru_trials)]
+        failed_trials = trials[np.isin(trials,runthru_trials)]
+        failed_types = types[np.isin(trials,runthru_trials)]
+
+        spike_data = drop_runthru_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
+    return spike_data
+
+
+
+def drop_runthru_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i, j):
+
+    sn=[]
+    sn.append(a) # rate
+    sn.append(b) # speed
+    sn.append(c) # position
+    sn.append(d) # trials
+    sn.append(e) # trials
+    spike_data.at[cluster_index, 'spikes_in_time_try_b'] = list(sn)
+
+    sn=[]
+    sn.append(f) # rate
+    sn.append(g) # speed
+    sn.append(h) # position
+    sn.append(i) # trials
+    sn.append(j) # trials
+    spike_data.at[cluster_index, 'spikes_in_time_runthru_b'] = list(sn)
+    return spike_data
+
+
+
+def extract_time_binned_firing_rate_runthru(spike_data):
+    spike_data["Rates_averaged_runthru_b"] = ""
+    spike_data["Rates_sd_runthru_b"] = ""
+
+    for cluster in range(len(spike_data)):
+        speed=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[1])
+        rates=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[0])
+        position=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[2])
+        trials=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[3], dtype= np.int32)
+        types=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[4], dtype= np.int32)
+        window = signal.gaussian(2, std=2)
+
+        # stack data
+        data = np.vstack((rates,speed,position,types, trials))
+        data=data.transpose()
+
+        if len(np.unique(trials)) > 1:
+            # bin data over position bins
+            bins = np.arange(0,200,1)
+            trial_numbers = np.arange(min(trials),max(trials), 1)
+            binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0])); binned_data[:, :] = np.nan
+            for tcount, trial in enumerate(trial_numbers):
+                trial_data = data[data[:,4] == trial,:]
+                if trial_data.shape[0] > 0:
+                    t_rates = trial_data[:,0]
+                    t_pos = trial_data[:,2]
+                    for bcount, b in enumerate(bins):
+                        rate_in_position = np.take(t_rates, np.where(np.logical_and(t_pos >= bcount, t_pos < bcount+1)))
+                        average_rates = np.nanmean(rate_in_position)
+                        binned_data[bcount, tcount] = average_rates
+
+            #remove nans interpolate
+            data_b = pd.DataFrame(binned_data[:,:], dtype=None, copy=False)
+            data_b = data_b.dropna(axis = 1, how = "all")
+            data_b.reset_index(drop=True, inplace=True)
+            data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
+            data_b = np.asarray(data_b)
+            x = np.reshape(data_b, (data_b.shape[0]*data_b.shape[1]))
+            x = signal.convolve(x, window, mode='same')/ sum(window)
+            data_b = np.reshape(x, (data_b.shape[0], data_b.shape[1]))
+            x = np.nanmean(data_b, axis=1)
+            x_sd = np.nanstd(data_b, axis=1)
+            spike_data.at[cluster, 'Rates_averaged_runthru_b'] = list(x)# add data to dataframe
+            spike_data.at[cluster, 'Rates_sd_runthru_b'] = list(x_sd)
+        else:
+            spike_data.at[cluster, 'Rates_averaged_runthru_b'] = np.nan
+            spike_data.at[cluster, 'Rates_sd_runthru_b'] = np.nan
+            #print("no data")
+    return spike_data
+
+
+
+def extract_time_binned_firing_rate_try(spike_data):
+    spike_data["Rates_averaged_try_b"] = ""
+    spike_data["Rates_sd_try_b"] = ""
+
+    for cluster in range(len(spike_data)):
+        speed=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[1])
+        rates=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[0])
+        position=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[2])
+        trials=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[3], dtype= np.int32)
+        types=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[4], dtype= np.int32)
+        window = signal.gaussian(2, std=2)
+
+        # stack data
+        data = np.vstack((rates,speed,position,types, trials))
+        data=data.transpose()
+        if len(np.unique(trials)) > 1:
+            # bin data over position bins
+            bins = np.arange(0,200,1)
+            trial_numbers = np.arange(min(trials),max(trials), 1)
+            binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0])); binned_data[:, :] = np.nan
+            for tcount, trial in enumerate(trial_numbers):
+                trial_data = data[data[:,4] == trial,:]
+                if trial_data.shape[0] > 0:
+                    t_rates = trial_data[:,0]
+                    t_pos = trial_data[:,2]
+                    for bcount, b in enumerate(bins):
+                        rate_in_position = np.take(t_rates, np.where(np.logical_and(t_pos >= bcount, t_pos < bcount+1)))
+                        average_rates = np.nanmean(rate_in_position)
+                        binned_data[bcount, tcount] = average_rates
+
+            #remove nans interpolate
+            data_b = pd.DataFrame(binned_data[:,:], dtype=None, copy=False)
+            data_b = data_b.dropna(axis = 1, how = "all")
+            data_b.reset_index(drop=True, inplace=True)
+            data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
+            data_b = np.asarray(data_b)
+            x = np.reshape(data_b, (data_b.shape[0]*data_b.shape[1]))
+            x = signal.convolve(x, window, mode='same')/ sum(window)
+            data_b = np.reshape(x, (data_b.shape[0], data_b.shape[1]))
+            x = np.nanmean(data_b, axis=1)
+            x_sd = np.nanstd(data_b, axis=1)
+            spike_data.at[cluster, 'Rates_averaged_try_b'] = list(x)# add data to dataframe
+            spike_data.at[cluster, 'Rates_sd_try_b'] = list(x_sd)
+        else:
+            spike_data.at[cluster, 'Rates_averaged_try_b'] = np.nan
+            spike_data.at[cluster, 'Rates_sd_try_b'] = np.nan
+            #print("no data")
+    return spike_data
 
