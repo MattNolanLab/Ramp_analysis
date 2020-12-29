@@ -204,9 +204,9 @@ Now, we want to know what proportion of cells fit this group
 _note : we focus on cue-independent neurons here as classified in Figure 4 (CueAnalysis_0100.Rmd)_
 
 1. Find cue independent cells
-_note: cue_group is defined in Figure4_Analysis.Rmd_
+_note: cue_group_o is defined in Figure4_Analysis.Rmd_
 ```{r}
-cueindependent_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+cueindependent_neurons <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 2. find proportion of cue independent cells that fall into groups as catagorised above (pospos, posneg etc)
@@ -409,7 +409,7 @@ data <- subset(spatial_firing, track_catagory == "pospos" | track_catagory == "n
 
 2. extract only neurons that are driven by path integration (as determined by Figure 4 Analysis)
 ```{r}
-pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 3. subset based on position
@@ -477,7 +477,7 @@ data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory ==
 
 2. 
 ```{r}
-pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 3. subset based on position
@@ -519,7 +519,7 @@ ggsave(file = "plots/slope_comparison_reset.png", width = 5, height = 5)
 
 Now we want to plot population rate across whole track for diff groups so we can visualise the average firing rate
 
-cue_groups are as follows :
+cue_group_os are as follows :
 
 outbound homebound  reset
     +       +         n
@@ -535,7 +535,7 @@ outbound homebound  reset
 1. Split data based on cue independant/cue dependant
 
 ```{r}
-position_neurons <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+position_neurons <- subset(spatial_firing, cue_group_o_o == "Positive-PI" | cue_group_o_o == "Negative-PI")
 ```
 
 3. subset based on position
@@ -836,7 +836,7 @@ Now we want to plot a sankey diagram showing the slope of neurons in the outboun
 ```{r}
 data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory == "negneg" | track_catagory == "posneg"| track_catagory == "negpos" | track_catagory == "posnon"| track_catagory == "negnon")
 
-pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 
 pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
@@ -921,7 +921,7 @@ data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory ==
 
 # filter for pi neurons
 ```{r}
-pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 
 pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 
