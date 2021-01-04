@@ -19,8 +19,8 @@ output folder for all mice, all days frame: /Users/sarahtennant/Work/Analysis/Ep
 
 
 def concat_all_mice_dir():
-    local_output_path = '/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis/WholeFrame/Alldays_cohort4_dataset.pkl'
-    frames_path = '/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis/Individual_Mouse_Frames/cohort4/'
+    local_output_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort4_dataset.pkl'
+    frames_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/IndividualFrames/c4/'
     #frames_path = '/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis/WholeFrame/Merged_frame/all/'
     allmice_data = pd.DataFrame()
 
