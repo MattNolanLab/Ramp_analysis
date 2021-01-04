@@ -125,7 +125,7 @@ ggplot(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope,
     coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
     geom_point() +
     xlab("\nslope") +
-    ylab("R2") +
+    ylab("r.squared") +
     theme_classic() +
     scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
     theme(axis.text.x = element_text(size=12),
@@ -135,7 +135,7 @@ ggplot(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=12), 
           legend.text=element_text(size=12), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/shuff_lm_allcells.png", width = 4, height = 5)
+ggsave(file = "plots/lm_allcells.png", width = 4, height = 5)
 ```
 ,
 
@@ -184,7 +184,7 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-shuffles <- 10
+shuffles <- 100
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
@@ -281,7 +281,7 @@ adu_p_nb <- tibble(adjust_pval_nb_o = p.adjust(p_vals_nb$pvals, "BH"))
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
 ```
 
-3. do the same for probe trials 
+4. do the same for probe trials 
 ```{r}
 p_vals_p <- tibble(pvals = spatial_firing$asr_p_o_rewarded_fit_p.value)
 adu_p_p <- tibble(adjust_pval_p_o = p.adjust(p_vals_p$pvals, "BH"))
@@ -371,7 +371,6 @@ ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32"
     coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
     geom_point(alpha=.4) + 
     geom_point(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope, y = asr_b_o_rewarded_fit_r.squared, color=factor(unlist(lm_group_b)))) +
-    #geom_point(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32") +
     xlab("\nslope") +
     ylab("R2") +
     scale_color_manual(values=c("violetred2", "chartreuse3", "grey82")) +
@@ -383,7 +382,7 @@ ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32"
           text = element_text(size=12), 
           legend.text=element_text(size=12), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/LMOut_coefficients.png", width = 4, height = 5)
+ggsave(file = "plots/Outbound_linearmodel_coefficients.png", width = 4, height = 5)
 
 ```
 
@@ -393,12 +392,9 @@ Now lets find and plot the proportion of cells that pass criteria according to o
 
 1. extract proportion of cells that meet each criteria
 ```{r}
-# positive homebound slopes
 start <- nrow(subset(spatial_firing, lm_group_b == "Negative"))/nrow(spatial_firing)*100
 reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))/nrow(spatial_firing)*100
 nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spatial_firing)*100
-
-
 ```
 
 2. Put into a tibble 
@@ -420,15 +416,13 @@ ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id)
         text = element_text(size=16), 
         legend.text=element_text(size=16), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-
-ggsave(file = "plots/LMOut_proportions_rewarded.png", width = 3, height = 6)
-
+ggsave(file = "plots/Outbound_ramp_proportions.png", width = 3, height = 6)
 ```
 
 
 We might also want to visualise the coefficients for the real and shuffled dataset as a histogram.
 
-1. First, make stacked histogram of slope values for real dataset
+1. First, make stacked histogram of slope values for real dataset 
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
@@ -445,7 +439,7 @@ ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlis
         text = element_text(size=14),
         legend.text=element_text(size=14),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/LMOut_histogram_slopes.png", width = 4.5, height = 2)
+ggsave(file = "plots/Outbound_slope_histogram.png", width = 4.5, height = 2)
 
 ```
 
@@ -464,12 +458,11 @@ ggplot(data=shuff_slopes, aes(x = slopes)) +
           text = element_text(size=14),
           legend.text=element_text(size=14),
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height = 2)
+ggsave(file = "plots/Outbound_slope_histogram_shuffled.png", width = 4.5, height = 2)
 ```
 
 
 3. Make stacked histogram of rsquared values for real dataset
-
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
@@ -487,9 +480,7 @@ ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(u
         text = element_text(size=14),
         legend.text=element_text(size=14),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/LMOut_histogram_r2.png", width = 4.5, height = 2)
-
-
+ggsave(file = "plots/Outbound_rsquared_histogram.png", width = 4.5, height = 2)
 ```
 
 4. Same as above but for shuffled datasets
@@ -508,7 +499,7 @@ ggplot(data=shuff_slopes, aes(x = r2)) +
           text = element_text(size=14),
           legend.text=element_text(size=14),
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/LMOut_shuffle_r2_datasets_histogram.png", width = 4.5, height = 2)
+ggsave(file = "plots/Outbound_rsquared_histogram_shuffled.png", width = 4.5, height = 2)
 ```
 
 
@@ -530,7 +521,7 @@ ggplot(data=shuff_slopes, aes(x = slopes, y = r2)) +
           text = element_text(size=12),
           legend.text=element_text(size=12),
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/LMOut_shuffle_datasets.png", width = 3, height = 3)
+ggsave(file = "plots/Outbound_coefficient_scatter_shuffled.png", width = 3, height = 3)
 
 ```
 
@@ -646,7 +637,7 @@ save_pheatmap_png(myheatmap, "my_heatmap_all.png")
 
 
 ```{r}
-saveRDS(spatial_firing, file="All_Results.Rda")
+saveRDS(spatial_firing, file="All_Results_1000_shuffles.Rda")
 
 ```
 
