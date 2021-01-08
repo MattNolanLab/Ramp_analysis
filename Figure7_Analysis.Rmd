@@ -255,7 +255,7 @@ To do this, we can plot population rate for rewarded and failed trials across wh
 
 1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
 ```{r}
-position_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", final_model_o_b == "P" )
+position_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", final_model_o_b == "P")
 ```
 
 Function to plot data mean and SD of the population data based on the classification, as per Figure 2, and classification as per figure 5, on beaconed trials in the outbound and homebound regions of the track.
@@ -600,8 +600,6 @@ sum_speed_in_reward_zone <- function(df) {
     group_by(Trials) %>%
     dplyr::summarise(mean_speed = mean(Speed, na.rm = TRUE),
              se_speed = std.error(Speed, na.rm = TRUE)) 
-  #print(df)
-
   return(df)
 }
 ```
@@ -623,7 +621,6 @@ spatial_firing <- spatial_firing %>%
 Function to calculate and plot histogram. First takes input column, extracts the average reward zone speed for each trial, then plots for all sessions 
 ```{r}
 histogram_plots <- function(df, name, color){
-  
   df <- df %>%
     select(name) %>%
     unnest(name) %>%
@@ -655,14 +652,99 @@ ggsave(file = "plots/Mean_rewardzone_speed_rewarded.png",width = 4, height = 2.5
 ```
 5. Plot histogram for try trials
 ```{r}
-(try_hist_plot <- histogram_plots(position_neurons, "Speed_hist_run", "red"))
+(run_hist_plot <- histogram_plots(position_neurons, "Speed_hist_run", "red"))
 ggsave(file = "plots/Mean_rewardzone_speed_run.png",width = 4, height = 2.5)
 ```
 
 6. Plot histogram for run trials
 ```{r}
-(run_hist_plot <- histogram_plots(position_neurons, "Speed_hist_try", "blue"))
+(try_hist_plot <- histogram_plots(position_neurons, "Speed_hist_try", "blue"))
 ggsave(file = "plots/Mean_rewardzone_speed_try.png",width = 4, height = 2.5)
 ```
 
 
+### ------------------------------------------------------------------------------------ ###
+
+### plot the 95 % confidence intervals for speed in the reward zone
+
+
+
+Function to calculate and plot histogram. First takes input column, extracts the average reward zone speed for each trial, then plots for all sessions 
+```{r}
+CI_plot <- function(df, name, color){
+  
+  df <- df %>%
+    select(name) %>%
+    unnest(name[1]) 
+  
+  print(df)
+
+  ggplot(data=df, aes(x = as.vector(name))) +
+    coord_cartesian(xlim=c(0,100)) +
+    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill=color) +
+    labs(y="Density", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          text = element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+```
+
+
+
+6. Plot histogram for run trials
+```{r}
+CI_plot_upper <- function(df, name, color){
+  df <- df %>%
+    select(name) %>%
+    unnest_wider(name,names_repair = "universal")
+  
+  upper <- ggplot(data=df, aes(x = as.vector(...1))) +
+    coord_cartesian(xlim=c(0,100)) +
+    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill=color) +
+    labs(y="Density", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          text = element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+```
+
+```{r}
+CI_plot_lower <- function(df, name, color){
+  df <- df %>%
+    select(name) %>%
+    unnest_wider(name,names_repair = "universal")
+  
+  upper <- ggplot(data=df, aes(x = as.vector(...2))) +
+    coord_cartesian(xlim=c(0,100)) +
+    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill=color) +
+    labs(y="Density", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          text = element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+```
+
+```{r}
+(upper <- CI_plot_upper(position_neurons, "speed_CI_rewarded", "black"))
+ggsave(file = "plots/Speed_upperCI_rewarded.png", width = 4, height = 2.5)
+```
+```{r}
+(upper <- CI_plot_lower(position_neurons, "speed_CI_rewarded", "black"))
+ggsave(file = "plots/Speed_lowerCI_rewarded.png", width = 4, height = 2.5)
+```
+
+
+```{r}
+(upper <- CI_plot_upper(position_neurons, "speed_CI_run", "red"))
+ggsave(file = "plots/Speed_upperCI_run.png", width = 4, height = 2.5)
+```
+```{r}
+(upper <- CI_plot_lower(position_neurons, "speed_CI_run", "red"))
+ggsave(file = "plots/Speed_lowerCI_run.png", width = 4, height = 2.5)
+```
