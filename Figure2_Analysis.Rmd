@@ -184,7 +184,7 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-shuffles <- 100
+shuffles <- 1000
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
@@ -192,7 +192,7 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
     mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
 }
 # Uncomment the line below to save spatial firing at this point.
-saveRDS(spatial_firing, "SpatialFiring_with_100_shuffles.Rda")
+saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
 # To reload use
 #spatial_firing <- readRDS("SpatialFiring_with_100_shuffles.Rda")
 # And use this to save a truncated version. Useful for testing code.
@@ -443,7 +443,11 @@ ggsave(file = "plots/Outbound_slope_histogram.png", width = 4.5, height = 2)
 
 ```
 
-2. same as above but for shuffled datasets
+same as above but for shuffled datasets
+
+1. Extract shuffled slopes and rsquared values. This is already done above.
+
+2. Plot histogram of slopes
 ```{r}
 ggplot(data=shuff_slopes, aes(x = slopes)) +
     coord_cartesian(xlim = c(-0.6,0.6)) +
@@ -484,7 +488,6 @@ ggsave(file = "plots/Outbound_rsquared_histogram.png", width = 4.5, height = 2)
 ```
 
 4. Same as above but for shuffled datasets
-
 ```{r}
 ggplot(data=shuff_slopes, aes(x = r2)) +
     coord_cartesian(xlim = c(0,1)) +
