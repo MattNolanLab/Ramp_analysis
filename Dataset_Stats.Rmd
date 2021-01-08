@@ -262,4 +262,14 @@ none_p <-nrow(subset(path_integrating_neurons, predict_id_p == "posnon"| predict
 
 ### ----------------------------------------------------------------------------------------- ###
 
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+```
+
+```{r}
+sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ramps)*100
+nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps)*100
+non_ramps <- nrow(subset(ramps, reward_interaction_id == "None" | reward_interaction_id == "NA"))/nrow(ramps)*100
+
+```
 
