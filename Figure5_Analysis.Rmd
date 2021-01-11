@@ -194,7 +194,8 @@ mark_track_catagory <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_catagory = map2(lm_group_b, lm_group_b_h, mark_track_catagory))
+  mutate(track_catagory = map2(lm_group_b, lm_group_b_h, mark_track_catagory)) %>%
+  mutate(track_catagory_nb = map2(lm_group_nb, lm_group_nb_h, mark_track_catagory))
 
 ```
 
@@ -368,7 +369,6 @@ spatial_firing <- spatial_firing %>%
 
 ### ------------------------------------------------------------------------------------------ ### 
 
-
 Now, we can classify cells based on their predicted activity. 
 
 1. Function to classify neurons based on predict mean
@@ -386,13 +386,13 @@ mark_reset_group <- function(df){
   }
 }
 
-
 ```
 
 2. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(reset_group = map(predict_diff, mark_reset_group))
+  mutate(reset_group = map(predict_diff, mark_reset_group)) %>%
+  mutate(reset_group_nb = map(predict_diff_nb, mark_reset_group))
 
 ```
 
@@ -429,7 +429,8 @@ mark_track_catagory <- function(outbound, homebound, reset){
 3. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_catagory))
+  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_catagory)) %>%
+  mutate(track_reset_group_nb = pmap(list(lm_group_nb, lm_group_nb_h, reset_group_nb), mark_track_catagory))
 
 ```
 
