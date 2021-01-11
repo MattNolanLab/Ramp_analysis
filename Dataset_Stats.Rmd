@@ -27,6 +27,24 @@ reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))/nrow(spatial_fi
 nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spatial_firing)*100
 ```
 
+# How many numbers on average for each animal?
+
+```{r}
+data <- spatial_firing %>%
+  select(lm_group_b,Mouse) %>%
+  group_by(Mouse, lm_group_b) %>%
+  summarise(n = n()) %>%
+  summarise(proportion = n / sum(n)) %>%
+  mutate(lmgroup = rep(c("Negative", "Unclassified", "Positive"))) %>%
+  select(proportion,lmgroup) %>%
+  group_by(lmgroup) %>%
+  summarise(avg = mean(proportion), sd = sd(proportion)/6)
+
+
+
+```
+
+
 
 ### ----------------------------------------------------------------------------------------- ###
 
@@ -88,9 +106,6 @@ spatial_firing <- spatial_firing %>%
 positive_ramps <- subset(spatial_firing, lm_group_b == "Positive")
 negative_ramps <- subset(spatial_firing, lm_group_b == "Negative")
 unclassified_ramps <- subset(spatial_firing, lm_group_b == "Unclassified")
-
-#shuff_positive_ramps <- subset(spatial_firing, lm_result_o_shuff == "Positive")
-#shuff_negative_ramps <- subset(spatial_firing, lm_result_o_shuff == "Negative")
 ```
 
 3. find apsolute ramp scores for -ve and +ve slopes
@@ -112,6 +127,20 @@ abs_un_ramp <- unclassied_ramps_scores  %>%
 
 
 ## perform ttest on ramp scores
+
+```{r}
+# paired t-test
+t.test(positive_ramps_scores,unclassied_ramps_scores) # where y1 & y2 are numeric
+
+```
+
+
+```{r}
+# paired t-test
+t.test(negative_ramps_scores,unclassied_ramps_scores) # where y1 & y2 are numeric
+
+```
+
 
 ```{r}
 positive_ramps_scores <- as.numeric(positive_ramps$start_ramp_score)
@@ -195,25 +224,47 @@ neg_A_num <- nrow(subset(neg, final_model_o_b == "A"))
 position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
 1. extract position cells
 ```{r}
-position_cells <- subset(spatial_firing, final_model_o_b == "P")
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
-
+2. from above, extract position neurons that are ramp like in beaconed trials
 ```{r}
 pos_position_cells <- subset(position_cells, lm_group_b == "Positive")
 neg_position_cells <- subset(position_cells, lm_group_b == "Negative")
 ```
 
-
+3. find neurons that maintain ramp polarity in the non beaconed trial
 ```{r}
 posnb_position_cells <- nrow(subset(pos_position_cells, lm_group_nb == "Positive"))
 negnb_position_cells <- nrow(subset(neg_position_cells, lm_group_nb == "Negative"))
+
+```
+
+4. calculate numbers
+```{r}
+total <- nrow(pos_position_cells) + nrow(neg_position_cells)
+neurons_same <- (posnb_position_cells + negnb_position_cells)/total*100
+```
+
+5. the same as above but for neurons that switch ramp polarity in the non beaconed trial
+```{r}
+posnb_position_cells <- nrow(subset(pos_position_cells, lm_group_nb != "Positive"))
+negnb_position_cells <- nrow(subset(neg_position_cells, lm_group_nb != "Negative"))
 ```
 
 ```{r}
-neurons_same <- (posnb_position_cells + negnb_position_cells)
 total <- nrow(pos_position_cells) + nrow(neg_position_cells)
+neurons_diff <- (posnb_position_cells + negnb_position_cells)
 ```
+
+```{r}
+un_position_cells <- subset(spatial_firing, lm_group_b == "Unclassified")
+unnb_position_cells <- nrow(subset(un_position_cells, lm_group_nb == "Positive" | lm_group_nb == "Negative"))
+
+```
+
+
+
 
 ### ----------------------------------------------------------------------------------------- ###
 
