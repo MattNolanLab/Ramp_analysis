@@ -147,14 +147,20 @@ spatial_firing <- spatial_firing  %>%
 
 ### Plot model selection results
 
+First plit data based on cue independant/cue dependant (Figure 5) as we are only interested in position neurons here
+```{r}
+cue_independant_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+cue_dependant_neurons <- filter(spatial_firing, cue_group_o == "Positive-cue" | cue_group_o == "Negative-cue")
+
+```
 
 1. Split data by linear model result
 ```{r}
 
 # extracting diff models 
-pos <-subset(spatial_firing, lm_group_b == "Positive")
-neg <-subset(spatial_firing, lm_group_b == "Negative")
-none <-subset(spatial_firing, lm_group_b == "Unclassified")
+pos <-subset(cue_dependant_neurons, lm_group_b == "Positive")
+neg <-subset(cue_dependant_neurons, lm_group_b == "Negative")
+none <-subset(cue_dependant_neurons, lm_group_b == "Unclassified")
 
 ```
 
@@ -231,7 +237,7 @@ ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, lev
         text = element_text(size=12), 
         legend.text=element_text(size=12), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/LMERProportions_beaconed.png", width = 4, height = 4.5)
+ggsave(file = "plots/LMERProportions_beaconed_cuedependant.png", width = 4, height = 4.5)
 
 
 ```
