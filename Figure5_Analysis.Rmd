@@ -285,7 +285,9 @@ normalise_rates <- function(df){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
+  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates)) %>%
+  mutate(normalised_rates_nb = map(Rates_averaged_rewarded_nb, normalise_rates))
+
 ```
 
 Then, predict firing rate in homebound region based on fit from real data in outbound region
@@ -350,16 +352,21 @@ calc_predict_diff <- function(rates, fit)
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_')) %>%
+  select(-contains('predict_params_nb_')) %>%
   mutate(predict_params = map(normalised_rates, predict_homebound)) %>%
-  unnest_wider(predict_params, names_sep = "_", names_repair = "universal")
+  mutate(predict_params_nb = map(normalised_rates_nb, predict_homebound)) %>%
+  unnest_wider(predict_params, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(predict_params_nb, names_sep = "_", names_repair = "universal")
 
 spatial_firing <- spatial_firing %>%
   mutate(offset = pmap_chr(list(normalised_rates, predict_params_lwr, predict_params_upr), offset_test),
-         predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff))
+         predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff),
+         predict_diff_nb = map2_dbl(normalised_rates_nb, predict_params_nb_fit, calc_predict_diff))
 
 ```
 
 
+### ------------------------------------------------------------------------------------------ ### 
 
 
 Now, we can classify cells based on their predicted activity. 
@@ -367,16 +374,12 @@ Now, we can classify cells based on their predicted activity.
 1. Function to classify neurons based on predict mean
 
 ```{r}
-mark_reset_group <- function(df, id){
+mark_reset_group <- function(df){
   if (is.na(df) ) {
     return( "None" )
-  } else if( id == "posneg" | id == "negpos") {
-    return( "Switch" ) 
-  } else if( id == "posnon" | id == "negnon") {
-    return( "Switch" ) 
-  } else if( (df > -1 & df < 1) & (id == "pospos" | id == "negneg")) {
+  } else if( (df > -1 & df < 1)) {
     return( "Continuous" )
-  } else if( (df <= -1 | df >= 1) & (id == "pospos" | id == "negneg")) {
+  } else if( (df <= -1 | df >= 1)) {
     return( "Reset" ) 
   } else {
     return("None")
@@ -389,10 +392,46 @@ mark_reset_group <- function(df, id){
 2. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(reset_group = map2(predict_diff, track_catagory, mark_reset_group))
+  mutate(reset_group = map(predict_diff, mark_reset_group))
 
 ```
 
+then add another column, which contains the slope in both the outbound and homebound and the reset activity
+
+```{r}
+mark_track_catagory <- function(outbound, homebound, reset){
+  if (is.na(outbound) ) {
+    return( "None" )  
+  } else if( outbound == "Positive" & homebound == "Negative") {
+    return( "+ -" ) 
+  } else if( outbound == "Positive" & homebound == "Positive" & reset == "Continuous") {
+    return( "+ +" )
+  } else if( outbound == "Positive" & homebound == "Positive" & reset == "Reset") {
+    return( "+ + R" )
+  } else if( outbound == "Negative" & homebound == "Positive") {
+    return( "- +" )
+  } else if( outbound == "Negative" & homebound == "Negative" & reset == "Continuous") {
+    return( "- -" )
+  } else if( outbound == "Negative" & homebound == "Negative" & reset == "Reset") {
+    return( "- - R" )
+  } else if( outbound == "Negative" & homebound == "Unclassified") {
+    return( "- none" )
+  } else if( outbound == "Positive" & homebound == "Unclassified") {
+    return( "+ none" )
+    
+  } else {
+    return("None")
+  }
+}
+
+```
+
+3. Run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_catagory))
+
+```
 
 ### ------------------------------------------------------------------------------------------ ### 
 
