@@ -374,6 +374,28 @@ Now, we can classify cells based on their predicted activity.
 1. Function to classify neurons based on predict mean
 
 ```{r}
+mark_reset_group_predict <- function(df){
+  if (is.na(df) ) {
+    return( "None" )
+  } else if( df == "None") {
+    return( "Continuous" )
+  } else if( ( df == "Neg" ||  df == "Pos")) {
+    return( "Reset" ) 
+  }
+}
+
+```
+
+2. Run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(reset_group = map(offset, mark_reset_group_predict))
+
+```
+
+## classify based on prediction
+
+```{r}
 mark_reset_group <- function(df){
   if (is.na(df) ) {
     return( "None" )
@@ -402,21 +424,21 @@ then add another column, which contains the slope in both the outbound and homeb
 mark_track_catagory <- function(outbound, homebound, reset){
   if (is.na(outbound) ) {
     return( "None" )  
-  } else if( outbound == "Positive" & homebound == "Negative") {
+  } else if( (outbound == "Positive") & (homebound == "Negative")) {
     return( "+ -" ) 
-  } else if( outbound == "Positive" & homebound == "Positive" & reset == "Continuous") {
+  } else if( (outbound == "Positive") & (homebound == "Positive") & (reset == "Continuous")) {
     return( "+ +" )
-  } else if( outbound == "Positive" & homebound == "Positive" & reset == "Reset") {
+  } else if( (outbound == "Positive") & (homebound == "Positive") & (reset == "Reset")) {
     return( "+ + R" )
-  } else if( outbound == "Negative" & homebound == "Positive") {
+  } else if( (outbound == "Negative") & (homebound == "Positive")) {
     return( "- +" )
-  } else if( outbound == "Negative" & homebound == "Negative" & reset == "Continuous") {
+  } else if( (outbound == "Negative") & (homebound == "Negative") & (reset == "Continuous")) {
     return( "- -" )
-  } else if( outbound == "Negative" & homebound == "Negative" & reset == "Reset") {
+  } else if( (outbound == "Negative") & (homebound == "Negative") & (reset == "Reset")) {
     return( "- - R" )
-  } else if( outbound == "Negative" & homebound == "Unclassified") {
+  } else if( (outbound == "Negative") & (homebound == "Unclassified")) {
     return( "- none" )
-  } else if( outbound == "Positive" & homebound == "Unclassified") {
+  } else if( (outbound == "Positive") & (homebound == "Unclassified")) {
     return( "+ none" )
     
   } else {
@@ -430,7 +452,7 @@ mark_track_catagory <- function(outbound, homebound, reset){
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_catagory)) %>%
-  mutate(track_reset_group_nb = pmap(list(lm_group_nb, lm_group_nb_h, reset_group_nb), mark_track_catagory))
+  mutate(track_reset_group_nb = pmap(list(lm_group_nb, lm_group_nb_h, reset_group_nb), mark_track_catagory)) 
 
 ```
 
@@ -449,7 +471,7 @@ data <- subset(spatial_firing, track_catagory == "pospos" | track_catagory == "n
 
 2. extract only neurons that are driven by path integration (as determined by Figure 4 Analysis)
 ```{r}
-pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+pi_data <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 3. subset based on position
@@ -459,21 +481,21 @@ position_neurons <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "
 
 4. Plot bar charts - positive neurons
 ```{r}
-ggplot(data=subset(position_neurons, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(lm_group_b)))) +
-  coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
-  geom_histogram(aes(y=..density..), alpha=0.5) +
-  scale_fill_manual(values=c( "chartreuse3")) +
+ggplot(data=subset(position_neurons, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+  coord_cartesian(xlim=c(-5,5)) +
+  geom_histogram(aes(y=..count..), alpha=0.5) +
+  scale_fill_manual(values=c(  "grey", "black","chartreuse3")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  geom_vline(xintercept = 1, color="black", linetype="dotted") +
-  geom_vline(xintercept = -1, color="black", linetype="dotted") +
+  #geom_vline(xintercept = 1, color="black", linetype="dotted") +
+  #geom_vline(xintercept = -1, color="black", linetype="dotted") +
   labs(y="Density", x="") +
   theme_classic() +
-  theme(axis.text.x = element_text(size=10),
-        axis.text.y = element_text(size=10),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=10), 
-        legend.text=element_text(size=10), 
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/PredictHomeboundMean_PIpositive_pi.png",width = 4, height = 2.5)
 ```
@@ -482,21 +504,21 @@ ggsave(file = "plots/PredictHomeboundMean_PIpositive_pi.png",width = 4, height =
 
 ```{r}
 
-ggplot(data=subset(position_neurons,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(lm_group_b)))) +
-  coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
-  geom_histogram(aes(y=..density..), alpha=0.5) +
-  scale_fill_manual(values=c("violetred2")) +
+ggplot(data=subset(position_neurons,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+  coord_cartesian(xlim=c(-5,5)) +
+  geom_histogram(aes(y=..count..), alpha=0.5) +
+  scale_fill_manual(values=c( "grey", "black","violetred2")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  geom_vline(xintercept = 1, color="black", linetype="dotted") +
-  geom_vline(xintercept = -1, color="black", linetype="dotted") +
+  #geom_vline(xintercept = 1, color="black", linetype="dotted") +
+  #geom_vline(xintercept = -1, color="black", linetype="dotted") +
   labs(y="Density", x="") +
   theme_classic() +
-  theme(axis.text.x = element_text(size=10),
-        axis.text.y = element_text(size=10),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=10), 
-        legend.text=element_text(size=10), 
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/PredictHomeboundMean_PInegative_pi.png",width = 4, height = 2.5)
 
@@ -517,7 +539,7 @@ data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory ==
 
 2. 
 ```{r}
-pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+pi_data <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 3. subset based on position
@@ -538,6 +560,8 @@ ggplot() +
     geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
     geom_jitter(data=reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
     coord_cartesian(ylim = c(-.6,.6), xlim = c(-.6,.6)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
     xlab("Outbound slope") +
     ylab("Homebound slope") +
     theme_classic() +
@@ -549,7 +573,7 @@ ggplot() +
           text = element_text(size=16), 
           legend.text=element_text(size=16), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/slope_comparison_reset.png", width = 5, height = 5)
+ggsave(file = "plots/slope_comparison_reset.png", width = 4, height = 4)
 
 ```
 
@@ -575,7 +599,7 @@ outbound homebound  reset
 1. Split data based on cue independant/cue dependant
 
 ```{r}
-position_neurons <- subset(spatial_firing, cue_group_o_o == "Positive-PI" | cue_group_o_o == "Negative-PI")
+position_neurons <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 3. subset based on position
@@ -585,7 +609,12 @@ pi_data <-subset(position_neurons, final_model_o_b == "P" | final_model_o_b == "
 
 2. make tibble with average firing rates and classifications : _just path integration neurons_
 ```{r}
-df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$Rates_averaged_rewarded_b), Outbound_beaconed = rep(pi_data$lm_group_b, each=200), Homebound_beaconed = rep(pi_data$lm_group_b_h, each=200), group = rep(as.character(pi_data$reset_group), each=200), predict_diff = rep(as.numeric(pi_data$predict_diff), each=200))
+df <- tibble(session_id = rep(pi_data$session_id, each=200),
+             Position = rep(1:200, times=nrow(pi_data)), 
+             Rates = unlist(pi_data$Rates_averaged_rewarded_b), 
+             Outbound_beaconed = rep(pi_data$lm_group_b, each=200), 
+             Homebound_beaconed = rep(pi_data$lm_group_b_h, each=200), 
+             group = rep(as.character(pi_data$reset_group), each=200))
 
 ```
 
@@ -612,10 +641,10 @@ ggplot(data=df_neg_cue) +
   scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
   scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 ggsave(file = "plots/Negneg_contiuous_mean.png", width = 3.5, height = 2.5)
 
 ```
@@ -645,10 +674,10 @@ ggplot(data=df_neg_cue) +
   scale_y_continuous(breaks=seq(5,30,5), expand = c(0, 0)) +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 ggsave(file = "plots/negneg_reset_mean.png", width = 3.5, height = 2.5)
 
 ```
@@ -677,10 +706,10 @@ ggplot(data=df_pos_cue) +
   scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 ggsave(file = "plots/negpos_mean.png", width = 3.5, height = 2.5)
 
 ```
@@ -712,10 +741,10 @@ ggplot(data=df_pos_pi) +
   #geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 ggsave(file = "plots/pospos_continuous_mean.png", width = 3.5, height = 2.5)
 
 
@@ -747,10 +776,10 @@ ggplot(data=df_pos_pi) +
   scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 ggsave(file = "plots/pospos_reset_mean.png", width = 3.5, height = 2.5)
 
 
@@ -779,10 +808,10 @@ ggplot(data=df_pos_pi) +
   scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12), 
+        text = element_text(size=14), 
         panel.grid = element_blank(),
         panel.border = element_blank()) 
 ggsave(file = "plots/posneg_mean.png", width = 3.5, height = 2.5)
