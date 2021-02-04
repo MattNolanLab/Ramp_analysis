@@ -371,7 +371,7 @@ spatial_firing <- spatial_firing %>%
 
 Now, we can classify cells based on their predicted activity. 
 
-1. Function to classify neurons based on predict mean
+1. Function to classify neurons based on offset (Matt code that does it based on prediction)
 
 ```{r}
 mark_reset_group_predict <- function(df){
@@ -393,7 +393,10 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
-## classify based on prediction
+
+Now, we can classify cells based on their predicted activity. 
+_second method_
+1. classify based on predict mean (Sarah method)
 
 ```{r}
 mark_reset_group <- function(df){
