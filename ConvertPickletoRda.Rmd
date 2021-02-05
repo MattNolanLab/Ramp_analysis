@@ -9,13 +9,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ----------------------------------------------------------------------------------------------- ###
 
 ## This code loads dataframes with spatial firing of neurons in the virtual reality
 
 Aim:We want to load dataframes from python output which are in pickled format, and save them in Rs dataframe format (.Rda). 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ----------------------------------------------------------------------------------------------- ###
 
 
 First we need to set up the python environment. This is so we can call a python script from R that loads the pickled dataframes and sends it back to the R workspace. 
@@ -29,11 +29,11 @@ Sys.setenv(RETICULATE_PYTHON = "/usr/local/bin/python/bin/python")
 ```
 
 
-## ----------------------------------------------------------------------------------------------------------------------------------------------------------- 
+### ----------------------------------------------------------------------------------------------- ###
 
 ### LOAD ALL MICE ALL DAYS DATAFRAMES
 
-## ----------------------------------------------------------------------------------------------------------------------------------------------------------- 
+### ----------------------------------------------------------------------------------------------- ###
 
 ## Loading dataframe for all mice and days (all curated cells from one animal/multiple animals)
 
@@ -74,13 +74,46 @@ saveRDS(spatial_firing, file="PythonOutput_Concat.Rda")
 ```
 
 
-## Optional code to load only select columns of the dataframe _Optional_
+## Loading specific column for all mice and days
 ```{r}
-drops <- c('Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb')
-spatial_firing[ , !(names(spatial_firing) %in% drops)]
+dataframe_to_load <- "data/Alldays_cohort_1_speed.pkl" # name of the pickled dataframe want to load 
+spatial_firing1 <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
+spatial_firing1 <- select(spatial_firing1,c('speed_CI_rewarded', 'speed_CI_try', 'speed_CI_run'))
+
+dataframe_to_load <- "data/Alldays_cohort_2_speed.pkl" 
+source_python("pickle_reader.py") 
+spatial_firing2 <- read_pickle_file(file.path(dataframe_to_load)) 
+spatial_firing2 <- select(spatial_firing2,c('speed_CI_rewarded', 'speed_CI_try', 'speed_CI_run'))
+
+dataframe_to_load <- "data/Alldays_cohort_3_speed.pkl"  
+source_python("pickle_reader.py") 
+spatial_firing3 <- read_pickle_file(file.path(dataframe_to_load)) 
+spatial_firing3 <- select(spatial_firing3,c('speed_CI_rewarded', 'speed_CI_try', 'speed_CI_run'))
+
+dataframe_to_load <- "data/Alldays_cohort_4_speed.pkl" 
+source_python("pickle_reader.py") 
+spatial_firing4 <- read_pickle_file(file.path(dataframe_to_load)) 
+spatial_firing4 <- select(spatial_firing4,c('speed_CI_rewarded', 'speed_CI_try', 'speed_CI_run'))
+
+```
+
+1. Concatinate cohorts together
+```{r}
+spatial_firing_speed <- rbind(spatial_firing1, spatial_firing2, spatial_firing3, spatial_firing4)
+```
+
+2. Concatinate with main dataframe
+```{r}
+spatial_firing <- cbind(spatial_firing, spatial_firing_speed)
+
+```
 
 
-spatial_firing <- select(spatial_firing,-c('Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb'))
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains(c('speed_CI_rewarded', 'speed_CI_try', 'speed_CI_run')))
+  
+  
 
 ```
 
