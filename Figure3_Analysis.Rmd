@@ -190,7 +190,7 @@ P_S_A_positive <- nrow(subset(pos ,final_model_o_b == "PSA"))/nrow(pos)*100
 P_S_A_negative <- nrow(subset(neg ,final_model_o_b == "PSA"))/nrow(neg)*100
 P_S_A_none <- nrow(subset(none ,final_model_o_b == "PSA"))/nrow(none)*100
 
-NONE_positive <- nrow(subset(pos ,final_model_o_b == "None"))/nrow(pos)*100
+NONE_positive <- nrow(subset(pos ,final_model_o_b == "None" |))/nrow(pos)*100
 NONE_negative <- nrow(subset(neg ,final_model_o_b == "None"))/nrow(neg)*100
 NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
 
@@ -210,7 +210,7 @@ mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative
                                  "PA", "PA", "PA", 
                                  "SA", "SA", "SA", 
                                  "PAS", "PAS","PAS",
-                                 "Null","Null", "Null"), 
+                                 "None","None", "None"), 
                       ramp_type= c("Positive", "Negative", "Unclassified","Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified","Positive", "Negative" ,"Unclassified","Positive", "Negative","Unclassified","Positive", "Negative","Unclassified", "Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified" ))
 
 ```
@@ -218,19 +218,19 @@ mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative
 4. Plot model results
 ```{r}
 # plot data
-level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "Null")
+level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "None")
 ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
   geom_bar(stat="identity",width = 0.9, alpha = .7) +
   labs(y = "Percent of neurons") +
   scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
   #scale_fill_brewer(palette= "RdYlBu") +
   theme_classic() +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=12), 
-        legend.text=element_text(size=12), 
+        text = element_text(size=16), 
+        legend.text=element_text(size=16), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/LMERProportions_beaconed.png", width = 4, height = 4.5)
 
