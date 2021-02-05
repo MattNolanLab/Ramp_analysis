@@ -50,7 +50,7 @@ spatial_firing$asr_b_h_rewarded_fit_slope
 spatial_firing$asr_b_h_rewarded_fit_r.squared
 
 
-4. Plot coefficients of model (slope and r2 value) for each neuron
+3. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
 ggplot(data=spatial_firing, aes(x = asr_b_h_rewarded_fit_slope,
                                 y = asr_b_h_rewarded_fit_r.squared)) +
@@ -71,20 +71,19 @@ ggsave(file = "plots/shuff_lm_homebound_allcells.png", width = 4, height = 5)
 ```
 
 
+### ---------------------------------------------------------------------------- ### 
+
 ## Identification of homebound ramp cells in dataset 
 
 Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled datasets
 
 Beause the homebound zone is the same length as the outbound zone, and as shuffling is across the full track length, we can use the shuffle results generated for Figure 2.
 
-
-### ---------------------------------------------------------------------------- ### 
-
 ### classify neurons based on shuffle activity
 
 If outside the 95% of the shuffled dataset, a neuron is considered to have ramp like activity along the track. 
 
-Then we want to correct the pvals of the lm, to account for multiple comparisons
+First we want to correct the pvals of the lm, to account for multiple comparisons
 
 1. put all pvalues into tibble then adjust using p.adjust from - package
 ```{r}
@@ -111,8 +110,6 @@ p_vals_p <- tibble(pvals = spatial_firing$asr_p_h_rewarded_fit_p.value)
 adu_p_p <- tibble(adjust_pval_p_h = p.adjust(p_vals_p$pvals, "BH"))
 spatial_firing <- cbind(spatial_firing, adu_p_p)
 ```
-
-### ----------------------------------------------------------------------------------------- ### 
 
 Now we want to classify neurons, taking the adjusted significance into account
 
@@ -194,15 +191,15 @@ mark_track_catagory <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_catagory = map2(lm_group_b, lm_group_b_h, mark_track_catagory)) %>%
-  mutate(track_catagory_nb = map2(lm_group_nb, lm_group_nb_h, mark_track_catagory))
+  mutate(whole_track_catagory = map2(lm_group_b, lm_group_b_h, mark_track_catagory)) %>%
+  mutate(whole_track_catagory_nb = map2(lm_group_nb, lm_group_nb_h, mark_track_catagory))
 
 ```
 
 ### ------------------------------------------------------------------------------------------ ### 
 
 Now, we want to know what proportion of cells fit this group 
-_note : we focus on cue-independent neurons here as classified in Figure 4 (CueAnalysis_0100.Rmd)_
+_note : we focus on cue-independent neurons here as classified in Figure 4 (Figure4_A.Rmd)_
 
 1. Find cue independent cells
 _note: cue_group_o is defined in Figure4_Analysis.Rmd_
@@ -213,16 +210,16 @@ cueindependent_neurons <- subset(spatial_firing, cue_group_o == "Positive-PI" | 
 2. find proportion of cue independent cells that fall into groups as catagorised above (pospos, posneg etc)
 ```{r}
 # positive homebound slopes
-pospos <-nrow(subset(cueindependent_neurons, track_catagory == "pospos"))/nrow(cueindependent_neurons)*100
-posneg <-nrow(subset(cueindependent_neurons, track_catagory == "posneg"))/nrow(cueindependent_neurons)*100
-negneg <-nrow(subset(cueindependent_neurons, track_catagory == "negneg"))/nrow(cueindependent_neurons)*100
-negpos <-nrow(subset(cueindependent_neurons, track_catagory == "negpos"))/nrow(cueindependent_neurons)*100
+pospos <-nrow(subset(cueindependent_neurons, whole_track_catagory == "pospos"))/nrow(cueindependent_neurons)*100
+posneg <-nrow(subset(cueindependent_neurons, whole_track_catagory == "posneg"))/nrow(cueindependent_neurons)*100
+negneg <-nrow(subset(cueindependent_neurons, whole_track_catagory == "negneg"))/nrow(cueindependent_neurons)*100
+negpos <-nrow(subset(cueindependent_neurons, whole_track_catagory == "negpos"))/nrow(cueindependent_neurons)*100
 
 # positive homebound slopes
-pospos_num <-nrow(subset(cueindependent_neurons, track_catagory == "pospos"))
-posneg_num <-nrow(subset(cueindependent_neurons, track_catagory == "posneg"))
-negneg_num <-nrow(subset(cueindependent_neurons, track_catagory == "negneg"))
-negpos_num <-nrow(subset(cueindependent_neurons, track_catagory == "negpos"))
+pospos_num <-nrow(subset(cueindependent_neurons, whole_track_catagory == "pospos"))
+posneg_num <-nrow(subset(cueindependent_neurons, whole_track_catagory == "posneg"))
+negneg_num <-nrow(subset(cueindependent_neurons, whole_track_catagory == "negneg"))
+negpos_num <-nrow(subset(cueindependent_neurons, whole_track_catagory == "negpos"))
 
 ```
 
@@ -421,6 +418,7 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
+
 then add another column, which contains the slope in both the outbound and homebound and the reset activity
 
 ```{r}
@@ -469,12 +467,12 @@ spatial_firing <- spatial_firing %>%
 
 1. extract neurons with slope on outbound & homebound
 ```{r}
-data <- subset(spatial_firing, track_catagory == "pospos" | track_catagory == "negneg" | track_catagory == "posneg"| track_catagory == "negpos")
+data <- subset(spatial_firing, whole_track_catagory == "pospos" | whole_track_catagory == "negneg" | whole_track_catagory == "posneg" | whole_track_catagory == "negpos" | whole_track_catagory == "negnon" | whole_track_catagory == "posnon")
 ```
 
 2. extract only neurons that are driven by path integration (as determined by Figure 4 Analysis)
 ```{r}
-pi_data <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 3. subset based on position
@@ -487,7 +485,7 @@ position_neurons <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "
 ggplot(data=subset(position_neurons, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
   coord_cartesian(xlim=c(-5,5)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
-  scale_fill_manual(values=c(  "grey", "black","chartreuse3")) +
+  scale_fill_manual(values=c(  "grey", "chartreuse3","chartreuse3")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
   #geom_vline(xintercept = 1, color="black", linetype="dotted") +
   #geom_vline(xintercept = -1, color="black", linetype="dotted") +
@@ -510,7 +508,7 @@ ggsave(file = "plots/PredictHomeboundMean_PIpositive_pi.png",width = 4, height =
 ggplot(data=subset(position_neurons,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
   coord_cartesian(xlim=c(-5,5)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
-  scale_fill_manual(values=c( "grey", "black","violetred2")) +
+  scale_fill_manual(values=c( "grey", "violetred2","violetred2")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
   #geom_vline(xintercept = 1, color="black", linetype="dotted") +
   #geom_vline(xintercept = -1, color="black", linetype="dotted") +
