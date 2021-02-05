@@ -396,7 +396,7 @@ ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id)
         text = element_text(size=19), 
         legend.text=element_text(size=19), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/Outbound_ramp_proportions.png", width = 3, height = 6)
+ggsave(file = "plots/Outbound_ramp_proportions.png", width = 3, height = 5)
 ```
 
 
@@ -419,7 +419,7 @@ ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlis
         text = element_text(size=16),
         legend.text=element_text(size=16),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/Outbound_slope_histogram.png", width = 4.5, height = 2)
+ggsave(file = "plots/Outbound_slope_histogram.png", width = 4, height = 2)
 
 ```
 
@@ -445,7 +445,7 @@ ggplot(data=shuff_slopes, aes(x = slopes)) +
           text = element_text(size=16),
           legend.text=element_text(size=16),
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/Outbound_slope_histogram_shuffled.png", width = 4.5, height = 2)
+ggsave(file = "plots/Outbound_slope_histogram_shuffled.png", width = 4, height = 2)
 ```
 
 
@@ -454,11 +454,12 @@ ggsave(file = "plots/Outbound_slope_histogram_shuffled.png", width = 4.5, height
 level_order <- c("Negative", "Positive", "Unclassified")
 
 ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(lm_group_b))
-  coord_cartesian(xlim = c(0,1)) +
+  coord_cartesian(xlim = c(0,1), ylim = c(0,0.06)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
-  xlab("\nrsquared") +
+  xlab(" ") +
   scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
   theme_classic() +
   theme(axis.text.x = element_text(size=16),
         axis.text.y = element_text(size=16),
@@ -467,7 +468,7 @@ ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(u
         text = element_text(size=16),
         legend.text=element_text(size=16),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/Outbound_rsquared_histogram.png", width = 4.5, height = 2)
+ggsave(file = "plots/Outbound_rsquared_histogram.png", width = 4, height = 2)
 ```
 
 4. Same as above but for shuffled datasets
@@ -475,8 +476,9 @@ ggsave(file = "plots/Outbound_rsquared_histogram.png", width = 4.5, height = 2)
 ggplot(data=shuff_slopes, aes(x = r2)) +
     coord_cartesian(xlim = c(0,1)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
-    xlab(expression(R^2)) +
+    xlab(paste("\n",expression(R^2))) +
     ylab("Proportion") +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
     theme_classic() +
     theme(axis.text.x = element_text(size=16),
           axis.text.y = element_text(size=16),
@@ -485,7 +487,7 @@ ggplot(data=shuff_slopes, aes(x = r2)) +
           text = element_text(size=16),
           legend.text=element_text(size=16),
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/Outbound_rsquared_histogram_shuffled.png", width = 4.5, height = 2)
+ggsave(file = "plots/Outbound_rsquared_histogram_shuffled.png", width = 4, height = 2)
 ```
 
 
