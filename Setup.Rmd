@@ -27,6 +27,8 @@ library(plotrix)
 library(pheatmap) # this package lets you make nice heatmaps
 library(RColorBrewer) # import color palettes
 library(networkD3) # This package lets you make and plot sankey diagrams
+library(zoo) # some mathmatical functions that are useful
+library(tibbletime)
 
 # Import functions
 source("Functions.R")
@@ -35,7 +37,7 @@ source("Functions_Outbound_LMER.R")
 # Load data
 # Alternative file names commened out
 spatial_firing <- readRDS(file="PythonOutput_Concat.Rda")
-#spatial_firing <- readRDS(file="All_Results.Rda") 
+spatial_firing <- readRDS(file="SpatialFiring_with_1000_shuffles.Rda") 
 # To work on  a subset of data for testing
 # spatial_firing <-  slice_head(spatial_firing, n = 10)
 ```

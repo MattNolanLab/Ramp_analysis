@@ -47,7 +47,7 @@ mark_track_catagory <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate( track_catagory_p = map2(lm_cue_group_p, lm_cue_group_p_h, mark_track_catagory))
+  mutate( track_catagory_p = map2(lm_group_p, lm_group_p_h, mark_track_catagory))
 
 ```
 
@@ -78,65 +78,22 @@ spatial_firing <- spatial_firing %>%
 
 Then, predict firing rate in hombound region based on fit from real data in outbound region
 
-1. make function to predict firing rate
-```{r}
-lm_predict <- function(df){
-  new.data <- data.frame(Position =df$Position)
-}
-```
-
-2. Calculate mean apsolute difference between predicted and real fits in the first 5 cm of homebound zone
-
-```{r}
-
-lm_predict_mse_homebound <- function(rate){
-  if(all(is.na(rate))) 
-    return(NA)
-  startbins=c(30:90)
-  df <- tibble(Rates = unlist(rate), Position=rep(1:200))
-
-  lmer <- lm(Rates ~ Position, data = df[startbins,])
-  
-  df_homebound <- df %>% filter(between(Position, 110, 115))
-  new.data <- lm_predict(df_homebound)
-  Rates <- predict(lmer, newdata = new.data)
-  mydata <- cbind(new.data, Rates)
-  
-  mean( df_homebound$Rates - mydata$Rate, na.rm=TRUE)
-
-}
-```
-
-3. Run on all neurons
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(predict_mean_p = map(normalised_rates_p, lm_predict_mse_homebound)) 
-  
-```
-
-
 Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
-```{r}
-predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 110, predict_end = 115){
-  # check for NAs
-  if(all(is.na(df))) 
-    return(NA)
-  # Make track column
-  df <- tibble(Rates = unlist(df), Position=rep(1:200))
-  model <- lm(Rates ~ Position, data = filter(df, Position >= fit_start, Position <= fit_end))
-  homebound_prediction_pos <- tibble(Position = rep(1:200))
-  homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "confidence") 
-}
 
-
-```
-
-or with confidence intervals and using absolute rates rather than normalised rates:
+2. Run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(predict_mean_p = map(Rates_averaged_rewarded_p, predict_homebound)) 
+  select(-contains('predict_params_p_')) %>%
+  mutate(predict_params_p = map(normalised_rates, predict_homebound)) %>%
+  unnest_wider(predict_params_p, names_sep = "_", names_repair = "universal")
+
+spatial_firing <- spatial_firing %>%
+  mutate(offset = pmap_chr(list(normalised_rates_p, predict_params_p_lwr, predict_params_p_upr), offset_test),
+         predict_diff_p = map2_dbl(normalised_rates, predict_params_p_fit, calc_predict_diff))
 
 ```
+
+
 
 4. Classify neurons based on apsolute difference between predicted and real as either "Continuous" or "Reset"
 ```{r}
@@ -155,10 +112,32 @@ mark_reset_group <- function(df, id){
 }
 
 spatial_firing <- spatial_firing %>%
-  mutate(reset_group_p = map2(predict_mean_p, track_catagory_p, mark_color))
+  mutate(reset_group_p = map2(predict_diff_p, track_catagory_p, mark_color))
 
 ```
 
+
+## catagorised based on predict alone, ignoring slope?
+
+Now, we can classify cells based on their predicted activity. 
+
+1. Function to classify neurons based on predict mean _this is defined in Figure 5_
+
+2. Run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(reset_group_p = map(predict_diff_p, mark_reset_group))
+
+```
+
+then tag along with the slope _this is defined in Figure 5_
+
+2. Run on all cells 
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(track_reset_group_p = pmap(list(lm_group_p, lm_group_p_h, reset_group_p), mark_track_catagory))
+
+```
 
 ### ------------------------------------------------------------------------------------------ ### 
 
@@ -760,3 +739,145 @@ pi_none_none <-nrow(subset(pi_none, lm_result_h_p == "None"))
 
 ```
 
+
+
+##
+
+```{r}
+pi_data <- subset(spatial_firing, track_catagory != "None")
+
+pi_data <- subset(pi_data, lm_group_b == "Positive" | lm_group_b == "Negative")
+
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+
+```
+
+```{r}
+
+pospos <-subset(pi_data, track_reset_group == "+ +")
+posneg <-subset(pi_data, track_reset_group == "+ -")
+negpos <-subset(pi_data, track_reset_group == "- +")
+negneg <-subset(pi_data, track_reset_group == "- -")
+pospos_r <-subset(pi_data, track_reset_group == "+ + R")
+negneg_r <-subset(pi_data, track_reset_group == "- - R")
+
+pospos_pospos <-nrow(subset(pospos, track_reset_group_nb == "+ +"))
+pospos_posneg <-nrow(subset(pospos, track_reset_group_nb == "+ -"))
+pospos_negpos <-nrow(subset(pospos, track_reset_group_nb == "- +"))
+pospos_negneg <-nrow(subset(pospos, track_reset_group_nb == "- -"))
+pospos_pospos_r <-nrow(subset(pospos, track_reset_group_nb == "+ + R"))
+pospos_negneg_r <-nrow(subset(pospos, track_reset_group_nb == "+ + R"))
+
+negpos_pospos <-nrow(subset(negpos, track_reset_group_nb == "+ +"))
+negpos_posneg <-nrow(subset(negpos, track_reset_group_nb == "+ -"))
+negpos_negpos <-nrow(subset(negpos, track_reset_group_nb == "- +"))
+negpos_negneg <-nrow(subset(negpos, track_reset_group_nb == "- -"))
+negpos_pospos_r <-nrow(subset(negpos, track_reset_group_nb == "+ + R"))
+negpos_negneg_r <-nrow(subset(negpos, track_reset_group_nb == "+ + R"))
+
+posneg_pospos <-nrow(subset(posneg, track_reset_group_nb == "+ +"))
+posneg_posneg <-nrow(subset(posneg, track_reset_group_nb == "+ -"))
+posneg_negpos <-nrow(subset(posneg, track_reset_group_nb == "- +"))
+posneg_negneg <-nrow(subset(posneg, track_reset_group_nb == "- -"))
+posneg_pospos_r <-nrow(subset(posneg, track_reset_group_nb == "+ + R"))
+posneg_negneg_r <-nrow(subset(posneg, track_reset_group_nb == "+ + R"))
+
+negneg_pospos <-nrow(subset(negneg, track_reset_group_nb == "+ +"))
+negneg_posneg <-nrow(subset(negneg, track_reset_group_nb == "+ -"))
+negneg_negpos <-nrow(subset(negneg, track_reset_group_nb == "- +"))
+negneg_negneg <-nrow(subset(negneg, track_reset_group_nb == "- -"))
+negneg_pospos_r <-nrow(subset(negneg, track_reset_group_nb == "+ + R"))
+negneg_negneg_r <-nrow(subset(negneg, track_reset_group_nb == "+ + R"))
+
+pospos_r_pospos <-nrow(subset(pospos_r, track_reset_group_nb == "+ +"))
+pospos_r_posneg <-nrow(subset(pospos_r, track_reset_group_nb == "+ -"))
+pospos_r_negpos <-nrow(subset(pospos_r, track_reset_group_nb == "- +"))
+pospos_r_negneg <-nrow(subset(pospos_r, track_reset_group_nb == "- -"))
+pospos_r_pospos_r <-nrow(subset(pospos_r, track_reset_group_nb == "+ + R"))
+pospos_r_negneg_r <-nrow(subset(pospos_r, track_reset_group_nb == "+ + R"))
+
+negneg_r_pospos <-nrow(subset(negneg_r, track_reset_group_nb == "+ +"))
+negneg_r_posneg <-nrow(subset(negneg_r, track_reset_group_nb == "+ -"))
+negneg_r_negpos <-nrow(subset(negneg_r, track_reset_group_nb == "- +"))
+negneg_r_negneg <-nrow(subset(negneg_r, track_reset_group_nb == "- -"))
+negneg_r_pospos_r <-nrow(subset(negneg_r, track_reset_group_nb == "+ + R"))
+negneg_r_negneg_r <-nrow(subset(negneg_r, track_reset_group_nb == "+ + R"))
+
+```
+
+
+```{r}
+pospos <-subset(pi_data, track_catagory == "pospos")
+posneg <-subset(pi_data, track_catagory == "posneg")
+negpos <-subset(pi_data, track_catagory == "negpos")
+negneg <-subset(pi_data, track_catagory == "negneg")
+
+pospos_pospos <-nrow(subset(pospos, track_catagory_nb == "pospos"))
+pospos_posneg <-nrow(subset(pospos, track_catagory_nb == "posneg"))
+pospos_negpos <-nrow(subset(pospos, track_catagory_nb == "negpos"))
+pospos_negneg <-nrow(subset(pospos, track_catagory_nb == "negneg"))
+
+negpos_pospos <-nrow(subset(negpos, track_catagory_nb == "pospos"))
+negpos_posneg <-nrow(subset(negpos, track_catagory_nb == "posneg"))
+negpos_negpos <-nrow(subset(negpos, track_catagory_nb == "negpos"))
+negpos_negneg <-nrow(subset(negpos, track_catagory_nb == "negneg"))
+
+posneg_pospos <-nrow(subset(posneg, track_catagory_nb == "pospos"))
+posneg_posneg <-nrow(subset(posneg, track_catagory_nb == "posneg"))
+posneg_negpos <-nrow(subset(posneg, track_catagory_nb == "negpos"))
+posneg_negneg <-nrow(subset(posneg, track_catagory_nb == "negneg"))
+
+negneg_pospos <-nrow(subset(negneg, track_catagory_nb == "pospos"))
+negneg_posneg <-nrow(subset(negneg, track_catagory_nb == "posneg"))
+negneg_negpos <-nrow(subset(negneg, track_catagory_nb == "negpos"))
+negneg_negneg <-nrow(subset(negneg, track_catagory_nb == "negneg"))
+
+
+```
+
+```{r}
+
+data_long <- tibble(value=c(pospos_pospos, pospos_posneg, pospos_negpos, pospos_negneg, 
+                            negpos_pospos, negpos_posneg, negpos_negpos, negpos_negneg,
+                            posneg_pospos, posneg_posneg, posneg_negpos, posneg_negneg,
+                            negneg_pospos, negneg_posneg, negneg_negpos, negneg_negneg),
+                      source= c("+ +","+ +", "+ +", "+ +",
+                                "- +","- +", "- +", "- +",
+                                "+ -","+ -", "+ -", "+ -",
+                                "- -","- -", "- -", "- -"),
+                     target= c(" + +"," - +", " + -"," - -",
+                               " + +"," - +", " + -"," - -",
+                               " + +"," - +", " + -"," - -",
+                               " + +"," - +", " + -"," - -"))
+
+
+data_long <- data_long %>% 
+  filter(value > 0)                           
+                    
+```
+
+```{r}
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
+ 
+```
+
+```{r}
+# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+data_long$IDsource=match(data_long$source, nodes$name)-1 
+data_long$IDtarget=match(data_long$target, nodes$name)-1
+```
+
+```{r}
+# prepare colour scale
+ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
+
+# Make the Network
+sankeyNetwork(Links = data_long, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "value", NodeID = "name", LinkGroup='source',
+              sinksRight=FALSE, colourScale=ColourScal,
+              nodeWidth=40, fontSize=13, nodePadding=20)
+#ggsave(file = "plots/model_movement.png", width = 24, height = 18)
+
+```

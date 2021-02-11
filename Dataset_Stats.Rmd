@@ -7,7 +7,27 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Script performs basic stats (n numbers, ttest etc) on the dataset
+### Script performs basic stats (n numbers, statistical test etc) on the dataset
+
+### ----------------------------------------------------------------------------------------- ###
+
+First we might want to know how many sessions for each mouse
+
+```{r}
+data <- spatial_firing  %>%
+  select(Mouse, Day, session_id) %>%
+  group_by(Mouse, Day) 
+
+data <- data[!duplicated(data$session_id), ]
+
+data <- data  %>%
+  group_by(Mouse) 
+```
+
+```{r}
+write_csv2(data, "mouse_session_data.csv")
+
+```
 
 ### ----------------------------------------------------------------------------------------- ###
 
@@ -15,30 +35,71 @@ knitr::opts_chunk$set(echo = TRUE)
 
 1. get numbers of cells for each lm group (positive/negative/unclassified)
 ```{r}
-start <- nrow(subset(spatial_firing, lm_group == "Negative"))
-reward <- nrow(subset(spatial_firing, lm_group == "Positive"))
-nonslope <- nrow(subset(spatial_firing, lm_group == "Unclassified"))
-
+start <- nrow(subset(spatial_firing, lm_group_b == "Negative"))
+reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))
+nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))
 ```
 
 2. find and plot proportions for ramp types in dataset
 ```{r}
-# positive homebound slopes
-start <- nrow(subset(spatial_firing, lm_group == "Negative"))/nrow(spatial_firing)*100
-reward <- nrow(subset(spatial_firing, lm_group == "Positive"))/nrow(spatial_firing)*100
-nonslope <- nrow(subset(spatial_firing, lm_group == "Unclassified"))/nrow(spatial_firing)*100
+start <- nrow(subset(spatial_firing, lm_group_b == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spatial_firing)*100
+```
+
+# How many numbers on average for each animal?
+
+```{r}
+data <- spatial_firing %>%
+  select(lm_group_b,Mouse) %>%
+  group_by(Mouse, lm_group_b) %>%
+  summarise(n = n()) %>%
+  summarise(proportion = n / sum(n)) %>%
+  filter(Mouse != "1124") %>%
+  mutate(lmgroup = c("Negative", "Unclassified", "Positive")) %>%
+  select(proportion,lmgroup) %>%
+  group_by(lmgroup) %>%
+  summarise(avg = mean(proportion), sd = sd(proportion)/6, min=min(proportion), max=max(proportion))
+
+
 
 ```
+
 
 
 ### ----------------------------------------------------------------------------------------- ###
 
 ### How much of the shuffled dataset is past criteria? 
-
-1. Proportion of cells in the shuffled datasets that pass criteria
+1. Extract shuffled slopes and rsquared values. 
 ```{r}
-shuff_ramps <- nrow(subset(spatial_firing,lm_result_o_shuff == "Positive" | lm_result_o_shuff == "Negative" ))/nrow(spatial_firing)*100
-non_shuff_ramps <- nrow(subset(spatial_firing,lm_result_o_shuff == "None" | lm_result_o_shuff == "NoSlope" ))/nrow(spatial_firing)*100
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), 
+                       r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
+                       pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
+                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, times = 999), 
+                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = 999))
+```
+
+2. Function to classify shuffled cells based on shuffled distribution
+```{r}
+shuff_slopes <- shuff_slopes %>%
+  mutate(
+    shuff_lm_group_b = pmap(
+      list(
+        min_slope,
+        max_slope,
+        slopes,
+        pval
+      ),
+      compare_slopes
+    )
+  )
+```
+
+3. Calculate proportion of cells in the shuffled datasets that pass criteria
+```{r}
+shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" ))
+non_shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" ))
+non_shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" ))/nrow(shuff_slopes)*100
 
 ```
 
@@ -62,46 +123,57 @@ spatial_firing <- spatial_firing %>%
 
 2. find apsolute ramp scores for -ve and +ve slopes
 ```{r}
-
-positive_ramps <- subset(spatial_firing, lm_result_o_rewarded == "Positive")
-negative_ramps <- subset(spatial_firing, lm_result_o_rewarded == "Negative")
-
-#shuff_positive_ramps <- subset(spatial_firing, lm_result_o_shuff == "Positive")
-#shuff_negative_ramps <- subset(spatial_firing, lm_result_o_shuff == "Negative")
-
+positive_ramps <- subset(spatial_firing, lm_group_b == "Positive")
+negative_ramps <- subset(spatial_firing, lm_group_b == "Negative")
+unclassified_ramps <- subset(spatial_firing, lm_group_b == "Unclassified")
 ```
 
 3. find apsolute ramp scores for -ve and +ve slopes
 ```{r}
-
 positive_ramps_scores <- tibble(ramp_score = as.numeric(positive_ramps$start_ramp_score))
 negative_ramps_scores <- tibble(ramp_score = as.numeric(negative_ramps$start_ramp_score))
-
+unclassied_ramps_scores <- tibble(ramp_score = as.numeric(unclassified_ramps$start_ramp_score))
 ```
 
 4. Find mean of the ramp scores
 ```{r}
 abs_pos_ramp <- positive_ramps_scores  %>%
-  summarise(mean(ramp_score, na.rm = TRUE), sd(ramp_score, na.rm = TRUE))
+  summarise(mean(ramp_score, na.rm = TRUE), sd(ramp_score, na.rm = TRUE), min(ramp_score, na.rm = TRUE), max(ramp_score, na.rm = TRUE), range(ramp_score, na.rm = TRUE))
 abs_neg_ramp <- negative_ramps_scores  %>%
-  summarise(mean(ramp_score, na.rm = TRUE), sd(ramp_score, na.rm = TRUE))
+  summarise(mean(ramp_score, na.rm = TRUE), sd(ramp_score, na.rm = TRUE), min(ramp_score, na.rm = TRUE), max(ramp_score, na.rm = TRUE), range(ramp_score, na.rm = TRUE))
+abs_un_ramp <- unclassied_ramps_scores  %>%
+  summarise(mean(ramp_score, na.rm = TRUE), sd(ramp_score, na.rm = TRUE), min(ramp_score, na.rm = TRUE), max(ramp_score, na.rm = TRUE), range(ramp_score, na.rm = TRUE)) 
 ```
 
+## perform ttest on ramp scores 
+_compare to unclassified cells_
 
-## perform ttest on ramp scores
+1. negative ramps 
+```{r}
+# paired t-test
+t.test(positive_ramps_scores,unclassied_ramps_scores) # where y1 & y2 are numeric
 
+```
+2. positive ramps
+```{r}
+# paired t-test
+t.test(negative_ramps_scores,unclassied_ramps_scores) # where y1 & y2 are numeric
+
+```
+
+_compare to shuffled data_
 ```{r}
 positive_ramps_scores <- as.numeric(positive_ramps$start_ramp_score)
 shuff_positive_ramps_scores <- as.numeric(shuff_positive_ramps$start_ramp_score)
 
-# paired t-test
+# paired t-test for positive ramps
 t.test(positive_ramps_scores,shuff_positive_ramps_scores) # where y1 & y2 are numeric
 
 
 negative_ramps_scores <- as.numeric(negative_ramps$start_ramp_score)
 shuff_negative_ramps_scores <- as.numeric(shuff_negative_ramps$start_ramp_score)
 
-# paired t-test
+# paired t-test for negative ramps
 t.test(negative_ramps_scores,shuff_negative_ramps_scores) # where y1 & y2 are numeric
 ```
 
@@ -138,12 +210,9 @@ A_num <- nrow(subset(spatial_firing, final_model_o_b == "A"))/nrow(spatial_firin
 
 1. Split data by linear model result
 ```{r}
-
-# extracting diff models 
-pos <-subset(spatial_firing, lm_group == "Positive")
-neg <-subset(spatial_firing, lm_group == "Negative")
-none <-subset(spatial_firing, lm_group == "None")
-
+pos <-subset(spatial_firing, lm_group_b == "Positive")
+neg <-subset(spatial_firing, lm_group_b == "Negative")
+none <-subset(spatial_firing, lm_group_b == "None")
 ```
 
 2. number of cells in each group - positive sloping neurons
@@ -169,15 +238,143 @@ neg_A_num <- nrow(subset(neg, final_model_o_b == "A"))
 ```
 
 
+### ----------------------------------------------------------------------------------------- ###
+
+
+position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
+1. extract position cells
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. from above, extract position neurons that are ramp like in beaconed trials
+```{r}
+pos_position_cells <- subset(position_cells, lm_group_b == "Positive")
+neg_position_cells <- subset(position_cells, lm_group_b == "Negative")
+```
+
+3. find neurons that maintain ramp polarity in the non beaconed trial
+```{r}
+posnb_position_cells <- nrow(subset(pos_position_cells, lm_group_nb == "Positive"))
+negnb_position_cells <- nrow(subset(neg_position_cells, lm_group_nb == "Negative"))
+
+```
+
+4. calculate numbers
+```{r}
+total <- nrow(pos_position_cells) + nrow(neg_position_cells)
+neurons_same <- (posnb_position_cells + negnb_position_cells)
+```
+
+5. the same as above but for neurons that switch ramp polarity in the non beaconed trial
+```{r}
+posnb_position_cells <- nrow(subset(pos_position_cells, lm_group_nb != "Positive"))
+negnb_position_cells <- nrow(subset(neg_position_cells, lm_group_nb != "Negative"))
+```
+
+```{r}
+total <- nrow(pos_position_cells) + nrow(neg_position_cells)
+neurons_diff <- (posnb_position_cells + negnb_position_cells)
+```
+
+```{r}
+un_position_cells <- subset(spatial_firing, lm_group_b == "Unclassified")
+unnb_position_cells <- nrow(subset(un_position_cells, lm_group_nb == "Positive" | lm_group_nb == "Negative"))
+
+```
 
 
 
 
+### ----------------------------------------------------------------------------------------- ###
+
+compare coefficients for position, speed and acceleration from lmer model
+
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+```{r}
+pos_position_cells <- subset(spatial_firing, lm_group_b == "Positive")
+neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
+
+```
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save <- select(neg_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble()
+
+```
+
+1. put data into a tibble for plotting
+```{r}
+data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
+                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
+                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
+                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
+                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
+                    group = c(as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b)), 
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save)),
+                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
+```
+
+2. run anova
+```{r}
+one.way <- aov(coef ~ coef_type, data = data_coef)
+
+summary(one.way)
+```
+
+3. Post hoc Tukey's test
+```{r}
+tukey.test <- TukeyHSD(one.way)
+tukey.test
+```
 
 
+### ----------------------------------------------------------------------------------------- ###
+
+
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+```{r}
+pi_data <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+```
+
+```{r}
+
+pospos <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
+negneg <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative")
+
+posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
+negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
+
+posnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
+negnon <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Unclassified")
+
+
+pospos_r <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Reset")
+pospos_c <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Continuous")
+negneg_r <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Reset")
+negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Continuous")
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
 
 ## Calculate number of neurons that areset/switch/continuous across outbound and homebound
+
 ```{r}
+
 path_integrating_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
 
 neg_probe <- nrow(subset(spatial_firing, lm_group_nb == "Negative" )) # all neurons that are conciderd ramp like on nb/probe trials
@@ -190,3 +387,21 @@ continuous_p <-nrow(subset(path_integrating_neurons, reset_group_p == "Continuou
 none_p <-nrow(subset(path_integrating_neurons, predict_id_p == "posnon"| predict_id_p == "negnon"))
 
 ```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & reward_interaction_id != "NA")
+```
+
+```{r}
+sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ramps_with_enough_trials)*100
+nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps_with_enough_trials)*100
+```
+```{r}
+sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
+nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))
+```
+

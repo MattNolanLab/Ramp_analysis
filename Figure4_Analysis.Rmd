@@ -95,7 +95,7 @@ proportions_mixed_ramps <- calc_props_cue_dep(spatial_firing$cue_group_o)
 ```
 
 
-3. Plot a pie chart of results, 
+Plot a pie chart of results, 
 _note : pie segments represent the proportions with real values in text_
 ```{r}
 proportions_mixed_ramps_pi_maker <- function(df){
@@ -169,7 +169,6 @@ calc_transitions <- function(group1, group2){
 
 ```
 
-
 Make a data frame that contains numbers to be used for the Sankey plot.
 ```{r}
 data_long <- calc_transitions(spatial_firing$lm_group_b, spatial_firing$lm_group_nb)
@@ -179,8 +178,7 @@ nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_lon
 
 ```
 
-
-5. Plot Sankey diagram
+Plot Sankey diagram
 ```{r}
 # prepare colour scale
 ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
@@ -210,14 +208,13 @@ position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b
                            final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
-
-
 Calculate proportions for neurons with +/- ramps on beaconed trials.
 ```{r}
 proportions_pos_mixed_ramps <- calc_props_cue_dep(position_neurons$cue_group_o)
 
 proportions_mixed_ramps_pi_maker(proportions_pos_mixed_ramps)
 ```
+
 Make a data frame that contains numbers to be used for the Sankey plot.
 ```{r}
 data_long_pos <- calc_transitions(position_neurons$lm_group_b, position_neurons$lm_group_nb)
@@ -227,8 +224,7 @@ nodes_pos <- data.frame(name=c(as.character(data_long_pos$source), as.character(
 
 ```
 
-
-5. Plot Sankey diagram
+Plot Sankey diagram
 ```{r}
 # prepare colour scale
 ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
@@ -328,8 +324,6 @@ mean_SD_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b), fill = "grey70", alpha=0.2) +
   geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - se_nb, ymax = mean_nb + se_nb), fill = "Red2", alpha=0.05) +
   geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
-  #stat_smooth(aes(y=mean_b, x=Position), color = "Grey32", n = 60, span = 0.5) +
-  #stat_smooth(aes(y=mean_nb, x=Position), color = "Red2", n = 60, span = 0.5) +
   geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)", x = "Position") +
@@ -343,22 +337,21 @@ mean_SD_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
 
 
 
-2. Subset data by group then average rates for plotting          **Negative Cue**
+Subset data by group then average rates for plotting          **Negative Cue**
 ```{r}
 (NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Unclassified"))
 # ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
 ```
 
 
-4. Subset data by group then average rates for plotting          **Positive Cue**
+Subset data by group then average rates for plotting          **Positive Cue**
 ```{r}
 (PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Unclassified"))
 # ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
 ```
 
 
-
-4. Subset data by group then average rates for plotting          **Positive PI**
+Subset data by group then average rates for plotting          **Positive PI**
 
 ```{r}
 (PosPos_plot <- mean_SD_plots(position_neurons, "Positive", "Positive"))
@@ -366,8 +359,7 @@ mean_SD_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
 ```
 
 
-
-4. Subset data by group then average rates for plotting          **Negative PI**
+Subset data by group then average rates for plotting          **Negative PI**
 
 ```{r}
 (NegNeg_plot <- mean_SD_plots(position_neurons, "Negative", "Negative"))
@@ -375,26 +367,22 @@ mean_SD_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
 ```
 
 
-4. Subset data by group then average rates for plotting          **Negative PI only**
+Subset data by group then average rates for plotting          **Negative PI only**
 
 These data are not in position neurons so make a new data frame containing these neurons.
 ```{r}
 unclassified_neurons <- filter(spatial_firing, lm_group_b == "Unclassified")
 ```
 
-
-
 ```{r}
 (UCNeg_plot <- mean_SD_plots(unclassified_neurons, "Unclassified", "Negative"))
 # ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
 ```
 
-
-4. Subset data by group then average rates for plotting          **Positive PI only**
+Subset data by group then average rates for plotting          **Positive PI only**
 
 ```{r}
 (UCPos_plot <- mean_SD_plots(unclassified_neurons, "Unclassified", "Positive"))
 # ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
 ```
 
-### ---------------------------------------------------------------------------------------- ### 

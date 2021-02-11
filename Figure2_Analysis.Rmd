@@ -24,6 +24,14 @@ The aim of this analysis is to identify all ramp cells within a specified datase
 
 To set up, including loading packages and data, first run SetUp.Rmd.
 
+### ----------------------------------------------------------------------------------------- ###
+
+Remove neurons in visual cortex
+
+```{r}
+spatial_firing <- subset(spatial_firing, brain_region != "V1" )
+```
+
 
 ### ----------------------------------------------------------------------------------------- ###
 
@@ -71,7 +79,7 @@ lm_helper <- function(df,
                       startbin,
                       endbin) {
  # Check for NAs
-  if (any(is.na(df$Rates))) {
+  if (all(is.na(df$Rates))) {
     df <-
       tibble(
         r.squared = c(NA),
@@ -125,7 +133,7 @@ ggplot(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope,
     coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
     geom_point() +
     xlab("\nslope") +
-    ylab("R2") +
+    ylab("r.squared") +
     theme_classic() +
     scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
     theme(axis.text.x = element_text(size=12),
@@ -135,7 +143,7 @@ ggplot(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=12), 
           legend.text=element_text(size=12), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/shuff_lm_allcells.png", width = 4, height = 5)
+ggsave(file = "plots/lm_allcells.png", width = 4, height = 5)
 ```
 ,
 
@@ -184,7 +192,7 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-shuffles <- 10
+shuffles <- 1000
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
@@ -192,7 +200,7 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
     mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
 }
 # Uncomment the line below to save spatial firing at this point.
-saveRDS(spatial_firing, "SpatialFiring_with_100_shuffles.Rda")
+saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
 # To reload use
 # spatial_firing <- readRDS("SpatialFiring_with_100_shuffles.Rda")
 # spatial_firing <- readRDS("SpatialFiring_with_1000_shuffles.Rda")
@@ -282,7 +290,7 @@ adu_p_nb <- tibble(adjust_pval_nb_o = p.adjust(p_vals_nb$pvals, "BH"))
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
 ```
 
-3. do the same for probe trials 
+4. do the same for probe trials 
 ```{r}
 p_vals_p <- tibble(pvals = spatial_firing$asr_p_o_rewarded_fit_p.value)
 adu_p_p <- tibble(adjust_pval_p_o = p.adjust(p_vals_p$pvals, "BH"))
@@ -361,45 +369,13 @@ spatial_firing$lm_group_p
 
 Now we want to visualise the coefficients of all neurons and all shuffled datasets
 
-1. extract shuffled values into tibble _nb needed because each 1000 shuffled datasets are nested for each neuron_
-```{r}
-shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared))
-```
-
-2. plot real and shuffled coefficients 
-```{r}
-ggplot(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32", fill="grey32") + 
-    coord_cartesian(xlim = c(-0.6,0.6), ylim = c(0,1)) +
-    geom_point(alpha=.4) + 
-    geom_point(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope, y = asr_b_o_rewarded_fit_r.squared, color=factor(unlist(lm_group_b)))) +
-    #geom_point(data=shuff_slopes, aes(x = slopes, y = r2), color="grey32") +
-    xlab("\nslope") +
-    ylab("R2") +
-    scale_color_manual(values=c("violetred2", "chartreuse3", "grey82")) +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=12),
-          axis.text.y = element_text(size=12),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=12), 
-          legend.text=element_text(size=12), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/LMOut_coefficients.png", width = 4, height = 5)
-
-```
-
-
-
 Now lets find and plot the proportion of cells that pass criteria according to our classification
 
 1. extract proportion of cells that meet each criteria
 ```{r}
-# positive homebound slopes
 start <- nrow(subset(spatial_firing, lm_group_b == "Negative"))/nrow(spatial_firing)*100
 reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))/nrow(spatial_firing)*100
 nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spatial_firing)*100
-
-
 ```
 
 2. Put into a tibble 
@@ -414,102 +390,105 @@ ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id)
   labs(y = "Percent") +
   scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
   theme_classic() +
-  theme(axis.text.x = element_text(size=16),
-        axis.text.y = element_text(size=16),
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=16), 
-        legend.text=element_text(size=16), 
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-
-ggsave(file = "plots/LMOut_proportions_rewarded.png", width = 3, height = 6)
-
+ggsave(file = "plots/Outbound_ramp_proportions.png", width = 3, height = 5)
 ```
 
 
 We might also want to visualise the coefficients for the real and shuffled dataset as a histogram.
 
-1. First, make stacked histogram of slope values for real dataset
+1. First, make stacked histogram of slope values for real dataset 
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
 ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(lm_group_b))
-  coord_cartesian(xlim = c(-0.6,0.6)) +
+  coord_cartesian(xlim = c(-0.45,0.45)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
   scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
   theme_classic() +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
         legend.title = element_blank(),
         legend.position = "none",
-        text = element_text(size=14),
-        legend.text=element_text(size=14),
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/LMOut_histogram_slopes.png", width = 4.5, height = 2)
+ggsave(file = "plots/Outbound_slope_histogram.png", width = 4, height = 2)
 
 ```
 
-2. same as above but for shuffled datasets
+same as above but for shuffled datasets
+
+1. extract shuffled values into tibble _each 1000 shuffled datasets are nested for each neuron_
+```{r}
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared))
+```
+
+2. Plot histogram of slopes
 ```{r}
 ggplot(data=shuff_slopes, aes(x = slopes)) +
-    coord_cartesian(xlim = c(-0.6,0.6)) +
+    coord_cartesian(xlim = c(-0.45,0.45)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
     labs(x = "Slope (Hz/cm)") +
     ylab("Proportion") +
     theme_classic() +
-    theme(axis.text.x = element_text(size=14),
-          axis.text.y = element_text(size=14),
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
           legend.position="bottom",
           legend.title = element_blank(),
-          text = element_text(size=14),
-          legend.text=element_text(size=14),
+          text = element_text(size=16),
+          legend.text=element_text(size=16),
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/LMOut_shuffle_datasets_histogram.png", width = 4.5, height = 2)
+ggsave(file = "plots/Outbound_slope_histogram_shuffled.png", width = 4, height = 2)
 ```
 
 
 3. Make stacked histogram of rsquared values for real dataset
-
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
 ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(lm_group_b))
-  coord_cartesian(xlim = c(0,1)) +
+  coord_cartesian(xlim = c(0,1), ylim = c(0,0.06)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
-  xlab("\nrsquared") +
+  xlab(" ") +
   scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
   theme_classic() +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
         legend.title = element_blank(),
         legend.position = "none",
-        text = element_text(size=14),
-        legend.text=element_text(size=14),
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/LMOut_histogram_r2.png", width = 4.5, height = 2)
-
-
+ggsave(file = "plots/Outbound_rsquared_histogram.png", width = 4, height = 2)
 ```
 
 4. Same as above but for shuffled datasets
-
 ```{r}
 ggplot(data=shuff_slopes, aes(x = r2)) +
     coord_cartesian(xlim = c(0,1)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
-    xlab(expression(R^2)) +
+    xlab(paste("\n",expression(R^2))) +
     ylab("Proportion") +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
     theme_classic() +
-    theme(axis.text.x = element_text(size=14),
-          axis.text.y = element_text(size=14),
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
           legend.position="none",
           legend.title = element_blank(),
-          text = element_text(size=14),
-          legend.text=element_text(size=14),
+          text = element_text(size=16),
+          legend.text=element_text(size=16),
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/LMOut_shuffle_r2_datasets_histogram.png", width = 4.5, height = 2)
+ggsave(file = "plots/Outbound_rsquared_histogram_shuffled.png", width = 4, height = 2)
 ```
 
 
@@ -531,7 +510,7 @@ ggplot(data=shuff_slopes, aes(x = slopes, y = r2)) +
           text = element_text(size=12),
           legend.text=element_text(size=12),
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-ggsave(file = "plots/LMOut_shuffle_datasets.png", width = 3, height = 3)
+ggsave(file = "plots/Outbound_coefficient_scatter_shuffled.png", width = 3, height = 3)
 
 ```
 
@@ -542,6 +521,9 @@ ggsave(file = "plots/LMOut_shuffle_datasets.png", width = 3, height = 3)
 
 First, reorder the dataframe with ramps according to slope.
 _For start ramps, steepest slope should be negative - thus will have the highest cluster id_
+```{r}
+spatial_firing <- subset(spatial_firing, Mouse != "1124")
+```
 
 ```{r}
 start_ramps<-spatial_firing[order(spatial_firing$asr_b_o_rewarded_fit_slope),]
@@ -607,30 +589,27 @@ Now we can plot the heatmap with annotations using pheatmap
 #convert data to wide format
 wide_DF <- concat_firing_start %>% spread(Position, Rates)
 
+#remove unused column
+wide_DF <- subset(wide_DF, select=-c(new_cluster_id))
+
 # Generte data (modified the mydf slightly)
-colnames(wide_DF) <- c("new_cluster_id", rep(30:90, times=1))
 rownames(wide_DF) <- paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_")
 
-#remove unused column
-name <- "new_cluster_id"
-wide_DF <- wide_DF %>% select(-one_of(name))
-
 # data for annotation rows in seperate dataframe
-mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), catagory = lm_result, region = brain_region, ramp_score=ramp_result)
+mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), region = brain_region, catagory = lm_result, ramp_score=ramp_result)
 
 # change the color of annotation to what you want: (eg: "navy", "darkgreen")
 Var1        <- c("violetred2", "black", "chartreuse3")
 names(Var1) <- c("Negative", "Unclassified", "Positive")
 
-Var2        <- c("springgreen4", "deepskyblue1", "firebrick", "violetred2" )
-names(Var2) <- c("PS", "UN", "V1", "PreS")
+Var2        <- c("coral2", "deepskyblue2", "deepskyblue2", "blueviolet" )
+names(Var2) <- c("PS", "UN", "RH", "MEC")
 
-anno_col <- list(result = Var1, region = Var2, ramp_score = brewer.pal(11,"RdBu"))
+anno_col <- list(region = Var2, result = Var1, ramp_score = brewer.pal(11,"RdBu"))
 
-#annotation_row = mydf, annotation_colors = anno_col, show_rownames = F, show_colnames = F
-myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, show_rownames = F, show_colnames = F )
+#, ramp_score = brewer.pal(11,"RdBu")
+myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, annotation_colors = anno_col, show_rownames = F, show_colnames = F )
 
-myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, show_rownames = F, show_colnames = F )
 ```
 
 Save the heatmap (bit of a nightmare here...)
@@ -642,12 +621,7 @@ save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
   dev.off()
 }
  
-save_pheatmap_png(myheatmap, "my_heatmap_all.png")
+save_pheatmap_png(myheatmap, "my_heatmap_all2.png")
 ```
 
-
-```{r}
-saveRDS(spatial_firing, file="All_Results.Rda")
-
-```
 
