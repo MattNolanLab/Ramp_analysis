@@ -190,7 +190,7 @@ P_S_A_positive <- nrow(subset(pos ,final_model_o_b == "PSA"))/nrow(pos)*100
 P_S_A_negative <- nrow(subset(neg ,final_model_o_b == "PSA"))/nrow(neg)*100
 P_S_A_none <- nrow(subset(none ,final_model_o_b == "PSA"))/nrow(none)*100
 
-NONE_positive <- nrow(subset(pos ,final_model_o_b == "None" |))/nrow(pos)*100
+NONE_positive <- nrow(subset(pos ,final_model_o_b == "None"))/nrow(pos)*100
 NONE_negative <- nrow(subset(neg ,final_model_o_b == "None"))/nrow(neg)*100
 NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
 
@@ -239,7 +239,7 @@ ggsave(file = "plots/LMERProportions_beaconed.png", width = 4, height = 4.5)
 
 
 
-First plit data based on cue independant/cue dependant (Figure 5) as we are only interested in position neurons here
+First plit data based on cue independent/cue dependent (Figure 5) as we are only interested in position neurons here
 ```{r}
 cue_independant_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 cue_dependant_neurons <- filter(spatial_firing, cue_group_o == "Positive-cue" | cue_group_o == "Negative-cue")
