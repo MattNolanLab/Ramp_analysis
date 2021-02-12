@@ -39,7 +39,7 @@ spatial_firing <- subset(spatial_firing, brain_region != "V1" )
 
 The linear model uses firing rate data binned in space. For this we want to load average firing rate over trials from the data frame for each cluster. 
 - Map over "Rates_averaged" column and extract averaged rates
-- Add position for each point ( data is binned into 200, 1 cm bins )
+- Add position for each point (data is binned into 200, 1 cm bins )
 - Insert result back into dataframe
 - Do this for beaconed, nonbeaconed and probe trials
 - Do this for shuffled spike rate (beaconed)
@@ -57,8 +57,8 @@ add_position <- function(df, session_id, cluster_id) {
 
 input columns: 
 Rates_averaged_rewarded_b = beaconed trials
-Rates_averaged_rewarded_nb = non-beaconed / probe trials
-Rates_averaged_rewarded_p = probe trials
+Rates_averaged_rewarded_nb = non-beaconed and probe trials
+Rates_averaged_rewarded_p = probe trials only
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(asr_b_rewarded = pmap(list(Rates_averaged_rewarded_b, session_id, cluster_id), add_position),
@@ -121,8 +121,9 @@ spatial_firing <- spatial_firing %>%
 ```
 
 Linear model results are stored in:
-spatial_firing$asr_b_o_rewarded_fit_pval
 spatial_firing$asr_b_o_rewarded_fit_slope
+spatial_firing$asr_b_o_rewarded_fit_intercept
+spatial_firing$asr_b_o_rewarded_fit_p.value
 spatial_firing$asr_b_o_rewarded_fit_r.squared
 
 
@@ -152,10 +153,10 @@ ggsave(file = "plots/lm_allcells.png", width = 4, height = 5)
 
 ## Identification of ramp cells in dataset 
 
-Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled datasets
+Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled data sets.
 
 
-1. write function to generate 1000 shuffles
+1. Function to generate shuffles
 - shuffles spikes using sample() function
 - runs lm
 - extracts coefficients
@@ -186,7 +187,7 @@ return(df_modified)
 }
 ```
 
-2. Run on example neuron (beaconed and non-beaconed trials)
+2. Run if shuffles haven't already been generated.
 ```{r}
 # Uncomment the line below to load pre-saved shuffled data
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
@@ -213,7 +214,7 @@ saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
 
 ### classify neurons based on shuffle activity
 
-If outside the 95% of the shuffled dataset, a neuron is considered to have ramp like activity along the track. 
+If outside the 95% of the shuffled data set, a neuron is considered to have ramp like activity along the track. 
 
 First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron 
 
@@ -369,7 +370,7 @@ spatial_firing$lm_group_p
 
 Now we want to visualise the coefficients of all neurons and all shuffled datasets
 
-Now lets find and plot the proportion of cells that pass criteria according to our classification
+Now lets find and plot the proportion of cells according to the classification
 
 1. extract proportion of cells that meet each criteria
 ```{r}
