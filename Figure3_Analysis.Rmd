@@ -458,3 +458,81 @@ write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, se
 
 
 
+###----------------------------------------------------------------------------###
+
+Analyses
+
+Compare coefficients for position, speed and acceleration.
+
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+```{r}
+pos_position_cells <- subset(spatial_firing, lm_group_b == "Positive")
+neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
+
+```
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save_p <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble()
+
+spatial_firing_save_n <- select(neg_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble()
+```
+
+1. put data into a tibble for plotting
+```{r}
+data_coef_p <- tibble(session_id = rep(unlist(spatial_firing_save_p$unique_id), times=3), 
+                    cluster_id = rep(spatial_firing_save_p$cluster_id, times=3), 
+                    coef = c(as.character(spatial_firing_save_p$o_b_mod_coefs_pos),
+                             as.character(spatial_firing_save_p$o_b_mod_coefs_speed),
+                             as.character(spatial_firing_save_p$o_b_mod_coefs_accel)),
+                    group = c(as.character(spatial_firing_save_p$final_model_o_b),
+                              as.character(spatial_firing_save_p$final_model_o_b),
+                              as.character(spatial_firing_save_p$final_model_o_b)), 
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save_p)),
+                    lm_result = rep(as.character(spatial_firing_save_p$lm_group_b), times=3))
+
+data_coef_n <- tibble(session_id = rep(unlist(spatial_firing_save_n$unique_id), times=3), 
+                    cluster_id = rep(spatial_firing_save_n$cluster_id, times=3), 
+                    coef = c(as.character(spatial_firing_save_n$o_b_mod_coefs_pos),
+                             as.character(spatial_firing_save_n$o_b_mod_coefs_speed),
+                             as.character(spatial_firing_save_n$o_b_mod_coefs_accel)),
+                    group = c(as.character(spatial_firing_save_n$final_model_o_b),
+                              as.character(spatial_firing_save_n$final_model_o_b),
+                              as.character(spatial_firing_save_n$final_model_o_b)), 
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save_n)),
+                    lm_result = rep(as.character(spatial_firing_save_n$lm_group_b), times=3))
+```
+
+2. run anova
+```{r}
+one.way_p <- aov(coef ~ coef_type, data = data_coef_p)
+
+summary(one.way_p)
+
+one.way_n <- aov(coef ~ coef_type, data = data_coef_n)
+
+summary(one.way_n)
+```
+
+3. Post hoc Tukey's test
+```{r}
+tukey.test_p <- TukeyHSD(one.way_p)
+tukey.test_p$coef_type
+
+tukey.test_n <- TukeyHSD(one.way_n)
+tukey.test_n$coef_type
+```
+
+
+
