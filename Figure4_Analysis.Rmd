@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ### --------------------------------------------------------------------------------- ###
 
 
-## Runs analysis that compares cued trials (beaconed) to uncued (non-beaconed + probe)
+## Runs analysis that compares cued trials (Beaconed) to uncued (Non-beaconed + Probe)
 
 _note : focuses on activity in outbound region_
 
@@ -19,15 +19,15 @@ _note : focuses on activity in outbound region_
 ### --------------------------------------------------------------------------------- ###
 
 
-First, we are interested to see what proportion of neurons has the following pattern ramp activity :
+First, we are interested to see what proportion of neurons have the following patterns of ramp activity:
 
-1. ramp in both cued and uncued (cue independent)
-2. ramp in just cued (cue dependent)
-3. ramp in just uncued (only pi)
+1. Cue-independent ('PI'): ramp in both cued (B) and uncued (NB/P)
+2. Cue-dependent ('cue'): ramp in just cued (B)
+3. Cue-impaired ('onlypi'   ): ramp in just uncued (NB/P)
 
-To classify cells into these categories above, we will use the classification established in Figure 2. This requires that Figure 2 analyses have been run for B and NB groups.
+To classify cells into these categories above, we will use the classification established in Figure 2. This requires that Figure 2 analyses have been run for B and NB/P groups. Note that in the code 'nb' includes non-beaconed and probe trials.
 
-1. make function to classify cells based on activity in beaconed / non-beaconed & probe trials 
+1. Make function to classify cells based on activity in beaconed / non-beaconed & probe trials 
 ```{r}
 mark_neurons <- function(beac, nb){
   if (is.na(beac) | is.na(nb) ) {
@@ -64,7 +64,7 @@ spatial_firing <- spatial_firing %>%
 
 Visualise the proportion of cells that fit the above criteria.  
 
-We will focus here only on neurons classified as having a positive or negative slope in Figure 2. A problem with this analysis is that it includes neurons that in Figure 3 are shown to be modulated by speed or acceleration but not position. The analysis below will address this.
+We will first focus on neurons classified as having a positive or negative slope in Figure 2. A problem with this analysis is that it includes neurons that in Figure 3 are shown to be modulated by speed or acceleration but not position. The further analysis below will address this.
 
 
 Function to return a tibble with proportions of neurons classified as cue-dependent, cue-independent or path integration only.
@@ -85,7 +85,7 @@ calc_props_cue_dep <- function(cue_group){
   uc <-uc_num / num_cells
   none <- none_num / num_cells
 
-proportions_mixed_ramps <- tibble(perc=c(pi, cue, pionly, uc, none), num=c(pi_num, cue_num, pionly_num, uc_num, none_num), ramp_id= c("Cue-independent", "Cue-dependant", "Path-Integration-only", "Unclassified", "None"),ramp_type = c("Cue-independent", "Cue-dependant", "Path-Integration-only", "Unclassified", "None"))
+proportions_mixed_ramps <- tibble(perc=c(pi, cue, pionly, uc, none), num=c(pi_num, cue_num, pionly_num, uc_num, none_num),ramp_type = c("Cue-independent", "Cue-dependant", "Path-Integration-only", "Unclassified", "None"))
 }
 ```
 
@@ -96,17 +96,17 @@ proportions_mixed_ramps <- calc_props_cue_dep(spatial_firing$cue_group_o)
 
 
 Plot a pie chart of results, 
-_note : pie segments represent the proportions with real values in text_
+_note : pie segments represent the proportions with numbers in text_
 ```{r}
 proportions_mixed_ramps_pi_maker <- function(df){
   # Compute the position of labels
 data <- df %>% 
-  arrange(desc(ramp_id)) %>%
+  arrange(desc(ramp_type)) %>%
   mutate(prop = perc) %>%
   mutate(ypos = cumsum(prop)- 0.5*prop )
 
 # Basic piechart
-ggplot(data, aes(x="", y=prop, fill=ramp_id)) +
+ggplot(data, aes(x="", y=prop, fill=ramp_type)) +
   geom_bar(stat="identity", width=1, color="white") +
   coord_polar("y", start=0) +
   theme_void() + 
@@ -297,11 +297,11 @@ ggsave(file = "plots/cell_proportions-AllNeurons.png", width = 4, height = 4.5)
 
 Now we want to visualise the average firing rate for each of the groups (cue dependant & cue independent / positive & negative).
 
-We will again focus exclusively on neurons that have a +/- slope (Figure 2) and are position modulated (Figure 3). To do so we will use the frame position_neurons generated above.
+We will again focus exclusively on neurons that have a +/- slope (Figure 2) and are position modulated (Figure 3). To do so we will use the tibble 'position_neurons' generated above.
 
-Function to plot data mean and SD of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
+Function to plot data mean and SEM of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
 ```{r}
-mean_SD_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
+mean_SEM_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
   df <- df %>%
     filter(lm_group_b == group_b,
            lm_group_nb == group_nb) %>%
@@ -339,14 +339,14 @@ mean_SD_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
 
 Subset data by group then average rates for plotting          **Negative Cue**
 ```{r}
-(NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Unclassified"))
+(NegUC_plot <- mean_SEM_plots(position_neurons, "Negative", "Unclassified"))
 # ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
 ```
 
 
 Subset data by group then average rates for plotting          **Positive Cue**
 ```{r}
-(PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Unclassified"))
+(PosUC_plot <- mean_SEM_plots(position_neurons, "Positive", "Unclassified"))
 # ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
 ```
 
@@ -354,7 +354,7 @@ Subset data by group then average rates for plotting          **Positive Cue**
 Subset data by group then average rates for plotting          **Positive PI**
 
 ```{r}
-(PosPos_plot <- mean_SD_plots(position_neurons, "Positive", "Positive"))
+(PosPos_plot <- mean_SEM_plots(position_neurons, "Positive", "Positive"))
 # ggsave(file = "plots/AverageRates_PositionCells_PosPI.png", width = 3.5, height = 2.5)
 ```
 
@@ -362,7 +362,7 @@ Subset data by group then average rates for plotting          **Positive PI**
 Subset data by group then average rates for plotting          **Negative PI**
 
 ```{r}
-(NegNeg_plot <- mean_SD_plots(position_neurons, "Negative", "Negative"))
+(NegNeg_plot <- mean_SEM_plots(position_neurons, "Negative", "Negative"))
 # ggsave(file = "plots/AverageRates_PositionCells_NegPI.png", width = 3.5, height = 2.5)
 ```
 
@@ -375,14 +375,14 @@ unclassified_neurons <- filter(spatial_firing, lm_group_b == "Unclassified")
 ```
 
 ```{r}
-(UCNeg_plot <- mean_SD_plots(unclassified_neurons, "Unclassified", "Negative"))
+(UCNeg_plot <- mean_SEM_plots(unclassified_neurons, "Unclassified", "Negative"))
 # ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
 ```
 
 Subset data by group then average rates for plotting          **Positive PI only**
 
 ```{r}
-(UCPos_plot <- mean_SD_plots(unclassified_neurons, "Unclassified", "Positive"))
+(UCPos_plot <- mean_SEM_plots(unclassified_neurons, "Unclassified", "Positive"))
 # ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
 ```
 
@@ -393,7 +393,7 @@ Subset data by group then average rates for plotting          **Positive PI only
 ###----------------------------------------------------------------------------------------------###
 Additional analyses related to Figure 4.
 
-First split data based on cue independent/cue dependent (Figure 5) as we are only interested in position neurons here
+First split data based on cue independent/cue dependent as we are only interested in position neurons here
 ```{r}
 cue_independant_neurons <- filter(spatial_firing,  == "Positive-PI" | cue_group_o == "Negative-PI")
 cue_dependant_neurons <- filter(spatial_firing, cue_group_o == "Positive-cue" | cue_group_o == "Negative-cue")
@@ -469,7 +469,7 @@ mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative
 ```{r}
 # plot data
 level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "Null")
-ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
+ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_type, level = level_order))) +
   geom_bar(stat="identity",width = 0.9, alpha = .7) +
   labs(y = "Percent of neurons") +
   scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
