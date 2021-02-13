@@ -231,14 +231,25 @@ def extract_time_binned_speed_split(spike_data):
     spike_data["Speed_mean_runthru"] = ""
     spike_data["Speed_mean_rewarded"] = ""
     for cluster in range(len(spike_data)):
-        speed=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[1])
+        speed=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[1])-5
         position=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[2])
+        speed = convolve_with_scipy(speed)
 
-        data = np.vstack((speed,position))
-        data=data.transpose()
-        data_filtered = data[data[:,0] > 0,:]
-        speed = data_filtered[:,0]
-        position = data_filtered[:,1]
+        position_array = np.arange(1,201,1)
+        binned_speed = np.zeros((position_array.shape))
+        binned_speed_sd = np.zeros((position_array.shape))
+        for rowcount, row in enumerate(position_array):
+            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position <= rowcount+1)))
+            average_speed = np.nanmean(speed_in_position)
+            sd_speed = np.nanstd(speed_in_position)
+            binned_speed[rowcount] = average_speed
+            binned_speed_sd[rowcount] = sd_speed
+        binned_speed = convolve_with_scipy(binned_speed)
+        spike_data.at[cluster, 'Speed_mean_try'] = list(binned_speed)
+
+
+        speed=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[1])-5
+        position=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[2])
         speed = convolve_with_scipy(speed)
 
         position_array = np.arange(1,201,1)
@@ -248,30 +259,15 @@ def extract_time_binned_speed_split(spike_data):
             speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position < rowcount+1)))
             average_speed = np.nanmean(speed_in_position)
             sd_speed = np.nanstd(speed_in_position)
-            binned_speed[rowcount] = average_speed/40
-            binned_speed_sd[rowcount] = sd_speed
-        binned_speed = convolve_with_scipy(binned_speed)
-        spike_data.at[cluster, 'Speed_mean_try'] = list(binned_speed)
-
-
-        speed=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[1])
-        position=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[2])
-
-        position_array = np.arange(1,201,1)
-        binned_speed = np.zeros((position_array.shape))
-        binned_speed_sd = np.zeros((position_array.shape))
-        for rowcount, row in enumerate(position_array):
-            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position < rowcount+1)))
-            average_speed = np.nanmean(speed_in_position)
-            sd_speed = np.nanstd(speed_in_position)
-            binned_speed[rowcount] = average_speed/40
+            binned_speed[rowcount] = average_speed
             binned_speed_sd[rowcount] = sd_speed
         binned_speed = convolve_with_scipy(binned_speed)
         spike_data.at[cluster, 'Speed_mean_runthru'] = list(binned_speed)
 
 
-        speed=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded_b[1])
-        position=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded_b[2])
+        speed=np.array(spike_data.iloc[cluster].spikes_in_time_reward_b[1])-5
+        position=np.array(spike_data.iloc[cluster].spikes_in_time_reward_b[2])
+        speed = convolve_with_scipy(speed)
 
         position_array = np.arange(1,201,1)
         binned_speed = np.zeros((position_array.shape))
@@ -280,7 +276,7 @@ def extract_time_binned_speed_split(spike_data):
             speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position < rowcount+1)))
             average_speed = np.nanmean(speed_in_position)
             sd_speed = np.nanstd(speed_in_position)
-            binned_speed[rowcount] = average_speed/40
+            binned_speed[rowcount] = average_speed
             binned_speed_sd[rowcount] = sd_speed
         binned_speed = convolve_with_scipy(binned_speed)
         spike_data.at[cluster, 'Speed_mean_rewarded'] = list(binned_speed)
@@ -289,7 +285,7 @@ def extract_time_binned_speed_split(spike_data):
 
 
 def convolve_with_scipy(rate):
-    window = signal.gaussian(7, std=5)
+    window = signal.gaussian(7, std=3)
     convolved_rate = signal.convolve(rate, window, mode='same')
     return (convolved_rate/ sum(window))
 
