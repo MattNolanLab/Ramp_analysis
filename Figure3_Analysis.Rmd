@@ -21,7 +21,7 @@ output: html_document
 1. Load functions to perform linear mixed effect model
 This might not be needed anymore??
 ```{r}
-source("Functions_Outbound_LMER.R")
+# source("Functions_Outbound_LMER.R")
 ```
 
 Function to fit mixed effect models
