@@ -714,14 +714,8 @@ Variables:
 """
 
 
-def add_instant_rates_regression_to_frame(spike_data):
-    spike_data["linregress_speed"] = ""
-    spike_data["linregress_location"] = ""
-    return spike_data
-
 
 def plot_instant_rates(recording_folder, spike_data):
-    #spike_data = add_instant_rates_regression_to_frame(spike_data)
     #print('I am plotting instant rate against location ...')
     save_path = recording_folder + '/Figures/InstantRates'
     if os.path.exists(save_path) is False:
@@ -802,7 +796,7 @@ def plot_color_coded_instant_rates(recording_folder, spike_data):
         plt.scatter(speed, rates, s=1, c=position, cmap='BuPu_r')
         cbar = plt.colorbar(cmap='BuPu_r')
         cbar.ax.tick_params(labelsize=16)
-        plt.ylabel('Spike rate (hz)', fontsize=16, labelpad = 10)
+        plt.ylabel('Firing rate (Hz)', fontsize=16, labelpad = 10)
         plt.xlabel('Speed (cm/s)', fontsize=16, labelpad = 10)
         #x_max = np.nanmax(rates)
         ax.set_xlim(0)
@@ -839,7 +833,7 @@ def plot_color_coded_instant_rates(recording_folder, spike_data):
         cbar.ax.tick_params(labelsize=14)
         ax.set_xlim(0)
         ax.set_ylim(0)
-        plt.ylabel('Spike rate (hz)', fontsize=16, labelpad = 10)
+        plt.ylabel('Firing rate (Hz)', fontsize=16, labelpad = 10)
         plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
         ax.locator_params(axis = 'x', nbins=3)
         plt.locator_params(axis = 'y', nbins  = 4)
@@ -890,7 +884,6 @@ def remove_low_speeds_and_segment_beaconed(rates, speed, position, types ):
 
 
 def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_data):
-    spike_data = add_instant_rates_regression_to_frame(spike_data)
     print('I am plotting instant rate against location ...')
     save_path = recording_folder + '/Figures/InstantRates'
     if os.path.exists(save_path) is False:
@@ -930,7 +923,7 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
         plt.scatter(speed_o, rates_o, s=1, c=position_o)
         cbar=plt.colorbar()
         cbar.ax.tick_params(labelsize=16)
-        plt.ylabel('Spike rate (hz)', fontsize=16, labelpad = 10)
+        plt.ylabel('Firing rate (Hz)', fontsize=16, labelpad = 10)
         plt.xlabel('Speed (cm/s)', fontsize=16, labelpad = 10)
         #x_max = np.nanmax(rates)
         ax.set_xlim(0)
@@ -944,7 +937,7 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
             left=True,
             labelleft=True,
             labelbottom=True,
-            labelsize=14,
+            labelsize=16,
             length=5,
             width=1.5)  # labels along the bottom edge are off
         ax.locator_params(axis = 'x', nbins=3)
@@ -968,7 +961,7 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
         plt.scatter(speed_h, rates_h/3, s=area, c=position_h)
         cbar=plt.colorbar()
         cbar.ax.tick_params(labelsize=16)
-        plt.ylabel('Spike rate (hz)', fontsize=16, labelpad = 10)
+        plt.ylabel('Firing rate (Hz)', fontsize=16, labelpad = 10)
         plt.xlabel('Speed (cm/s)', fontsize=16, labelpad = 10)
         x_max = np.nanmax(rates)
         ax.set_xlim(0)
@@ -982,7 +975,7 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
             left=True,
             labelleft=True,
             labelbottom=True,
-            labelsize=14,
+            labelsize=16,
             length=5,
             width=1.5)  # labels along the bottom edge are off
         ax.locator_params(axis = 'x', nbins=3)
@@ -1004,7 +997,7 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
         cbar.ax.tick_params(labelsize=16)
         ax.set_xlim(30, 90)
         ax.set_ylim(0)
-        plt.ylabel('Spike rate (hz)', fontsize=16, labelpad = 10)
+        plt.ylabel('Firing rate (Hz)', fontsize=16, labelpad = 10)
         plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
         ax.locator_params(axis = 'x', nbins=3)
         plt.locator_params(axis = 'y', nbins  = 4)
@@ -1017,7 +1010,7 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
             left=True,
             labelleft=True,
             labelbottom=True,
-            labelsize=14,
+            labelsize=16,
             length=5,
             width=1.5)  # labels along the bottom edge are off
         ax.spines['top'].set_visible(False)
@@ -1037,7 +1030,7 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
         cbar.ax.tick_params(labelsize=16)
         ax.set_xlim(110, 170)
         ax.set_ylim(0)
-        plt.ylabel('Spike rate (hz)', fontsize=16, labelpad = 10)
+        plt.ylabel('Firing rate (Hz)', fontsize=16, labelpad = 10)
         plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
         ax.locator_params(axis = 'x', nbins=3)
         plt.locator_params(axis = 'y', nbins  = 4)
@@ -1050,7 +1043,7 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
             left=True,
             labelleft=True,
             labelbottom=True,
-            labelsize=14,
+            labelsize=16,
             length=5,
             width=1.5)  # labels along the bottom edge are off
         ax.spines['top'].set_visible(False)
@@ -1394,7 +1387,7 @@ def plot_tiny_raw_ind(recording_folder, spike_data):
             left=True,
             labelleft=True,
             labelbottom=True,
-            labelsize=16,
+            labelsize=22,
             length=5,
             width=1.5)  # labels along the bottom edge are off
         ax.spines['top'].set_visible(False)
@@ -1427,7 +1420,7 @@ def plot_tiny_raw_ind(recording_folder, spike_data):
             left=True,
             labelleft=True,
             labelbottom=True,
-            labelsize=18,
+            labelsize=22,
             length=5,
             width=1.5)  # labels along the bottom edge are off
         ax.spines['top'].set_visible(False)
@@ -1461,7 +1454,7 @@ def plot_tiny_raw_ind(recording_folder, spike_data):
             left=True,
             labelleft=True,
             labelbottom=True,
-            labelsize=18,
+            labelsize=22,
             length=5,
             width=1.5)  # labels along the bottom edge are off
         ax.spines['top'].set_visible(False)
@@ -1470,7 +1463,6 @@ def plot_tiny_raw_ind(recording_folder, spike_data):
         ax.spines['bottom'].set_visible(True)
         ax.set_xticklabels(['', '', ''])
         ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
-        #ax.axhline(0, linewidth = 1.5, color = 'black') # bold line on the x axis
         ax.set_xlim(0)
         plt.subplots_adjust(hspace = .35, wspace = .35,  bottom = 0.25, left = 0.1, right = 0.9, top = 0.9)
         plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_raw_data_' + str(cluster_index +1) + '_acceleration.png', dpi=200)

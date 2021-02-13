@@ -44,14 +44,14 @@ def plot_peak_data(peak_data, output_path):
 
     cm_max_pos, cm_max_neg, cm_min_pos, cm_min_neg = extract_lm_classified(peak_data)
 
-    stop_histogram = plt.figure(figsize=(6,4))
+    stop_histogram = plt.figure(figsize=(6,3.5))
     ax = stop_histogram.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
-    ax.hist(cm_max_pos, alpha=0.5, bins=int(15), color="DodgerBlue") #"violetred2", "chartreuse3"
-    ax.hist(cm_min_pos, alpha=0.5, bins=int(15), color="Grey")
+    ax.hist(cm_max_pos, alpha=0.5, bins=int(20), color="DodgerBlue") #"violetred2", "chartreuse3"
+    ax.hist(cm_min_pos, alpha=0.5, bins=int(20), color="Grey")
     plt.ylabel('Count', fontsize=14, labelpad = 10)
     plt.xlabel('Location (cm)', fontsize=14, labelpad = 10)
-    ax.axvspan(90, 110, facecolor='DarkGreen', alpha=.15, linewidth =0)
-    ax.axvspan(20, 30, facecolor='k', linewidth =0, alpha=.15) # black box
+    ax.axvspan(90, 110, facecolor='LimeGreen', alpha=.3, linewidth =0)
+    ax.axvspan(20, 30, facecolor='k', linewidth =0, alpha=.3) # black box
     plt.xlim(20,110)
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
@@ -69,21 +69,24 @@ def plot_peak_data(peak_data, output_path):
     plt.locator_params(axis = 'y', nbins  = 3)
     plt.locator_params(axis = 'x', nbins  = 3)
     ax.set_xticklabels(['20', '20', '70'])
-
+    ax.axhline(linewidth=10, color="k")        # inc. width of x-axis and color it green
+    ax.axvline(linewidth=10, color="k")
     plt.subplots_adjust(hspace = .35, wspace = .35,  bottom = 0.2, left = 0.17, right = 0.87, top = 0.92)
     plt.savefig(output_path + 'peak_histogram_positive' + '.png', dpi=200)
     plt.close()
 
 
-    stop_histogram = plt.figure(figsize=(6,4))
+    stop_histogram = plt.figure(figsize=(6,3.5))
     ax = stop_histogram.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
-    ax.hist(cm_max_neg, alpha=0.5, bins=int(15), color="DodgerBlue")
-    ax.hist(cm_min_neg, alpha=0.5, bins=int(15), color="Grey")
+    ax.hist(cm_max_neg, alpha=0.5, bins=int(20), color="DodgerBlue")
+    ax.hist(cm_min_neg, alpha=0.5, bins=int(20), color="Grey")
     plt.ylabel('Count', fontsize=14, labelpad = 16)
     plt.xlabel('Location (cm)', fontsize=14, labelpad = 16)
-    ax.axvspan(90, 110, facecolor='DarkGreen', alpha=.15, linewidth =0)
-    ax.axvspan(20, 30, facecolor='k', linewidth =0, alpha=.15) # black box
+    ax.axvspan(90, 110, facecolor='LimeGreen', alpha=.3, linewidth =0)
+    ax.axvspan(20, 30, facecolor='k', linewidth =0, alpha=.3) # black box
     plt.xlim(20,110)
+    ax.axhline(linewidth=10, color="k")        # inc. width of x-axis and color it green
+    ax.axvline(linewidth=10, color="k")
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
     ax.tick_params(
@@ -99,6 +102,8 @@ def plot_peak_data(peak_data, output_path):
     plt.locator_params(axis = 'x', nbins  = 3)
     plt.locator_params(axis = 'y', nbins  = 3)
     ax.set_xticklabels(['20', '20', '70'])
+    ax.axhline(linewidth=10, color="k")        # inc. width of x-axis and color it green
+    ax.axvline(linewidth=10, color="k")
     plt.subplots_adjust(hspace = .35, wspace = .35,  bottom = 0.2, left = 0.16, right = 0.87, top = 0.92)
     plt.savefig(output_path + 'peak_histogram_negative' + '.png', dpi=200)
     plt.close()
@@ -113,10 +118,10 @@ def replot_peak_data(peak_data, output_path):
 
     cm_max_pos, cm_max_neg, cm_min_pos, cm_min_neg = extract_lm_classified(peak_data)
 
-    stop_histogram = plt.figure(figsize=(6,4))
+    stop_histogram = plt.figure(figsize=(6,3.5))
     ax = stop_histogram.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
-    ax.hist(cm_max_pos, alpha=0.5, bins=int(15), color="Chartreuse") #"violetred2", "chartreuse3"
-    ax.hist(cm_max_neg, alpha=0.5, bins=int(15), color="HotPink")
+    ax.hist(cm_max_pos, alpha=0.6, bins=int(20), color="LawnGreen") #"violetred2", "chartreuse3"
+    ax.hist(cm_max_neg, alpha=0.6, bins=int(20), color="HotPink")
     plt.ylabel('Count', fontsize=18, labelpad = 10)
     plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
     ax.axvspan(90, 110, facecolor='DarkGreen', alpha=.15, linewidth =0)
@@ -124,6 +129,10 @@ def replot_peak_data(peak_data, output_path):
     plt.xlim(20,110)
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
+    #ax.axhline(linewidth=10, color="k")        # inc. width of x-axis and color it green
+    #ax.axvline(linewidth=10, color="k")
+    ax.spines['left'].set_linewidth(2)
+    ax.spines['bottom'].set_linewidth(2)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(True)
@@ -137,21 +146,19 @@ def replot_peak_data(peak_data, output_path):
         left=True,
         labelleft=True,
         labelbottom=True,
-        labelsize=18)  # labels along the bottom edge are off
-
+        labelsize=20)  # labels along the bottom edge are off
     plt.locator_params(axis = 'y', nbins  = 3)
     plt.locator_params(axis = 'x', nbins  = 3)
     ax.set_xticklabels(['20', '20', '70'])
-
     plt.subplots_adjust(hspace = .35, wspace = .35,  bottom = 0.2, left = 0.17, right = 0.87, top = 0.92)
     plt.savefig(output_path + 'peak_histogram_peak' + '.png', dpi=200)
     plt.close()
 
 
-    stop_histogram = plt.figure(figsize=(6,4))
+    stop_histogram = plt.figure(figsize=(6,3.5))
     ax = stop_histogram.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
-    ax.hist(cm_min_pos, alpha=0.5, bins=int(15), color="Chartreuse")
-    ax.hist(cm_min_neg, alpha=0.5, bins=int(15), color="HotPink")
+    ax.hist(cm_min_pos, alpha=0.6, bins=int(20), color="LawnGreen")
+    ax.hist(cm_min_neg, alpha=0.6, bins=int(20), color="HotPink")
     plt.ylabel('Count', fontsize=18, labelpad = 10)
     plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
     ax.axvspan(90, 110, facecolor='DarkGreen', alpha=.15, linewidth =0)
@@ -159,6 +166,10 @@ def replot_peak_data(peak_data, output_path):
     plt.xlim(20,110)
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
+    #ax.axhline(linewidth=6, color="k")        # inc. width of x-axis and color it green
+    #ax.axvline(linewidth=6, color="k")
+    ax.spines['left'].set_linewidth(2)
+    ax.spines['bottom'].set_linewidth(2)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(True)
@@ -172,7 +183,7 @@ def replot_peak_data(peak_data, output_path):
         left=True,
         labelleft=True,
         labelbottom=True,
-        labelsize=18)  # labels along the bottom edge are off
+        labelsize=20)  # labels along the bottom edge are off
     plt.locator_params(axis = 'x', nbins  = 3)
     plt.locator_params(axis = 'y', nbins  = 3)
     ax.set_xticklabels(['20', '20', '70'])
@@ -186,9 +197,8 @@ def main():
     print('-------------------------------------------------------------')
     print('-------------------------------------------------------------')
 
-    df_path = '/Users/sarahtennant/Work/Analysis/in_vivo_virtual_reality/data/peak_analysis-2.pkl'
-    output_path = '/Users/sarahtennant/Work/Analysis/in_vivo_virtual_reality/plots/'
-
+    df_path = '/Users/sarahtennant/Work/Analysis/Ramp_analysis/data/peak_analysis.pkl'
+    output_path = '/Users/sarahtennant/Work/Analysis/Ramp_analysis/plots/'
 
     peak_data = process_a_dir(df_path,output_path)
 

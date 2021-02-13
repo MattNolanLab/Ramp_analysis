@@ -28,6 +28,7 @@ def extract_time_binned_firing_rate_rewarded(spike_data, prm):
         # stack data
         data = np.vstack((rates,speed,position,types, trials))
         data=data.transpose()
+        data = data[data[:,1] >= 3,:]
 
         # bin data over position bins
         bins = np.arange(0,200,1)
@@ -112,8 +113,8 @@ def plot_rewarded_firing_rate(spike_data, prm):
         ax.plot(position_array,rates, '-', color='Black')
         ax.fill_between(position_array, rates-sd_rates,rates+sd_rates, facecolor = 'Black', alpha = 0.2)
 
-        plt.ylabel('Rates (Hz)', fontsize=12, labelpad = 10)
-        plt.xlabel('Location (cm)', fontsize=12, labelpad = 10)
+        plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+        plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
         plt.xlim(0,200)
         ax.yaxis.set_ticks_position('left')
         ax.xaxis.set_ticks_position('bottom')
@@ -132,7 +133,7 @@ def plot_rewarded_firing_rate(spike_data, prm):
             left=True,
             labelleft=True,
             labelbottom=True,
-            labelsize=14,
+            labelsize=16,
             length=5,
             width=1.5)  # labels along the bottom edge are off
 
@@ -171,8 +172,8 @@ def plot_rewarded_nb_firing_rate(spike_data, prm):
         ax.plot(position_array,rates_nb, '-', color='Red')
         ax.fill_between(position_array, rates_nb-sd_rates_nb,rates_nb+sd_rates_nb, facecolor = 'Red', alpha = 0.2)
 
-        plt.ylabel('Rates (Hz)', fontsize=12, labelpad = 10)
-        plt.xlabel('Location (cm)', fontsize=12, labelpad = 10)
+        plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+        plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
         plt.xlim(0,200)
         ax.yaxis.set_ticks_position('left')
         ax.xaxis.set_ticks_position('bottom')
@@ -191,7 +192,7 @@ def plot_rewarded_nb_firing_rate(spike_data, prm):
             left=True,
             labelleft=True,
             labelbottom=True,
-            labelsize=14,
+            labelsize=16,
             length=5,
             width=1.5)  # labels along the bottom edge are off
 
