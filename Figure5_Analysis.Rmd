@@ -50,7 +50,7 @@ spatial_firing$asr_b_h_rewarded_fit_slope
 spatial_firing$asr_b_h_rewarded_fit_r.squared
 
 
-4. Plot coefficients of model (slope and r2 value) for each neuron
+3. Plot coefficients of model (slope and r2 value) for each neuron
 ```{r}
 ggplot(data=spatial_firing, aes(x = asr_b_h_rewarded_fit_slope,
                                 y = asr_b_h_rewarded_fit_r.squared)) +
@@ -71,20 +71,19 @@ ggsave(file = "plots/shuff_lm_homebound_allcells.png", width = 4, height = 5)
 ```
 
 
+### ---------------------------------------------------------------------------- ### 
+
 ## Identification of homebound ramp cells in dataset 
 
 Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled datasets
 
 Beause the homebound zone is the same length as the outbound zone, and as shuffling is across the full track length, we can use the shuffle results generated for Figure 2.
 
-
-### ---------------------------------------------------------------------------- ### 
-
 ### classify neurons based on shuffle activity
 
 If outside the 95% of the shuffled dataset, a neuron is considered to have ramp like activity along the track. 
 
-Then we want to correct the pvals of the lm, to account for multiple comparisons
+First we want to correct the pvals of the lm, to account for multiple comparisons
 
 1. put all pvalues into tibble then adjust using p.adjust from - package
 ```{r}
@@ -111,8 +110,6 @@ p_vals_p <- tibble(pvals = spatial_firing$asr_p_h_rewarded_fit_p.value)
 adu_p_p <- tibble(adjust_pval_p_h = p.adjust(p_vals_p$pvals, "BH"))
 spatial_firing <- cbind(spatial_firing, adu_p_p)
 ```
-
-### ----------------------------------------------------------------------------------------- ### 
 
 Now we want to classify neurons, taking the adjusted significance into account
 
@@ -194,34 +191,35 @@ mark_track_catagory <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_catagory = map2(lm_group_b, lm_group_b_h, mark_track_catagory))
+  mutate(whole_track_catagory = map2(lm_group_b, lm_group_b_h, mark_track_catagory)) %>%
+  mutate(whole_track_catagory_nb = map2(lm_group_nb, lm_group_nb_h, mark_track_catagory))
 
 ```
 
 ### ------------------------------------------------------------------------------------------ ### 
 
 Now, we want to know what proportion of cells fit this group 
-_note : we focus on cue-independent neurons here as classified in Figure 4 (CueAnalysis_0100.Rmd)_
+_note : we focus on cue-independent neurons here as classified in Figure 4 (Figure4_A.Rmd)_
 
 1. Find cue independent cells
-_note: cue_group is defined in Figure4_Analysis.Rmd_
+_note: cue_group_o is defined in Figure4_Analysis.Rmd_
 ```{r}
-cueindependent_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+cueindependent_neurons <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 2. find proportion of cue independent cells that fall into groups as catagorised above (pospos, posneg etc)
 ```{r}
 # positive homebound slopes
-pospos <-nrow(subset(cueindependent_neurons, track_catagory == "pospos"))/nrow(cueindependent_neurons)*100
-posneg <-nrow(subset(cueindependent_neurons, track_catagory == "posneg"))/nrow(cueindependent_neurons)*100
-negneg <-nrow(subset(cueindependent_neurons, track_catagory == "negneg"))/nrow(cueindependent_neurons)*100
-negpos <-nrow(subset(cueindependent_neurons, track_catagory == "negpos"))/nrow(cueindependent_neurons)*100
+pospos <-nrow(subset(cueindependent_neurons, whole_track_catagory == "pospos"))/nrow(cueindependent_neurons)*100
+posneg <-nrow(subset(cueindependent_neurons, whole_track_catagory == "posneg"))/nrow(cueindependent_neurons)*100
+negneg <-nrow(subset(cueindependent_neurons, whole_track_catagory == "negneg"))/nrow(cueindependent_neurons)*100
+negpos <-nrow(subset(cueindependent_neurons, whole_track_catagory == "negpos"))/nrow(cueindependent_neurons)*100
 
 # positive homebound slopes
-pospos_num <-nrow(subset(cueindependent_neurons, track_catagory == "pospos"))
-posneg_num <-nrow(subset(cueindependent_neurons, track_catagory == "posneg"))
-negneg_num <-nrow(subset(cueindependent_neurons, track_catagory == "negneg"))
-negpos_num <-nrow(subset(cueindependent_neurons, track_catagory == "negpos"))
+pospos_num <-nrow(subset(cueindependent_neurons, whole_track_catagory == "pospos"))
+posneg_num <-nrow(subset(cueindependent_neurons, whole_track_catagory == "posneg"))
+negneg_num <-nrow(subset(cueindependent_neurons, whole_track_catagory == "negneg"))
+negpos_num <-nrow(subset(cueindependent_neurons, whole_track_catagory == "negpos"))
 
 ```
 
@@ -285,7 +283,9 @@ normalise_rates <- function(df){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
+  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates)) %>%
+  mutate(normalised_rates_nb = map(Rates_averaged_rewarded_nb, normalise_rates))
+
 ```
 
 Then, predict firing rate in homebound region based on fit from real data in outbound region
@@ -350,49 +350,112 @@ calc_predict_diff <- function(rates, fit)
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_')) %>%
+  select(-contains('predict_params_nb_')) %>%
   mutate(predict_params = map(normalised_rates, predict_homebound)) %>%
-  unnest_wider(predict_params, names_sep = "_", names_repair = "universal")
+  mutate(predict_params_nb = map(normalised_rates_nb, predict_homebound)) %>%
+  unnest_wider(predict_params, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(predict_params_nb, names_sep = "_", names_repair = "universal")
 
 spatial_firing <- spatial_firing %>%
   mutate(offset = pmap_chr(list(normalised_rates, predict_params_lwr, predict_params_upr), offset_test),
-         predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff))
+         predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff),
+         predict_diff_nb = map2_dbl(normalised_rates_nb, predict_params_nb_fit, calc_predict_diff))
 
 ```
 
 
-
+### ------------------------------------------------------------------------------------------ ### 
 
 Now, we can classify cells based on their predicted activity. 
 
-1. Function to classify neurons based on predict mean
+1. Function to classify neurons based on offset (Matt code that does it based on prediction)
 
 ```{r}
-mark_reset_group <- function(df, id){
+mark_reset_group_predict <- function(df){
   if (is.na(df) ) {
     return( "None" )
-  } else if( id == "posneg" | id == "negpos") {
-    return( "Switch" ) 
-  } else if( id == "posnon" | id == "negnon") {
-    return( "Switch" ) 
-  } else if( (df > -1 & df < 1) & (id == "pospos" | id == "negneg")) {
+  } else if( df == "None") {
     return( "Continuous" )
-  } else if( (df <= -1 | df >= 1) & (id == "pospos" | id == "negneg")) {
+  } else if( ( df == "Neg" ||  df == "Pos")) {
     return( "Reset" ) 
-  } else {
-    return("None")
   }
 }
-
 
 ```
 
 2. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(reset_group = map2(predict_diff, track_catagory, mark_reset_group))
+  mutate(reset_group = map(offset, mark_reset_group_predict))
 
 ```
 
+
+Now, we can classify cells based on their predicted activity. 
+_second method_
+1. classify based on predict mean (Sarah method)
+
+```{r}
+mark_reset_group <- function(df){
+  if (is.na(df) ) {
+    return( "None" )
+  } else if( (df > -1 & df < 1)) {
+    return( "Continuous" )
+  } else if( (df <= -1 | df >= 1)) {
+    return( "Reset" ) 
+  } else {
+    return("None")
+  }
+}
+
+```
+
+2. Run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(reset_group = map(predict_diff, mark_reset_group)) %>%
+  mutate(reset_group_nb = map(predict_diff_nb, mark_reset_group))
+
+```
+
+
+then add another column, which contains the slope in both the outbound and homebound and the reset activity
+
+```{r}
+mark_track_catagory <- function(outbound, homebound, reset){
+  if (is.na(outbound) ) {
+    return( "None" )  
+  } else if( (outbound == "Positive") & (homebound == "Negative")) {
+    return( "+ -" ) 
+  } else if( (outbound == "Positive") & (homebound == "Positive") & (reset == "Continuous")) {
+    return( "+ +" )
+  } else if( (outbound == "Positive") & (homebound == "Positive") & (reset == "Reset")) {
+    return( "+ + R" )
+  } else if( (outbound == "Negative") & (homebound == "Positive")) {
+    return( "- +" )
+  } else if( (outbound == "Negative") & (homebound == "Negative") & (reset == "Continuous")) {
+    return( "- -" )
+  } else if( (outbound == "Negative") & (homebound == "Negative") & (reset == "Reset")) {
+    return( "- - R" )
+  } else if( (outbound == "Negative") & (homebound == "Unclassified")) {
+    return( "- none" )
+  } else if( (outbound == "Positive") & (homebound == "Unclassified")) {
+    return( "+ none" )
+    
+  } else {
+    return("None")
+  }
+}
+
+```
+
+3. Run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_catagory)) %>%
+  mutate(track_reset_group_nb = pmap(list(lm_group_nb, lm_group_nb_h, reset_group_nb), mark_track_catagory)) 
+
+```
 
 ### ------------------------------------------------------------------------------------------ ### 
 
@@ -404,12 +467,12 @@ spatial_firing <- spatial_firing %>%
 
 1. extract neurons with slope on outbound & homebound
 ```{r}
-data <- subset(spatial_firing, track_catagory == "pospos" | track_catagory == "negneg" | track_catagory == "posneg"| track_catagory == "negpos")
+data <- subset(spatial_firing, whole_track_catagory == "pospos" | whole_track_catagory == "negneg" | whole_track_catagory == "posneg" | whole_track_catagory == "negpos" | whole_track_catagory == "negnon" | whole_track_catagory == "posnon")
 ```
 
 2. extract only neurons that are driven by path integration (as determined by Figure 4 Analysis)
 ```{r}
-pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 3. subset based on position
@@ -419,21 +482,21 @@ position_neurons <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "
 
 4. Plot bar charts - positive neurons
 ```{r}
-ggplot(data=subset(position_neurons, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(lm_group_b)))) +
-  coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
-  geom_histogram(aes(y=..density..), alpha=0.5) +
-  scale_fill_manual(values=c( "chartreuse3")) +
+ggplot(data=subset(position_neurons, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+  coord_cartesian(xlim=c(-5,5)) +
+  geom_histogram(aes(y=..count..), alpha=0.5) +
+  scale_fill_manual(values=c(  "grey", "chartreuse3","chartreuse3")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  geom_vline(xintercept = 1, color="black", linetype="dotted") +
-  geom_vline(xintercept = -1, color="black", linetype="dotted") +
+  #geom_vline(xintercept = 1, color="black", linetype="dotted") +
+  #geom_vline(xintercept = -1, color="black", linetype="dotted") +
   labs(y="Density", x="") +
   theme_classic() +
-  theme(axis.text.x = element_text(size=10),
-        axis.text.y = element_text(size=10),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=10), 
-        legend.text=element_text(size=10), 
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/PredictHomeboundMean_PIpositive_pi.png",width = 4, height = 2.5)
 ```
@@ -442,21 +505,21 @@ ggsave(file = "plots/PredictHomeboundMean_PIpositive_pi.png",width = 4, height =
 
 ```{r}
 
-ggplot(data=subset(position_neurons,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(lm_group_b)))) +
-  coord_cartesian(xlim=c(-5,5), y=c(0,0.7)) +
-  geom_histogram(aes(y=..density..), alpha=0.5) +
-  scale_fill_manual(values=c("violetred2")) +
+ggplot(data=subset(position_neurons,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+  coord_cartesian(xlim=c(-5,5)) +
+  geom_histogram(aes(y=..count..), alpha=0.5) +
+  scale_fill_manual(values=c( "grey", "violetred2","violetred2")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  geom_vline(xintercept = 1, color="black", linetype="dotted") +
-  geom_vline(xintercept = -1, color="black", linetype="dotted") +
+  #geom_vline(xintercept = 1, color="black", linetype="dotted") +
+  #geom_vline(xintercept = -1, color="black", linetype="dotted") +
   labs(y="Density", x="") +
   theme_classic() +
-  theme(axis.text.x = element_text(size=10),
-        axis.text.y = element_text(size=10),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=10), 
-        legend.text=element_text(size=10), 
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/PredictHomeboundMean_PInegative_pi.png",width = 4, height = 2.5)
 
@@ -477,7 +540,7 @@ data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory ==
 
 2. 
 ```{r}
-pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+pi_data <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
 3. subset based on position
@@ -498,6 +561,8 @@ ggplot() +
     geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
     geom_jitter(data=reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
     coord_cartesian(ylim = c(-.6,.6), xlim = c(-.6,.6)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
     xlab("Outbound slope") +
     ylab("Homebound slope") +
     theme_classic() +
@@ -509,7 +574,7 @@ ggplot() +
           text = element_text(size=16), 
           legend.text=element_text(size=16), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/slope_comparison_reset.png", width = 5, height = 5)
+ggsave(file = "plots/slope_comparison_reset.png", width = 4, height = 4)
 
 ```
 
@@ -519,7 +584,7 @@ ggsave(file = "plots/slope_comparison_reset.png", width = 5, height = 5)
 
 Now we want to plot population rate across whole track for diff groups so we can visualise the average firing rate
 
-cue_groups are as follows :
+cue_group_os are as follows :
 
 outbound homebound  reset
     +       +         n
@@ -545,7 +610,12 @@ pi_data <-subset(position_neurons, final_model_o_b == "P" | final_model_o_b == "
 
 2. make tibble with average firing rates and classifications : _just path integration neurons_
 ```{r}
-df <- tibble(Position = rep(1:200, times=nrow(pi_data)), Rates = unlist(pi_data$Rates_averaged_rewarded_b), Outbound_beaconed = rep(pi_data$lm_group_b, each=200), Homebound_beaconed = rep(pi_data$lm_group_b_h, each=200), group = rep(as.character(pi_data$reset_group), each=200), predict_diff = rep(as.numeric(pi_data$predict_diff), each=200))
+df <- tibble(session_id = rep(pi_data$session_id, each=200),
+             Position = rep(1:200, times=nrow(pi_data)), 
+             Rates = unlist(pi_data$Rates_averaged_rewarded_b), 
+             Outbound_beaconed = rep(pi_data$lm_group_b, each=200), 
+             Homebound_beaconed = rep(pi_data$lm_group_b_h, each=200), 
+             group = rep(as.character(pi_data$reset_group), each=200))
 
 ```
 
@@ -572,10 +642,10 @@ ggplot(data=df_neg_cue) +
   scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
   scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 ggsave(file = "plots/Negneg_contiuous_mean.png", width = 3.5, height = 2.5)
 
 ```
@@ -605,10 +675,10 @@ ggplot(data=df_neg_cue) +
   scale_y_continuous(breaks=seq(5,30,5), expand = c(0, 0)) +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 ggsave(file = "plots/negneg_reset_mean.png", width = 3.5, height = 2.5)
 
 ```
@@ -637,10 +707,10 @@ ggplot(data=df_pos_cue) +
   scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 ggsave(file = "plots/negpos_mean.png", width = 3.5, height = 2.5)
 
 ```
@@ -672,10 +742,10 @@ ggplot(data=df_pos_pi) +
   #geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 ggsave(file = "plots/pospos_continuous_mean.png", width = 3.5, height = 2.5)
 
 
@@ -707,10 +777,10 @@ ggplot(data=df_pos_pi) +
   scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 ggsave(file = "plots/pospos_reset_mean.png", width = 3.5, height = 2.5)
 
 
@@ -739,10 +809,10 @@ ggplot(data=df_pos_pi) +
   scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12), 
+        text = element_text(size=14), 
         panel.grid = element_blank(),
         panel.border = element_blank()) 
 ggsave(file = "plots/posneg_mean.png", width = 3.5, height = 2.5)
@@ -836,7 +906,7 @@ Now we want to plot a sankey diagram showing the slope of neurons in the outboun
 ```{r}
 data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory == "negneg" | track_catagory == "posneg"| track_catagory == "negpos" | track_catagory == "posnon"| track_catagory == "negnon")
 
-pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 
 pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
@@ -921,7 +991,7 @@ data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory ==
 
 # filter for pi neurons
 ```{r}
-pi_data <- subset(data, cue_group == "Positive-PI" | cue_group == "Negative-PI")
+pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 
 pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 

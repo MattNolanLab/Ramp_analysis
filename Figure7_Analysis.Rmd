@@ -145,6 +145,8 @@ Now we can plot the coefficients for each trial type, marked by whether or not t
 3. subset by outbound ramps (Figure 2)
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+ramps <- subset(ramps, final_model_o_b == "P" | final_model_o_b == "PSA")
+
 ```
 
 4. Plot slope coefficient for rewarded trials and run through trials
@@ -160,14 +162,14 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
     xlab("\nslope") +
     ylab("R2") +
     theme_classic() +
-    theme(axis.text.x = element_text(size=12),
-          axis.text.y = element_text(size=12),
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
           legend.position="bottom", 
           legend.title = element_blank(),
-          text = element_text(size=12), 
-          legend.text=element_text(size=12), 
+          text = element_text(size=14), 
+          legend.text=element_text(size=14), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_run.png", width = 4, height = 4)
+ggsave(file = "plots/SlopeScatter_reward_vs_run.png", width = 4, height = 3.5)
 ```
 ,5. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
 ```{r}
@@ -182,16 +184,68 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
     xlab("\nslope") +
     ylab("R2") +
     theme_classic() +
-    theme(axis.text.x = element_text(size=12),
-          axis.text.y = element_text(size=12),
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
           legend.position="bottom", 
           legend.title = element_blank(),
-          text = element_text(size=12), 
-          legend.text=element_text(size=12), 
+          text = element_text(size=14), 
+          legend.text=element_text(size=14), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_try.png", width = 4, height = 4)
+ggsave(file = "plots/SlopeScatter_reward_vs_try.png", width = 4, height = 3.5)
 ```
 
+3. subset by outbound ramps (Figure 2)
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+
+ramps <- subset(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A")
+
+```
+
+4. Plot slope coefficient for rewarded trials and run through trials
+```{r}
+ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
+                                y = asr_b_run_fit_slope, 
+                                fill = factor(unlist(reward_interaction_id)),
+                                color = factor(unlist(reward_interaction_id)))) +
+    coord_cartesian(xlim=c(-0.35,0.35), y=c(-0.35,0.35)) +
+    geom_point(alpha=0.3) +
+    scale_fill_manual(values=c("grey", "red", "blue")) +
+    scale_color_manual(values=c("grey", "red", "blue")) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=14), 
+          legend.text=element_text(size=14), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/SlopeScatter_reward_vs_run_speed.png", width = 4, height = 3.5)
+```
+,5. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
+```{r}
+ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
+                                y = asr_b_try_fit_slope, 
+                                fill = factor(unlist(reward_interaction_id)),
+                                color = factor(unlist(reward_interaction_id)))) +
+    coord_cartesian(xlim=c(-0.35,0.35), y=c(-0.35,0.35)) +
+    geom_point(alpha=0.3) +
+    scale_fill_manual(values=c("grey", "red", "blue")) +
+    scale_color_manual(values=c("grey", "red", "blue")) +
+    xlab("\nslope") +
+    ylab("R2") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=14), 
+          legend.text=element_text(size=14), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/SlopeScatter_reward_vs_try_speed.png", width = 4, height = 3.5)
+```
 ### ----------------------------------------------------------------------------------------- ###
 
 Now we want to examine if there are differences in the reset activity between trial types (hit, try, run)
@@ -201,7 +255,7 @@ To do this, we can plot population rate for rewarded and failed trials across wh
 
 1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
 ```{r}
-position_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", final_model_o_b == "P" )
+position_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", final_model_o_b == "P")
 ```
 
 Function to plot data mean and SD of the population data based on the classification, as per Figure 2, and classification as per figure 5, on beaconed trials in the outbound and homebound regions of the track.
@@ -358,7 +412,7 @@ ggsave(file = "plots/NegPos_failed_PI_justspeed.png", width = 4.5, height = 2.5)
 
 ### ------------------------------------------------------------------------------------ ###
 
-## plot average speed vs location for groups of neurons (P, S)
+## plot average speed vs location for groups of neurons (P, S etc)
 
 1. Write function to add position to speed
 ```{r}
@@ -392,26 +446,25 @@ mean_speed_plots <- function(df, x_start = 30, x_end = 90){
    unnest(c(Speed_avg))
 
  df <- df %>%
-   group_by(Position, Indicator) %>%
-   dplyr::summarise(mean_b = mean(Speed*2, na.rm = TRUE),
-             se_b = std.error(Speed*2, na.rm = TRUE))
- print(df)
+   group_by(Indicator, Position) %>%
+   dplyr::summarise(mean_b = mean(Speed, na.rm = TRUE),
+             se_b = std.error(Speed, na.rm = TRUE))
  ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  annotate("rect", xmin=0, xmax=30, ymin=10,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=170, xmax=200, ymin=10,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=90, xmax=110, ymin=10,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, 
                   y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b, 
                   fill=as.factor(Indicator)), alpha=0.1) +
    geom_line(aes(y=mean_b, 
                  x=Position, 
-                 color=as.factor(Indicator), fill=as.factor(Indicator)), alpha=0.5, n= 100, span=0.2) +
+                 color=as.factor(Indicator)), alpha=0.5, n= 100, span=0.2) +
    scale_fill_manual(values=c("black", "red", "blue")) +
    scale_color_manual(values=c("black", "red", "blue")) +
    theme_classic() +
    labs(y = "Mean speed (cm/s)", x = "Position") +
    xlim(x_start, x_end) +
-   #ylim(5,130) +
+   ylim(10,170) +
    theme(axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12),
         legend.title = element_blank(),
@@ -422,7 +475,7 @@ mean_speed_plots <- function(df, x_start = 30, x_end = 90){
 
 3. Split data based on encoding group (Figure 3) as we are only interested in position neurons here
 ```{r}
-position_neurons <- filter(spatial_firing, final_model_o_b == "P" )
+position_neurons <- filter(spatial_firing, final_model_o_b == "P" | final_model_o_b == "S" | final_model_o_b == "A" | final_model_o_b == "SA")
 ```
 
 4. Subset data by group then average rates for plotting          
@@ -430,16 +483,268 @@ position_neurons <- filter(spatial_firing, final_model_o_b == "P" )
 (Pos_speed_plot <- mean_speed_plots(position_neurons,  0, 200))
 ggsave(file = "plots/PI_speed.png", width = 4.5, height = 2.5)
 ```
-
-
-
-5. Split data based on encoding group (Figure 3) as we are only interested in speed neurons here
+Function to extract all data. Filter for positions in the reward zone and calculate mean speed for each trial. Do this seperatly for hit, run and try neurons. 
 ```{r}
-speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "A" | final_model_o_b == "SA")
+average_speed <- function(df) {
+  df <-
+    tibble(
+      Speed = as.numeric(Re(df[[2]])/10),
+      Position = as.integer(Re(df[[3]])),
+    )
+
+  df <- df %>%
+    select(Speed, Position) %>%
+    group_by(Position) %>%
+    dplyr::summarise(mean_speed = mean(Speed, na.rm = TRUE),
+                     se_speed = std.error(Speed, na.rm = TRUE)) 
+  return(df)
+}
 ```
 
-6. Subset data by group then average rates for plotting          
+1. Run on dataframe : Average across trial types
+
+input columns: 
+spikes_in_time_rewarded_b = speed, position and trial number for rewarded beaconed trials
+spikes_in_time_try_b =  speed, position and trial number for try beaconed trials
+Speed_hist_runthru_b = speed, position and trial number for run through trials
 ```{r}
-(Speed_speed_plot <- mean_speed_plots(speed_neurons,  0, 200))
-ggsave(file = "plots/Sp_speed.png", width = 4.5, height = 2.5)
+spatial_firing <- spatial_firing %>%
+  mutate(Speed_mean_rewarded = map(spikes_in_time_rewarded, average_speed),
+         Speed_mean_try = map(spikes_in_time_try_b, average_speed),
+         Speed_mean_run = map(spikes_in_time_runthru_b, average_speed))
+```
+
+```{r}
+# The function to use at each step is `mean`.
+# The window size is 5
+rolling_mean <- rollify(mean, window = 6)
+
+mean_speed_plots <- function(df, x_start = 30, x_end = 90){
+  
+  hit <- df %>%
+    select(Speed_mean_rewarded) %>%
+    unnest(Speed_mean_rewarded) %>%
+    mutate(rolling_avg = rolling_mean(mean_speed))
+  try <- df %>%
+    select(Speed_mean_try) %>%
+    unnest(Speed_mean_try) %>%
+    mutate(rolling_avg = rolling_mean(mean_speed))
+  run <- df %>%
+    select(Speed_mean_run) %>%
+    unnest(Speed_mean_run) %>%
+    mutate(rolling_avg = rolling_mean(mean_speed))
+
+  full_df <- tibble(Speed = c(hit$rolling_avg,try$rolling_avg, run$rolling_avg),
+               Position = c(hit$Position,try$Position, run$Position),
+               Indicator = c(rep("Hit", times=nrow(hit)),rep("Try", times=nrow(try)),rep("Run",times=nrow(run)))
+    )
+
+  full_df <- full_df %>%
+    group_by(Position, Indicator) %>%
+    dplyr::summarise(rolling_mean = mean(Speed, na.rm = TRUE),
+                     se_b = std.error(Speed, na.rm = TRUE))
+  
+  ggplot(data=full_df) +
+    annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+    geom_ribbon(aes(x=Position, 
+                    y=rolling_mean, ymin = rolling_mean - se_b, ymax = rolling_mean + se_b, 
+                    fill=as.factor(Indicator)), alpha=0.1) +
+    geom_line(aes(y=rolling_mean, 
+                  x=Position, 
+                  color=as.factor(Indicator)), alpha=0.5, n= 100) +
+    scale_fill_manual(values=c("black", "red", "blue")) +
+    scale_color_manual(values=c("black", "red", "blue")) +
+    theme_classic() +
+    labs(y = "Mean speed (cm/s)", x = "Position") +
+    xlim(x_start, x_end) +
+    #ylim(5,104) +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.title = element_blank(),
+          text = element_text(size=12))
+  }
+```
+
+4. Subset data by group then average rates for plotting          
+```{r}
+(Pos_speed_plot <- mean_speed_plots(spatial_firing, 0, 200))
+ggsave(file = "plots/PI_speed2.png", width = 4.5, height = 2.5)
+```
+
+
+
+
+### ------------------------------------------------------------------------------------ ###
+
+## calculate a histogram of speed in the reward zone
+
+Here we want to see the distribution of speed in the reward zone in the trial types (hit, run, try)
+
+Function to extract all data. Filter for positions in the reward zone and calculate mean speed for each trial. Do this seperatly for hit, run and try neurons. 
+```{r}
+sum_speed_in_reward_zone <- function(df) {
+  df <-
+    tibble(
+      Rates = as.numeric(Re(df[[1]])),
+      Speed = as.numeric(Re(df[[2]])),
+      Position = as.numeric(Re(df[[3]])),
+      Trials = as.numeric(Re(df[[4]])),
+      Types = as.factor(df[[5]])
+    )
+
+  df <- df %>%
+    select(Speed, Trials, Position) %>%
+    filter(Position >= 90, Position <= 110) %>%
+    group_by(Trials) %>%
+    dplyr::summarise(mean_speed = mean(Speed, na.rm = TRUE),
+             se_speed = std.error(Speed, na.rm = TRUE)) 
+  return(df)
+}
+```
+
+1. Run on dataframe : Average across trial types
+
+input columns: 
+spikes_in_time_rewarded_b = speed, position and trial number for rewarded beaconed trials
+spikes_in_time_try_b =  speed, position and trial number for try beaconed trials
+Speed_hist_runthru_b = speed, position and trial number for run through trials
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(Speed_hist_rewarded = map(spikes_in_time_rewarded, sum_speed_in_reward_zone),
+         Speed_hist_try = map(spikes_in_time_try_b, sum_speed_in_reward_zone),
+         Speed_hist_run = map(spikes_in_time_runthru_b, sum_speed_in_reward_zone))
+```
+
+
+Function to calculate and plot histogram. First takes input column, extracts the average reward zone speed for each trial, then plots for all sessions 
+```{r}
+histogram_plots <- function(df, name, color){
+  df <- df %>%
+    select(name) %>%
+    unnest(name) %>%
+    select(mean_speed)
+
+  ggplot(data=df, aes(x = as.vector(mean_speed))) +
+    coord_cartesian(xlim=c(0,100)) +
+    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill=color) +
+    labs(y="Density", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          text = element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+```
+
+3. extract only neurons that are driven by path integration (as determined by Figure 4 Analysis)
+```{r}
+position_neurons <- spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", 
+         final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") 
+```
+
+4. Plot histogram for rewarded trials
+```{r}
+(hit_hist_plot <- histogram_plots(position_neurons, "Speed_hist_rewarded", "black"))
+ggsave(file = "plots/Mean_rewardzone_speed_rewarded.png",width = 4, height = 2.5)
+```
+5. Plot histogram for try trials
+```{r}
+(run_hist_plot <- histogram_plots(position_neurons, "Speed_hist_run", "red"))
+ggsave(file = "plots/Mean_rewardzone_speed_run.png",width = 4, height = 2.5)
+```
+
+6. Plot histogram for run trials
+```{r}
+(try_hist_plot <- histogram_plots(position_neurons, "Speed_hist_try", "blue"))
+ggsave(file = "plots/Mean_rewardzone_speed_try.png",width = 4, height = 2.5)
+```
+
+
+### ------------------------------------------------------------------------------------ ###
+
+### plot the 95 % confidence intervals for speed in the reward zone
+
+
+
+Function to calculate and plot histogram. First takes input column, extracts the average reward zone speed for each trial, then plots for all sessions 
+```{r}
+CI_plot <- function(df, name, color){
+  
+  df <- df %>%
+    select(name) %>%
+    unnest(name[1]) 
+  
+  print(df)
+
+  ggplot(data=df, aes(x = as.vector(name))) +
+    coord_cartesian(xlim=c(0,100)) +
+    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill=color) +
+    labs(y="Density", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          text = element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+```
+
+
+
+6. Plot histogram for run trials
+```{r}
+CI_plot_upper <- function(df, name, color){
+  df <- df %>%
+    select(name) %>%
+    unnest_wider(name,names_repair = "universal")
+  
+  upper <- ggplot(data=df, aes(x = as.vector(...1))) +
+    coord_cartesian(xlim=c(0,100)) +
+    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill=color) +
+    labs(y="Density", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          text = element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+```
+
+```{r}
+CI_plot_lower <- function(df, name, color){
+  df <- df %>%
+    select(name) %>%
+    unnest_wider(name,names_repair = "universal")
+  
+  upper <- ggplot(data=df, aes(x = as.vector(...2))) +
+    coord_cartesian(xlim=c(0,100)) +
+    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill=color) +
+    labs(y="Density", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          text = element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+```
+
+```{r}
+(upper <- CI_plot_upper(position_neurons, "speed_CI_rewarded", "black"))
+ggsave(file = "plots/Speed_upperCI_rewarded.png", width = 4, height = 2.5)
+```
+```{r}
+(upper <- CI_plot_lower(position_neurons, "speed_CI_rewarded", "black"))
+ggsave(file = "plots/Speed_lowerCI_rewarded.png", width = 4, height = 2.5)
+```
+
+
+```{r}
+(upper <- CI_plot_upper(position_neurons, "speed_CI_run", "red"))
+ggsave(file = "plots/Speed_upperCI_run.png", width = 4, height = 2.5)
+```
+```{r}
+(upper <- CI_plot_lower(position_neurons, "speed_CI_run", "red"))
+ggsave(file = "plots/Speed_lowerCI_run.png", width = 4, height = 2.5)
 ```
