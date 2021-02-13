@@ -446,9 +446,9 @@ ggsave(file = "plots/LMERProportions_beaconed_cueindependant.png", width = 4, he
 
 
 
-Might need to add something here to save the coefficients??
+Plot the distribution of standardised coefficients for cue-dependent and cue-independent cells with positve / negative slopes.
 
-
+Use function 'standard_plot' from Figure 3. This expects a tibble with columns 'coef_type' (either P, S or A) and 'coef' (the coefficients)
 
 Make tibble for coefficient plots
 4. put data into a tibble for plotting.
