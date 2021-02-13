@@ -199,9 +199,9 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 
 ### ------------------------------------------------------------------------------------- ###
 
-_same as above but just for position based cells_
+_same as above but just for position modulated cells_
 
-We want to focus the analysis exclusively on neurons that have a +/- slope (Figure 2) and are position modulated (Figure 3).
+Here, we want to focus the analysis exclusively on neurons that have a +/- slope on beaconed trials (Figure 2) and are position modulated (Figure 3).
 
 ```{r}
 position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative",
@@ -239,56 +239,56 @@ sankeyNetwork(Links = data_long_pos, Nodes = nodes_pos,
 
 ```
 
-## For the neurons in the above Sankey plot that have positive or negative slopes on the non-beaconed/probe trials, calculate the proportion in each model group
+<!-- ## For the neurons in the above Sankey plot that have positive or negative slopes on the non-beaconed/probe trials, calculate the proportion in each model group -->
 
-A function to calculate neurons in each group. Groups are:
-P, PA, PS, PSA for NB+ and NB- slopes.
-```{r}
-calc_pos_groups <- function(lmgroup, final_model) {
-  total_plus_neurons <-  length(which(lmgroup == "Positive"))
-  total_neg_neurons <-  length(which(lmgroup == "Negative"))
-  data_groups <- tibble(perc = c(
-    length(which(lmgroup == "Positive" & final_model == "P"))/total_plus_neurons,
-    length(which(lmgroup == "Positive" & final_model == "PA"))/total_plus_neurons,
-    length(which(lmgroup == "Positive" & final_model == "PS"))/total_plus_neurons,
-    length(which(lmgroup == "Positive" & final_model == "PSA"))/total_plus_neurons,
-    length(which(lmgroup == "Negative" & final_model == "P"))/total_neg_neurons,
-    length(which(lmgroup == "Negative" & final_model == "PA"))/total_neg_neurons,
-    length(which(lmgroup == "Negative" & final_model == "PS"))/total_neg_neurons,
-    length(which(lmgroup == "Negative" & final_model == "PSA"))/total_neg_neurons
-  ),
-  ramp_id= c("P","PA","PS", "PSA", "P","PA","PS", "PSA"),
-  ramp_type = c("Positive", "Positive", "Positive", "Positive", "Negative", "Negative", "Negative", "Negative"))
-  data_groups$perc <- data_groups$perc*100
-  return(data_groups)
-}
-```
+<!-- A function to calculate neurons in each group. Groups are: -->
+<!-- P, PA, PS, PSA for + and - slopes. -->
+<!-- ```{r} -->
+<!-- calc_pos_groups <- function(lmgroup, final_model) { -->
+<!--   total_plus_neurons <-  length(which(lmgroup == "Positive")) -->
+<!--   total_neg_neurons <-  length(which(lmgroup == "Negative")) -->
+<!--   data_groups <- tibble(perc = c( -->
+<!--     length(which(lmgroup == "Positive" & final_model == "P"))/total_plus_neurons, -->
+<!--     length(which(lmgroup == "Positive" & final_model == "PA"))/total_plus_neurons, -->
+<!--     length(which(lmgroup == "Positive" & final_model == "PS"))/total_plus_neurons, -->
+<!--     length(which(lmgroup == "Positive" & final_model == "PSA"))/total_plus_neurons, -->
+<!--     length(which(lmgroup == "Negative" & final_model == "P"))/total_neg_neurons, -->
+<!--     length(which(lmgroup == "Negative" & final_model == "PA"))/total_neg_neurons, -->
+<!--     length(which(lmgroup == "Negative" & final_model == "PS"))/total_neg_neurons, -->
+<!--     length(which(lmgroup == "Negative" & final_model == "PSA"))/total_neg_neurons -->
+<!--   ), -->
+<!--   ramp_id= c("P","PA","PS", "PSA", "P","PA","PS", "PSA"), -->
+<!--   ramp_type = c("Positive", "Positive", "Positive", "Positive", "Negative", "Negative", "Negative", "Negative")) -->
+<!--   data_groups$perc <- data_groups$perc*100 -->
+<!--   return(data_groups) -->
+<!-- } -->
+<!-- ``` -->
 
 
-Calculate distribution of groups on non-beaconed trials.
-```{r}
-pos_groups <- calc_pos_groups(position_neurons$lm_group_nb, position_neurons$final_model_o_b)
-```
+<!-- Calculate distribution of groups on non-beaconed trials. -->
+<!-- ```{r} -->
+<!-- pos_groups <- calc_pos_groups(position_neurons$lm_group_nb, position_neurons$final_model_o_b) -->
+<!-- ``` -->
 
-3. plot data
-```{r}
-# plot data
-level_order <- c("P", "PS", "PA", "PSA")
-ggplot(pos_groups, aes(x = factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
-  geom_bar(stat="identity",width = 0.9, alpha = .7) +
-  labs(y = "Percent of neurons") +
-  scale_fill_manual(values=c("firebrick1","darkorange", "darkorchid1","darkslategray")) +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=14), 
-        legend.text=element_text(size=14), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0))) +
-ggsave(file = "plots/cell_proportions-AllNeurons.png", width = 4, height = 4.5)
+<!-- 3. plot data -->
+<!-- ```{r} -->
+<!-- # plot data -->
+<!-- level_order <- c("P", "PS", "PA", "PSA") -->
+<!-- ggplot(pos_groups, aes(x = factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) + -->
+<!--   geom_bar(stat="identity",width = 0.9, alpha = .7) + -->
+<!--   labs(y = "Percent of neurons") + -->
+<!--   scale_fill_manual(values=c("firebrick1","darkorange", "darkorchid1","darkslategray")) + -->
+<!--   theme_classic() + -->
+<!--   theme(axis.text.x = element_text(size=14), -->
+<!--         axis.text.y = element_text(size=14), -->
+<!--         legend.position="bottom",  -->
+<!--         legend.title = element_blank(), -->
+<!--         text = element_text(size=14),  -->
+<!--         legend.text=element_text(size=14),  -->
+<!--         axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0))) + -->
+<!-- ggsave(file = "plots/cell_proportions-AllNeurons.png", width = 4, height = 4.5) -->
 
-```
+<!-- ``` -->
 
 
 
@@ -395,84 +395,37 @@ Additional analyses related to Figure 4.
 
 First split data based on cue independent/cue dependent as we are only interested in position neurons here
 ```{r}
-cue_independant_neurons <- filter(spatial_firing,  == "Positive-PI" | cue_group_o == "Negative-PI")
-cue_dependant_neurons <- filter(spatial_firing, cue_group_o == "Positive-cue" | cue_group_o == "Negative-cue")
+cue_independant_neurons <- filter(position_neurons, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+cue_dependant_neurons <- filter(position_neurons, cue_group_o == "Positive-cue" | cue_group_o == "Negative-cue")
 
 ```
 
-1. Split data by linear model result
+
+Make bar charts showing the distribution of P, PS, PA and PSA neurons.
 ```{r}
-
-# extracting diff models 
-pos <-subset(cue_dependant_neurons, lm_group_b == "Positive")
-neg <-subset(cue_dependant_neurons, lm_group_b == "Negative")
-none <-subset(cue_dependant_neurons, lm_group_b == "Unclassified")
-```
-
-2. Split data by mixed effect model result
-```{r}
-
-P_positive <- nrow(subset(pos, final_model_o_b == "P"))/nrow(pos)*100
-P_negative <- nrow(subset(neg, final_model_o_b == "P"))/nrow(neg)*100
-P_none <- nrow(subset(none,final_model_o_b == "P"))/nrow(none)*100
-
-S_positive <- nrow(subset(pos,final_model_o_b == "S"))/nrow(pos)*100
-S_negative <- nrow(subset(neg,final_model_o_b == "S"))/nrow(neg)*100
-S_none <- nrow(subset(none,final_model_o_b == "S"))/nrow(none)*100
-
-A_positive <- nrow(subset(pos,final_model_o_b == "A"))/nrow(pos)*100
-A_negative <- nrow(subset(neg,final_model_o_b == "A"))/nrow(neg)*100
-A_none <- nrow(subset(none,final_model_o_b == "A"))/nrow(none)*100
-
-P_S_positive <- nrow(subset(pos,final_model_o_b == "PS"))/nrow(pos)*100
-P_S_negative <- nrow(subset(neg,final_model_o_b == "PS"))/nrow(neg)*100
-P_S_none <- nrow(subset(none,final_model_o_b == "PS"))/nrow(none)*100
-
-P_A_positive <- nrow(subset(pos ,final_model_o_b == "PA"))/nrow(pos)*100
-P_A_negative <- nrow(subset(neg ,final_model_o_b == "PA"))/nrow(neg)*100
-P_A_none <- nrow(subset(none,final_model_o_b == "PA"))/nrow(none)*100
-
-S_A_positive <- nrow(subset(pos ,final_model_o_b == "SA"))/nrow(pos)*100
-S_A_negative <- nrow(subset(neg ,final_model_o_b == "SA"))/nrow(neg)*100
-S_A_none <- nrow(subset(none,final_model_o_b == "SA"))/nrow(none)*100
-
-P_S_A_positive <- nrow(subset(pos ,final_model_o_b == "PSA"))/nrow(pos)*100
-P_S_A_negative <- nrow(subset(neg ,final_model_o_b == "PSA"))/nrow(neg)*100
-P_S_A_none <- nrow(subset(none ,final_model_o_b == "PSA"))/nrow(none)*100
-
-NONE_positive <- nrow(subset(pos ,final_model_o_b == "None"))/nrow(pos)*100
-NONE_negative <- nrow(subset(neg ,final_model_o_b == "None"))/nrow(neg)*100
-NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
-
-
-```
-
-3. Put data into tibble
-```{r}
-
-
-mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative, S_none, A_positive,A_negative,A_none,  P_S_positive, P_S_negative,P_S_none, P_A_positive, P_A_negative, P_A_none, S_A_positive, S_A_negative, S_A_none,P_S_A_positive, P_S_A_negative, P_S_A_none, NONE_positive,NONE_negative, NONE_none), 
+make_mm_class_bar <- function(df){
+  pos <-subset(df, lm_group_b == "Positive")
+  neg <-subset(df, lm_group_b == "Negative")
+  mixed_ramps <- tibble(perc=c(nrow(subset(pos, final_model_o_b == "P"))/nrow(pos)*100,
+                             nrow(subset(neg, final_model_o_b == "P"))/nrow(neg)*100,
+                             nrow(subset(pos,final_model_o_b == "PS"))/nrow(pos)*100,
+                             nrow(subset(neg,final_model_o_b == "PS"))/nrow(neg)*100,
+                             nrow(subset(pos ,final_model_o_b == "PA"))/nrow(pos)*100,
+                             nrow(subset(neg ,final_model_o_b == "PA"))/nrow(neg)*100,
+                             nrow(subset(pos ,final_model_o_b == "PSA"))/nrow(pos)*100, 
+                             nrow(subset(neg ,final_model_o_b == "PSA"))/nrow(neg)*100), 
                       
-                      ramp_id= c("P","P","P", 
-                                 "S", "S", "S", 
-                                 "A", "A", "A",
-                                 "PS", "PS", "PS", 
-                                 "PA", "PA", "PA", 
-                                 "SA", "SA", "SA", 
-                                 "PAS", "PAS","PAS",
-                                 "Null","Null", "Null"), 
-                      ramp_type= c("Positive", "Negative", "Unclassified","Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified","Positive", "Negative" ,"Unclassified","Positive", "Negative","Unclassified","Positive", "Negative","Unclassified", "Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified" ))
-
-```
-
-4. Plot model results
-```{r}
-# plot data
-level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "Null")
-ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_type, level = level_order))) +
+                      ramp_id= c("P","P", 
+                                 "PS", "PS",
+                                 "PA", "PA", 
+                                 "PAS", "PAS"), 
+                      ramp_type= rep(c("Positive", "Negative"), 4))
+  
+  level_order <- c("P", "PS", "PA", "PAS")
+ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
   geom_bar(stat="identity",width = 0.9, alpha = .7) +
   labs(y = "Percent of neurons") +
-  scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
+  scale_fill_manual(values=c("firebrick1","gold", "darkorchid1", "darkslategray")) +
   #scale_fill_brewer(palette= "RdYlBu") +
   theme_classic() +
   theme(axis.text.x = element_text(size=12),
@@ -481,14 +434,19 @@ ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_type, l
         legend.title = element_blank(),
         text = element_text(size=12), 
         legend.text=element_text(size=12), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+
+make_mm_class_bar(cue_dependant_neurons)
 ggsave(file = "plots/LMERProportions_beaconed_cuedependant.png", width = 4, height = 4.5)
-
-
+make_mm_class_bar(cue_independant_neurons)
+ggsave(file = "plots/LMERProportions_beaconed_cueindependant.png", width = 4, height = 4.5)
 ```
 
 
-Might need to add something here to save the coefficients.
+
+
+Might need to add something here to save the coefficients??
 
 
 
