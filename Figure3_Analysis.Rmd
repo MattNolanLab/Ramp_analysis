@@ -190,7 +190,7 @@ P_S_A_positive <- nrow(subset(pos ,final_model_o_b == "PSA"))/nrow(pos)*100
 P_S_A_negative <- nrow(subset(neg ,final_model_o_b == "PSA"))/nrow(neg)*100
 P_S_A_none <- nrow(subset(none ,final_model_o_b == "PSA"))/nrow(none)*100
 
-NONE_positive <- nrow(subset(pos ,final_model_o_b == "None" |))/nrow(pos)*100
+NONE_positive <- nrow(subset(pos ,final_model_o_b == "None"))/nrow(pos)*100
 NONE_negative <- nrow(subset(neg ,final_model_o_b == "None"))/nrow(neg)*100
 NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
 
@@ -238,17 +238,17 @@ ggsave(file = "plots/LMERProportions_beaconed.png", width = 4, height = 4.5)
 ```
 
 
+We might also want to look at the proportions in cue independant/cue dependant groups (defined in Figure 4)
 
-First plit data based on cue independant/cue dependant (Figure 5) as we are only interested in position neurons here
+First split data based on cue independant/cue dependant (Figure 4) as we are only interested in path integrating neurons/cue dependant neurons seperatly here
 ```{r}
 cue_independant_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 cue_dependant_neurons <- filter(spatial_firing, cue_group_o == "Positive-cue" | cue_group_o == "Negative-cue")
 
 ```
 
-1. Split data by linear model result
+1. Split data by classification defined in Figure 2
 ```{r}
-
 # extracting diff models 
 pos <-subset(cue_dependant_neurons, lm_group_b == "Positive")
 neg <-subset(cue_dependant_neurons, lm_group_b == "Negative")
@@ -297,7 +297,6 @@ NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
 3. Put data into tibble
 ```{r}
 
-
 mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative, S_none, A_positive,A_negative,A_none,  P_S_positive, P_S_negative,P_S_none, P_A_positive, P_A_negative, P_A_none, S_A_positive, S_A_negative, S_A_none,P_S_A_positive, P_S_A_negative, P_S_A_none, NONE_positive,NONE_negative, NONE_none), 
                       
                       ramp_id= c("P","P","P", 
@@ -307,7 +306,7 @@ mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative
                                  "PA", "PA", "PA", 
                                  "SA", "SA", "SA", 
                                  "PAS", "PAS","PAS",
-                                 "Null","Null", "Null"), 
+                                 "None","None", "None"), 
                       ramp_type= c("Positive", "Negative", "Unclassified","Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified","Positive", "Negative" ,"Unclassified","Positive", "Negative","Unclassified","Positive", "Negative","Unclassified", "Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified" ))
 
 ```
@@ -315,12 +314,11 @@ mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative
 4. Plot model results
 ```{r}
 # plot data
-level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "Null")
+level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "None")
 ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
   geom_bar(stat="identity",width = 0.9, alpha = .7) +
   labs(y = "Percent of neurons") +
   scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
-  #scale_fill_brewer(palette= "RdYlBu") +
   theme_classic() +
   theme(axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12),
@@ -330,7 +328,6 @@ ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, lev
         legend.text=element_text(size=12), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/LMERProportions_beaconed_cuedependant.png", width = 4, height = 4.5)
-
 
 ```
 
@@ -358,7 +355,7 @@ std_coef <- function(mm) {
   
 ```
 
-2. Run on all cells
+3. Run on all cells
 ```{r, warning=FALSE}
 
 spatial_firing <- spatial_firing  %>%
@@ -489,7 +486,7 @@ ggsave(file = "plots/CoefficientValues_PositivePAcells.png", width = 3, height =
   
 ```
 
-7. Split by negative slope
+6. Split by negative slope
 ```{r}
 data_coef_neg_PA <- data_coef %>%
   subset(group == "PA") %>%
@@ -503,7 +500,7 @@ ggsave(file = "plots/CoefficientValues_NegativePAcells.png", width = 3, height =
 
 _Plot coefficients for just position cells_
 
-7a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having signficant fit coefficients for position only.
+6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having signficant fit coefficients for position only.
 ```{r}
 data_coef_pos_P <- data_coef %>%
   subset(group == "P") %>%
@@ -516,7 +513,7 @@ ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 3, height = 
 ```
 
 
-7b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having signficant fit coefficients for position only.
+6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having signficant fit coefficients for position only.
 ```{r}
 data_coef_neg_P <- data_coef %>%
   subset(group == "P") %>%
@@ -528,7 +525,7 @@ ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 3, height = 
 ```
 
 
-7c. Plot coefficients for cells classified in Figure 2 as being unclassified but that have 'signficant' positional coefficients in the mixed effect model.
+6c. Plot coefficients for cells classified in Figure 2 as being unclassified but that have 'signficant' positional coefficients in the mixed effect model.
 ```{r}
 data_coef_UC_PSA <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
