@@ -446,37 +446,31 @@ ggsave(file = "plots/LMERProportions_beaconed_cueindependant.png", width = 4, he
 
 
 
-Might need to add something here to save the coefficients??
-
+Plot the distribution of standardised coefficients for cue-dependent and cue-independent cells with positve / negative slopes.
 
 
 Make tibble for coefficient plots
 4. put data into a tibble for plotting.
 ```{r}
-data_coef_2 <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
-                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
-                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save$final_model_o_b),
-                              as.character(spatial_firing_save$final_model_o_b),
-                              as.character(spatial_firing_save$final_model_o_b)), 
-                    cue_group = c(as.character(spatial_firing_save$cue_group_o),
-                               as.character(spatial_firing_save$cue_group_o),
-                               as.character(spatial_firing_save$cue_group_o)),
+data_coef_2 <- tibble(session_id = rep(unlist(position_neurons$unique_id), times=3), 
+                    cluster_id = rep(position_neurons$cluster_id, times=3), 
+                    coef = c(as.character(position_neurons$o_b_mod_coefs_pos),
+                             as.character(position_neurons$o_b_mod_coefs_speed),
+                             as.character(position_neurons$o_b_mod_coefs_accel)),
+                    group = rep(as.character(position_neurons$final_model_o_b), 3),
+                    cue_group = rep(as.character(position_neurons$cue_group_o), 3),
                     coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save)),
-                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
+                                    each = nrow(position_neurons)),
+                    lm_result = rep(as.character(position_neurons$lm_group_b), times=3))
 ```
 
+Use function 'standard_plot' from Figure 3. This expects a tibble with columns 'coef_type' (either P, S or A) and 'coef' (the coefficients)
 
 
-
-
-4b. Plot coefficients for cells classified in Figure 3 as having 'significant' positional coefficients in the mixed effect model, and Figure 4 as having ramp-like activity on both beaconed and non-beaconed/probe trials. 
+Plot coefficients for cells classified in Figure 3 as having 'significant' positional coefficients in the mixed effect model, and Figure 4 as having ramp-like activity on both beaconed and non-beaconed/probe trials. 
 
 ```{r}
-data_coef_PSA_PI_pos <- data_coef %>%
+data_coef_PSA_PI_pos <- data_coef_2 %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
   subset(cue_group == "Positive-PI")
 
@@ -487,7 +481,7 @@ ggsave(file = "plots/CoefficientValues_PSAPIposcells.png", width = 3, height = 3
 
 
 ```{r}
-data_coef_PSA_PI_neg <- data_coef %>%
+data_coef_PSA_PI_neg <- data_coef_2 %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
   subset(cue_group == "Negative-PI")
 
@@ -497,3 +491,23 @@ ggsave(file = "plots/CoefficientValues_PSAPInegcells.png", width = 3, height = 3
 ```
 
 
+
+Plot coefficients for cells classified in Figure 3 as having 'significant' positional coefficients in the mixed effect model, and Figure 4 as having ramp-like activity on beaconed but not non-beaconed/probe trials. 
+
+
+```{r}
+data_coef_PSA_cue_pos <- data_coef_2 %>%
+  subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
+  subset(cue_group == "Positive-cue")
+
+standard_plot(data_coef_PSA_cue_pos)
+```
+
+
+```{r}
+data_coef_PSA_cue_neg <- data_coef_2 %>%
+  subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
+  subset(cue_group == "Negative-cue")
+
+standard_plot(data_coef_PSA_cue_pos)
+```
