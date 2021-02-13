@@ -15,6 +15,10 @@ import Python_PostSorting.Spike_Time_Analysis
 import Python_PostSorting.AnalyseSpikes
 import Python_PostSorting.AnalyseRewardedSpikes
 import Python_PostSorting.Add_BrainRegion_Classifier
+import Python_PostSorting.SplitDataBySpeed
+import Python_PostSorting.BehaviourAnalysis
+import Python_PostSorting.RewardAnalysis_behaviour
+import Python_PostSorting.FirstStopAnalysis_behaviour
 import numpy as np
 import pandas as pd
 
@@ -28,6 +32,29 @@ def initialize_parameters(recording_folder):
     prm.set_file_path(recording_folder)
     prm.set_local_recording_folder_path(recording_folder)
     prm.set_output_path(recording_folder)
+
+
+def add_mouse_to_frame(df):
+    print("Adding ID for Mouse and Day to dataframe...")
+    df["Mouse"] = ""
+    df["Day"] = ""
+    df["Day_numeric"] = ""
+    for cluster in range(len(df)):
+        session_id = df.session_id.values[cluster]
+        numericday, day, mouse = extract_mouse_and_day(session_id)
+        df.at[cluster,"Mouse"] = mouse
+        df.at[cluster,"Day"] = day
+        df.at[cluster,"Day_numeric"] = numericday
+    return df
+
+
+# extract what mouse and day it is from the session_id column in spatial_firing
+def extract_mouse_and_day(session_id):
+    mouse = session_id.rsplit('_', 3)[0]
+    day1 = session_id.rsplit('_', 3)[1]
+    #mouse = mouse1.rsplit('M', 3)[1]
+    day = day1.rsplit('D', 3)[1]
+    return day, day1, mouse
 
 
 def make_plots(recording_folder,spike_data):
@@ -48,20 +75,13 @@ def make_plots(recording_folder,spike_data):
     #Python_PostSorting.Spike_Analysis.extract_time_binned_firing_rate_per_trialtype_outbound(spike_data, prm)
     #Python_PostSorting.Spike_Analysis.extract_time_binned_firing_rate_per_trialtype_probe(spike_data, prm)
 
-    Python_PostSorting.MakePlots.plot_color_coded_instant_rates(recording_folder, spike_data)
+    #Python_PostSorting.MakePlots.plot_color_coded_instant_rates(recording_folder, spike_data)
     Python_PostSorting.MakePlots.plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_data)
-    Python_PostSorting.MakePlots.plot_color_coded_instant_rates_according_to_segment_nonbeaconed(recording_folder, spike_data)
-    Python_PostSorting.MakePlots.plot_color_coded_instant_rates_according_to_segment_probe(recording_folder, spike_data)
+    #Python_PostSorting.MakePlots.plot_color_coded_instant_rates_according_to_segment_nonbeaconed(recording_folder, spike_data)
+    #Python_PostSorting.MakePlots.plot_color_coded_instant_rates_according_to_segment_probe(recording_folder, spike_data)
     #Python_PostSorting.MakePlots.plot_color_trial_coded_instant_rates_according_to_segment(recording_folder, spike_data)
     #Python_PostSorting.MakePlots.plot_color_coded_instant_rates_by_trial(recording_folder, spike_data)
     return spike_data
-
-
-def make_behaviour_plots(recording_folder,spike_data, prm):
-    #Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track(recording_folder, processed_position_data, prm)
-    Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(recording_folder, spike_data, prm)
-    Python_PostSorting.MakePlots_Behaviour.plot_speed(recording_folder,spike_data)
-    return
 
 
 def make_firing_plots(spike_data):
@@ -72,13 +92,6 @@ def make_firing_plots(spike_data):
     return
 
 
-def load_local_frames(server_path, prm):
-    #spike_data = Python_PostSorting.LoadDataFrames.process_a_dir(server_path, prm) # test data
-    spike_data = Python_PostSorting.LoadDataFrames.process_allmice_dir(server_path, prm) # overall data
-    #spike_data = PostSorting.LoadDataFrames.process_multi_spatial_dir(server_path, prm) # loads spatial data into the spike dataframe
-    return spike_data
-
-
 def drop_columns_from_frame(spike_data):
     spike_data.drop(['random_snippets'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['x_position_cm'], axis='columns', inplace=True, errors='ignore')
@@ -86,7 +99,6 @@ def drop_columns_from_frame(spike_data):
     spike_data.drop(['trial_types'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['firing_times'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['rewarded_trials'], axis='columns', inplace=True, errors='ignore')
-    #spike_data.drop(['rewarded_locations'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['stop_location_cm'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['stop_trial_number'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['spike_num_on_trials'], axis='columns', inplace=True, errors='ignore')
@@ -130,48 +142,47 @@ def main():
     print('Processing ' + str(server_path))
 
     #LOAD DATA
-    spike_data = load_local_frames(server_path, prm)
+    spike_data = Python_PostSorting.LoadDataFrames.process_allmice_dir(server_path, prm) # overall data
     spike_data.reset_index(drop=True, inplace=True)
 
-    #run_behavioural_analysis(spike_data, server_path)
-    #make_firing_plots(spike_data)
+    # CURATION (for spike data frame only)
+    #spike_data = Python_PostSorting.Curation.remove_false_positives(spike_data)
+    #spike_data = Python_PostSorting.Curation.curate_data(spike_data)
+    #spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data)
+    spike_data = add_mouse_to_frame(spike_data)
 
-    # CURATION (for spike frame only)
-    spike_data = Python_PostSorting.Curation.remove_false_positives(spike_data)
-    spike_data = Python_PostSorting.Curation.curate_data(spike_data)
-    spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data)
+    # Add brain region and ramp score data for each neuron to dataframe
     spike_data = Python_PostSorting.Add_BrainRegion_Classifier.load_brain_region_data_into_frame(spike_data)
     spike_data = Python_PostSorting.FitAnalysis.load_Teris_ramp_score_data_into_frame(spike_data)
 
-    #Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm)
+    # Basic plots for each neuron
     #spike_data = Python_PostSorting.RewardFiring.generate_reward_indicator(spike_data) # for saving data into dataframe for R
     #Python_PostSorting.MakePlots.plot_rewarded_spikes_on_track2(server_path,spike_data)
     #Python_PostSorting.MakePlots.plot_failed_spikes_on_track2(server_path,spike_data)
     #Python_PostSorting.MakePlots.plot_smoothed_firing_rate_maps_for_rewarded_trials(server_path, spike_data)
     #Python_PostSorting.MakePlots.plot_smoothed_firing_rate_maps_for_failed_trials(server_path, spike_data)
+    #spike_data = Python_PostSorting.MakePlots.plot_tiny_raw(server_path, spike_data) ## for Figure3A
 
-    #spike_data = Python_PostSorting.AnalyseSpikes.extract_time_binned_firing_rate_overtrial_per_trialtype(spike_data, prm)
-
+    # Split data by TRIAL OUTCOME (HIT/MISS)
     spike_data = Python_PostSorting.RewardFiring.split_time_data_by_reward(spike_data, prm)
+    spike_data = Python_PostSorting.FirstStopAnalysis_behaviour.extract_first_stop_rewarded(spike_data, prm)
+
     spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_rewarded(spike_data, prm)
-    spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_failed(spike_data, prm)
-    #spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_firing_rate(spike_data, prm)
-    #spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_nb_firing_rate(spike_data, prm)
+    #spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_failed(spike_data, prm)
+    #spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_rates(spike_data, prm)
 
+    # Split data by TRIAL OUTCOME (HIT/TRY/RUN)
+    #spike_data = Python_PostSorting.SplitDataBySpeed.split_time_data_by_speed(spike_data, prm)
+    #spike_data = Python_PostSorting.SplitDataBySpeed.extract_time_binned_firing_rate_runthru(spike_data)
+    #spike_data = Python_PostSorting.SplitDataBySpeed.extract_time_binned_firing_rate_try(spike_data)
+
+    # calculate acceleration and plot instant rates
     spike_data = Python_PostSorting.CalculateAcceleration.generate_acceleration(spike_data, server_path)
+    Python_PostSorting.MakePlots.plot_color_coded_instant_rates_according_to_segment(server_path, spike_data)
 
-    # MAKE PLOTS
-    #make_behaviour_plots(server_path, spike_data, prm)
-    #make_shuffled_plots(server_path,spike_data)
-    #spike_data = plot_reward_based_analysis(server_path, spike_data) # split trials based on reward then plot spikes on trials and firing rate
-
-    # ANALYSIS FOR R
-    #spike_data = run_analysis_for_r(spike_data, server_path)
-    #spike_data = make_plots(server_path,spike_data)
-
-    # SAVE DATAFRAMES
-    spike_data = drop_columns_from_frame(spike_data)
-    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_2.pkl')
+    # SAVE DATAFRAMES for R
+    #spike_data = drop_columns_from_frame(spike_data)
+    #spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort_1.pkl')
 
 
 
