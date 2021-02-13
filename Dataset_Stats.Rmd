@@ -302,7 +302,7 @@ neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
 
 2. take only columns we need for the rest of the analysis
 ```{r}
-spatial_firing_save <- select(neg_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+spatial_firing_save <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
   unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
     final_model_o_b, lm_group_b)) %>%
   as.tibble()
@@ -334,7 +334,7 @@ summary(one.way)
 3. Post hoc Tukey's test
 ```{r}
 tukey.test <- TukeyHSD(one.way)
-tukey.test
+tukey.test$coef_type
 ```
 
 
