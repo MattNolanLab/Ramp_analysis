@@ -38,8 +38,8 @@ ggplot(tb, aes(x, y)) +
 (fields <- ggplot(tb, aes(x, y)) +
   geom_line() +
   labs(title = "Discrete place field\n",
-       y = "Firing rate\n",
-       x = "\nLocation") +
+       y = "Firing rate",
+       x = "Location") +
   theme_cowplot() +
   theme(axis.text = element_blank(),
         axis.ticks = element_blank(),
@@ -47,7 +47,7 @@ ggplot(tb, aes(x, y)) +
         axis.text.x = element_text(size=0),
         axis.text.y = element_text(size=0),
         legend.title = element_blank(),
-        text = element_text(size=14)))
+        text = element_text(size=17)))
 
 ggsave(file = "Figure1_A.png", width = 4, height = 3.5)
 
@@ -61,8 +61,8 @@ tb_r <- tibble(x = x, y = ramp)
 (ramp <- ggplot(tb_r, aes(x, y)) +
   geom_line() +
   labs(title = "Continous ramp-like code\n",
-       y = "Firing rate\n",
-       x = "\nLocation") +
+       y = "Firing rate",
+       x = "Location") +
   theme_cowplot() +
   theme(axis.text = element_blank(),
         axis.ticks = element_blank(),
@@ -70,7 +70,7 @@ tb_r <- tibble(x = x, y = ramp)
         axis.text.x = element_text(size=0),
         axis.text.y = element_text(size=0),
         legend.title = element_blank(),
-        text = element_text(size=14)))
+        text = element_text(size=17)))
 
 ggsave(file = "Figure1_B.png", width = 4, height = 3.5)
 
