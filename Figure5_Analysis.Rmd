@@ -493,12 +493,12 @@ ggplot(data=subset(position_neurons, lm_group_b == "Positive"), aes(x = unlist(p
   #geom_vline(xintercept = -1, color="black", linetype="dotted") +
   labs(y="Density", x="") +
   theme_classic() +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=14), 
-        legend.text=element_text(size=14), 
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/PredictHomeboundMean_PIpositive_pi.png",width = 4, height = 2.5)
 ```
@@ -516,12 +516,12 @@ ggplot(data=subset(position_neurons,lm_group_b == "Negative"), aes(x = unlist(pr
   #geom_vline(xintercept = -1, color="black", linetype="dotted") +
   labs(y="Density", x="") +
   theme_classic() +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=14), 
-        legend.text=element_text(size=14), 
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
 ggsave(file = "plots/PredictHomeboundMean_PInegative_pi.png",width = 4, height = 2.5)
 
@@ -537,7 +537,7 @@ ggsave(file = "plots/PredictHomeboundMean_PInegative_pi.png",width = 4, height =
 
 1. 
 ```{r}
-data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory == "negneg" | track_catagory == "posneg"| track_catagory == "negpos" | track_catagory == "posnon"| track_catagory == "negnon")
+data <- spatial_firing %>% filter(whole_track_catagory == "pospos" | whole_track_catagory == "negneg" | whole_track_catagory == "posneg"| whole_track_catagory == "negpos" | whole_track_catagory == "posnon"| whole_track_catagory == "negnon")
 ```
 
 2. 
@@ -569,11 +569,11 @@ ggplot() +
     ylab("Homebound slope") +
     theme_classic() +
     scale_color_manual(values=c("violetred2", "chartreuse3")) +
-    theme(axis.text.x = element_text(size=16),
-          axis.text.y = element_text(size=16),
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
           legend.position="bottom", 
           legend.title = element_blank(),
-          text = element_text(size=16), 
+          text = element_text(size=17), 
           legend.text=element_text(size=16), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 ggsave(file = "plots/slope_comparison_reset.png", width = 4, height = 4)
