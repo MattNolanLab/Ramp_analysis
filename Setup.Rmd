@@ -29,6 +29,7 @@ library(RColorBrewer) # import color palettes
 library(networkD3) # This package lets you make and plot Sankey diagrams
 library(zoo) # some mathematical functions that are useful
 library(tibbletime)
+library(agricolae) # post hoc Tukey test
 
 # Import functions
 source("Functions.R")
