@@ -332,8 +332,6 @@ ggsave(file = "plots/PosPos_Reset_failed_PI_justposition.png", width = 4.5, heig
 Remake the function above to not take reset group as an input
 ```{r}
 mean_SD_plots <- function(df, group_b, group_h, x_start = 30, x_end = 90){
- print(length(df))
-
  df <- df %>%
   filter(lm_group_b == group_b,
          lm_group_b_h == group_h) %>%
