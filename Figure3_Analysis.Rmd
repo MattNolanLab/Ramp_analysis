@@ -405,7 +405,9 @@ ggsave(file = "plots/CoefficientValues_NegativePAcells.png", width = 3, height =
 
 _Plot coefficients for just position cells_
 
+
 6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position only.
+
 ```{r}
 data_coef_pos_P <- data_coef %>%
   subset(group == "P") %>%
@@ -418,7 +420,9 @@ ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 3, height = 
 ```
 
 
+
 6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position only.
+
 ```{r}
 data_coef_neg_P <- data_coef %>%
   subset(group == "P") %>%
@@ -430,7 +434,9 @@ ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 3, height = 
 ```
 
 
+
 6c. Plot coefficients for cells classified in Figure 2 as being unclassified but that have 'significant' positional coefficients in the mixed effect model.
+
 ```{r}
 data_coef_UC_PSA <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
@@ -489,8 +495,10 @@ spatial_firing_save_n <- select(neg_position_cells, session_id, cluster_id, uniq
 
 1. put data into a tibble for plotting
 ```{r}
+
 data_coef_p <- tibble(session_id = rep(unlist(spatial_firing_save_p$unique_id), times=3),
                     cluster_id = rep(spatial_firing_save_p$cluster_id, times=3),
+
                     coef = c(as.character(spatial_firing_save_p$o_b_mod_coefs_pos),
                              as.character(spatial_firing_save_p$o_b_mod_coefs_speed),
                              as.character(spatial_firing_save_p$o_b_mod_coefs_accel)),
