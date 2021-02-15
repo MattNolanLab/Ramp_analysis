@@ -167,9 +167,9 @@ sum_speed_in_reward_zone <- function(df) {
     )
 
   df <- df %>%
-    #filter(Speed > 0) %>%
+    filter(Types == 0) %>%
     select(Speed, Trials, Position) %>%
-    filter(Position >= 90, Position <= 100) %>%
+    filter(Position >= 90, Position <= 110) %>%
     group_by(Trials) %>%
     dplyr::summarise(mean_speed = mean(Speed, na.rm = TRUE),
              se_speed = std.error(Speed, na.rm = TRUE)) 
@@ -201,7 +201,7 @@ histogram_plots <- function(df, name, color){
 
   ggplot(data=df, aes(x = as.vector(mean_speed))) +
     coord_cartesian(xlim=c(0,100)) +
-    geom_histogram(aes(y=..count..),binwidth = 2, alpha=0.5, fill=color) +
+    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill=color) +
     scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
     labs(y="Density", x="") +
     theme_classic() +
@@ -218,6 +218,7 @@ histogram_plots <- function(df, name, color){
 (hit_hist_plot <- histogram_plots(spatial_firing, "Speed_hist_rewarded", "black"))
 ggsave(file = "plots/Mean_rewardzone_speed_rewarded.png",width = 4, height = 2.5)
 ```
+
 5. Plot histogram for try trials
 ```{r}
 (run_hist_plot <- histogram_plots(spatial_firing, "Speed_hist_run", "red"))
