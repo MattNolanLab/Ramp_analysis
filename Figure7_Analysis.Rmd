@@ -378,29 +378,18 @@ ggsave(file = "plots/NegPos_failed_PI_justposition.png", width = 4.5, height = 2
 ```
 
 
+
 Repeat above plots but for speed encoding neurons
 
 1. Split data based on cue independant/cue dependant (Figure 5) and speed encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
-speed_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A" )
-```
-
-2. Subset data by group then average rates for plotting          **Negative Negative Continuous**
-```{r}
-(NegNegC_plot <- mean_SD_plots_with_reset(speed_neurons, "Negative", "Negative", "Continuous",  0, 200))
-ggsave(file = "plots/NegNeg_Continuous_failed_PI_justspeed.png", width = 4.5, height = 2.5)
+speed_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A" )
 ```
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
 (NegNegR_plot <- mean_SD_plots_with_reset(speed_neurons, "Negative", "Negative", "Reset",  0, 200))
 ggsave(file = "plots/NegNeg_Reset_failed_PI_justspeed.png", width = 4.5, height = 2.5)
-```
-
-4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
-```{r}
-(PosPosC_plot <- mean_SD_plots_with_reset(speed_neurons, "Positive", "Positive", "Continuous", 0, 200))
-ggsave(file = "plots/PosPos_Continuous_failed_PI_justspeed.png", width = 4.5, height = 2.5)
 ```
 
 5. Subset data by group then average rates for plotting          **Positive Positive Reset**
