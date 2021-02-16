@@ -72,8 +72,8 @@ mean_speed_plots <- function(df, x_start = 30, x_end = 90){
    geom_line(aes(y=mean_b, 
                  x=Position, 
                  color=as.factor(Indicator)), alpha=0.5, n= 100, span=0.2) +
-   scale_fill_manual(values=c("black", "red", "blue")) +
-   scale_color_manual(values=c("black", "red", "blue")) +
+   scale_fill_manual(values=c("black", "blue", "red")) +
+   scale_color_manual(values=c("black", "blue", "red")) +
    theme_classic() +
    labs(y = "Mean speed (cm/s)", x = "Position") +
    xlim(x_start, x_end) +
@@ -86,12 +86,8 @@ mean_speed_plots <- function(df, x_start = 30, x_end = 90){
 }
 ```
 
-3. Split data based on encoding group (Figure 3) as we are only interested in position neurons here
-```{r}
-position_neurons <- filter(spatial_firing, final_model_o_b == "P" | final_model_o_b == "S" | final_model_o_b == "A" | final_model_o_b == "SA")
-```
 
-4. Subset data by group then average rates for plotting          
+Subset data by group then average rates for plotting          
 ```{r}
 (Pos_speed_plot <- mean_speed_plots(spatial_firing,  0, 200))
 ggsave(file = "plots/PI_speed.png", width = 4.5, height = 2.5)
@@ -114,16 +110,17 @@ df <- spatial_firing %>%
 ```
 
 ```{r}
-  ggplot(data=df, aes(x = as.numeric(rewardzone_speed_hit))) +
-    coord_cartesian(xlim=c(0,100)) +
-    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill="black") +
-    #scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
-    labs(y="Density", x="") +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=16),
-          axis.text.y = element_text(size=16),
-          text = element_text(size=16), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggplot(data=df, aes(x = as.numeric(rewardzone_speed_hit))) +
+  coord_cartesian(xlim=c(0,100)) +
+  geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill="black") +
+  #scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  labs(y="Density", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        text = element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/speedhist_hit.png", width = 4, height = 2.5)
 
 ```
 
@@ -139,7 +136,7 @@ df <- spatial_firing %>%
 ```{r}
   ggplot(data=df, aes(x = as.numeric(rewardzone_speed_try))) +
     coord_cartesian(xlim=c(0,100)) +
-    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill="red") +
+    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill="blue") +
     #scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
     labs(y="Density", x="") +
     theme_classic() +
@@ -147,6 +144,7 @@ df <- spatial_firing %>%
           axis.text.y = element_text(size=16),
           text = element_text(size=16), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/speedhist_try.png", width = 4, height = 2.5)
 
 ```
 
@@ -161,7 +159,7 @@ df <- spatial_firing %>%
 ```{r}
   ggplot(data=df, aes(x = as.numeric(rewardzone_speed_run))) +
     coord_cartesian(xlim=c(0,100)) +
-    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill="blue") +
+    geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill="red") +
     #scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
     labs(y="Density", x="") +
     theme_classic() +
@@ -169,6 +167,7 @@ df <- spatial_firing %>%
           axis.text.y = element_text(size=16),
           text = element_text(size=16), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/speedhist_run.png", width = 4, height = 2.5)
 
 ```
 
