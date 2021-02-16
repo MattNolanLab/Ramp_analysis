@@ -332,8 +332,7 @@ ggsave(file = "plots/PosPos_Reset_failed_PI_justposition.png", width = 4.5, heig
 Remake the function above to not take reset group as an input
 ```{r}
 mean_SD_plots <- function(df, group_b, group_h, x_start = 30, x_end = 90){
- print(length(df))
-
+  
  df <- df %>%
   filter(lm_group_b == group_b,
          lm_group_b_h == group_h) %>%
@@ -412,7 +411,7 @@ ggsave(file = "plots/PosPos_Reset_failed_PI_justspeed.png", width = 4.5, height 
 
 6. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
-(PosUC_plot <- mean_SD_plots(speed_neurons, "Positive", "Negative", 0, 200))
+(PosUC_plot <- mean_SD_plots(speed_neurons, "Positive", "Unclassified", 0, 200))
 ggsave(file = "plots/PosNeg_failed_PI_justspeed.png", width = 4.5, height = 2.5)
 ```
 

@@ -391,6 +391,8 @@ none_p <-nrow(subset(path_integrating_neurons, predict_id_p == "posnon"| predict
 
 ### ----------------------------------------------------------------------------------------- ###
 
+## Figure 7 stats
+
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
 ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & reward_interaction_id != "NA")
@@ -403,5 +405,37 @@ nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/
 ```{r}
 sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
 nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## calculate total number of trials for each trial outcome 
+## Figure 7 stats
+
+```{r}
+trial_adder <- function(trials) {
+  x<-length(trials)
+  return(x)
+}
+
+```
+
+
+```{r}
+ramps <- spatial_firing %>%
+  select(run_through_trialid, try_trialid,rewarded_locations) %>%
+  mutate(run_trials_number = map(run_through_trialid,trial_adder),
+         try_trials_number = map(try_trialid,trial_adder),
+         hit_trials_number = map(rewarded_locations,trial_adder))
+```
+
+```{r}
+ramps_sum <- ramps %>%
+  #unnest(c(run_trials_number,try_trials_number,hit_trials_number))
+  summarise(total_run = sum(unlist(run_trials_number)), total_try = sum(unlist(try_trials_number)), total_hit = sum(unlist(hit_trials_number)))
+
+
 ```
 
