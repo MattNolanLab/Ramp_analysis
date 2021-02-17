@@ -98,18 +98,7 @@ Now, we can classify cells based on their predicted activity.
 
 1. Function to classify neurons based on offset (Matt code that does it based on prediction)
 
-```{r}
-mark_reset_group_predict <- function(df){
-  if (is.na(df) ) {
-    return( "None" )
-  } else if( df == "None") {
-    return( "Continuous" )
-  } else if( ( df == "Neg" ||  df == "Pos")) {
-    return( "Reset" ) 
-  }
-}
-
-```
+Use function 'mark_reset_group_predict' defined in Figure 5.
 
 2. Run on all cells
 ```{r}
@@ -119,26 +108,6 @@ spatial_firing <- spatial_firing %>%
 ```
 
 4. Classify neurons based on apsolute difference between predicted and real as either "Continuous" or "Reset"
-```{r}
-mark_reset_group <- function(df, id){
-  if (is.na(df) ) {
-    return( "None" )
-  } else if( id == "posneg" | id == "negpos") {
-    return( "Switch" ) 
-  } else if( (df > -1 & df < 1) & (id == "pospos" | id == "negneg")) {
-    return( "Continuous" )
-  } else if( (df <= -1 | df >= 1) & (id == "pospos" | id == "negneg")) {
-    return( "Reset" ) 
-    } else {
-    return("None")
-  }
-}
-
-spatial_firing <- spatial_firing %>%
-  mutate(reset_group_p = map2(predict_diff_p, track_catagory_p, mark_reset_group))
-
-```
-
 
 ## catagorised based on predict alone, ignoring slope?
 
@@ -150,7 +119,6 @@ Now, we can classify cells based on their predicted activity.
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(reset_group_p = map(predict_diff_p, mark_reset_group))
-
 ```
 
 
@@ -159,7 +127,7 @@ then tag along with the slope _this is defined in Figure 5_
 2. Run on all cells 
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_reset_group_p = pmap(list(lm_group_p, lm_group_p_h, reset_group_p), mark_track_catagory))
+  mutate(track_reset_group_p = pmap(list(lm_group_p, lm_group_p_h, reset_group_p), mark_track_category))
 
 ```
 

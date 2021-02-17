@@ -373,12 +373,12 @@ _first method_
 1. Function to classify neurons based on offset (Matt code that does it based on prediction)
 
 ```{r}
-mark_reset_group_predict <- function(df){
-  if (is.na(df) ) {
+mark_reset_group_predict <- function(offset){
+  if (is.na(offset) ) {
     return( "None" )
-  } else if( df == "None") {
+  } else if( offset == "None") {
     return( "Continuous" )
-  } else if( ( df == "Neg" ||  df == "Pos")) {
+  } else if( ( offset == "Neg" ||  offset == "Pos")) {
     return( "Reset" ) 
   }
 }
@@ -398,12 +398,12 @@ _second method_
 1. classify based on predict mean (Sarah method)
 
 ```{r}
-mark_reset_group <- function(df){
-  if (is.na(df) ) {
+mark_reset_group <- function(diff){
+  if (is.na(diff) ) {
     return( "None" )
-  } else if( (df > -1 & df < 1)) {
+  } else if( (diff > -1 & diff < 1)) {
     return( "Continuous" )
-  } else if( (df <= -1 | df >= 1)) {
+  } else if( (diff <= -1 | diff >= 1)) {
     return( "Reset" ) 
   } else {
     return("None")
