@@ -24,8 +24,26 @@ rewarded trials
 
 First combine hit and miss trials together with an indicator of trial type (hit, try, run)
 
-Function to join firing rates from different trial types and add indicator of the type of trial
+First, function that extracts data into a tibble, saves space in the function below
 ```{r}
+extract_to_tibble <- function(df) {
+  df <-
+  tibble(
+    Rates = as.numeric(Re(df[[1]])),
+    Position = as.numeric(Re(df[[3]])),
+    Speed = as.numeric(Re(df[[2]])),
+    Trials = as.factor(df[[4]]),
+    Types = as.factor(df[[5]])
+  )
+  return (df)
+}
+
+```
+
+Function to join firing rates from different trial types and add indicator of the type of trial
+
+```{r}
+
 join_rates <- function(hit, run, try, session_id, cluster_id) {
   if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
     return(
@@ -34,16 +52,28 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
                Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)))
     )
   }
-  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try)), Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)), Position = c(rep(1:200), rep(1:200), rep(1:200)))
+  
+  hit_df <- extract_to_tibble(hit)
+  run_df <- extract_to_tibble(run)
+  try_df <- extract_to_tibble(try)
+ 
+  df <- tibble(Rates = c(hit_df$Rates, run_df$Rates, try_df$Rates), 
+               Reward_indicator = c(rep("Rewarded", times=nrow(hit_df)), 
+                                    rep("Run Through", times=nrow(run_df)), 
+                                    rep("Try", times=nrow(try_df))), 
+               Position = c(hit_df$Position, run_df$Position, try_df$Position), 
+               Trials = c(hit_df$Trials, run_df$Trials, try_df$Trials))
   return (df)
 }
+
+
 
 ```
 
 1. Generate firing rate tibble for each cell
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(avg_both_asr_b = pmap(list(Rates_averaged_rewarded_b, Rates_averaged_runthru_b, Rates_averaged_try_b, session_id, cluster_id), join_rates))
+  mutate(avg_both_asr_b = pmap(list(spikes_in_time_reward_b, spikes_in_time_runthru_b, spikes_in_time_try_b, session_id, cluster_id), join_rates))
 
 ```
 
@@ -56,11 +86,9 @@ compare_models_slope_lm <- function(df, run,try){
   }
  df <- df %>%
   filter(Position >= 30, Position <= 90)
- fit <- lm(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df, na.action = na.exclude) 
- # get the model parameters
- params <- select(glance(fit), r.squared, p.value)
- print(params)
- return (params$p.value[[1]])
+ fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator) + (1|Trials), data = df, na.action = na.exclude) 
+ modelAnova <- car::Anova(fit)
+ return (modelAnova$"Pr(>Chisq)"[[3]])
 }
 ```
 
