@@ -47,7 +47,7 @@ mark_track_catagory <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate( whole_track_catagory_p = map2(lm_group_p, lm_group_p_h, mark_track_catagory))
+  mutate( track_catagory_p = map2(lm_group_p, lm_group_p_h, mark_track_catagory))
 
 ```
 
@@ -173,7 +173,7 @@ spatial_firing <- spatial_firing %>%
 
 1. extract neurons with slope on outbound
 ```{r}
-data <- spatial_firing %>% filter(whole_track_catagory_p == "pospos" | whole_track_catagory_p == "negneg" | whole_track_catagory_p == "posneg"| whole_track_catagory_p == "negpos"| whole_track_catagory_p == "posnon"| whole_track_catagory_p == "negnon")
+data <- spatial_firing %>% filter(track_catagory_p == "pospos" | track_catagory_p == "negneg" | track_catagory_p == "posneg"| track_catagory_p == "negpos"| track_catagory_p == "posnon"| track_catagory_p == "negnon")
 ```
 
 2. extract only neurons that are driven by path integration (as determined by CueAnalysis.0100.Rmd - i.e. Figure 4)
