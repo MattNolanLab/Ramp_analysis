@@ -49,7 +49,7 @@ spatial_firing <- spatial_firing %>%
 
 Function to run linear model that takes trial type (hit, try, run) into account and use the car package to extract slope significance
 ```{r}
-compare_models_slope <- function(df,run,try){
+compare_models_slope_lm <- function(df, run,try){
  # Check for NAs
   if (all(is.na(run)) | all(is.na(try))) { 
     return(NA)
@@ -67,7 +67,7 @@ compare_models_slope <- function(df,run,try){
 2. Run linear model on all cells and extract pval
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(avg_pval_slope = pmap(list(avg_both_asr_b, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope))
+  mutate(avg_pval_slope = pmap(list(avg_both_asr_b, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope_lm))
 
 ```
 

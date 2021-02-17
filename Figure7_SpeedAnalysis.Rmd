@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 1. Write function to add position to speed
 ```{r}
-add_position <- function(hit, try, run) {
+add_position_withoutcome <- function(hit, try, run) {
   df <- tibble(Speed = c(unlist(hit), unlist(try), unlist(run)), 
                Position = rep(1:200, times=3), 
                Indicator = c(rep("Hit", times=200), rep("Try", times=200), rep("Run", times=200)))
@@ -35,7 +35,7 @@ Speed_mean_try =  speed ontry beaconed trials
 Speed_mean_runthru = speed on run through trials
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(Speed_avg = pmap(list(Speed_mean_rewarded, Speed_mean_try, Speed_mean_runthru), add_position))
+  mutate(Speed_avg = pmap(list(Speed_mean_rewarded, Speed_mean_try, Speed_mean_runthru), add_position_withoutcome))
 ```
 
 Then average over selected neurons 

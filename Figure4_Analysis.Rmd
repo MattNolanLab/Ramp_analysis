@@ -512,3 +512,20 @@ data_coef_PSA_cue_neg <- data_coef_2 %>%
 
 standard_plot(data_coef_PSA_cue_pos)
 ```
+
+
+## save dataset for harry
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save <- select(spatial_firing, session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, cue_group_o) %>%
+  unnest(cols = c(session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, cue_group_o)) %>%
+  as.tibble()
+
+```
+
+3. save to csv file _this is for matching to plots from python_
+```{r}
+write_csv2(spatial_firing_save, "all_results_linearmodel.csv")
+```
+

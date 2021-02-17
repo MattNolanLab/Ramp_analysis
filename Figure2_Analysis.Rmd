@@ -201,7 +201,7 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
     mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
 }
 # Uncomment the line below to save spatial firing at this point.
-saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
+# saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
 # To reload use
 # spatial_firing <- readRDS("SpatialFiring_with_100_shuffles.Rda")
 # spatial_firing <- readRDS("SpatialFiring_with_1000_shuffles.Rda")
@@ -627,19 +627,4 @@ save_pheatmap_png(myheatmap, "my_heatmap_all2.png")
 
 
 
-
-## save dataset for harry
-
-2. take only columns we need for the rest of the analysis
-```{r}
-spatial_firing_save <- select(spatial_firing, session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, cue_group_o) %>%
-  unnest(cols = c(session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, cue_group_o)) %>%
-  as.tibble()
-
-```
-
-3. save to csv file _this is for matching to plots from python_
-```{r}
-write_csv2(spatial_firing_save, "all_results_linearmodel.csv")
-```
 

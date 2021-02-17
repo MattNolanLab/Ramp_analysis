@@ -168,7 +168,7 @@ i.e. posneg = positive in outbound, negative in homebound
 
 1. write function to mark cells based on groups
 ```{r}
-mark_track_catagory <- function(outbound, homebound){
+mark_track_category <- function(outbound, homebound){
   if (is.na(outbound) ) {
     return( "None" )  
   } else if( outbound == "Positive" & homebound == "Negative") {
@@ -193,8 +193,8 @@ mark_track_catagory <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_catagory = map2(lm_group_b, lm_group_b_h, mark_track_catagory)) %>%
-  mutate(track_catagory_nb = map2(lm_group_nb, lm_group_nb_h, mark_track_catagory))
+  mutate(track_category = map2(lm_group_b, lm_group_b_h, mark_track_category)) %>%
+  mutate(track_category_nb = map2(lm_group_nb, lm_group_nb_h, mark_track_category))
 
 ```
 
@@ -212,16 +212,16 @@ cueindependent_neurons <- subset(spatial_firing, cue_group_o == "Positive-PI" | 
 2. find proportion of cue independent cells that fall into groups as catagorised above (pospos, posneg etc)
 ```{r}
 # positive homebound slopes
-pospos <-nrow(subset(cueindependent_neurons, track_catagory == "pospos"))/nrow(cueindependent_neurons)*100
-posneg <-nrow(subset(cueindependent_neurons, track_catagory == "posneg"))/nrow(cueindependent_neurons)*100
-negneg <-nrow(subset(cueindependent_neurons, track_catagory == "negneg"))/nrow(cueindependent_neurons)*100
-negpos <-nrow(subset(cueindependent_neurons, track_catagory == "negpos"))/nrow(cueindependent_neurons)*100
+pospos <-nrow(subset(cueindependent_neurons, track_category == "pospos"))/nrow(cueindependent_neurons)*100
+posneg <-nrow(subset(cueindependent_neurons, track_category == "posneg"))/nrow(cueindependent_neurons)*100
+negneg <-nrow(subset(cueindependent_neurons, track_category == "negneg"))/nrow(cueindependent_neurons)*100
+negpos <-nrow(subset(cueindependent_neurons, track_category == "negpos"))/nrow(cueindependent_neurons)*100
 
 # positive homebound slopes
-pospos_num <-nrow(subset(cueindependent_neurons, track_catagory == "pospos"))
-posneg_num <-nrow(subset(cueindependent_neurons, track_catagory == "posneg"))
-negneg_num <-nrow(subset(cueindependent_neurons, track_catagory == "negneg"))
-negpos_num <-nrow(subset(cueindependent_neurons, track_catagory == "negpos"))
+pospos_num <-nrow(subset(cueindependent_neurons, track_category == "pospos"))
+posneg_num <-nrow(subset(cueindependent_neurons, track_category == "posneg"))
+negneg_num <-nrow(subset(cueindependent_neurons, track_category == "negneg"))
+negpos_num <-nrow(subset(cueindependent_neurons, track_category == "negpos"))
 
 ```
 
@@ -373,12 +373,12 @@ _first method_
 1. Function to classify neurons based on offset (Matt code that does it based on prediction)
 
 ```{r}
-mark_reset_group_predict <- function(df){
-  if (is.na(df) ) {
+mark_reset_group_predict <- function(offset){
+  if (is.na(offset) ) {
     return( "None" )
-  } else if( df == "None") {
+  } else if( offset == "None") {
     return( "Continuous" )
-  } else if( ( df == "Neg" ||  df == "Pos")) {
+  } else if( ( offset == "Neg" ||  offset == "Pos")) {
     return( "Reset" ) 
   }
 }
@@ -398,12 +398,12 @@ _second method_
 1. classify based on predict mean (Sarah method)
 
 ```{r}
-mark_reset_group <- function(df){
-  if (is.na(df) ) {
+mark_reset_group <- function(diff){
+  if (is.na(diff) ) {
     return( "None" )
-  } else if( (df > -1 & df < 1)) {
+  } else if( (diff > -1 & diff < 1)) {
     return( "Continuous" )
-  } else if( (df <= -1 | df >= 1)) {
+  } else if( (diff <= -1 | diff >= 1)) {
     return( "Reset" ) 
   } else {
     return("None")
@@ -424,7 +424,7 @@ spatial_firing <- spatial_firing %>%
 then add another column, which contains the slope in both the outbound and homebound and the reset activity
 
 ```{r}
-mark_track_catagory <- function(outbound, homebound, reset){
+mark_track_category <- function(outbound, homebound, reset){
   if (is.na(outbound) ) {
     return( "None" )  
   } else if( (outbound == "Positive") & (homebound == "Negative")) {
@@ -454,8 +454,8 @@ mark_track_catagory <- function(outbound, homebound, reset){
 3. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_catagory)) %>%
-  mutate(track_reset_group_nb = pmap(list(lm_group_nb, lm_group_nb_h, reset_group_nb), mark_track_catagory)) 
+  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_category)) %>%
+  mutate(track_reset_group_nb = pmap(list(lm_group_nb, lm_group_nb_h, reset_group_nb), mark_track_category)) 
 
 ```
 
@@ -469,7 +469,7 @@ spatial_firing <- spatial_firing %>%
 
 1. extract neurons with slope on outbound & homebound
 ```{r}
-data <- subset(spatial_firing, track_catagory == "pospos" | track_catagory == "negneg" | track_catagory == "posneg" | track_catagory == "negpos" | track_catagory == "negnon" | track_catagory == "posnon")
+data <- subset(spatial_firing, track_category == "pospos" | track_category == "negneg" | track_category == "posneg" | track_category == "negpos" | track_category == "negnon" | track_category == "posnon")
 ```
 
 2. extract only neurons that are driven by path integration (as determined by Figure 4 Analysis)
@@ -537,7 +537,7 @@ ggsave(file = "plots/PredictHomeboundMean_PInegative_pi.png",width = 4, height =
 
 1. 
 ```{r}
-data <- spatial_firing %>% filter(whole_track_catagory == "pospos" | whole_track_catagory == "negneg" | whole_track_catagory == "posneg"| whole_track_catagory == "negpos" | whole_track_catagory == "posnon"| whole_track_catagory == "negnon")
+data <- spatial_firing %>% filter(track_category == "pospos" | track_category == "negneg" | track_category == "posneg"| track_category == "negpos" | track_category == "posnon"| track_category == "negnon")
 ```
 
 2. 
@@ -906,7 +906,7 @@ Now we want to plot a sankey diagram showing the slope of neurons in the outboun
 
 1.
 ```{r}
-data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory == "negneg" | track_catagory == "posneg"| track_catagory == "negpos" | track_catagory == "posnon"| track_catagory == "negnon")
+data <- spatial_firing %>% filter(track_category == "pospos" | track_category == "negneg" | track_category == "posneg"| track_category == "negpos" | track_category == "posnon"| track_category == "negnon")
 
 pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 
@@ -987,7 +987,7 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 
 1. 
 ```{r}
-data <- spatial_firing %>% filter(track_catagory == "pospos" | track_catagory == "negneg")
+data <- spatial_firing %>% filter(track_category == "pospos" | track_category == "negneg")
 
 ```
 

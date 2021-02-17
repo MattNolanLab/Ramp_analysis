@@ -71,7 +71,9 @@ mm_pvalues <- function(mm) {
 ```
 
 
-2. Run on all cells 
+2. Run on all cells.
+Note here, there may be some overfitting with the mixed effect model. This is likely because some  coefficients likely do not vary with position. However, we can't address this by tailoring the model to each cell as we want to treat each cell the same way. The standardized coefficients should still be interpretable.
+See discussion in ?isSingular and here: https://stats.stackexchange.com/questions/378939/dealing-with-singular-fit-in-mixed-models
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
   select(-contains('o_mm_p_b_')) %>%
