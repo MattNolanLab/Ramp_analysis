@@ -117,8 +117,10 @@ ggplot(data, aes(x="", y=prop, fill=ramp_type)) +
 }
 
 proportions_mixed_ramps_pi_maker(proportions_mixed_ramps)
-# ggsave(file = "plots/CueComparison_proportions.png", width = 4, height = 4)
 
+if (save_figures == 1) {
+  ggsave(file = "plots/CueComparison_proportions.png", width = 4, height = 4)
+}
 ```
 
 
@@ -164,9 +166,7 @@ calc_transitions <- function(group1, group2){
   transition_values_long$IDsource=match(transition_values_long$source, nodes$name)-1
   transition_values_long$IDtarget=match(transition_values_long$target, nodes$name)-1
   return(transition_values_long)
-
 }
-
 ```
 
 Make a data frame that contains numbers to be used for the Sankey plot.
@@ -189,8 +189,10 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
               Value = "value", NodeID = "name", LinkGroup='source',
               sinksRight=FALSE, colourScale=ColourScal,
               nodeWidth=40, fontSize=0, nodePadding=30)
-#ggsave(file = "plots/model_movement.png", width = 24, height = 18)
 
+if (save_figures == 1) {
+  ggsave(file = "plots/model_movement.png", width = 24, height = 18)
+}
 ```
 
 
@@ -235,61 +237,13 @@ sankeyNetwork(Links = data_long_pos, Nodes = nodes_pos,
               Value = "value", NodeID = "name", LinkGroup='source',
               sinksRight=FALSE, colourScale=ColourScal,
               nodeWidth=40, fontSize=0, nodePadding=30)
-#ggsave(file = "plots/model_movement.png", width = 24, height = 18)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/model_movement.png", width = 24, height = 18)
+}
+
 
 ```
-
-<!-- ## For the neurons in the above Sankey plot that have positive or negative slopes on the non-beaconed/probe trials, calculate the proportion in each model group -->
-
-<!-- A function to calculate neurons in each group. Groups are: -->
-<!-- P, PA, PS, PSA for + and - slopes. -->
-<!-- ```{r} -->
-<!-- calc_pos_groups <- function(lmgroup, final_model) { -->
-<!--   total_plus_neurons <-  length(which(lmgroup == "Positive")) -->
-<!--   total_neg_neurons <-  length(which(lmgroup == "Negative")) -->
-<!--   data_groups <- tibble(perc = c( -->
-<!--     length(which(lmgroup == "Positive" & final_model == "P"))/total_plus_neurons, -->
-<!--     length(which(lmgroup == "Positive" & final_model == "PA"))/total_plus_neurons, -->
-<!--     length(which(lmgroup == "Positive" & final_model == "PS"))/total_plus_neurons, -->
-<!--     length(which(lmgroup == "Positive" & final_model == "PSA"))/total_plus_neurons, -->
-<!--     length(which(lmgroup == "Negative" & final_model == "P"))/total_neg_neurons, -->
-<!--     length(which(lmgroup == "Negative" & final_model == "PA"))/total_neg_neurons, -->
-<!--     length(which(lmgroup == "Negative" & final_model == "PS"))/total_neg_neurons, -->
-<!--     length(which(lmgroup == "Negative" & final_model == "PSA"))/total_neg_neurons -->
-<!--   ), -->
-<!--   ramp_id= c("P","PA","PS", "PSA", "P","PA","PS", "PSA"), -->
-<!--   ramp_type = c("Positive", "Positive", "Positive", "Positive", "Negative", "Negative", "Negative", "Negative")) -->
-<!--   data_groups$perc <- data_groups$perc*100 -->
-<!--   return(data_groups) -->
-<!-- } -->
-<!-- ``` -->
-
-
-<!-- Calculate distribution of groups on non-beaconed trials. -->
-<!-- ```{r} -->
-<!-- pos_groups <- calc_pos_groups(position_neurons$lm_group_nb, position_neurons$final_model_o_b) -->
-<!-- ``` -->
-
-<!-- 3. plot data -->
-<!-- ```{r} -->
-<!-- # plot data -->
-<!-- level_order <- c("P", "PS", "PA", "PSA") -->
-<!-- ggplot(pos_groups, aes(x = factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) + -->
-<!--   geom_bar(stat="identity",width = 0.9, alpha = .7) + -->
-<!--   labs(y = "Percent of neurons") + -->
-<!--   scale_fill_manual(values=c("firebrick1","darkorange", "darkorchid1","darkslategray")) + -->
-<!--   theme_classic() + -->
-<!--   theme(axis.text.x = element_text(size=14), -->
-<!--         axis.text.y = element_text(size=14), -->
-<!--         legend.position="bottom",  -->
-<!--         legend.title = element_blank(), -->
-<!--         text = element_text(size=14),  -->
-<!--         legend.text=element_text(size=14),  -->
-<!--         axis.title.y = element_text(margin = margin(t = 0, r = 15, b = 0, l = 0))) + -->
-<!-- ggsave(file = "plots/cell_proportions-AllNeurons.png", width = 4, height = 4.5) -->
-
-<!-- ``` -->
-
 
 
 
@@ -340,14 +294,20 @@ mean_SEM_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
 Subset data by group then average rates for plotting          **Negative Cue**
 ```{r}
 (NegUC_plot <- mean_SEM_plots(position_neurons, "Negative", "Unclassified"))
-# ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
+}
 ```
 
 
 Subset data by group then average rates for plotting          **Positive Cue**
 ```{r}
 (PosUC_plot <- mean_SEM_plots(position_neurons, "Positive", "Unclassified"))
-# ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
+}
 ```
 
 
@@ -355,7 +315,10 @@ Subset data by group then average rates for plotting          **Positive PI**
 
 ```{r}
 (PosPos_plot <- mean_SEM_plots(position_neurons, "Positive", "Positive"))
-# ggsave(file = "plots/AverageRates_PositionCells_PosPI.png", width = 3.5, height = 2.5)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/AverageRates_PositionCells_PosPI.png", width = 3.5, height = 2.5)
+}
 ```
 
 
@@ -363,7 +326,10 @@ Subset data by group then average rates for plotting          **Negative PI**
 
 ```{r}
 (NegNeg_plot <- mean_SEM_plots(position_neurons, "Negative", "Negative"))
-# ggsave(file = "plots/AverageRates_PositionCells_NegPI.png", width = 3.5, height = 2.5)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/AverageRates_PositionCells_NegPI.png", width = 3.5, height = 2.5)
+}
 ```
 
 
@@ -376,14 +342,20 @@ unclassified_neurons <- filter(spatial_firing, lm_group_b == "Unclassified")
 
 ```{r}
 (UCNeg_plot <- mean_SEM_plots(unclassified_neurons, "Unclassified", "Negative"))
-# ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
+}
 ```
 
 Subset data by group then average rates for plotting          **Positive PI only**
 
 ```{r}
 (UCPos_plot <- mean_SEM_plots(unclassified_neurons, "Unclassified", "Positive"))
-# ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
+
+if (save_figures == 1) {
+ ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5) 
+}
 ```
 
 
@@ -438,9 +410,17 @@ ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, lev
 }
 
 make_mm_class_bar(cue_dependant_neurons)
-ggsave(file = "plots/LMERProportions_beaconed_cuedependant.png", width = 4, height = 4.5)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/LMERProportions_beaconed_cuedependant.png", width = 4, height = 4.5)
+}
+
+
 make_mm_class_bar(cue_independant_neurons)
-ggsave(file = "plots/LMERProportions_beaconed_cueindependant.png", width = 4, height = 4.5)
+
+if (save_figures == 1) {
+ ggsave(file = "plots/LMERProportions_beaconed_cueindependant.png", width = 4, height = 4.5) 
+}
 ```
 
 
@@ -475,8 +455,12 @@ data_coef_PSA_PI_pos <- data_coef_2 %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
   subset(cue_group == "Positive-PI")
 
-(PSA_PI_pos_coef_plot <- standard_plot(data_coef_PSA_PI_pos) +
-ggsave(file = "plots/CoefficientValues_PSAPIposcells.png", width = 3, height = 3.5))
+(PSA_PI_pos_coef_plot <- standard_plot(data_coef_PSA_PI_pos))
+
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_PSAPIposcells.png", width = 3, height = 3.5)
+}
+
 
 ```
 
@@ -486,9 +470,11 @@ data_coef_PSA_PI_neg <- data_coef_2 %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
   subset(cue_group == "Negative-PI")
 
-(PSA_PI_neg_coef_plot <- standard_plot(data_coef_PSA_PI_neg) +
-ggsave(file = "plots/CoefficientValues_PSAPInegcells.png", width = 3, height = 3.5))
+(PSA_PI_neg_coef_plot <- standard_plot(data_coef_PSA_PI_neg))
 
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_PSAPInegcells.png", width = 3, height = 3.5)
+}
 ```
 
 
@@ -518,10 +504,11 @@ standard_plot(data_coef_PSA_cue_pos)
 
 2. take only columns we need for the rest of the analysis
 ```{r}
-spatial_firing_save <- select(spatial_firing, session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, cue_group_o) %>%
-  unnest(cols = c(session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, cue_group_o)) %>%
+if(save_figures == 1) {
+  spatial_firing_save <- select(spatial_firing, session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, cue_group_o) %>%
+    unnest(cols = c(session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, cue_group_o)) %>%
   as.tibble()
-
+}
 ```
 
 3. save to csv file _this is for matching to plots from python_
