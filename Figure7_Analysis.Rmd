@@ -51,15 +51,16 @@ Function to run linear model that takes trial type (hit, try, run) into account 
 ```{r}
 compare_models_slope_lm <- function(df, run,try){
  # Check for NAs
-  if (any(is.na(run)) | any(is.na(try))) { 
+  if (all(is.na(run)) | all(is.na(try))) { 
     return(NA)
   }
  df <- df %>%
-  filter(Position > 30, Position < 90)
- # change this to linear model
-  fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df, na.action = na.omit, REML = FALSE) 
-  prtAnova <- car::Anova(fit, type="II")
-  return (prtAnova$"Pr(>Chisq)"[3][1])
+  filter(Position >= 30, Position <= 90)
+ fit <- lm(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df, na.action = na.exclude) 
+ # get the model parameters
+ params <- select(glance(fit), r.squared, p.value)
+ print(params)
+ return (params$p.value[[1]])
 }
 ```
 
