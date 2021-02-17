@@ -392,18 +392,19 @@ First we want to seperate based on whether they have a positive or negative rela
 
 Function to fit mixed effect models
 ```{r}
-speed_fit <- function(df, TT = 0) {
+speed_fit <- function(df) {
   if (length(df) == 1)
     return(NA)
   df <-
     tibble(
       Rates = as.numeric(Re(df[[1]])),
       Position = as.numeric(Re(df[[2]])),
+      Acceleration = as.numeric(Re(df[[3]])),
       Speed = as.numeric(Re(df[[4]])),
       Types = as.factor(df[[6]])
     )
   df <- df %>%
-    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == TT)
+    subset(Position >= 30 & Position <= 90 & Speed > 3)
   
   if (length(df) == 1 | nrow(df) < 3)
     return(NA)
@@ -423,7 +424,7 @@ speed_fit <- function(df, TT = 0) {
 
 ```{r}
 speed_neurons <- speed_neurons %>%
-  mutate(speed_slope = map2(spikes_in_time, 0, speed_fit)
+  mutate(speed_slope = map2(spikes_in_time, speed_fit)
          )
 
 ```
@@ -447,14 +448,14 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
  df$Rates <- as.double(df$Rates)
 
  df <- df %>%
-   group_by(Position, Reward_indicator) %>%
+   group_by(Reward_indicator,Position) %>%
    dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
              se_b = std.error(Rates, na.rm = TRUE))
  
  ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  annotate("rect", xmin=0, xmax=30, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=170, xmax=200, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=90, xmax=110, ymin=0,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
                   fill=factor(Reward_indicator)), alpha=0.1) +
    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
@@ -473,41 +474,19 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(NegNegR_plot <- mean_SD_plots_outbound(speed_neurons_pos,  0, 200))
-ggsave(file = "plots/Positive_relationship_wspeed.png", width = 4.5, height = 2.5)
+(NegNegR_plot <- mean_SD_plots_outbound(speed_neurons,  0, 200))
+ggsave(file = "plots/all_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
 (pos_plot <- mean_SD_plots_outbound(speed_neurons_neg,  0, 200))
-ggsave(file = "plots/negative_relationship_waccel.png", width = 4.5, height = 2.5)
+ggsave(file = "plots/negative_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
 
 
-5. Subset data by group then average rates for plotting          **Positive Positive Reset**
+3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(PosPosR_plot <- mean_SD_plots_outbound(speed_neurons_neg, "Negative", 0, 200))
-ggsave(file = "plots/Negative_negative_relationship_waccel.png", width = 4.5, height = 2.5)
+(pos_plot <- mean_SD_plots_outbound(speed_neurons_pos,  0, 200))
+ggsave(file = "plots/positive_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
-
-5. Subset data by group then average rates for plotting          **Positive Positive Reset**
-```{r}
-(PosPosR_plot <- mean_SD_plots_outbound(speed_neurons_neg, "Positive", 0, 200))
-ggsave(file = "plots/Positive_negative_relationship_waccel.png", width = 4.5, height = 2.5)
-```
-
-
-5. Subset data by group then average rates for plotting          **Positive Positive Reset**
-```{r}
-(PosPosR_plot <- mean_SD_plots_with_reset(speed_neurons_neg, "Positive", "Positive", "Reset", 0, 200))
-ggsave(file = "plots/PosPos_Reset_failed_PI_negativespeed.png", width = 4.5, height = 2.5)
-```
-
-6. Subset data by group then average rates for plotting          **Positive Unclassified**
-```{r}
-(PosUC_plot <- mean_SD_plots(speed_neurons_pos, "Positive", "Unclassified", 0, 200))
-ggsave(file = "plots/PosNeg_failed_PI_positivespeed.png", width = 4.5, height = 2.5)
-```
-
-
-
