@@ -86,7 +86,7 @@ compare_models_slope_lm <- function(df, run,try){
   }
  df <- df %>%
   filter(Position >= 30, Position <= 90)
- fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator), data = df, na.action = na.exclude) 
+ fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator) + (1|Trials), data = df, na.action = na.exclude) 
  modelAnova <- car::Anova(fit)
  return (modelAnova$"Pr(>Chisq)"[[3]])
 }
