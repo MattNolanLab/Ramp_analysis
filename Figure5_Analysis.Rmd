@@ -369,7 +369,7 @@ spatial_firing <- spatial_firing %>%
 ### ------------------------------------------------------------------------------------------ ### 
 
 Now, we can classify cells based on their predicted activity. 
-
+_first method_
 1. Function to classify neurons based on offset (Matt code that does it based on prediction)
 
 ```{r}
