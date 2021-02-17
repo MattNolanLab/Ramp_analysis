@@ -233,10 +233,10 @@ ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, lev
         legend.title = element_blank(),
         text = element_text(size=16), 
         legend.text=element_text(size=16), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
-ggsave(file = "plots/LMERProportions_beaconed.png", width = 4, height = 4.5)
-
-
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/LMERProportions_beaconed.png", width = 4, height = 4.5)
+}
 ```
 
 
@@ -355,8 +355,11 @@ standard_plot <- function(df) {
 data_coef_pos_neg <- data_coef %>%
   subset(lm_result == "Positive" || lm_result == "Negative")
 
-(pos_neg_coef_plot <- standard_plot(data_coef_pos_neg) +
-    ggsave(file = "plots/CoefficientValues_positive_negative_cells1.png", width = 3, height = 2.5))
+(pos_neg_coef_plot <- standard_plot(data_coef_pos_neg))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_positive_negative_cells1.png", width = 3, height = 2.5)
+}  
+    
 ```
 
 
@@ -366,8 +369,10 @@ data_coef_pos_neg <- data_coef %>%
 data_coef_pos <- data_coef %>%
   subset(lm_result == "Positive" )
 
-(pos_coef_plot <- standard_plot(data_coef_pos) +
-    ggsave(file = "plots/CoefficientValues_positivecells.png", width = 3, height = 2.5))
+(pos_coef_plot <- standard_plot(data_coef_pos))
+if (save_figures == 1) {
+   ggsave(file = "plots/CoefficientValues_positivecells.png", width = 3, height = 2.5)
+}
 ```
 
 5. Split by negative slope _all cells_
@@ -375,9 +380,10 @@ data_coef_pos <- data_coef %>%
 data_coef_neg <- data_coef %>%
   subset(lm_result == "Negative" )
 
-(neg_coef_plot <- standard_plot(data_coef_neg) +
-ggsave(file = "plots/CoefficientValues_negativecells.png", width = 3, height = 2.5))
-  
+(neg_coef_plot <- standard_plot(data_coef_neg))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_negativecells.png", width = 3, height = 2.5)
+}
 ```
 
 _Plot coefficients for all cells_
@@ -388,9 +394,10 @@ data_coef_pos_PA <- data_coef %>%
   subset(group == "PA") %>%
   subset(lm_result == "Positive" )
 
-(pos_PA_coef_plot <- standard_plot(data_coef_pos_PA) +
-ggsave(file = "plots/CoefficientValues_PositivePAcells.png", width = 3, height = 2.5))
-  
+(pos_PA_coef_plot <- standard_plot(data_coef_pos_PA))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_PositivePAcells.png", width = 3, height = 2.5)
+}
 ```
 
 6. Split by negative slope
@@ -399,9 +406,10 @@ data_coef_neg_PA <- data_coef %>%
   subset(group == "PA") %>%
   subset(lm_result == "Negative" )
 
-(neg_PA_coef_plot <- standard_plot(data_coef_neg_PA) +
-ggsave(file = "plots/CoefficientValues_NegativePAcells.png", width = 3, height = 2.5))
- 
+(neg_PA_coef_plot <- standard_plot(data_coef_neg_PA))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_NegativePAcells.png", width = 3, height = 2.5)
+}
 ```
 
 
@@ -415,10 +423,10 @@ data_coef_pos_P <- data_coef %>%
   subset(group == "P") %>%
   subset(lm_result == "Positive")
 
-(pos_P_coef_plot <- standard_plot(data_coef_pos_P) +
-ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 3, height = 2.5))
- 
-
+(pos_P_coef_plot <- standard_plot(data_coef_pos_P))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 3, height = 2.5)
+}
 ```
 
 
@@ -430,9 +438,10 @@ data_coef_neg_P <- data_coef %>%
   subset(group == "P") %>%
   subset(lm_result == "Negative")
 
-(neg_P_coef_plot <- standard_plot(data_coef_neg_P) +
-ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 3, height = 2.5))
-
+(neg_P_coef_plot <- standard_plot(data_coef_neg_P))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 3, height = 2.5)
+}
 ```
 
 
@@ -444,9 +453,10 @@ data_coef_UC_PSA <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
   subset(lm_result == "Unclassified")
 
-(UC_PSA_coef_plot <- standard_plot(data_coef_UC_PSA) +
-ggsave(file = "plots/CoefficientValues_UCPSAcells.png", width = 3, height = 2.5))
-
+(UC_PSA_coef_plot <- standard_plot(data_coef_UC_PSA))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_UCPSAcells.png", width = 3, height = 2.5)
+}
 ```
 
 ## Save to csv file _this is for matching to plots from python_
