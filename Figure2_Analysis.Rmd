@@ -144,7 +144,10 @@ ggplot(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=12), 
           legend.text=element_text(size=12), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/lm_allcells.png", width = 4, height = 5)
+if (save_figures == 1) {
+  ggsave(file = "plots/lm_allcells.png", width = 4, height = 5)
+}
+
 ```
 ,
 

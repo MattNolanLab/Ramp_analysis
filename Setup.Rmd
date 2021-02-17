@@ -35,6 +35,13 @@ library(agricolae) # post hoc Tukey test
 source("Functions.R")
 source("Functions_Outbound_LMER.R")
 
+# Parameter to save figures. Set to 1 if you'd like to save them.
+save_figures = 0
+
+# Parameter to save data snapshots as analysis proceeds. Set to 1 to save.
+save_results = 0
+
+
 # Load data
 # Alternative file names commented out
 #spatial_firing <- readRDS(file="PythonOutput_Concat.Rda")
