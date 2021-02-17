@@ -201,7 +201,7 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
     mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
 }
 # Uncomment the line below to save spatial firing at this point.
-saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
+# saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
 # To reload use
 # spatial_firing <- readRDS("SpatialFiring_with_100_shuffles.Rda")
 # spatial_firing <- readRDS("SpatialFiring_with_1000_shuffles.Rda")
