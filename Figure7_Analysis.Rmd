@@ -436,16 +436,16 @@ ggsave(file = "plots/NegPos_failed_PI_justposition.png", width = 4.5, height = 2
 
 Repeat above plots but for speed encoding neurons
 
-1. Split data based on cue independant/cue dependant (Figure 5) and speed encoding group (Figure 3) as we are only interested in these neurons here
+1. Split data based on cue independant/cue dependant (Figure 5) and acceleration encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
-speed_neurons <- filter(spatial_firing, final_model_o_b == "A",  lm_group_b == "Positive" | lm_group_b == "Negative")
+accel_neurons <- filter(spatial_firing, final_model_o_b == "A",  lm_group_b == "Positive" | lm_group_b == "Negative")
 ```
 
-First we want to seperate based on whether they have a positive or negative relationship with speed
+First we want to seperate based on whether they have a positive or negative relationship with acceleration
 
 ```{r}
-speed_neurons_pos <- filter(speed_neurons, o_b_mod_coefs_accel > 0)
-speed_neurons_neg <- filter(speed_neurons, o_b_mod_coefs_accel < 0)
+accel_neurons_pos <- filter(accel_neurons, o_b_mod_coefs_accel > 0)
+accel_neurons_neg <- filter(accel_neurons, o_b_mod_coefs_accel < 0)
 ```
 
 
@@ -466,9 +466,9 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
              se_b = std.error(Rates, na.rm = TRUE))
  
  ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=0,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  annotate("rect", xmin=0, xmax=30, ymin=3,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=170, xmax=200, ymin=3,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=90, xmax=110, ymin=3,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
                   fill=factor(Reward_indicator)), alpha=0.1) +
    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
@@ -487,19 +487,19 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(NegNegR_plot <- mean_SD_plots_outbound(speed_neurons,  0, 200))
+(NegNegR_plot <- mean_SD_plots_outbound(accel_neurons,  0, 200))
 ggsave(file = "plots/all_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(speed_neurons_neg,  0, 200))
+(pos_plot <- mean_SD_plots_outbound(accel_neurons_neg,  0, 200))
 ggsave(file = "plots/negative_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
 
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(speed_neurons_pos,  0, 200))
+(pos_plot <- mean_SD_plots_outbound(accel_neurons_pos,  0, 200))
 ggsave(file = "plots/positive_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
