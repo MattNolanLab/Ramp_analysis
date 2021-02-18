@@ -452,7 +452,7 @@ speed_fit <- function(df) {
 
 ```{r}
 speed_neurons <- speed_neurons %>%
-  mutate(speed_slope = map2(spikes_in_time, speed_fit)
+  mutate(speed_slope = map(spikes_in_time, speed_fit)
          )
 
 ```
