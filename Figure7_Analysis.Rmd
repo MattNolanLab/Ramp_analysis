@@ -484,8 +484,8 @@ speed_neurons <- speed_neurons %>%
 
 
 ```{r}
-speed_neurons_pos <- filter(speed_neurons, speed_slope > 0)
-speed_neurons_neg <- filter(speed_neurons, speed_slope < 0)
+speed_neurons_pos <- filter(speed_neurons, o_b_mod_coefs_accel > 0)
+speed_neurons_neg <- filter(speed_neurons, o_b_mod_coefs_accel < 0)
 ```
 
 
