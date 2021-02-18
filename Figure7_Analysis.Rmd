@@ -73,7 +73,7 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
 1. Generate firing rate tibble for each cell
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(avg_both_asr_b = pmap(list(spikes_in_time_reward_b, spikes_in_time_runthru_b, spikes_in_time_try_b, session_id, cluster_id), join_rates))
+  mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward_b, spikes_in_time_runthru_b, spikes_in_time_try_b, session_id, cluster_id), join_rates))
 
 ```
 
@@ -86,7 +86,7 @@ compare_models_slope_lm <- function(df, run,try){
   }
  df <- df %>%
   filter(Position >= 30, Position <= 90)
- fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator) + (1|Trials), data = df, na.action = na.exclude) 
+ fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (1 + Position | Reward_indicator), data = df, na.action = na.exclude, REML = FALSE) 
  modelAnova <- car::Anova(fit)
  return (modelAnova$"Pr(>Chisq)"[[3]])
 }
@@ -95,7 +95,7 @@ compare_models_slope_lm <- function(df, run,try){
 2. Run linear model on all cells and extract pval
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(avg_pval_slope = pmap(list(avg_both_asr_b, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope_lm))
+  mutate(avg_pval_slope = pmap(list(both_asr_b_by_trial, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope_lm))
 
 ```
 
@@ -178,7 +178,7 @@ Now we can plot the coefficients for each trial type, marked by whether or not t
 1. subset by outbound ramps (Figure 2)
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-ramps <- subset(ramps, final_model_o_b == "P" | final_model_o_b == "PSA")
+ramps <- subset(ramps, final_model_o_b == "P")
 
 ```
 
@@ -232,11 +232,11 @@ ggsave(file = "plots/SlopeScatter_reward_vs_try.png", width = 4, height = 3.5)
 
 Do the same as above but for cells that are modulated by speed as determined by Figure 3 (Figure3_Analysis.Rmd)
 
-1. subset by outbound ramps (Figure 2) and cells that are modulated by speed (Figure 3)
+1. subset by outbound ramps (Figure 2) and cells that are modulated by acceleration (Figure 3)
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
 
-ramps <- subset(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A")
+ramps <- subset(spatial_firing, final_model_o_b == "A")
 ```
 
 2. Plot slope coefficient for rewarded trials and run through trials
@@ -260,7 +260,7 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=14), 
           legend.text=element_text(size=14), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_run_speed.png", width = 4, height = 3.5)
+ggsave(file = "plots/SlopeScatter_reward_vs_run_accel.png", width = 4, height = 3.5)
 ```
 
 3. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
@@ -284,13 +284,38 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=14), 
           legend.text=element_text(size=14), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_try_speed.png", width = 4, height = 3.5)
+ggsave(file = "plots/SlopeScatter_reward_vs_try_accel.png", width = 4, height = 3.5)
 ```
 
 
 ### ----------------------------------------------------------------------------------------- ###
 
 Now we want to examine if there are differences in the reset activity between trial types (hit, try, run). To do this, we can plot population rate for rewarded and failed trials across whole track. 
+
+Function to join firing rates from different trial types and add indicator of the type of trial
+
+First combine hit and miss trials together with an indicator of trial type (hit, try, run)
+
+Function to join firing rates from different trial types and add indicator of the type of trial
+```{r}
+join_average_rates <- function(hit, run, try, session_id, cluster_id) {
+  if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
+    return(
+      df <- tibble(Rates = rep(NA, times=600), 
+               Position = rep(NA, times=600),
+               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)))
+    )
+  }
+  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try)), Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)), Position = c(rep(1:200), rep(1:200), rep(1:200)))
+  return (df)
+}
+```
+
+1. Generate firing rate tibble for each cell
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(avg_both_asr_b = pmap(list(Rates_averaged_rewarded_b, Rates_averaged_runthru_b, Rates_averaged_try_b, session_id, cluster_id), join_average_rates))
+```
 
 
 1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
@@ -411,56 +436,16 @@ ggsave(file = "plots/NegPos_failed_PI_justposition.png", width = 4.5, height = 2
 
 Repeat above plots but for speed encoding neurons
 
-1. Split data based on cue independant/cue dependant (Figure 5) and speed encoding group (Figure 3) as we are only interested in these neurons here
+1. Split data based on cue independant/cue dependant (Figure 5) and acceleration encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
-speed_neurons <- filter(spatial_firing, final_model_o_b == "S",  lm_group_b == "Positive" | lm_group_b == "Negative")
+accel_neurons <- filter(spatial_firing, final_model_o_b == "A",  lm_group_b == "Positive" | lm_group_b == "Negative")
 ```
 
-First we want to seperate based on whether they have a positive or negative relationship with speed
-
-Function to fit mixed effect models
-```{r}
-speed_fit <- function(df) {
-  if (length(df) == 1)
-    return(NA)
-  df <-
-    tibble(
-      Rates = as.numeric(Re(df[[1]])),
-      Position = as.numeric(Re(df[[2]])),
-      Acceleration = as.numeric(Re(df[[3]])),
-      Speed = as.numeric(Re(df[[4]])),
-      Types = as.factor(df[[6]])
-    )
-  df <- df %>%
-    subset(Position >= 30 & Position <= 90 & Speed > 3)
-  
-  if (length(df) == 1 | nrow(df) < 3)
-    return(NA)
-  
-  df_fit <- lm(Rates ~ Speed,
-      data = df,
-      na.action = na.exclude
-    )
-  # get the model parameters
-  params <- select(glance(df_fit), r.squared, p.value)
-  # get the coefficients
-  coeffs <- tidy(df_fit)
-  # extract coefficients
-  slope <- coeffs$estimate[[2]]
-}
-```
+First we want to seperate based on whether they have a positive or negative relationship with acceleration
 
 ```{r}
-speed_neurons <- speed_neurons %>%
-  mutate(speed_slope = map(spikes_in_time, speed_fit)
-         )
-
-```
-
-
-```{r}
-speed_neurons_pos <- filter(speed_neurons, speed_slope > 0)
-speed_neurons_neg <- filter(speed_neurons, speed_slope < 0)
+accel_neurons_pos <- filter(accel_neurons, o_b_mod_coefs_accel > 0)
+accel_neurons_neg <- filter(accel_neurons, o_b_mod_coefs_accel < 0)
 ```
 
 
@@ -481,9 +466,9 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
              se_b = std.error(Rates, na.rm = TRUE))
  
  ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=0,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  annotate("rect", xmin=0, xmax=30, ymin=3,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=170, xmax=200, ymin=3,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=90, xmax=110, ymin=3,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
                   fill=factor(Reward_indicator)), alpha=0.1) +
    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
@@ -502,19 +487,19 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(NegNegR_plot <- mean_SD_plots_outbound(speed_neurons,  0, 200))
+(NegNegR_plot <- mean_SD_plots_outbound(accel_neurons,  0, 200))
 ggsave(file = "plots/all_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(speed_neurons_neg,  0, 200))
+(pos_plot <- mean_SD_plots_outbound(accel_neurons_neg,  0, 200))
 ggsave(file = "plots/negative_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
 
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(speed_neurons_pos,  0, 200))
+(pos_plot <- mean_SD_plots_outbound(accel_neurons_pos,  0, 200))
 ggsave(file = "plots/positive_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
