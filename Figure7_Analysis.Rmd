@@ -86,7 +86,7 @@ compare_models_slope_lm <- function(df, run,try){
   }
  df <- df %>%
   filter(Position >= 30, Position <= 90)
- fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (Position||Reward_indicator) + (1|Trials), data = df, na.action = na.exclude) 
+ fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (1 + Position | Reward_indicator), data = df, na.action = na.exclude) 
  modelAnova <- car::Anova(fit)
  return (modelAnova$"Pr(>Chisq)"[[3]])
 }
@@ -178,7 +178,7 @@ Now we can plot the coefficients for each trial type, marked by whether or not t
 1. subset by outbound ramps (Figure 2)
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-ramps <- subset(ramps, final_model_o_b == "P" | final_model_o_b == "PSA")
+ramps <- subset(ramps, final_model_o_b == "P")
 
 ```
 
@@ -232,11 +232,11 @@ ggsave(file = "plots/SlopeScatter_reward_vs_try.png", width = 4, height = 3.5)
 
 Do the same as above but for cells that are modulated by speed as determined by Figure 3 (Figure3_Analysis.Rmd)
 
-1. subset by outbound ramps (Figure 2) and cells that are modulated by speed (Figure 3)
+1. subset by outbound ramps (Figure 2) and cells that are modulated by acceleration (Figure 3)
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
 
-ramps <- subset(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A")
+ramps <- subset(spatial_firing, final_model_o_b == "A")
 ```
 
 2. Plot slope coefficient for rewarded trials and run through trials
@@ -260,7 +260,7 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=14), 
           legend.text=element_text(size=14), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_run_speed.png", width = 4, height = 3.5)
+ggsave(file = "plots/SlopeScatter_reward_vs_run_accel.png", width = 4, height = 3.5)
 ```
 
 3. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
@@ -284,7 +284,7 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=14), 
           legend.text=element_text(size=14), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_try_speed.png", width = 4, height = 3.5)
+ggsave(file = "plots/SlopeScatter_reward_vs_try_accel.png", width = 4, height = 3.5)
 ```
 
 
@@ -413,7 +413,7 @@ Repeat above plots but for speed encoding neurons
 
 1. Split data based on cue independant/cue dependant (Figure 5) and speed encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
-speed_neurons <- filter(spatial_firing, final_model_o_b == "S",  lm_group_b == "Positive" | lm_group_b == "Negative")
+speed_neurons <- filter(spatial_firing, final_model_o_b == "A",  lm_group_b == "Positive" | lm_group_b == "Negative")
 ```
 
 First we want to seperate based on whether they have a positive or negative relationship with speed
