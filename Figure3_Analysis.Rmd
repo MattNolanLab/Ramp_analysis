@@ -18,12 +18,6 @@ output: html_document
 
 ## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
 
-1. Load functions to perform linear mixed effect model
-This might not be needed anymore??
-```{r}
-# source("Functions_Outbound_LMER.R")
-```
-
 Function to fit mixed effect models
 ```{r}
 mm_fit <- function(df, TT = 0) {
