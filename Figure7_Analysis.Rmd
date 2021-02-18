@@ -73,7 +73,7 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
 1. Generate firing rate tibble for each cell
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(avg_both_asr_b = pmap(list(spikes_in_time_reward_b, spikes_in_time_runthru_b, spikes_in_time_try_b, session_id, cluster_id), join_rates))
+  mutate(avg_both_asr_b_by_trial = pmap(list(spikes_in_time_reward_b, spikes_in_time_runthru_b, spikes_in_time_try_b, session_id, cluster_id), join_rates))
 
 ```
 
@@ -291,6 +291,31 @@ ggsave(file = "plots/SlopeScatter_reward_vs_try_accel.png", width = 4, height = 
 ### ----------------------------------------------------------------------------------------- ###
 
 Now we want to examine if there are differences in the reset activity between trial types (hit, try, run). To do this, we can plot population rate for rewarded and failed trials across whole track. 
+
+Function to join firing rates from different trial types and add indicator of the type of trial
+
+First combine hit and miss trials together with an indicator of trial type (hit, try, run)
+
+Function to join firing rates from different trial types and add indicator of the type of trial
+```{r}
+join_average_rates <- function(hit, run, try, session_id, cluster_id) {
+  if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
+    return(
+      df <- tibble(Rates = rep(NA, times=600), 
+               Position = rep(NA, times=600),
+               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)))
+    )
+  }
+  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try)), Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)), Position = c(rep(1:200), rep(1:200), rep(1:200)))
+  return (df)
+}
+```
+
+1. Generate firing rate tibble for each cell
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(avg_both_asr_b = pmap(list(Rates_averaged_rewarded_b, Rates_averaged_runthru_b, Rates_averaged_try_b, session_id, cluster_id), join_average_rates))
+```
 
 
 1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
