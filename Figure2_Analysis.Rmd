@@ -384,17 +384,27 @@ reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))/nrow(spatial_fi
 nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spatial_firing)*100
 ```
 
-2. Put into a tibble 
+2. get total numbers numbers
 ```{r}
-proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+start_num <- nrow(subset(spatial_firing, lm_group_b == "Negative"))
+reward_num <- nrow(subset(spatial_firing, lm_group_b == "Positive"))
+nonslope_num <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))
+
 ```
+
+3. Put into a tibble 
+```{r}
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), num=c(start_num, reward_num, nonslope_num), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+```
+
 
 3. Plot bar graph of proportions
 ```{r}
 ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
   geom_bar(stat="identity",width = 0.9, alpha = .4) +
-  labs(y = "Percent") +
+  labs(y = "Percent", x="") +
   scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  geom_text(aes(label = num), hjust = 1.5, vjust = 0.5, srt=90, size = 6, position = position_dodge(-0.5)) +
   theme_classic() +
   theme(axis.text.x = element_text(size=19),
         axis.text.y = element_text(size=20),
@@ -404,7 +414,7 @@ ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id)
         legend.text=element_text(size=19), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 if (save_figures == 1) {
-  ggsave(file = "plots/Outbound_ramp_proportions.png", width = 3, height = 5)
+  ggsave(file = "plots/Outbound_ramp_proportions.png", width = 3, height = 5.5)
 }
 ```
 
@@ -415,10 +425,11 @@ We might also want to visualise the coefficients for the real and shuffled datas
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(lm_group_b))
+ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
   coord_cartesian(xlim = c(-0.45,0.45)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
   scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
   theme_classic() +
   theme(axis.text.x = element_text(size=16),
@@ -447,6 +458,7 @@ ggplot(data=shuff_slopes, aes(x = slopes)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
     labs(x = "Slope (Hz/cm)") +
     ylab("Proportion") +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
     theme_classic() +
     theme(axis.text.x = element_text(size=16),
           axis.text.y = element_text(size=16),
@@ -465,7 +477,7 @@ if (save_figures == 1) {
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + #fill=factor(unlist(lm_group_b))
+ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + 
   coord_cartesian(xlim = c(0,1), ylim = c(0,0.06)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
@@ -490,9 +502,9 @@ if (save_figures == 1) {
 ggplot(data=shuff_slopes, aes(x = r2)) +
     coord_cartesian(xlim = c(0,1)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
-    xlab(paste("\n",expression(R^2))) +
+    xlab(expression(R^2)) +
     ylab("Proportion") +
-    scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
     theme_classic() +
     theme(axis.text.x = element_text(size=16),
           axis.text.y = element_text(size=16),
@@ -508,6 +520,7 @@ if (save_figures == 1) {
 
 
 Plot distribution of the shuffled data
+_note this is not used in a figure_
 
 1. Extract shuffled slopes and rsquared values. This is already done above.
 
