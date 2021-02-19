@@ -270,8 +270,7 @@ unnb_position_cells <- nrow(subset(un_position_cells, lm_group_nb == "Positive" 
 
 ### ----------------------------------------------------------------------------------------- ###
 
-
-
+_Figure 4C stats_
 compare coefficients for position, speed and acceleration from lmer model
 _focus on all position neurons (Figure 3) that have positive or negative slope (Figure 2)_
 
