@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Differences in the positional dependance of firing between rewarded trials, run through trials and trials where the animal "tries" 
 
+
 trial types :
 1. rewarded = animal recieves a reward
 2. try = speed in the reward zone is within the 95% confidence interval of speed in the reward zone in
@@ -86,7 +87,7 @@ compare_models_slope_lm <- function(df, run,try){
   }
  df <- df %>%
   filter(Position >= 30, Position <= 90)
- fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (1 + Position | Reward_indicator), data = df, na.action = na.exclude, REML = FALSE) 
+ fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (1 + Position | Trials), data = df, na.action = na.exclude, REML = FALSE) 
  modelAnova <- car::Anova(fit)
  return (modelAnova$"Pr(>Chisq)"[[3]])
 }
