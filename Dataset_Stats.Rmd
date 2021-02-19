@@ -59,7 +59,7 @@ data <- spatial_firing %>%
   mutate(lmgroup = c("Negative", "Unclassified", "Positive")) %>%
   select(proportion,lmgroup) %>%
   group_by(lmgroup) %>%
-  summarise(avg = mean(proportion), sd = sd(proportion)/6, min=min(proportion), max=max(proportion))
+  summarise(avg = mean(proportion), sd = std.error(proportion), min=min(proportion), max=max(proportion))
 
 
 
@@ -145,6 +145,7 @@ abs_un_ramp <- unclassied_ramps_scores  %>%
   summarise(mean(ramp_score, na.rm = TRUE), sd(ramp_score, na.rm = TRUE), min(ramp_score, na.rm = TRUE), max(ramp_score, na.rm = TRUE), range(ramp_score, na.rm = TRUE)) 
 ```
 
+
 ## perform ttest on ramp scores 
 _compare to unclassified cells_
 
@@ -181,32 +182,9 @@ t.test(negative_ramps_scores,shuff_negative_ramps_scores) # where y1 & y2 are nu
 
 ### ----------------------------------------------------------------------------------------- ###
 
-### How many neurons passed criteria in the linear model ? 
+_Figure 2 stats_
 
-1. number of cells in each group
-```{r}
-P_num <- nrow(subset(spatial_firing, final_model_o_b == "P"))
-PA_num <- nrow(subset(spatial_firing, final_model_o_b == "PA"))
-PS_num <- nrow(subset(spatial_firing, final_model_o_b == "PS"))
-PSA_num <- nrow(subset(spatial_firing, final_model_o_b == "PSA"))
-SA_num <- nrow(subset(spatial_firing, final_model_o_b == "SA"))
-S_num <- nrow(subset(spatial_firing, final_model_o_b == "S"))
-A_num <- nrow(subset(spatial_firing, final_model_o_b == "A"))
-```
-
-2. Proportion of cells in each group
-```{r}
-P_num <- nrow(subset(spatial_firing, final_model_o_b == "P"))/nrow(spatial_firing)*100
-PA_num <- nrow(subset(spatial_firing, final_model_o_b == "PA"))/nrow(spatial_firing)*100
-PS_num <- nrow(subset(spatial_firing, final_model_o_b == "PS"))/nrow(spatial_firing)*100
-PSA_num <- nrow(subset(spatial_firing, final_model_o_b == "PSA"))/nrow(spatial_firing)*100
-SA_num <- nrow(subset(spatial_firing, final_model_o_b == "SA"))/nrow(spatial_firing)*100
-S_num <- nrow(subset(spatial_firing, final_model_o_b == "S"))/nrow(spatial_firing)*100
-A_num <- nrow(subset(spatial_firing, final_model_o_b == "A"))/nrow(spatial_firing)*100
-```
-
-
-## Same as above but for positive and negative sloping neurons
+### How many neurons passed criteria in the linear mixed effect ? 
 
 1. Split data by linear model result
 ```{r}
@@ -215,7 +193,8 @@ neg <-subset(spatial_firing, lm_group_b == "Negative")
 none <-subset(spatial_firing, lm_group_b == "None")
 ```
 
-2. number of cells in each group - positive sloping neurons
+2. Then for each linear model classification (Positive/Negative) find the number of cells that encode position, speed etc (P,A,PS etc)
+Do fist for positive slope neurons
 ```{r}
 pos_P_num <- nrow(subset(pos, final_model_o_b == "P"))
 pos_PA_num <- nrow(subset(pos, final_model_o_b == "PA"))
@@ -226,7 +205,7 @@ pos_S_num <- nrow(subset(pos, final_model_o_b == "S"))
 pos_A_num <- nrow(subset(pos, final_model_o_b == "A"))
 ```
 
-3. number of cells in each group - negative sloping neurons
+3. same as above for negative slope neurons
 ```{r}
 neg_P_num <- nrow(subset(neg, final_model_o_b == "P"))
 neg_PA_num <- nrow(subset(neg, final_model_o_b == "PA"))
@@ -240,17 +219,20 @@ neg_A_num <- nrow(subset(neg, final_model_o_b == "A"))
 
 ### ----------------------------------------------------------------------------------------- ###
 
-
+_Figure 4B-E stats_
 position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
 1. extract position cells
 ```{r}
 position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+
+position_ramp_cells <- subset(position_cells, lm_group_b == "Negative" | lm_group_b == "Positive")
+
 ```
 
 2. from above, extract position neurons that are ramp like in beaconed trials
 ```{r}
-pos_position_cells <- subset(position_cells, lm_group_b == "Positive")
-neg_position_cells <- subset(position_cells, lm_group_b == "Negative")
+pos_position_cells <- subset(position_ramp_cells, lm_group_b == "Positive")
+neg_position_cells <- subset(position_ramp_cells, lm_group_b == "Negative")
 ```
 
 3. find neurons that maintain ramp polarity in the non beaconed trial
@@ -288,7 +270,57 @@ unnb_position_cells <- nrow(subset(un_position_cells, lm_group_nb == "Positive" 
 
 ### ----------------------------------------------------------------------------------------- ###
 
+_Figure 4C stats_
 compare coefficients for position, speed and acceleration from lmer model
+_focus on all position neurons (Figure 3) that have positive or negative slope (Figure 2)_
+
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA" )
+
+position_ramp_cells <- subset(position_cells, lm_group_b == "Negative" | lm_group_b == "Positive")
+
+```
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save <- select(position_ramp_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble()
+
+```
+
+1. put data into a tibble for plotting
+```{r}
+data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
+                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
+                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
+                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
+                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
+                    group = c(as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b)), 
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save)),
+                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
+```
+
+2. run anova
+```{r}
+one.way <- aov(coef ~ coef_type, data = data_coef)
+
+summary(one.way)
+```
+
+3. Post hoc Tukey's test
+```{r}
+tukey.test <- TukeyHSD(one.way)
+tukey.test$coef_type
+```
+
+
+same as above but split by positive or negative slope
+_focus on all position neurons (Figure 3) that have positive or negative slopes (Figure2)_
 
 ```{r}
 position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
