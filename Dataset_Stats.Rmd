@@ -59,7 +59,7 @@ data <- spatial_firing %>%
   mutate(lmgroup = c("Negative", "Unclassified", "Positive")) %>%
   select(proportion,lmgroup) %>%
   group_by(lmgroup) %>%
-  summarise(avg = mean(proportion), sd = sd(proportion)/6, min=min(proportion), max=max(proportion))
+  summarise(avg = mean(proportion), sd = std.error(proportion), min=min(proportion), max=max(proportion))
 
 
 
