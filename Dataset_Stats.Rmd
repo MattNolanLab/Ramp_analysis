@@ -372,6 +372,9 @@ tukey.test$coef_type
 
 ### ----------------------------------------------------------------------------------------- ###
 
+## Calculate number of neurons that areset/switch/continuous across outbound and homebound
+
+_Figure 5_
 
 ```{r}
 position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
@@ -400,23 +403,14 @@ negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative"
 
 ```
 
-
-### ----------------------------------------------------------------------------------------- ###
-
-## Calculate number of neurons that areset/switch/continuous across outbound and homebound
+_Figure 5_
 
 ```{r}
-
-path_integrating_neurons <- subset(spatial_firing, cue_group == "Positive-PI" | cue_group == "Negative-PI")
-
-neg_probe <- nrow(subset(spatial_firing, lm_group_nb == "Negative" )) # all neurons that are conciderd ramp like on nb/probe trials
-pos_probe <- nrow(subset(spatial_firing, lm_group_nb == "Positive")) # all neurons that are conciderd ramp like on nb/probe trials
-
-all <- nrow(subset(path_integrating_neurons, lm_group_nb == "Negative" | lm_group_nb == "Positive")) # all neurons that are conciderd ramp like on nb/probe trials
-switchers <- nrow(subset(path_integrating_neurons, reset_group_p == "Switch")) # cells that switch slope 
-reset_p <-nrow(subset(path_integrating_neurons, reset_group_p == "Reset"))
-continuous_p <-nrow(subset(path_integrating_neurons, reset_group_p == "Continuous"))
-none_p <-nrow(subset(path_integrating_neurons, predict_id_p == "posnon"| predict_id_p == "negnon"))
+switch_slope <- nrow(posneg) + nrow(negpos)
+only_outbound_slope <- nrow(posnon) + nrow(negnon)
+same_slope <- nrow(pospos) + nrow(negneg)
+same_slope_reset <- nrow(pospos_r) + nrow(negneg_r)
+same_slope_continuous <- nrow(pospos_c) + nrow(negneg_c)
 
 ```
 
@@ -424,6 +418,8 @@ none_p <-nrow(subset(path_integrating_neurons, predict_id_p == "posnon"| predict
 ### ----------------------------------------------------------------------------------------- ###
 
 ## Figure 7 stats
+
+_Figure 7_
 
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
