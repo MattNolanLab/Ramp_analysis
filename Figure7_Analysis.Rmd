@@ -31,10 +31,8 @@ extract_to_tibble <- function(df) {
   df <-
   tibble(
     Rates = as.numeric(Re(df[[1]])),
-    Position = as.numeric(Re(df[[3]])),
-    Speed = as.numeric(Re(df[[2]])),
+    Position = as.integer(Re(df[[3]])),
     Trials = as.factor(df[[4]]),
-    Types = as.factor(df[[5]])
   )
   return (df)
 }
@@ -47,23 +45,27 @@ Function to join firing rates from different trial types and add indicator of th
 
 join_rates <- function(hit, run, try, session_id, cluster_id) {
   if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
-    return(
-      df <- tibble(Rates = rep(NA, times=600), 
-               Position = rep(NA, times=600),
-               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)))
-    )
+    return(NA)
   }
   
   hit_df <- extract_to_tibble(hit)
   run_df <- extract_to_tibble(run)
   try_df <- extract_to_tibble(try)
  
-  df <- tibble(Rates = c(hit_df$Rates, run_df$Rates, try_df$Rates), 
-               Reward_indicator = c(rep("Rewarded", times=nrow(hit_df)), 
-                                    rep("Run Through", times=nrow(run_df)), 
-                                    rep("Try", times=nrow(try_df))), 
-               Position = c(hit_df$Position, run_df$Position, try_df$Position), 
-               Trials = c(hit_df$Trials, run_df$Trials, try_df$Trials))
+  df <- tibble(Rates = c(hit_df$Rates, 
+                         run_df$Rates,
+                         try_df$Rates), 
+               Reward_indicator = c(rep(1, times=nrow(hit_df)), 
+                                    rep(2, times=nrow(run_df)), 
+                                    rep(3, times=nrow(try_df))), 
+               Position = c(hit_df$Position, 
+                            run_df$Position, 
+                            try_df$Position), 
+               Trials = c(hit_df$Trials,
+                          run_df$Trials,
+                          try_df$Trials))
+  df$Trials <- scale(df$Trials, center = TRUE)
+
   return (df)
 }
 
@@ -82,12 +84,20 @@ Function to run linear model that takes trial type (hit, try, run) into account 
 ```{r}
 compare_models_slope_lm <- function(df, run,try){
  # Check for NAs
-  if (all(is.na(run)) | all(is.na(try))) { 
+  if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
     return(NA)
   }
  df <- df %>%
-  filter(Position >= 30, Position <= 90)
- fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (1 + Position | Trials), data = df, na.action = na.exclude, REML = FALSE) 
+ filter(Position >= 30, Position <= 90)
+ fit <- lme4::lmer(Rates ~ Position * (Reward_indicator) + (1 + Position | Trials), data = df) 
+ #print(summary(fit))
+ #testing
+ #nrow(df)
+ #print(length(getME(fit,"theta")))
+ #print(length(fixef(fit)))
+ #tt <- getME(fit,"theta")
+ #ll <- getME(fit,"lower")
+ #print(min(tt[ll==0]))
  modelAnova <- car::Anova(fit)
  return (modelAnova$"Pr(>Chisq)"[[3]])
 }
