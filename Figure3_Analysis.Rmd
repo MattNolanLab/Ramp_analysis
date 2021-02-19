@@ -146,7 +146,6 @@ First for all cells.
 
 1. Split data by linear model result
 ```{r}
-
 # extracting diff models 
 pos <-subset(spatial_firing, lm_group_b == "Positive")
 neg <-subset(spatial_firing, lm_group_b == "Negative")
@@ -192,11 +191,51 @@ NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
 
 ```
 
+2. number of cells in each group - positive sloping neurons
+```{r}
+P_positive_num <- nrow(subset(pos, final_model_o_b == "P"))
+P_A_positive_num <- nrow(subset(pos, final_model_o_b == "PA"))
+P_S_positive_num <- nrow(subset(pos, final_model_o_b == "PS"))
+P_S_A_positive_num <- nrow(subset(pos, final_model_o_b == "PSA"))
+S_A_positive_num <- nrow(subset(pos, final_model_o_b == "SA"))
+S_positive_num <- nrow(subset(pos, final_model_o_b == "S"))
+A_positive_num <- nrow(subset(pos, final_model_o_b == "A"))
+NONE_positive_num <- nrow(subset(pos, final_model_o_b == "None"))
+
+```
+
+3. number of cells in each group - negative sloping neurons
+```{r}
+P_negative_num <- nrow(subset(neg, final_model_o_b == "P"))
+P_A_negative_num <- nrow(subset(neg, final_model_o_b == "PA"))
+P_S_negative_num <- nrow(subset(neg, final_model_o_b == "PS"))
+P_S_A_negative_num <- nrow(subset(neg, final_model_o_b == "PSA"))
+S_A_negative_num <- nrow(subset(neg, final_model_o_b == "SA"))
+S_negative_num <- nrow(subset(neg, final_model_o_b == "S"))
+A_negative_num <- nrow(subset(neg, final_model_o_b == "A"))
+NONE_negative_num <- nrow(subset(neg, final_model_o_b == "None"))
+
+```
+
+3. number of cells in each group - unclassified  neurons
+```{r}
+P_none_num <- nrow(subset(none, final_model_o_b == "P"))
+P_A_none_num <- nrow(subset(none, final_model_o_b == "PA"))
+P_S_none_num <- nrow(subset(none, final_model_o_b == "PS"))
+P_S_A_none_num <- nrow(subset(none, final_model_o_b == "PSA"))
+S_A_none_num <- nrow(subset(none, final_model_o_b == "SA"))
+S_none_num <- nrow(subset(none, final_model_o_b == "S"))
+A_none_num <- nrow(subset(none, final_model_o_b == "A"))
+NONE_none_num <- nrow(subset(none, final_model_o_b == "None"))
+
+```
+
 3. Put data into tibble
 ```{r}
 
 
 mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative, S_none, A_positive,A_negative,A_none,  P_S_positive, P_S_negative,P_S_none, P_A_positive, P_A_negative, P_A_none, S_A_positive, S_A_negative, S_A_none,P_S_A_positive, P_S_A_negative, P_S_A_none, NONE_positive,NONE_negative, NONE_none), 
+                      num=c(P_positive_num,P_negative_num,P_none_num,S_positive_num, S_negative_num, S_none_num, A_positive_num,A_negative_num,A_none_num,  P_S_positive_num, P_S_negative_num,P_S_none_num, P_A_positive_num, P_A_negative_num, P_A_none_num, S_A_positive_num, S_A_negative_num, S_A_none_num,P_S_A_positive_num, P_S_A_negative_num, P_S_A_none_num, NONE_positive_num,NONE_negative_num, NONE_none_num),
                       
                       ramp_id= c("P","P","P", 
                                  "S", "S", "S", 
@@ -216,10 +255,12 @@ mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative
 level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "None")
 ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
   geom_bar(stat="identity",width = 0.9, alpha = .7) +
-  labs(y = "Percent of neurons") +
+  labs(y = "Percent of neurons", x="") +
   scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
+  geom_text(aes(label = num), hjust = 0.6, vjust = 0.2, size = 5, position = position_stack(vjust= 0.5)) +
   #scale_fill_brewer(palette= "RdYlBu") +
   theme_classic() +
+  theme(axis.text.x = element_text(angle = 50, vjust=0.65)) +
   theme(axis.text.x = element_text(size=16),
         axis.text.y = element_text(size=16),
         legend.position="bottom", 
@@ -228,7 +269,7 @@ ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, lev
         legend.text=element_text(size=16), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 if (save_figures == 1) {
-  ggsave(file = "plots/LMERProportions_beaconed.png", width = 4, height = 4.5)
+  ggsave(file = "plots/LMERProportions_beaconed.png", width = 4, height = 5.5)
 }
 ```
 
