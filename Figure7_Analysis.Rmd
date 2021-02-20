@@ -31,8 +31,8 @@ extract_to_tibble <- function(df) {
   df <-
   tibble(
     Rates = as.numeric(Re(df[[1]])),
-    Position = as.integer(Re(df[[3]])),
-    Trials = as.factor(df[[4]]),
+    Position = as.numeric(Re(df[[3]])),
+    Trials = as.numeric(df[[4]]),
   )
   return (df)
 }
@@ -64,7 +64,6 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
                Trials = c(hit_df$Trials,
                           run_df$Trials,
                           try_df$Trials))
-  df$Trials <- scale(df$Trials, center = TRUE)
 
   return (df)
 }
@@ -87,17 +86,16 @@ compare_models_slope_lm <- function(df, run,try){
   if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
     return(NA)
   }
+  print(run)
+  if ((length(try) < 10) | (length(run)) <10) { 
+    return(NA)
+  }
  df <- df %>%
  filter(Position >= 30, Position <= 90)
- fit <- lme4::lmer(Rates ~ Position * (Reward_indicator) + (1 + Position | Trials), data = df) 
+ fit <- lme4::lmer(Rates ~ Position * (Reward_indicator) + (1+ Position | Trials), data = df, na.action=na.omit, REML=FALSE) 
  #print(summary(fit))
  #testing
  #nrow(df)
- #print(length(getME(fit,"theta")))
- #print(length(fixef(fit)))
- #tt <- getME(fit,"theta")
- #ll <- getME(fit,"lower")
- #print(min(tt[ll==0]))
  modelAnova <- car::Anova(fit)
  return (modelAnova$"Pr(>Chisq)"[[3]])
 }
@@ -106,7 +104,7 @@ compare_models_slope_lm <- function(df, run,try){
 2. Run linear model on all cells and extract pval
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(avg_pval_slope = pmap(list(both_asr_b_by_trial, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope_lm))
+  mutate(avg_pval_slope = pmap(list(both_asr_b_by_trial, spikes_in_time_runthru_b, spikes_in_time_try_b), compare_models_slope_lm))
 
 ```
 
