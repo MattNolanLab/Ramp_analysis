@@ -92,7 +92,7 @@ compare_models_slope_lm <- function(df, run,try){
   }
  df <- df %>%
  filter(Position >= 30, Position <= 90)
- fit <- lme4::lmer(Rates ~ Position * (Reward_indicator) + (1+ Position | Trials), data = df, na.action=na.omit, REML=FALSE) 
+ fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (1 + Position | Trials), data = df) 
  #print(summary(fit))
  #testing
  #nrow(df)
@@ -106,6 +106,12 @@ compare_models_slope_lm <- function(df, run,try){
 spatial_firing <- spatial_firing %>%
   mutate(avg_pval_slope = pmap(list(both_asr_b_by_trial, spikes_in_time_runthru_b, spikes_in_time_try_b), compare_models_slope_lm))
 
+```
+
+To test just use the first two rows
+```{r}
+a <- spatial_firing[1:2,] %>%
+  mutate(avg_pval_slope = pmap(list(both_asr_b_by_trial, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope_lm))
 ```
 
 Now we can classify cells based on their significance in the above model
@@ -193,17 +199,20 @@ ramps <- subset(ramps, final_model_o_b == "P")
 
 2. Plot slope coefficient for rewarded trials and run through trials
 ```{r}
-ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
-                                y = asr_b_run_fit_slope, 
-                                fill = factor(unlist(reward_interaction_id)),
-                                color = factor(unlist(reward_interaction_id)))) +
+plot_slope_comparison <- function(slope1, slope2, factor1){
+  df <- tibble(x_slope = slope1, y_slope = slope2, fac = factor1)
+  
+  ggplot(data=df, aes(x = x_slope,
+                                y = y_slope, 
+                                fill = factor(unlist(fac)),
+                                color = factor(unlist(fac)))) +
     coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
     geom_point(alpha=0.3) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     scale_fill_manual(values=c("grey", "red", "blue")) +
     scale_color_manual(values=c("grey", "red", "blue")) +
-    xlab("\nslope") +
-    ylab(expression(R^2)) +
+    xlab("slope") +
+    ylab(expression("slope")) +
     theme_classic() +
     theme(axis.text.x = element_text(size=14),
           axis.text.y = element_text(size=14),
@@ -212,31 +221,25 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=14), 
           legend.text=element_text(size=14), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_run.png", width = 4, height = 3.5)
+}
+
+plot_slope_comparison (ramps$asr_b_o_rewarded_fit_slope, ramps$asr_b_run_fit_slope, ramps$reward_interaction_id)
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_run.png", width = 4, height = 3.5)
+}
+
 ```
 
 3. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
 ```{r}
-ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
-                                y = asr_b_try_fit_slope, 
-                                fill = factor(unlist(reward_interaction_id)),
-                                color = factor(unlist(reward_interaction_id)))) +
-    coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
-    geom_point(alpha=0.3) +
-    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    scale_fill_manual(values=c("grey", "red", "blue")) +
-    scale_color_manual(values=c("grey", "red", "blue")) +
-    xlab("\nslope") +
-    ylab(expression(R^2)) +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=14),
-          axis.text.y = element_text(size=14),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=14), 
-          legend.text=element_text(size=14), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_try.png", width = 4, height = 3.5)
+plot_slope_comparison (ramps$asr_b_o_rewarded_fit_slope, ramps$asr_b_try_fit_slope, ramps$reward_interaction_id)
+
+if (save_fiugres == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_try.png", width = 4, height = 3.5)
+}
+
 ```
 
 Do the same as above but for cells that are modulated by speed as determined by Figure 3 (Figure3_Analysis.Rmd)
@@ -250,26 +253,12 @@ ramps <- subset(spatial_firing, final_model_o_b == "A")
 
 2. Plot slope coefficient for rewarded trials and run through trials
 ```{r}
-ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
-                                y = asr_b_run_fit_slope, 
-                                fill = factor(unlist(reward_interaction_id)),
-                                color = factor(unlist(reward_interaction_id)))) +
-    coord_cartesian(xlim=c(-0.35,0.35), y=c(-0.35,0.35)) +
-    geom_point(alpha=0.3) +
-    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    scale_fill_manual(values=c("grey", "red", "blue")) +
-    scale_color_manual(values=c("grey", "red", "blue")) +
-    xlab("\nslope") +
-    ylab(expression(R^2)) +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=14),
-          axis.text.y = element_text(size=14),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=14), 
-          legend.text=element_text(size=14), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_run_accel.png", width = 4, height = 3.5)
+plot_slope_comparison (ramps$asr_b_o_rewarded_fit_slope, ramps$asr_b_run_fit_slope, ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_run_accel.png", width = 4, height = 3.5)
+}
+
 ```
 
 3. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
@@ -293,7 +282,12 @@ ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
           text = element_text(size=14), 
           legend.text=element_text(size=14), 
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/SlopeScatter_reward_vs_try_accel.png", width = 4, height = 3.5)
+
+plot_slope_comparison (ramps$asr_b_o_rewarded_fit_slope, ramps$asr_b_try_fit_slope, ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_try_accel.png", width = 4, height = 3.5)
+}
 ```
 
 
