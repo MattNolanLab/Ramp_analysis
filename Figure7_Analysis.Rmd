@@ -53,7 +53,9 @@ spatial_firing_enoughtrials <- spatial_firing %>%
 ```
 
 
-Then, for this dataset, combine hit and miss trials together with an indicator of trial type (hit, try, run)
+### --------------------------------------------------------------------------------------- ###
+
+Then combine hit and miss trials together with an indicator of trial type (hit, try, run)
 
 First, function that extracts data into a tibble, saves space in the function below
 
