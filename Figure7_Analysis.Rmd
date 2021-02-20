@@ -23,16 +23,47 @@ rewarded trials
 
 ### --------------------------------------------------------------------------------------- ###
 
-First combine hit and miss trials together with an indicator of trial type (hit, try, run)
+
+## To address low trial numbers in run through and try catagories, first lets create a new dataset with only high trial numbers. 
+
+First extract number of trials for each type
+```{r}
+trial_adder <- function(df) {
+  df <-
+  tibble(
+    Rates = as.numeric(df[[1]]),
+    Position = as.numeric(df[[3]]),
+    Trials = as.numeric(df[[4]])
+  )
+  
+  trials <- length(unique(df$Trials))
+  return(trials)
+}
+
+
+spatial_firing <- spatial_firing %>%
+  mutate(try_trials_number = map(spikes_in_time_try_b,trial_adder),
+         run_trials_number = map(spikes_in_time_runthru_b,trial_adder))
+```
+
+filter dataset for having enough trials
+```{r}
+spatial_firing_enoughtrials <- spatial_firing %>%
+  filter(run_trials_number > 5 & try_trials_number > 5)
+```
+
+
+Then, for this dataset, combine hit and miss trials together with an indicator of trial type (hit, try, run)
 
 First, function that extracts data into a tibble, saves space in the function below
+
 ```{r}
-extract_to_tibble <- function(df) {
+extract_to_tibble <- function(df, name="hit") {
   df <-
   tibble(
     Rates = as.numeric(Re(df[[1]])),
-    Position = as.integer(Re(df[[3]])),
-    Trials = as.factor(df[[4]]),
+    Position = as.numeric(Re(df[[3]])),
+    Trials = as.numeric(Re(df[[4]]))
   )
   return (df)
 }
@@ -40,7 +71,6 @@ extract_to_tibble <- function(df) {
 ```
 
 Function to join firing rates from different trial types and add indicator of the type of trial
-
 ```{r}
 
 join_rates <- function(hit, run, try, session_id, cluster_id) {
@@ -48,23 +78,22 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
     return(NA)
   }
   
-  hit_df <- extract_to_tibble(hit)
-  run_df <- extract_to_tibble(run)
-  try_df <- extract_to_tibble(try)
+  hit_df <- extract_to_tibble(hit, " hit")
+  run_df <- extract_to_tibble(run, " run")
+  try_df <- extract_to_tibble(try, " try")
  
   df <- tibble(Rates = c(hit_df$Rates, 
                          run_df$Rates,
                          try_df$Rates), 
-               Reward_indicator = c(rep(1, times=nrow(hit_df)), 
-                                    rep(2, times=nrow(run_df)), 
-                                    rep(3, times=nrow(try_df))), 
+               Reward_indicator = c(as.factor(rep(1, times=nrow(hit_df))), 
+                                    as.factor(rep(2, times=nrow(run_df))), 
+                                    as.factor(rep(3, times=nrow(try_df)))), 
                Position = c(hit_df$Position, 
                             run_df$Position, 
                             try_df$Position), 
                Trials = c(hit_df$Trials,
                           run_df$Trials,
                           try_df$Trials))
-  #df$Trials <- scale(df$Trials, center = TRUE)
 
   return (df)
 }
@@ -75,10 +104,11 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
 
 1. Generate firing rate tibble for each cell
 ```{r}
-spatial_firing <- spatial_firing %>%
+spatial_firing_enoughtrials <- spatial_firing_enoughtrials %>%
   mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward_b, spikes_in_time_runthru_b, spikes_in_time_try_b, session_id, cluster_id), join_rates))
 
 ```
+
 
 Function to run linear model that takes trial type (hit, try, run) into account and use the car package to extract slope significance
 ```{r}
@@ -89,30 +119,23 @@ compare_models_slope_lm <- function(df, run,try){
   }
  df <- df %>%
  filter(Position >= 30, Position <= 90)
- fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (1 + Position | Trials), data = df) 
- #print(summary(fit))
- #testing
- #nrow(df)
- #print(length(getME(fit,"theta")))
- #print(length(fixef(fit)))
- #tt <- getME(fit,"theta")
- #ll <- getME(fit,"lower")
- #print(min(tt[ll==0]))
+ fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (1 + Position | Trials), data = df, na.action=na.omit)
+ #fit2 <- update(fit,control=lmerControl(optCtrl=list(maxfun=2e4))) #this didnt get rid of the error
  modelAnova <- car::Anova(fit)
+ 
+ #check what the fixed effect model matrix looks like 
+ fix.formula <- Rates ~ Position * Reward_indicator + (1 + Position | Trials)
+ X <- model.matrix (fix.formula, df)
+ print(X)
+ 
  return (modelAnova$"Pr(>Chisq)"[[3]])
 }
 ```
 
 2. Run linear model on all cells and extract pval
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(avg_pval_slope = pmap(list(both_asr_b_by_trial, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope_lm))
-
-```
-
 To test just use the first two rows
 ```{r}
-a <- spatial_firing[1:2,] %>%
+a <- spatial_firing_enoughtrials[1:10,] %>%
   mutate(avg_pval_slope = pmap(list(both_asr_b_by_trial, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope_lm))
 ```
 
@@ -238,7 +261,7 @@ if (save_figures == 1) {
 ```{r}
 plot_slope_comparison (ramps$asr_b_o_rewarded_fit_slope, ramps$asr_b_try_fit_slope, ramps$reward_interaction_id)
 
-if (save_fiugres == 1) {
+if (save_figures == 1) {
   ggsave(file = "plots/SlopeScatter_reward_vs_try.png", width = 4, height = 3.5)
 }
 
