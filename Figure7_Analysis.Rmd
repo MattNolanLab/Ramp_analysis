@@ -85,9 +85,9 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
   df <- tibble(Rates = c(hit_df$Rates, 
                          run_df$Rates,
                          try_df$Rates), 
-               Reward_indicator = c(as.factor(rep(1, times=nrow(hit_df))), 
-                                    as.factor(rep(2, times=nrow(run_df))), 
-                                    as.factor(rep(3, times=nrow(try_df)))), 
+               Reward_indicator = c(rep("Rewarded", times=nrow(hit_df)), 
+                                    rep("Run", times=nrow(run_df)), 
+                                    rep("Try", times=nrow(try_df))), 
                Position = c(hit_df$Position, 
                             run_df$Position, 
                             try_df$Position), 
@@ -98,13 +98,11 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
   return (df)
 }
 
-
-
 ```
 
 1. Generate firing rate tibble for each cell
 ```{r}
-spatial_firing_enoughtrials <- spatial_firing_enoughtrials %>%
+spatial_firing <- spatial_firing %>%
   mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward_b, spikes_in_time_runthru_b, spikes_in_time_try_b, session_id, cluster_id), join_rates))
 
 ```
@@ -119,15 +117,8 @@ compare_models_slope_lm <- function(df, run,try){
   }
  df <- df %>%
  filter(Position >= 30, Position <= 90)
- fit <- lme4::lmer(Rates ~ Position * Reward_indicator + (1 + Position | Trials), data = df, na.action=na.omit)
- #fit2 <- update(fit,control=lmerControl(optCtrl=list(maxfun=2e4))) #this didnt get rid of the error
+ fit <- lme4::lmer(Rates ~ scale(Position) * Reward_indicator + (1+scale(Position) | Trials), data = df, na.action=na.omit)
  modelAnova <- car::Anova(fit)
- 
- #check what the fixed effect model matrix looks like 
- fix.formula <- Rates ~ Position * Reward_indicator + (1 + Position | Trials)
- X <- model.matrix (fix.formula, df)
- print(X)
- 
  return (modelAnova$"Pr(>Chisq)"[[3]])
 }
 ```
@@ -135,8 +126,8 @@ compare_models_slope_lm <- function(df, run,try){
 2. Run linear model on all cells and extract pval
 To test just use the first two rows
 ```{r}
-a <- spatial_firing_enoughtrials[1:10,] %>%
-  mutate(avg_pval_slope = pmap(list(both_asr_b_by_trial, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope_lm))
+spatial_firing <- spatial_firing %>%
+  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope_lm))
 ```
 
 Now we can classify cells based on their significance in the above model
@@ -160,7 +151,7 @@ mark_neurons_sig <- function(pval){
 3. Make new column to identify whether cells are significant
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(reward_interaction_id = map(avg_pval_slope, mark_neurons_sig))
+  mutate(reward_interaction_id = map(pval_slope, mark_neurons_sig))
 ```
 
 
@@ -226,16 +217,15 @@ ramps <- subset(ramps, final_model_o_b == "P")
 ```{r}
 plot_slope_comparison <- function(slope1, slope2, factor1){
   df <- tibble(x_slope = slope1, y_slope = slope2, fac = factor1)
-  
   ggplot(data=df, aes(x = x_slope,
                                 y = y_slope, 
                                 fill = factor(unlist(fac)),
                                 color = factor(unlist(fac)))) +
-    coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
+    #coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
     geom_point(alpha=0.3) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    scale_fill_manual(values=c("grey", "red", "blue")) +
-    scale_color_manual(values=c("grey", "red", "blue")) +
+    scale_fill_manual(values=c("black", "red", "blue")) +
+    scale_color_manual(values=c("black", "red", "blue")) +
     xlab("slope") +
     ylab(expression("slope")) +
     theme_classic() +
@@ -273,7 +263,7 @@ Do the same as above but for cells that are modulated by speed as determined by 
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
 
-ramps <- subset(spatial_firing, final_model_o_b == "A")
+ramps <- subset(ramps, final_model_o_b == "A")
 ```
 
 2. Plot slope coefficient for rewarded trials and run through trials
