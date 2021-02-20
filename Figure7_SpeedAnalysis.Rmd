@@ -90,7 +90,9 @@ mean_speed_plots <- function(df, x_start = 30, x_end = 90){
 Subset data by group then average rates for plotting          
 ```{r}
 (Pos_speed_plot <- mean_speed_plots(spatial_firing,  0, 200))
-ggsave(file = "plots/PI_speed.png", width = 4.5, height = 2.5)
+if (save_figures == 1) {
+  ggsave(file = "plots/PI_speed.png", width = 4.5, height = 2.5)
+}
 ```
 
 
