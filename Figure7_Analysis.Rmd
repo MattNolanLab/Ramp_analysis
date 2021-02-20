@@ -60,7 +60,7 @@ Then combine hit and miss trials together with an indicator of trial type (hit, 
 First, function that extracts data into a tibble, saves space in the function below
 
 ```{r}
-extract_to_tibble <- function(df, name="hit") {
+extract_to_tibble <- function(df) {
   df <-
   tibble(
     Rates = as.numeric(Re(df[[1]])),
@@ -80,9 +80,9 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
     return(NA)
   }
   
-  hit_df <- extract_to_tibble(hit, " hit")
-  run_df <- extract_to_tibble(run, " run")
-  try_df <- extract_to_tibble(try, " try")
+  hit_df <- extract_to_tibble(hit)
+  run_df <- extract_to_tibble(run)
+  try_df <- extract_to_tibble(try)
  
   df <- tibble(Rates = c(hit_df$Rates, 
                          run_df$Rates,
