@@ -162,7 +162,7 @@ spatial_firing <- spatial_firing %>%
 
 ## Figure 7 stats
 
-_Figure 7_
+Find proportion & numbers of neurons that are significant/non-significiant
 
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
@@ -229,11 +229,15 @@ spatial_firing$asr_b_try_fit_r.squared
 
 
 
-Now we can plot the coefficients for each trial type, marked by whether or not the cells are significantly modulated by trial type (hit, try, run)
+Now we can plot the slope coefficients for each trial type, marked by whether or not the cells are significantly modulated by trial type (hit, try, run)
 
 1. subset by outbound ramps (Figure 2) and cells that are modulated by position alone (Figure 3)
+
 ```{r}
-ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+ramps <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+```
+
+```{r}
 just_position_ramps <- subset(ramps, final_model_o_b == "P")
 ```
 
@@ -246,7 +250,7 @@ plot_slope_comparison <- function(slope1, slope2, factor1){
                                 fill = factor(unlist(fac)),
                                 color = factor(unlist(fac)))) +
     coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
-    coord_cartesian(xlim=c(-0.35,0.35), y=c(-0.35,0.35)) +
+    #coord_cartesian(xlim=c(-0.35,0.35), y=c(-0.35,0.35)) +
     geom_point(alpha=0.3) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     scale_fill_manual(values=c("black", "red", "blue")) +
@@ -282,9 +286,10 @@ if (save_figures == 1) {
 
 ```
 
+
 Do the same as above but for cells that are modulated by position in any way (P,PA,PS,PSA) as determined by Figure 3 (Figure3_Analysis.Rmd)
 
-1. subset by outbound ramps (Figure 2) and for cells that are modulated by position in any way (P,PA,PS,PSA) as determined by Figure 3 (Figure3_Analysis.Rmd)
+1. subset by cells that are modulated by position in any way (P,PA,PS,PSA) 
 ```{r}
 all_position_ramps <- subset(ramps, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
@@ -311,13 +316,40 @@ if (save_figures == 1) {
 
 Do the same as above but for cells that are modulated by speed as determined by Figure 3 (Figure3_Analysis.Rmd)
 
-1. subset by outbound ramps (Figure 2) and cells that are modulated by acceleration (Figure 3)
+1. subset by outbound ramps (Figure 2) and cells that are modulated by speed (Figure 3)
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+```
+
 ```{r}
 speed_ramps <- subset(ramps, final_model_o_b == "S")
 ```
 
 2. Plot slope coefficient for rewarded trials and run through trials
 ```{r}
+plot_slope_comparison <- function(slope1, slope2, factor1){
+  df <- tibble(x_slope = slope1, y_slope = slope2, fac = factor1)
+  ggplot(data=df, aes(x = x_slope,
+                                y = y_slope, 
+                                fill = factor(unlist(fac)),
+                                color = factor(unlist(fac)))) +
+    #coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
+    coord_cartesian(xlim=c(-0.35,0.35), y=c(-0.35,0.35)) +
+    geom_point(alpha=0.3) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    scale_fill_manual(values=c("black", "red", "blue")) +
+    scale_color_manual(values=c("black", "red", "blue")) +
+    xlab("slope") +
+    ylab(expression("slope")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=14), 
+          legend.text=element_text(size=14), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+}
 plot_slope_comparison (speed_ramps$asr_b_o_rewarded_fit_slope, speed_ramps$asr_b_run_fit_slope, speed_ramps$reward_interaction_id)
 
 if (save_figures == 1) {
@@ -568,6 +600,37 @@ ggsave(file = "plots/NegPos_failed_PI_justposition.png", width = 4.5, height = 2
 
 
 
+1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
+```{r}
+allposition_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+Function to plot data mean and SD of the population data based on the classification, as per Figure 2, and classification as per figure 5, on beaconed trials in the outbound and homebound regions of the track.
+
+2. Subset data by group then average rates for plotting          **Negative Negative Continuous**
+```{r}
+(NegNegC_plot <- mean_SD_plots_with_reset(allposition_neurons, "Negative", "Negative", "Continuous",  0, 200))
+ggsave(file = "plots/NegNeg_Continuous_failed_PI_allposition.png", width = 4.5, height = 2.5)
+```
+
+3. Subset data by group then average rates for plotting          **Negative Negative Reset**
+```{r}
+(NegNegR_plot <- mean_SD_plots_with_reset(allposition_neurons, "Negative", "Negative", "Reset",  0, 200))
+ggsave(file = "plots/NegNeg_Reset_failed_PI_allposition.png", width = 4.5, height = 2.5)
+```
+
+4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
+```{r}
+(PosPosC_plot <- mean_SD_plots_with_reset(allposition_neurons, "Positive", "Positive", "Continuous", 0, 200))
+ggsave(file = "plots/PosPos_Continuous_failed_PI_allposition.png", width = 4.5, height = 2.5)
+```
+
+5. Subset data by group then average rates for plotting          **Positive Positive Reset**
+```{r}
+(PosPosR_plot <- mean_SD_plots_with_reset(allposition_neurons, "Positive", "Positive", "Reset", 0, 200))
+ggsave(file = "plots/PosPos_Reset_failed_PI_allposition.png", width = 4.5, height = 2.5)
+```
+
 Repeat above plots but for acceleration encoding neurons
 
 1. Split data based on cue independant/cue dependant (Figure 5) and acceleration encoding group (Figure 3) as we are only interested in these neurons here
@@ -641,7 +704,7 @@ ggsave(file = "plots/positive_relationship_waccel.png", width = 4.5, height = 2.
 
 Repeat above plots but for acceleration encoding neurons, regardless of Figure 2 classification
 
-1. Split data based on cue independant/cue dependant (Figure 5) and acceleration encoding group (Figure 3) as we are only interested in these neurons here
+1. Split data based on acceleration encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
 all_accel_neurons <- filter(spatial_firing, final_model_o_b == "A")
 ```
@@ -652,13 +715,11 @@ accel_neurons_pos <- filter(all_accel_neurons, o_b_mod_coefs_accel > 0)
 accel_neurons_neg <- filter(all_accel_neurons, o_b_mod_coefs_accel < 0)
 ```
 
-
 Remake the function above to not take reset group as an input
 ```{r}
 mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
   
  df <- df %>%
-  #filter(lm_group_b == group_b) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b))
  
@@ -697,7 +758,7 @@ ggsave(file = "plots/all_relationship_wallaccel.png", width = 4.5, height = 2.5)
 
 3. Subset data by group then average rates for plotting **Negative coefficient with acceleration**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(all_accel_neurons,  0, 200))
+(pos_plot <- mean_SD_plots_outbound(accel_neurons_neg,  0, 200))
 ggsave(file = "plots/negative_relationship_wallaccel.png", width = 4.5, height = 2.5)
 ```
 
@@ -727,20 +788,20 @@ speed_neurons_neg <- filter(speed_neurons, o_b_mod_coefs_speed < 0)
 
 3. Subset data by group then average rates for plotting          **Regardless of speed coefficient**
 ```{r}
-(NegNegR_plot <- mean_SD_plots_outbound(accel_neurons,  0, 200))
+(NegNegR_plot <- mean_SD_plots_outbound(speed_neurons,  0, 200))
 ggsave(file = "plots/all_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
 
 3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(accel_neurons_neg,  0, 200))
+(pos_plot <- mean_SD_plots_outbound(speed_neurons_neg,  0, 200))
 ggsave(file = "plots/negative_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
 
 
 3. Subset data by group then average rates for plotting          **Positive coefficient with speed**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(accel_neurons_pos,  0, 200))
+(pos_plot <- mean_SD_plots_outbound(speed_neurons_pos,  0, 200))
 ggsave(file = "plots/positive_relationship_wspeed.png", width = 4.5, height = 2.5)
 ```
 
