@@ -231,11 +231,10 @@ spatial_firing$asr_b_try_fit_r.squared
 
 Now we can plot the coefficients for each trial type, marked by whether or not the cells are significantly modulated by trial type (hit, try, run)
 
-1. subset by outbound ramps (Figure 2)
+1. subset by outbound ramps (Figure 2) and cells that are modulated by position alone (Figure 3)
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-ramps <- subset(ramps, final_model_o_b == "P")
-
+just_position_ramps <- subset(ramps, final_model_o_b == "P")
 ```
 
 2. Plot slope coefficient for rewarded trials and run through trials
@@ -264,37 +263,119 @@ plot_slope_comparison <- function(slope1, slope2, factor1){
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 }
 
-plot_slope_comparison (ramps$asr_b_o_rewarded_fit_slope, ramps$asr_b_run_fit_slope, ramps$reward_interaction_id)
+plot_slope_comparison (just_position_ramps$asr_b_o_rewarded_fit_slope, just_position_ramps$asr_b_run_fit_slope, just_position_ramps$reward_interaction_id)
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/SlopeScatter_reward_vs_run.png", width = 4, height = 3.5)
+  ggsave(file = "plots/SlopeScatter_reward_vs_run_justposition.png", width = 4, height = 3.5)
 }
 
 ```
 
 3. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
 ```{r}
-plot_slope_comparison (ramps$asr_b_o_rewarded_fit_slope, ramps$asr_b_try_fit_slope, ramps$reward_interaction_id)
+plot_slope_comparison (just_position_ramps$asr_b_o_rewarded_fit_slope, just_position_ramps$asr_b_try_fit_slope, just_position_ramps$reward_interaction_id)
 
 if (save_figures == 1) {
-  ggsave(file = "plots/SlopeScatter_reward_vs_try.png", width = 4, height = 3.5)
+  ggsave(file = "plots/SlopeScatter_reward_vs_try_justposition.png", width = 4, height = 3.5)
 }
 
 ```
+
+Do the same as above but for cells that are modulated by position in any way (P,PA,PS,PSA) as determined by Figure 3 (Figure3_Analysis.Rmd)
+
+1. subset by outbound ramps (Figure 2) and for cells that are modulated by position in any way (P,PA,PS,PSA) as determined by Figure 3 (Figure3_Analysis.Rmd)
+```{r}
+all_position_ramps <- subset(ramps, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. Plot slope coefficient for rewarded trials and run through trials
+```{r}
+plot_slope_comparison (all_position_ramps$asr_b_o_rewarded_fit_slope, all_position_ramps$asr_b_run_fit_slope, all_position_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_run_allposition.png", width = 4, height = 3.5)
+}
+```
+
+3. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
+```{r}
+plot_slope_comparison (all_position_ramps$asr_b_o_rewarded_fit_slope, all_position_ramps$asr_b_try_fit_slope, all_position_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_try_allposition.png", width = 4, height = 3.5)
+}
+
+```
+
 
 Do the same as above but for cells that are modulated by speed as determined by Figure 3 (Figure3_Analysis.Rmd)
 
 1. subset by outbound ramps (Figure 2) and cells that are modulated by acceleration (Figure 3)
 ```{r}
-ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-
-ramps <- subset(ramps, final_model_o_b == "A")
+speed_ramps <- subset(ramps, final_model_o_b == "S")
 ```
 
 2. Plot slope coefficient for rewarded trials and run through trials
 ```{r}
-plot_slope_comparison (ramps$asr_b_o_rewarded_fit_slope, ramps$asr_b_run_fit_slope, ramps$reward_interaction_id)
+plot_slope_comparison (speed_ramps$asr_b_o_rewarded_fit_slope, speed_ramps$asr_b_run_fit_slope, speed_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_run_speed.png", width = 4, height = 3.5)
+}
+
+```
+
+3. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
+```{r}
+plot_slope_comparison (speed_ramps$asr_b_o_rewarded_fit_slope, speed_ramps$asr_b_try_fit_slope, speed_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_try_speed.png", width = 4, height = 3.5)
+}
+
+```
+
+
+
+Do the same as above but for ALL cells that are modulated by speed as determined by Figure 3 (Figure3_Analysis.Rmd), regardless of classification in Figure 2
+
+1. subset by outbound ramps (Figure 2) and cells that are modulated by acceleration (Figure 3)
+```{r}
+allspeed_ramps <- subset(spatial_firing, final_model_o_b == "S")
+```
+
+2. Plot slope coefficient for rewarded trials and run through trials
+```{r}
+plot_slope_comparison (allspeed_ramps$asr_b_o_rewarded_fit_slope, allspeed_ramps$asr_b_run_fit_slope, allspeed_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_run_allspeed.png", width = 4, height = 3.5)
+}
+
+```
+
+3. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
+```{r}
+plot_slope_comparison (allspeed_ramps$asr_b_o_rewarded_fit_slope, allspeed_ramps$asr_b_try_fit_slope, allspeed_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_try_allspeed.png", width = 4, height = 3.5)
+}
+
+```
+
+
+Do the same as above but for cells that are modulated by acceleration as determined by Figure 3 (Figure3_Analysis.Rmd)
+
+1. subset by outbound ramps (Figure 2) and cells that are modulated by acceleration (Figure 3)
+```{r}
+acceleration_ramps <- subset(ramps, final_model_o_b == "A")
+```
+
+2. Plot slope coefficient for rewarded trials and run through trials
+```{r}
+plot_slope_comparison (acceleration_ramps$asr_b_o_rewarded_fit_slope, acceleration_ramps$asr_b_run_fit_slope, acceleration_ramps$reward_interaction_id)
 
 if (save_figures == 1) {
   ggsave(file = "plots/SlopeScatter_reward_vs_run_accel.png", width = 4, height = 3.5)
@@ -304,32 +385,41 @@ if (save_figures == 1) {
 
 3. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
 ```{r}
-ggplot(data=ramps, aes(x = asr_b_o_rewarded_fit_slope,
-                                y = asr_b_try_fit_slope, 
-                                fill = factor(unlist(reward_interaction_id)),
-                                color = factor(unlist(reward_interaction_id)))) +
-    coord_cartesian(xlim=c(-0.35,0.35), y=c(-0.35,0.35)) +
-    geom_point(alpha=0.3) +
-    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    scale_fill_manual(values=c("grey", "red", "blue")) +
-    scale_color_manual(values=c("grey", "red", "blue")) +
-    xlab("\nslope") +
-    ylab(expression(R^2)) +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=14),
-          axis.text.y = element_text(size=14),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=14), 
-          legend.text=element_text(size=14), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-
-plot_slope_comparison (ramps$asr_b_o_rewarded_fit_slope, ramps$asr_b_try_fit_slope, ramps$reward_interaction_id)
+plot_slope_comparison (acceleration_ramps$asr_b_o_rewarded_fit_slope, acceleration_ramps$asr_b_try_fit_slope, acceleration_ramps$reward_interaction_id)
 
 if (save_figures == 1) {
   ggsave(file = "plots/SlopeScatter_reward_vs_try_accel.png", width = 4, height = 3.5)
 }
 ```
+
+
+
+Do the same as above but for ALL cells that are modulated by acceleration as determined by Figure 3 (Figure3_Analysis.Rmd), regardless of classification in Figure 2
+
+1. subset by outbound ramps (Figure 2) and cells that are modulated by acceleration (Figure 3)
+```{r}
+allacceleration_ramps <- subset(spatial_firing, final_model_o_b == "A")
+```
+
+2. Plot slope coefficient for rewarded trials and run through trials
+```{r}
+plot_slope_comparison (allacceleration_ramps$asr_b_o_rewarded_fit_slope, allacceleration_ramps$asr_b_run_fit_slope, allacceleration_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_run_allaccel.png", width = 4, height = 3.5)
+}
+
+```
+
+3. Plot slope coefficients for rewarded trials and trials where the animal tries to stop
+```{r}
+plot_slope_comparison (allacceleration_ramps$asr_b_o_rewarded_fit_slope, allacceleration_ramps$asr_b_try_fit_slope, allacceleration_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/SlopeScatter_reward_vs_try_allaccel.png", width = 4, height = 3.5)
+}
+```
+
 
 
 ### ----------------------------------------------------------------------------------------- ###
