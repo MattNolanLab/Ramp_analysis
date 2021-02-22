@@ -121,6 +121,7 @@ compare_models_slope_lm <- function(df, run,try){
  filter(Position >= 30, Position <= 90)
  fit <- lme4::lmer(Rates ~ scale(Position) * Reward_indicator + (1+scale(Position) | Trials), data = df, na.action=na.omit)
  modelAnova <- car::Anova(fit)
+ 
  return (modelAnova$"Pr(>Chisq)"[[3]])
 }
 ```
@@ -155,6 +156,28 @@ mark_neurons_sig <- function(pval){
 spatial_firing <- spatial_firing %>%
   mutate(reward_interaction_id = map(pval_slope, mark_neurons_sig))
 ```
+
+### ----------------------------------------------------------------------------- ###
+
+
+## Figure 7 stats
+
+_Figure 7_
+
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & reward_interaction_id != "NA")
+```
+
+```{r}
+sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ramps_with_enough_trials)*100
+nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps_with_enough_trials)*100
+```
+```{r}
+sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
+nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))
+```
+
 
 
 ### ----------------------------------------------------------------------------- ###
@@ -223,7 +246,8 @@ plot_slope_comparison <- function(slope1, slope2, factor1){
                                 y = y_slope, 
                                 fill = factor(unlist(fac)),
                                 color = factor(unlist(fac)))) +
-    #coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
+    coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
+    coord_cartesian(xlim=c(-0.35,0.35), y=c(-0.35,0.35)) +
     geom_point(alpha=0.3) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     scale_fill_manual(values=c("black", "red", "blue")) +
