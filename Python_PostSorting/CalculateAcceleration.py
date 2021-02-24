@@ -15,15 +15,73 @@ from scipy import signal
 
 def generate_acceleration(spike_data, recording_folder):
     print('I am calculating acceleration...')
+    spike_data["spikes_in_time_all"] = ""
+    for cluster in range(len(spike_data)):
+        session_id = spike_data.at[cluster, "session_id"]
+        cluster_index = spike_data.cluster_id.values[cluster] - 1
+        rates =  np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10
+        speed = np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
+        trials =  np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real)
+        types =  np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real)
+        position = np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
+
+        # filter data
+        try:
+            window = signal.gaussian(2, std=3)
+            speed = signal.convolve(speed, window, mode='same')/sum(window)
+            rates = signal.convolve(rates, window, mode='same')/sum(window)
+        except (ValueError, TypeError):
+                continue
+
+        # remove outliers
+        rates_o =  pd.Series(rates)
+        speed_o =  pd.Series(speed)
+        position_o =  pd.Series(position)
+        trials_o =  pd.Series(trials)
+        types_o =  pd.Series(types)
+
+        rates = rates_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
+        speed = speed_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
+        position = position_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
+        trials = trials_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
+        types = types_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
+
+
+        if speed.size > 1:
+            acceleration = np.diff(np.array(speed))
+            acceleration = np.hstack((0, acceleration))
+            #plot_acceleration(recording_folder, spike_data, cluster_index, speed, acceleration)
+            #plot_instant_acceleration(recording_folder, spike_data, cluster_index, rates, position, speed, acceleration)
+            #plot_instant_acceleration_by_segment(recording_folder, spike_data, cluster, cluster_index, np.asarray(rates), np.asarray(position), np.asarray(speed), np.asarray(acceleration))
+        else:
+            acceleration = np.zeros((speed.size))
+        spike_data = store_acceleration(spike_data, cluster, np.asarray(rates), np.asarray(position), np.asarray(speed), np.asarray(acceleration), np.asarray(trials), np.asarray(types))
+    return spike_data
+
+
+def plot_acceleration(recording_folder, spike_data, cluster, speed, acceleration):
+    plt.plot(speed[:1000])
+    plt.plot(acceleration[:1000])
+    save_path = recording_folder + 'Figures/Acceleration'
+    if os.path.exists(save_path) is False:
+        os.makedirs(save_path)
+    plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_accell_map_Cluster_' + str(cluster +1) + '_location' + '.png', dpi=200)
+    plt.close()
+    return
+
+
+
+def generate_acceleration_rewarded_trials(spike_data, recording_folder):
+    print('I am calculating acceleration...')
     spike_data["spikes_in_time"] = ""
     for cluster in range(len(spike_data)):
         session_id = spike_data.at[cluster, "session_id"]
         cluster_index = spike_data.cluster_id.values[cluster] - 1
-        rates =  np.array(spike_data.iloc[cluster].spike_rate_in_time[0]).real*10 #*4 to convert from 250 ms sampling to Hz
-        speed = np.array(spike_data.iloc[cluster].spike_rate_in_time[1]).real # *4 to convert from 250 ms sampling to Hz
-        trials =  np.array(spike_data.iloc[cluster].spike_rate_in_time[3]).real
-        types =  np.array(spike_data.iloc[cluster].spike_rate_in_time[4]).real
-        position = np.array(spike_data.iloc[cluster].spike_rate_in_time[2]).real
+        rates =  np.array(spike_data.iloc[cluster].spikes_in_time_reward[0].real)*10
+        speed = np.array(spike_data.iloc[cluster].spikes_in_time_reward[1].real)
+        trials =  np.array(spike_data.iloc[cluster].spikes_in_time_reward[3].real)
+        types =  np.array(spike_data.iloc[cluster].spikes_in_time_reward[4].real)
+        position = np.array(spike_data.iloc[cluster].spikes_in_time_reward[2].real)
 
         # filter data
         try:
@@ -47,45 +105,21 @@ def generate_acceleration(spike_data, recording_folder):
         types = types_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
 
         if speed.size > 1:
-            #calculate acceleration
             acceleration = np.diff(np.array(speed))
             acceleration = np.hstack((0, acceleration))
-            #plot_acceleration(recording_folder, spike_data, cluster_index, speed, acceleration)
-            #plot_instant_acceleration(recording_folder, spike_data, cluster_index, rates, position, speed, acceleration)
-            plot_instant_acceleration_by_segment(recording_folder, spike_data, cluster, cluster_index, np.asarray(rates), np.asarray(position), np.asarray(speed), np.asarray(acceleration))
         else:
             acceleration = np.zeros((speed.size))
-        spike_data = store_acceleration(spike_data, cluster, np.asarray(rates), np.asarray(position), np.asarray(speed), np.asarray(acceleration), np.asarray(trials), np.asarray(types))
+        spike_data = store_acceleration_for_rewaded(spike_data, cluster, np.asarray(rates), np.asarray(position), np.asarray(speed), np.asarray(acceleration), np.asarray(trials), np.asarray(types))
     return spike_data
 
 
-def plot_acceleration(recording_folder, spike_data, cluster, speed, acceleration):
-    plt.plot(speed[:1000])
-    plt.plot(acceleration[:1000])
-    save_path = recording_folder + 'Figures/Acceleration'
-    if os.path.exists(save_path) is False:
-        os.makedirs(save_path)
-    plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_accell_map_Cluster_' + str(cluster +1) + '_location' + '.png', dpi=200)
-    plt.close()
-    return
 
-
-def remove_low_speeds(rates, speed, position, acceleration ):
-    data = np.vstack((rates, speed, position, acceleration))
-    data=data.transpose()
-    data_filtered = data[data[:,1] > 3,:]
-    rates = data_filtered[:,0]
-    speed = data_filtered[:,1]
-    position = data_filtered[:,2]
-    acceleration = data_filtered[:,3]
-    return rates, speed, position, acceleration
 
 
 def plot_instant_acceleration(recording_folder, spike_data, cluster, rates, position, speed, acceleration):
     save_path = recording_folder + '/Figures/InstantRates'
     if os.path.exists(save_path) is False:
         os.makedirs(save_path)
-    rates, speed, position, acceleration = remove_low_speeds(rates, speed, position,acceleration )
     avg_spikes_on_track = plt.figure(figsize=(4,3))
     ax = avg_spikes_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
     ax.plot(acceleration, rates, 'o', color='Black', markersize=1.5)
@@ -102,7 +136,7 @@ def plot_instant_acceleration(recording_folder, spike_data, cluster, rates, posi
 def remove_low_speeds_and_segment(rates, speed, position, acceleration ):
     data = np.vstack((rates, speed, position, acceleration))
     data=data.transpose()
-    data_filtered = data[data[:,1] >= 3,:]
+    data_filtered = data[data[:,1] >= 2,:]
 
     data_filtered = data_filtered[data_filtered[:,2] >= 30,:]
     data_filtered = data_filtered[data_filtered[:,2] <= 170,:]
@@ -202,12 +236,23 @@ def plot_instant_acceleration_by_segment(recording_folder, spike_data, cluster, 
 def store_acceleration(spike_data,cluster_index, rates, position, speed, acceleration,  trials, types):
     sn=[]
     sn.append(rates) # rate
-    sn.append(position) # speed
-    sn.append(speed) # position
+    sn.append(position) # position
+    sn.append(speed) # speed
+    sn.append(acceleration) # acceleration
+    sn.append(trials) # trials
+    sn.append(types) # types
+    spike_data.at[cluster_index, 'spikes_in_time_all'] = list(sn)
+    return spike_data
+
+
+
+def store_acceleration_for_rewaded(spike_data,cluster_index, rates, position, speed, acceleration,  trials, types):
+    sn=[]
+    sn.append(rates) # rate
+    sn.append(position) # position
+    sn.append(speed) # speed
     sn.append(acceleration) # acceleration
     sn.append(trials) # trials
     sn.append(types) # types
     spike_data.at[cluster_index, 'spikes_in_time'] = list(sn)
     return spike_data
-
-

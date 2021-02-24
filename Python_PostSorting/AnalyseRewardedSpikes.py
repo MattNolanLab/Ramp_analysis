@@ -6,16 +6,14 @@ from scipy import signal
 import Python_PostSorting.plot_utility
 
 
-def extract_time_binned_firing_rate_rewarded(spike_data, prm):
+def extract_time_binned_firing_rate_rewarded(spike_data):
     spike_data["Rates_averaged_rewarded_b"] = ""
     spike_data["Rates_averaged_rewarded_nb"] = ""
     spike_data["Rates_averaged_rewarded_p"] = ""
     spike_data["Rates_sd_rewarded_b"] = ""
     spike_data["Rates_sd_rewarded_nb"] = ""
     spike_data["Rates_sd_rewarded_p"] = ""
-    spike_data["Firing_rate_rewarded_b"] = ""
-    spike_data["Firing_rate_rewarded_nb"] = ""
-    spike_data["Firing_rate_rewarded_p"] = ""
+
 
     for cluster in range(len(spike_data)):
         speed=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[1])
@@ -63,7 +61,6 @@ def extract_time_binned_firing_rate_rewarded(spike_data, prm):
         x_sd = np.nanstd(data_b, axis=1)
         spike_data.at[cluster, 'Rates_averaged_rewarded_b'] = list(x)# add data to dataframe
         spike_data.at[cluster, 'Rates_sd_rewarded_b'] = list(x_sd)
-        spike_data.at[cluster, 'Firing_rate_rewarded_b'] = data_b
 
         data_nb = pd.DataFrame(binned_data[:,:,1], dtype=None, copy=False)
         data_nb = data_nb.dropna(axis = 1, how = "all")
@@ -77,7 +74,6 @@ def extract_time_binned_firing_rate_rewarded(spike_data, prm):
         x_sd = np.nanstd(data_nb, axis=1)
         spike_data.at[cluster, 'Rates_averaged_rewarded_nb'] = list(x)
         spike_data.at[cluster, 'Rates_sd_rewarded_nb'] = list(x_sd)
-        spike_data.at[cluster, 'Firing_rate_rewarded_nb'] = data_nb
 
         #just probe trials
         data_p = pd.DataFrame(binned_data[:,:,2], dtype=None, copy=False)
@@ -92,7 +88,6 @@ def extract_time_binned_firing_rate_rewarded(spike_data, prm):
         x_sd = np.nanstd(data_p, axis=1)
         spike_data.at[cluster, 'Rates_averaged_rewarded_p'] = list(x)
         spike_data.at[cluster, 'Rates_sd_rewarded_p'] = list(x_sd)
-        spike_data.at[cluster, 'Firing_rate_rewarded_p'] = data_p
 
     return spike_data
 
