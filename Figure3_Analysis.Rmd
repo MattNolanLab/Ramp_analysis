@@ -15,7 +15,6 @@ output: html_document
 ---
 
 
-
 ## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
 
 Function to fit mixed effect models
@@ -277,6 +276,12 @@ if (save_figures == 1) {
 ### ----------------------------------------------------------------------------------------- ###
 
 ## Calculate standardized coefficients for position, speed and acceleration in LMER model
+
+
+1. Load functions to calculate and extract standardised coefficients for each variable in the lmer
+```{r}
+source("Functions_StdCoef_lmer.R")
+```
 
 1. calculate and extract standardized coefficients for position, speed and acceleration
 
