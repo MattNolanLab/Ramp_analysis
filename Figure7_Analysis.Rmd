@@ -105,7 +105,7 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
 1. Generate firing rate tibble for each cell
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward_b, spikes_in_time_runthru_b, spikes_in_time_try_b, session_id, cluster_id), join_rates))
+  mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward, spikes_in_time_run, spikes_in_time_try, session_id, cluster_id), join_rates))
 
 ```
 
@@ -130,7 +130,7 @@ compare_models_slope_lm <- function(df, run,try){
 To test just use the first two rows
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Rates_averaged_runthru_b, Rates_averaged_try_b), compare_models_slope_lm))
+  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_lm))
 ```
 
 Now we can classify cells based on their significance in the above model
@@ -204,8 +204,8 @@ add_position <- function(df, session_id, cluster_id) {
 1. Run this on all animals for try and run through trials (we already have coefficients for rewarded data from Figure 2)
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(asr_b_try = pmap(list(Rates_averaged_try_b, session_id, cluster_id), add_position),
-         asr_b_run = pmap(list(Rates_averaged_runthru_b, session_id, cluster_id), add_position)
+  mutate(asr_b_try = pmap(list(Avg_FiringRate_TryTrials, session_id, cluster_id), add_position),
+         asr_b_run = pmap(list(Avg_FiringRate_RunTrials, session_id, cluster_id), add_position)
          )
 ```
 
@@ -480,13 +480,13 @@ join_average_rates <- function(hit, run, try, session_id, cluster_id) {
 1. Generate firing rate tibble for each cell
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(avg_both_asr_b = pmap(list(Rates_averaged_rewarded_b, Rates_averaged_runthru_b, Rates_averaged_try_b, session_id, cluster_id), join_average_rates))
+  mutate(avg_both_asr_b = pmap(list(Avg_FiringRate_HitTrials, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials, session_id, cluster_id), join_average_rates))
 ```
 
 
 1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
 ```{r}
-position_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", final_model_o_b == "P")
+position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
 ```
 
 Function to plot data mean and SD of the population data based on the classification, as per Figure 2, and classification as per figure 5, on beaconed trials in the outbound and homebound regions of the track.
@@ -600,36 +600,7 @@ ggsave(file = "plots/NegPos_PI_justposition.png", width = 4.5, height = 2.5)
 
 
 
-1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
-```{r}
-allposition_neurons <- filter(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
 
-Function to plot data mean and SD of the population data based on the classification, as per Figure 2, and classification as per figure 5, on beaconed trials in the outbound and homebound regions of the track.
-
-2. Subset data by group then average rates for plotting          **Negative Negative Continuous**
-```{r}
-(NegNegC_plot <- mean_SD_plots_with_reset(allposition_neurons, "Negative", "Negative", "Continuous",  0, 200))
-ggsave(file = "plots/NegNeg_Continuous_PI_allposition.png", width = 4.5, height = 2.5)
-```
-
-3. Subset data by group then average rates for plotting          **Negative Negative Reset**
-```{r}
-(NegNegR_plot <- mean_SD_plots_with_reset(allposition_neurons, "Negative", "Negative", "Reset",  0, 200))
-ggsave(file = "plots/NegNeg_Reset_PI_allposition.png", width = 4.5, height = 2.5)
-```
-
-4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
-```{r}
-(PosPosC_plot <- mean_SD_plots_with_reset(allposition_neurons, "Positive", "Positive", "Continuous", 0, 200))
-ggsave(file = "plots/PosPos_Continuous_PI_allposition.png", width = 4.5, height = 2.5)
-```
-
-5. Subset data by group then average rates for plotting          **Positive Positive Reset**
-```{r}
-(PosPosR_plot <- mean_SD_plots_with_reset(allposition_neurons, "Positive", "Positive", "Reset", 0, 200))
-ggsave(file = "plots/PosPos_Reset_PI_allposition.png", width = 4.5, height = 2.5)
-```
 
 Repeat above plots but for acceleration encoding neurons
 
@@ -640,8 +611,8 @@ accel_neurons <- filter(spatial_firing, final_model_o_b == "A",  lm_group_b == "
 
 2. seperate based on whether they have a positive or negative relationship with acceleration
 ```{r}
-accel_neurons_pos <- filter(accel_neurons, o_b_mod_coefs_accel > 0)
-accel_neurons_neg <- filter(accel_neurons, o_b_mod_coefs_accel < 0)
+accel_neurons_pos <- filter(accel_neurons, o_b_mod_coefs_accel < 0)
+accel_neurons_neg <- filter(accel_neurons, o_b_mod_coefs_accel > 0)
 ```
 
 Remake the function above to not take reset group as an input
@@ -660,9 +631,9 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
              se_b = std.error(Rates, na.rm = TRUE))
  
  ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=3,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=3,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=3,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
                   fill=factor(Reward_indicator)), alpha=0.1) +
    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
@@ -678,12 +649,6 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
 }
 ```
 
-
-3. Subset data by group then average rates for plotting **Regardless of coefficient with acceleration**
-```{r}
-(NegNegR_plot <- mean_SD_plots_outbound(accel_neurons,  0, 200))
-ggsave(file = "plots/all_relationship_waccel.png", width = 4.5, height = 2.5)
-```
 
 3. Subset data by group then average rates for plotting  **Negative coefficient with acceleration**
 ```{r}
@@ -702,7 +667,9 @@ ggsave(file = "plots/positive_relationship_waccel.png", width = 4.5, height = 2.
 
 
 
-Repeat above plots but for acceleration encoding neurons, regardless of Figure 2 classification
+
+
+Repeat above plots but for all acceleration encoding neurons, regardless of Figure 2 classification
 
 1. Split data based on acceleration encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
@@ -711,8 +678,8 @@ all_accel_neurons <- filter(spatial_firing, final_model_o_b == "A")
 
 2. seperate based on whether they have a positive or negative relationship with acceleration
 ```{r}
-accel_neurons_pos <- filter(all_accel_neurons, o_b_mod_coefs_accel > 0)
-accel_neurons_neg <- filter(all_accel_neurons, o_b_mod_coefs_accel < 0)
+accel_neurons_pos <- filter(all_accel_neurons, o_b_mod_coefs_accel < 0)
+accel_neurons_neg <- filter(all_accel_neurons, o_b_mod_coefs_accel > 0)
 ```
 
 Remake the function above to not take reset group as an input
@@ -731,9 +698,9 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
              se_b = std.error(Rates, na.rm = TRUE))
  
  ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=3,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=3,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=3,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
                   fill=factor(Reward_indicator)), alpha=0.1) +
    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
@@ -749,12 +716,6 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
 }
 ```
 
-
-3. Subset data by group then average rates for plotting  **Regardless of acceleration coefficient**
-```{r}
-(NegNegR_plot <- mean_SD_plots_outbound(all_accel_neurons,  0, 200))
-ggsave(file = "plots/all_relationship_wallaccel.png", width = 4.5, height = 2.5)
-```
 
 3. Subset data by group then average rates for plotting **Negative coefficient with acceleration**
 ```{r}
@@ -782,15 +743,10 @@ speed_neurons <- filter(spatial_firing, final_model_o_b == "S",  lm_group_b == "
 
 2.seperate based on whether they have a positive or negative relationship with speed
 ```{r}
-speed_neurons_pos <- filter(speed_neurons, o_b_mod_coefs_speed > 0)
-speed_neurons_neg <- filter(speed_neurons, o_b_mod_coefs_speed < 0)
+speed_neurons_pos <- filter(speed_neurons, o_b_mod_coefs_speed < 0)
+speed_neurons_neg <- filter(speed_neurons, o_b_mod_coefs_speed > 0)
 ```
 
-3. Subset data by group then average rates for plotting          **Regardless of speed coefficient**
-```{r}
-(NegNegR_plot <- mean_SD_plots_outbound(speed_neurons,  0, 200))
-ggsave(file = "plots/all_relationship_wspeed.png", width = 4.5, height = 2.5)
-```
 
 3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
 ```{r}
@@ -817,15 +773,10 @@ all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S")
 
 2.seperate based on whether they have a positive or negative relationship with speed
 ```{r}
-all_speed_neurons_pos <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
-all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
+all_speed_neurons_pos <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
+all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
 ```
 
-3. Subset data by group then average rates for plotting          **Regardless of speed coefficient**
-```{r}
-(NegNegR_plot <- mean_SD_plots_outbound(all_speed_neurons,  0, 200))
-ggsave(file = "plots/all_relationship_wallspeed.png", width = 4.5, height = 2.5)
-```
 
 3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
 ```{r}
