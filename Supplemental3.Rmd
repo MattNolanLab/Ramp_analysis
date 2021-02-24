@@ -1,0 +1,59 @@
+---
+title: "Supplemental3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+1. Function to generate shuffles
+- shuffles spikes using sample() function
+- runs lm
+- extracts coefficients
+- stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
+```{r}
+# shuffles defines the number of shuffes. Use a smaller value for testing.
+save_shuffle_rates <- function(df, startbin, endbin, shuffles = 10) {
+  df_modified <- data.frame(neuron=as.numeric(),
+                 slope=as.numeric(), 
+                 rsquared=as.numeric(), 
+                 pval=vector())
+  names(df_modified) <- c("neuron", "rate", "position")
+  x <- 1
+  repeat {
+  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
+  data <- data.frame(as.numeric(x), shuff_df$Rates, shuff_df$Position)
+  names(data) <- c("neuron", "rate", "position")
+  df_modified <- rbind(df_modified,data)
+  x = x+1
+  if (x == shuffles){ 
+  df_modified <- df_modified  %>%
+    group_by(position) %>%
+    dplyr::summarise(average_shuffle = mean(rate, na.rm = TRUE))
+  break
+  }
+ }
+return(df_modified)
+}
+```
+
+2. Run if shuffles haven't already been generated.
+```{r}
+
+# Check to see if the column shuffle_results exists. If it does then don't run again.
+shuffles <- 4
+spatial_firing <- spatial_firing %>%
+  mutate(avg_shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), save_shuffle_rates))
+
+if (save_results == 1) {
+  spatial_firing_shuffles <- spatial_firing %>%
+    select(session_id, cluster_id, avg_shuffle_results_b_o)
+  saveRDS(spatial_firing_shuffles, "10_shuffles.Rda")
+  # And use this to save a truncated version. Useful for testing code.
+}
+```
+
