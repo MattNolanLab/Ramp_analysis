@@ -7,62 +7,6 @@ import math
 from scipy import signal
 
 
-def extract_speed_data(spike_data, cluster):
-    speed = np.array(spike_data.at[cluster, "binned_speed_ms_per_trial"])
-    max_trial_number=int(speed.shape[0]/200)+1
-    trials = np.repeat(np.arange(1,max_trial_number), 200)
-
-    cluster_speed = pd.DataFrame({ 'speed' :  speed, 'trial_number' :  trials})
-    return cluster_speed
-
-
-def efficient_extract_of_speed(spike_data, cluster_index):
-    cluster_speed = pd.DataFrame({ 'speed' :  spike_data.at[cluster_index, "binned_speed_ms_per_trial"], 'trial_number' :  spike_data.loc[cluster_index].spike_rate_on_trials[1], 'trial_type' :  spike_data.loc[cluster_index].spike_rate_on_trials[2]})
-    return cluster_speed
-
-
-def split_firing_data_by_trial_type(cluster_speed):
-    beaconed_cluster_speed = cluster_speed.where(cluster_speed["trial_type"] ==0)
-    nbeaconed_cluster_speed = cluster_speed.where(cluster_speed["trial_type"] ==1)
-    probe_cluster_speed = cluster_speed.where(cluster_speed["trial_type"] ==2)
-    return beaconed_cluster_speed, nbeaconed_cluster_speed, probe_cluster_speed
-
-
-def split_speed_by_reward(spike_data, cluster_index, cluster_speed):
-    rewarded_trials = np.array(spike_data.at[cluster_index, 'rewarded_trials'], dtype=np.int16)
-    speed = np.array(cluster_speed['speed'], dtype=np.int16)
-    trials = np.array(cluster_speed['trial_number'], dtype=np.int16)
-
-    rewarded_speed = speed[np.isin(trials,rewarded_trials)]
-    rewarded_trials = trials[np.isin(trials,rewarded_trials)]
-
-    #rewarded_cluster_speed = cluster_speed.where(cluster_speed["trial_type"] ==0)
-    #nonrewarded_cluster_speed = cluster_speed.where(cluster_speed["trial_type"] ==1)
-    return rewarded_speed, rewarded_trials
-
-
-def reshape_and_average_over_trials(beaconed_cluster_speed, max_trial_number):
-    beaconed_reshaped_hist = np.reshape(beaconed_cluster_speed, (int(max_trial_number), 200))
-    average_beaconed_spike_rate = np.nanmean(beaconed_reshaped_hist, axis=0)
-    return np.array(average_beaconed_spike_rate, dtype=np.float16)
-
-
-def calculate_average_speed(spike_data):
-    print("calculating average speed")
-    spike_data["average_speed"] = ""
-    for cluster in range(len(spike_data)):
-        cluster_speed = efficient_extract_of_speed(spike_data, cluster)
-        #beaconed_cluster_speed = split_firing_data_by_trial_type(cluster_speed)
-        rewarded_speed, rewarded_trials = split_speed_by_reward(spike_data, cluster, cluster_speed)
-        unique_trials=np.unique(rewarded_trials)
-        average_beaconed_speed= reshape_and_average_over_trials(rewarded_speed, unique_trials.shape[0])
-        #spike_data = add_speed_data_to_dataframe(cluster, average_beaconed_speed,spike_data)
-        spike_data.at[cluster, "average_speed"] = list(average_beaconed_speed)
-    return spike_data
-
-
-### --------------------------------------------------------------------------------------- ###
-
 
 ## histogram of speeds
 
@@ -96,6 +40,8 @@ def generate_speed_histogram(spike_data, recording_folder):
 
 ### --------------------------------------------------------------------------------------- ###
 
+
+## here for testing
 
 def fix_position(position):
     position_fixed = np.zeros((position.shape[0]))
@@ -151,149 +97,6 @@ def calculate_speed_from_position(spike_data, recording_folder):
             print(session_id)
 
     return spike_data
-
-
-
-
-### ----------------------------------------------------------------------------------------- ###
-
-
-def extract_time_binned_speed(spike_data):
-    spike_data["Speed_mean"] = ""
-    for cluster in range(len(spike_data)):
-        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1])
-        position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2])
-
-        position_array = np.arange(1,201,1)
-        binned_speed = np.zeros((position_array.shape))
-        binned_speed_sd = np.zeros((position_array.shape))
-        for rowcount, row in enumerate(position_array):
-            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position < rowcount+1)))
-            average_speed = np.nanmean(speed_in_position)
-            sd_speed = np.nanstd(speed_in_position)
-            binned_speed[rowcount] = average_speed
-            binned_speed_sd[rowcount] = sd_speed
-        binned_speed = convolve_with_scipy(binned_speed)
-        spike_data.at[cluster, 'Speed_mean'] = list(binned_speed)
-
-        """
-        ##print('plotting speed histogram...', cluster)
-        save_path = prm.get_local_recording_folder_path() + '/Figures/behaviour/speed'
-        if os.path.exists(save_path) is False:
-            os.makedirs(save_path)
-
-        binned_speed = convolve_with_scipy(binned_speed)
-        binned_speed_sd = convolve_with_scipy(binned_speed_sd)
-        cluster_index = spike_data.cluster_id.values[cluster] - 1
-        speed_histogram = plt.figure(figsize=(4,2))
-        ax = speed_histogram.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
-        ax.plot(position_array,binned_speed/1000, '-', color='Black')
-        ax.fill_between(position_array, binned_speed/1000-binned_speed_sd/1000,binned_speed/1000+binned_speed_sd/1000, facecolor = 'Black', alpha = 0.2)
-        plt.ylabel('Speed (cm/s)', fontsize=12, labelpad = 10)
-        plt.xlabel('Location (cm)', fontsize=12, labelpad = 10)
-        plt.xlim(0,200)
-        ax.yaxis.set_ticks_position('left')
-        ax.xaxis.set_ticks_position('bottom')
-        Python_PostSorting.plot_utility.style_track_plot(ax, 200)
-
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_visible(True)
-        ax.spines['bottom'].set_visible(True)
-        ax.tick_params(
-            axis='both',  # changes apply to the x-axis
-            which='both',  # both major and minor ticks are affected
-            bottom=True,  # ticks along the bottom edge are off
-            top=False,  # ticks along the top edge are off
-            right=False,
-            left=True,
-            labelleft=True,
-            labelbottom=True,
-            labelsize=14,
-            length=5,
-            width=1.5)  # labels along the bottom edge are off
-
-        ax.axvline(0, linewidth = 2.5, color = 'black') # bold line on the y axis
-        ax.axhline(-5, linewidth = 2.5, color = 'black') # bold line on the x axis
-        ax.set_ylim(-5)
-
-        plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-        plt.savefig(save_path + '/time_binned_speed_histogram_' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + '.png', dpi=200)
-        plt.close()
-        """
-
-    return spike_data
-
-
-
-def extract_time_binned_speed_split(spike_data):
-    spike_data["Speed_mean_try"] = ""
-    spike_data["Speed_mean_runthru"] = ""
-    spike_data["Speed_mean_rewarded"] = ""
-    for cluster in range(len(spike_data)):
-        speed=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[1])-5
-        position=np.array(spike_data.iloc[cluster].spikes_in_time_try_b[2])
-        speed = convolve_with_scipy(speed)
-
-        position_array = np.arange(1,201,1)
-        binned_speed = np.zeros((position_array.shape))
-        binned_speed_sd = np.zeros((position_array.shape))
-        for rowcount, row in enumerate(position_array):
-            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position <= rowcount+1)))
-            average_speed = np.nanmean(speed_in_position)
-            sd_speed = np.nanstd(speed_in_position)
-            binned_speed[rowcount] = average_speed
-            binned_speed_sd[rowcount] = sd_speed
-        binned_speed = convolve_with_scipy(binned_speed)
-        spike_data.at[cluster, 'Speed_mean_try'] = list(binned_speed)
-
-
-        speed=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[1])-5
-        position=np.array(spike_data.iloc[cluster].spikes_in_time_runthru_b[2])
-        speed = convolve_with_scipy(speed)
-
-        position_array = np.arange(1,201,1)
-        binned_speed = np.zeros((position_array.shape))
-        binned_speed_sd = np.zeros((position_array.shape))
-        for rowcount, row in enumerate(position_array):
-            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position < rowcount+1)))
-            average_speed = np.nanmean(speed_in_position)
-            sd_speed = np.nanstd(speed_in_position)
-            binned_speed[rowcount] = average_speed
-            binned_speed_sd[rowcount] = sd_speed
-        binned_speed = convolve_with_scipy(binned_speed)
-        spike_data.at[cluster, 'Speed_mean_runthru'] = list(binned_speed)
-
-
-        speed=np.array(spike_data.iloc[cluster].spikes_in_time_reward_b[1])-5
-        position=np.array(spike_data.iloc[cluster].spikes_in_time_reward_b[2])
-        speed = convolve_with_scipy(speed)
-
-        position_array = np.arange(1,201,1)
-        binned_speed = np.zeros((position_array.shape))
-        binned_speed_sd = np.zeros((position_array.shape))
-        for rowcount, row in enumerate(position_array):
-            speed_in_position = np.take(speed, np.where(np.logical_and(position >= rowcount, position < rowcount+1)))
-            average_speed = np.nanmean(speed_in_position)
-            sd_speed = np.nanstd(speed_in_position)
-            binned_speed[rowcount] = average_speed
-            binned_speed_sd[rowcount] = sd_speed
-        binned_speed = convolve_with_scipy(binned_speed)
-        spike_data.at[cluster, 'Speed_mean_rewarded'] = list(binned_speed)
-
-    return spike_data
-
-
-def convolve_with_scipy(rate):
-    window = signal.gaussian(7, std=3)
-    convolved_rate = signal.convolve(rate, window, mode='same')
-    return (convolved_rate/ sum(window))
-
-
-
-
-
-
 
 
 

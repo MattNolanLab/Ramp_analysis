@@ -127,7 +127,7 @@ spatial_firing$asr_b_o_rewarded_fit_p.value
 spatial_firing$asr_b_o_rewarded_fit_r.squared
 
 
-3. Plot coefficients of model (slope and r2 value) for each neuron
+3. Plot coefficients of model (slope and r2 value) for each neuron (just for visualizing)
 ```{r}
 ggplot(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope,
                                 y = asr_b_o_rewarded_fit_r.squared)) +
@@ -266,9 +266,9 @@ We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neu
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  select(-contains('shuffle_results_b_o_')) %>%
-  select(-contains('shuffle_results_nb_o_')) %>%
-  select(-contains('shuffle_results_p_o_')) %>%
+  #select(-contains('shuffle_results_b_o_')) %>%
+  #select(-contains('shuffle_results_nb_o_')) %>%
+  #select(-contains('shuffle_results_p_o_')) %>%
   unnest_wider(shuffle_results_b_o, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(shuffle_results_nb_o, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(shuffle_results_p_o, names_sep = "_", names_repair = "universal")
@@ -551,10 +551,6 @@ if (save_figures == 1) {
 First, reorder the dataframe with ramps according to slope.
 _For start ramps, steepest slope should be negative - thus will have the highest cluster id_
 ```{r}
-spatial_firing <- subset(spatial_firing, Mouse != "1124")
-```
-
-```{r}
 start_ramps<-spatial_firing[order(spatial_firing$asr_b_o_rewarded_fit_slope),]
 start_ramp_number = nrow(start_ramps)
 new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
@@ -653,7 +649,4 @@ if (save_figures == 1) {
   save_pheatmap_png(myheatmap, "my_heatmap_all2.png")
 }
 ```
-
-
-
 
