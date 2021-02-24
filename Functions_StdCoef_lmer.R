@@ -63,7 +63,7 @@ coef_speed <- function(df, TT = 0) {
              Position <= 90 & Speed > 3 & Types == TT)
   if (length(df) == 1 | nrow(df) < 3)
     return(NA)
-  df_int <-lme4::lmer(Rates ~ Position + Speed + Acceleration + (1 | Trials),
+  df_int <-lme4::lmer(Rates ~ Position + Speed + Acceleration + (1 +Position | Trials),
                       data = df,
                       na.action = na.exclude
   )
