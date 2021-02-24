@@ -13,7 +13,6 @@ def load_Teris_ramp_score_data_into_frame(spike_data):
 
 
     for cluster in range(len(spike_data)):
-        print(spike_data.at[cluster, "session_id"], cluster)
         session_id=spike_data.at[cluster, "session_id"]
         cluster_id=spike_data.at[cluster, "cluster_id"]
 
