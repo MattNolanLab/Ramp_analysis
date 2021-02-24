@@ -42,8 +42,8 @@ trial_adder <- function(df) {
 
 
 spatial_firing <- spatial_firing %>%
-  mutate(try_trials_number = map(spikes_in_time_try_b,trial_adder),
-         run_trials_number = map(spikes_in_time_runthru_b,trial_adder))
+  mutate(try_trials_number = map(spikes_in_time_try,trial_adder),
+         run_trials_number = map(spikes_in_time_run,trial_adder))
 ```
 
 filter dataset for having enough trials
