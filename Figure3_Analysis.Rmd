@@ -37,7 +37,7 @@ mm_fit <- function(df, TT = 0) {
   
   if (length(df) == 1 | nrow(df) < 3)
     return(NA)
-  
+
   df_int <-
     lme4::lmer(
       Rates ~ Position + Speed + Acceleration + (1 + Position | Trials),
@@ -278,12 +278,7 @@ if (save_figures == 1) {
 
 ## Calculate standardized coefficients for position, speed and acceleration in LMER model
 
-1. Load functions to calculate and extract standardised coefficients for each variable in the lmer
-```{r}
-source("Functions_StdCoef_lmer.R")
-```
-
-2. calculate and extract standardized coefficients for position, speed and acceleration
+1. calculate and extract standardized coefficients for position, speed and acceleration
 
 Function to calculate standardized coefficients from the model fits
 ```{r}
