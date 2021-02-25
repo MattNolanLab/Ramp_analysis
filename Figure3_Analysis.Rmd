@@ -26,8 +26,8 @@ mm_fit <- function(df, TT = 0) {
     tibble(
       Rates = as.numeric(Re(df[[1]])),
       Position = as.numeric(Re(df[[2]])),
-      Acceleration = as.numeric(Re(df[[3]])),
-      Speed = as.numeric(Re(df[[4]])),
+      Acceleration = as.numeric(Re(df[[4]])),
+      Speed = as.numeric(Re(df[[3]])),
       Trials = as.factor(df[[5]]),
       Types = as.factor(df[[6]])
     )
@@ -256,11 +256,11 @@ ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, lev
   geom_bar(stat="identity",width = 0.9, alpha = .7) +
   labs(y = "Percent of neurons", x="") +
   scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
-  geom_text(aes(label = num), hjust = 0.6, vjust = 0.2, size = 5, position = position_stack(vjust= 0.5)) +
+  geom_text(aes(label = num), hjust = 0.7, vjust = 0.2, size = 5, position = position_stack(vjust= 0.5)) +
   #scale_fill_brewer(palette= "RdYlBu") +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 50, vjust=0.65)) +
-  theme(axis.text.x = element_text(size=16),
+  theme(axis.text.x = element_text(size=17),
         axis.text.y = element_text(size=16),
         legend.position="bottom", 
         legend.title = element_blank(),

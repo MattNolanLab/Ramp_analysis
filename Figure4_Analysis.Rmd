@@ -255,7 +255,7 @@ We will again focus exclusively on neurons that have a +/- slope (Figure 2) and 
 
 Function to plot data mean and SEM of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
 ```{r}
-mean_SEM_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
+mean_SEM_plots <- function(df, group_b, group_nb, x_start = 0, x_end = 60){
   df <- df %>%
     filter(lm_group_b == group_b,
            lm_group_nb == group_nb) %>%
@@ -265,7 +265,7 @@ mean_SEM_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
  df$Rates_averaged_rewarded_nb <- as.double(df$Rates_averaged_rewarded_nb)
  df$cue_group_o <- as.character(df$cue_group_o)
  numcells <- length(df$Rates_averaged_rewarded_nb)/200
- df$Position <- rep(1:200, times = numcells)
+ df$Position <- rep(-29:170, times = numcells)
  
  df <- df %>%
    group_by(cue_group_o, Position) %>%
@@ -281,7 +281,8 @@ mean_SEM_plots <- function(df, group_b, group_nb, x_start = 30, x_end = 90){
   geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)", x = "Position") +
-   xlim(x_start, x_end) +
+  xlim(x_start, x_end) +
+  #scale_x_discrete(breaks=c("40","60","80"), labels=c("10", "30", "50")) +
   theme(axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12),
         legend.title = element_blank(),
