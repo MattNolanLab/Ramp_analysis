@@ -608,50 +608,21 @@ Repeat above plots but for acceleration encoding neurons
 accel_neurons <- filter(spatial_firing, final_model_o_b == "A",  lm_group_b == "Positive" | lm_group_b == "Negative")
 ```
 
-2. seperate based on whether they have a positive or negative relationship with acceleration
+2. separate based on whether they have a positive or negative relationship with acceleration
 ```{r}
 accel_neurons_pos <- filter(accel_neurons, o_b_mod_coefs_accel < 0)
 accel_neurons_neg <- filter(accel_neurons, o_b_mod_coefs_accel > 0)
 ```
 
-Remake the function above to not take reset group as an input
-```{r}
-mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
-  
- df <- df %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b))
- 
- df$Rates <- as.double(df$Rates)
-
- df <- df %>%
-   group_by(Reward_indicator,Position) %>%
-   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-             se_b = std.error(Rates, na.rm = TRUE))
- 
- ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
-                  fill=factor(Reward_indicator)), alpha=0.1) +
-   geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
-   scale_fill_manual(values=c("black", "red", "blue")) +
-   scale_color_manual(values=c("black", "red", "blue")) +
-   theme_classic() +
-   labs(y = "Mean firing rate (Hz)", x = "Position") +
-   xlim(x_start, x_end) +
-   theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-}
-```
-
 
 3. Subset data by group then average rates for plotting  **Negative coefficient with acceleration**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(accel_neurons_neg,  0, 200))
+(Accel_Neg_plot <- accel_neurons %>%
+  filter(o_b_mod_coefs_accel > 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
 if (save_figures==1) {
   ggsave(file = "plots/negative_relationship_waccel.png", width = 4.5, height = 2.5)
 }
@@ -661,7 +632,12 @@ if (save_figures==1) {
 
 3. Subset data by group then average rates for plotting **Positive coefficient with acceleration**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(accel_neurons_pos,  0, 200))
+(Accel_Pos_plot <- accel_neurons %>%
+  filter(o_b_mod_coefs_accel < 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
 if (save_figures==1) {
   ggsave(file = "plots/positive_relationship_waccel.png", width = 4.5, height = 2.5)
 }
@@ -680,50 +656,23 @@ Repeat above plots but for all acceleration encoding neurons, regardless of Figu
 all_accel_neurons <- filter(spatial_firing, final_model_o_b == "A")
 ```
 
-2. seperate based on whether they have a positive or negative relationship with acceleration
+2. separate based on whether they have a positive or negative relationship with acceleration
 ```{r}
 accel_neurons_pos <- filter(all_accel_neurons, o_b_mod_coefs_accel < 0)
 accel_neurons_neg <- filter(all_accel_neurons, o_b_mod_coefs_accel > 0)
 ```
 
-Remake the function above to not take reset group as an input
-```{r}
-mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
-  
- df <- df %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b))
- 
- df$Rates <- as.double(df$Rates)
-
- df <- df %>%
-   group_by(Reward_indicator,Position) %>%
-   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-             se_b = std.error(Rates, na.rm = TRUE))
- 
- ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
-                  fill=factor(Reward_indicator)), alpha=0.1) +
-   geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
-   scale_fill_manual(values=c("black", "red", "blue")) +
-   scale_color_manual(values=c("black", "red", "blue")) +
-   theme_classic() +
-   labs(y = "Mean firing rate (Hz)", x = "Position") +
-   xlim(x_start, x_end) +
-   theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-}
-```
 
 
 3. Subset data by group then average rates for plotting **Negative coefficient with acceleration**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(accel_neurons_neg,  0, 200))
+(All_Accel_Neg_plot <- all_accel_neurons %>%
+  filter(o_b_mod_coefs_accel > 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+
 if (save_figures==1) {
   ggsave(file = "plots/negative_relationship_wallaccel.png", width = 4.5, height = 2.5)
 }
@@ -733,7 +682,12 @@ if (save_figures==1) {
 
 3. Subset data by group then average rates for plotting **Positive coefficient with acceleration**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(accel_neurons_pos,  0, 200))
+(All_Accel_Pos_plot <- all_accel_neurons %>%
+  filter(o_b_mod_coefs_accel < 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
 if (save_figures==1) {
   ggsave(file = "plots/positive_relationship_wallaccel.png", width = 4.5, height = 2.5)
 }
@@ -759,7 +713,12 @@ speed_neurons_neg <- filter(speed_neurons, o_b_mod_coefs_speed > 0)
 
 3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(speed_neurons_neg,  0, 200))
+(Speed_Neg_plot <- speed_neurons %>%
+  filter(o_b_mod_coefs_speed > 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
 if (save_figures==1) {
   ggsave(file = "plots/negative_relationship_wspeed.png", width = 4.5, height = 2.5)
 }
@@ -769,7 +728,12 @@ if (save_figures==1) {
 
 3. Subset data by group then average rates for plotting          **Positive coefficient with speed**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(speed_neurons_pos,  0, 200))
+(Speed_Pos_plot <- speed_neurons %>%
+  filter(o_b_mod_coefs_speed < 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
 if (save_figures==1) {
   ggsave(file = "plots/positive_relationship_wspeed.png", width = 4.5, height = 2.5)
 }
@@ -794,7 +758,12 @@ all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
 
 3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(all_speed_neurons_neg,  0, 200))
+(All_Speed_Neg_plot <- all_speed_neurons %>%
+  filter(o_b_mod_coefs_speed > 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
 if (save_figures==1) {
   ggsave(file = "plots/negative_relationship_wallspeed.png", width = 4.5, height = 2.5)
 }
@@ -803,7 +772,12 @@ if (save_figures==1) {
 
 3. Subset data by group then average rates for plotting          **positive coefficient with speed**
 ```{r}
-(pos_plot <- mean_SD_plots_outbound(all_speed_neurons_pos,  0, 200))
+(All_Speed_Pos_plot <- all_speed_neurons %>%
+  filter(o_b_mod_coefs_speed < 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
 if (save_figures==1) {
   ggsave(file = "plots/positive_relationship_wallspeed.png", width = 4.5, height = 2.5)
 }
