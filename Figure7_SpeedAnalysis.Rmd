@@ -105,10 +105,10 @@ Here we want to see the distribution of speed in the reward zone in the trial ty
 
 Function to make the plots
 ```{r}
-speed_hist <- function(df) {
+speed_hist <- function(df, fill_colour = 'black') {
   ggplot(data=df, aes(x = speed)) +
   coord_cartesian(xlim=c(0,100)) +
-  geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill="black") +
+  geom_histogram(aes(y=..density..),binwidth = 2, alpha=0.5, fill=fill_colour) +
   #scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
   labs(y="Density", x="") +
   theme_classic() +
@@ -126,7 +126,7 @@ speed_hist <- function(df) {
   select(rewardzone_speed_hit) %>%
   unnest(rewardzone_speed_hit) %>%
   mutate(speed = as.numeric(rewardzone_speed_hit)) %>%
-  speed_hist())
+  speed_hist(fill_colour = 'black'))
 
 if (save_figures == 1) {
  ggsave(file = "plots/speedhist_hit.png", width = 4, height = 2.5) 
@@ -141,7 +141,7 @@ if (save_figures == 1) {
   select(rewardzone_speed_try) %>%
   unnest(rewardzone_speed_try)  %>%
   mutate(speed = as.numeric(rewardzone_speed_try)) %>%
-  speed_hist())
+  speed_hist(fill_colour = 'red'))
 if (save_figures == 1) {
   ggsave(file = "plots/speedhist_try.png", width = 4, height = 2.5)
 }
@@ -154,7 +154,7 @@ if (save_figures == 1) {
   select(rewardzone_speed_run) %>%
   unnest(rewardzone_speed_run) %>%
   mutate(speed = as.numeric(rewardzone_speed_run)) %>%
-  speed_hist())
+  speed_hist(fill_colour = 'blue'))
 if(save_figures==1){
   ggsave(file = "plots/speedhist_run.png", width = 4, height = 2.5)
 }
