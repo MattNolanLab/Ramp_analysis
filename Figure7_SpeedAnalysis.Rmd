@@ -161,5 +161,59 @@ if(save_figures==1){
 ```
 
 
+Plot examples of speed or acceleration used to fit models in Figure 3 as a function of position. This is just as a check for obvious errors.
+Relevant columns are:
+spatial_firing$spikes_in_time
+Column 1: Rates
+Column 2: Position
+Column 3: Speed 
+Column 4: Acceleration
+```{r}
+trial_data_as_tibble <- function(df){
+    df <-
+    tibble(
+      Rates = as.numeric(Re(df[[1]])),
+      Position = as.numeric(Re(df[[2]])),
+      Acceleration = as.numeric(Re(df[[4]])),
+      Speed = as.numeric(Re(df[[3]])),
+      Trials = as.factor(df[[5]]),
+      Types = as.factor(df[[6]])
+    )
+}
+
+a <- spatial_firing[!duplicated(spatial_firing$session_id),] %>%
+  select(session_id, spikes_in_time) %>%
+  mutate(spikes_in_time = map(spikes_in_time, trial_data_as_tibble))
+
+
+
+ggplot(a$spikes_in_time[[1]], aes(Position, Speed)) +
+  geom_point() +
+  geom_smooth()
+
+
+ggplot(a$spikes_in_time[[2]], aes(Position, Acceleration)) +
+  geom_point() +
+  geom_smooth()
+
+# look at first 12 sessions to save time.
+b <- unnest(a[1:12,], spikes_in_time)
+
+ggplot(b, aes(Position, Speed)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(vars(session_id), scales = "free_y") +
+  theme_minimal() 
+  
+ggplot(b, aes(Position, Acceleration)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(vars(session_id), scales = "free_y") +
+  theme_minimal() 
+
+  
+
+```
+
 
 
