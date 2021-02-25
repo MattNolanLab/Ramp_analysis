@@ -462,23 +462,10 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
-1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
+Generic function to plot firing rate ± SEM as a function of position and colour coded according to trial outcome. The function expects to receive the unnested mean firing rates for all neurons that are to be plotted. Conditions for selection should be given before calling the function. Column names of the input data frame should be 'Rates', 'Position' and 'Reward_indicator'.
 ```{r}
-position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
-```
-
-Function to plot data mean and SD of the population data based on the classification, as per Figure 2, and classification as per figure 5, on beaconed trials in the outbound and homebound regions of the track.
-```{r}
-mean_SD_plots_with_reset <- function(df, group_b, group_h, track_group, x_start = 30, x_end = 90){
-
- df <- df %>%
-  filter(lm_group_b == group_b,
-         lm_group_b_h == group_h, 
-         reset_group == track_group) %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b))
- 
- df$Rates <- as.double(df$Rates)
+mean_SEM_plots_by_Outcome <- function(df, x_start = 00, x_end = 200) {
+  df$Rates <- as.double(df$Rates)
 
  df <- df %>%
    group_by(Position, Reward_indicator) %>%
@@ -504,9 +491,60 @@ mean_SD_plots_with_reset <- function(df, group_b, group_h, track_group, x_start 
 }
 ```
 
+
+
+1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
+```{r}
+position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+```
+
+Function to plot data mean and SD of the population data based on the classification, as per Figure 2, and classification as per figure 5, on beaconed trials in the outbound and homebound regions of the track.
+# ```{r}
+# mean_SD_plots_with_reset <- function(df, group_b, group_h, track_group, x_start = 30, x_end = 90){
+# 
+#  df <- df %>%
+#   filter(lm_group_b == group_b,
+#          lm_group_b_h == group_h, 
+#          reset_group == track_group) %>%
+#   select(avg_both_asr_b) %>%
+#   unnest(c(avg_both_asr_b))
+#  
+#  df$Rates <- as.double(df$Rates)
+# 
+#  df <- df %>%
+#    group_by(Position, Reward_indicator) %>%
+#    dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
+#              se_b = std.error(Rates, na.rm = TRUE))
+#  
+#  ggplot(data=df) +
+#   annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+#   annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+#   annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+#   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
+#                   fill=factor(Reward_indicator)), alpha=0.1) +
+#    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
+#    scale_fill_manual(values=c("black", "red", "blue")) +
+#    scale_color_manual(values=c("black", "red", "blue")) +
+#    theme_classic() +
+#    labs(y = "Mean firing rate (Hz)", x = "Position") +
+#    xlim(x_start, x_end) +
+#    theme(axis.text.x = element_text(size=12),
+#         axis.text.y = element_text(size=12),
+#         legend.title = element_blank(),
+#         text = element_text(size=12))
+# }
+# ```
+
 2. Subset data by group then average rates for plotting          **Negative Negative Continuous**
 ```{r}
-(NegNegC_plot <- mean_SD_plots_with_reset(position_neurons, "Negative", "Negative", "Continuous",  0, 200))
+(NegNegC_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Negative",
+         reset_group == "Continuous") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
 if (save_figures==1) {
   ggsave(file = "plots/NegNeg_Continuous_PI_justposition.png", width = 4.5, height = 2.5)
 }
@@ -515,7 +553,14 @@ if (save_figures==1) {
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(NegNegR_plot <- mean_SD_plots_with_reset(position_neurons, "Negative", "Negative", "Reset",  0, 200))
+(NegNegR_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Negative",
+         reset_group == "Reset") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
 if (save_figures==1) {
  ggsave(file = "plots/NegNeg_Reset_PI_justposition.png", width = 4.5, height = 2.5) 
 }
@@ -524,7 +569,15 @@ if (save_figures==1) {
 
 4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
 ```{r}
-(PosPosC_plot <- mean_SD_plots_with_reset(position_neurons, "Positive", "Positive", "Continuous", 0, 200))
+(PosPosC_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Positive",
+         reset_group == "Continuous") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+
 if (save_figures==1) {
   ggsave(file = "plots/PosPos_Continuous_PI_justposition.png", width = 4.5, height = 2.5)
 }
@@ -533,52 +586,67 @@ if (save_figures==1) {
 
 5. Subset data by group then average rates for plotting          **Positive Positive Reset**
 ```{r}
-(PosPosR_plot <- mean_SD_plots_with_reset(position_neurons, "Positive", "Positive", "Reset", 0, 200))
+(PosPosR_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Positive",
+         reset_group == "Reset") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
 if (save_figures==1) {
   ggsave(file = "plots/PosPos_Reset_PI_justposition.png", width = 4.5, height = 2.5)
 }
 
 ```
 
-Remake the function above to not take reset group as an input
-```{r}
-mean_SD_plots <- function(df, group_b, group_h, x_start = 30, x_end = 90){
-  
- df <- df %>%
-  filter(lm_group_b == group_b,
-         lm_group_b_h == group_h) %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b))
- 
- df$Rates <- as.double(df$Rates)
+<!-- Remake the function above to not take reset group as an input -->
+<!-- ```{r} -->
+<!-- mean_SD_plots <- function(df, group_b, group_h, x_start = 30, x_end = 90){ -->
 
- df <- df %>%
-   group_by(Position, Reward_indicator) %>%
-   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-             se_b = std.error(Rates, na.rm = TRUE))
- 
- ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
-                  fill=factor(Reward_indicator)), alpha=0.1) +
-   geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
-   scale_fill_manual(values=c("black", "red", "blue")) +
-   scale_color_manual(values=c("black", "red", "blue")) +
-   theme_classic() +
-   labs(y = "Mean firing rate (Hz)", x = "Position") +
-   xlim(x_start, x_end) +
-   theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
-}
-```
+<!--  df <- df %>% -->
+<!--   filter(lm_group_b == group_b, -->
+<!--          lm_group_b_h == group_h) %>% -->
+<!--   select(avg_both_asr_b) %>% -->
+<!--   unnest(c(avg_both_asr_b)) -->
+
+<!--  df$Rates <- as.double(df$Rates) -->
+
+<!--  df <- df %>% -->
+<!--    group_by(Position, Reward_indicator) %>% -->
+<!--    dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), -->
+<!--              se_b = std.error(Rates, na.rm = TRUE)) -->
+
+<!--  ggplot(data=df) + -->
+<!--   annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") + -->
+<!--   annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") + -->
+<!--   annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") + -->
+<!--   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b, -->
+<!--                   fill=factor(Reward_indicator)), alpha=0.1) + -->
+<!--    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) + -->
+<!--    scale_fill_manual(values=c("black", "red", "blue")) + -->
+<!--    scale_color_manual(values=c("black", "red", "blue")) + -->
+<!--    theme_classic() + -->
+<!--    labs(y = "Mean firing rate (Hz)", x = "Position") + -->
+<!--    xlim(x_start, x_end) + -->
+<!--    theme(axis.text.x = element_text(size=12), -->
+<!--         axis.text.y = element_text(size=12), -->
+<!--         legend.title = element_blank(), -->
+<!--         text = element_text(size=12)) -->
+<!-- } -->
+<!-- ``` -->
+
 
 6. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
-(PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Negative", 0, 200))
+(PosUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+
 if (save_figures==1) {
   ggsave(file = "plots/PosNeg_PI_justposition.png", width = 4.5, height = 2.5)
 }
