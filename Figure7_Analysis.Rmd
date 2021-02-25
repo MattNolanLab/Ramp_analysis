@@ -618,7 +618,7 @@ accel_neurons_neg <- filter(accel_neurons, o_b_mod_coefs_accel < 0)
 3. Subset data by group then average rates for plotting  **Negative coefficient with acceleration**
 ```{r}
 (Accel_Neg_plot <- accel_neurons %>%
-  filter(o_b_mod_coefs_accel > 0) %>%
+  filter(o_b_mod_coefs_accel < 0) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
   mean_SEM_plots_by_Outcome(0,200))
@@ -633,7 +633,7 @@ if (save_figures==1) {
 3. Subset data by group then average rates for plotting **Positive coefficient with acceleration**
 ```{r}
 (Accel_Pos_plot <- accel_neurons %>%
-  filter(o_b_mod_coefs_accel < 0) %>%
+  filter(o_b_mod_coefs_accel > 0) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
   mean_SEM_plots_by_Outcome(0,200))
@@ -667,7 +667,7 @@ accel_neurons_neg <- filter(all_accel_neurons, o_b_mod_coefs_accel < 0)
 3. Subset data by group then average rates for plotting **Negative coefficient with acceleration**
 ```{r}
 (All_Accel_Neg_plot <- all_accel_neurons %>%
-  filter(o_b_mod_coefs_accel > 0) %>%
+  filter(o_b_mod_coefs_accel < 0) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
   mean_SEM_plots_by_Outcome(0,200))
@@ -683,7 +683,7 @@ if (save_figures==1) {
 3. Subset data by group then average rates for plotting **Positive coefficient with acceleration**
 ```{r}
 (All_Accel_Pos_plot <- all_accel_neurons %>%
-  filter(o_b_mod_coefs_accel < 0) %>%
+  filter(o_b_mod_coefs_accel > 0) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
   mean_SEM_plots_by_Outcome(0,200))
@@ -714,7 +714,7 @@ speed_neurons_neg <- filter(speed_neurons, o_b_mod_coefs_speed < 0)
 3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
 ```{r}
 (Speed_Neg_plot <- speed_neurons %>%
-  filter(o_b_mod_coefs_speed > 0) %>%
+  filter(o_b_mod_coefs_speed < 0) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
   mean_SEM_plots_by_Outcome(0,200))
@@ -729,7 +729,7 @@ if (save_figures==1) {
 3. Subset data by group then average rates for plotting          **Positive coefficient with speed**
 ```{r}
 (Speed_Pos_plot <- speed_neurons %>%
-  filter(o_b_mod_coefs_speed < 0) %>%
+  filter(o_b_mod_coefs_speed > 0) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
   mean_SEM_plots_by_Outcome(0,200))
@@ -759,7 +759,7 @@ all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
 3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
 ```{r}
 (All_Speed_Neg_plot <- all_speed_neurons %>%
-  filter(o_b_mod_coefs_speed > 0) %>%
+  filter(o_b_mod_coefs_speed < 0) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
   mean_SEM_plots_by_Outcome(0,200))
@@ -773,7 +773,7 @@ if (save_figures==1) {
 3. Subset data by group then average rates for plotting          **positive coefficient with speed**
 ```{r}
 (All_Speed_Pos_plot <- all_speed_neurons %>%
-  filter(o_b_mod_coefs_speed < 0) %>%
+  filter(o_b_mod_coefs_speed > 0) %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
   mean_SEM_plots_by_Outcome(0,200))
