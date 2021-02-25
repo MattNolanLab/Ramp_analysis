@@ -327,29 +327,7 @@ speed_ramps <- subset(ramps, final_model_o_b == "S")
 
 2. Plot slope coefficient for rewarded trials and run through trials
 ```{r}
-plot_slope_comparison <- function(slope1, slope2, factor1){
-  df <- tibble(x_slope = slope1, y_slope = slope2, fac = factor1)
-  ggplot(data=df, aes(x = x_slope,
-                                y = y_slope, 
-                                fill = factor(unlist(fac)),
-                                color = factor(unlist(fac)))) +
-    #coord_cartesian(xlim=c(-0.55,0.55), y=c(-0.55,0.55)) +
-    coord_cartesian(xlim=c(-0.35,0.35), y=c(-0.35,0.35)) +
-    geom_point(alpha=0.3) +
-    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    scale_fill_manual(values=c("black", "red", "blue")) +
-    scale_color_manual(values=c("black", "red", "blue")) +
-    xlab("slope") +
-    ylab(expression("slope")) +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=14),
-          axis.text.y = element_text(size=14),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=14), 
-          legend.text=element_text(size=14), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-}
+
 plot_slope_comparison (speed_ramps$asr_b_o_rewarded_fit_slope, speed_ramps$asr_b_run_fit_slope, speed_ramps$reward_interaction_id)
 
 if (save_figures == 1) {
@@ -529,25 +507,37 @@ mean_SD_plots_with_reset <- function(df, group_b, group_h, track_group, x_start 
 2. Subset data by group then average rates for plotting          **Negative Negative Continuous**
 ```{r}
 (NegNegC_plot <- mean_SD_plots_with_reset(position_neurons, "Negative", "Negative", "Continuous",  0, 200))
-ggsave(file = "plots/NegNeg_Continuous_PI_justposition.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/NegNeg_Continuous_PI_justposition.png", width = 4.5, height = 2.5)
+}
+
 ```
 
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
 (NegNegR_plot <- mean_SD_plots_with_reset(position_neurons, "Negative", "Negative", "Reset",  0, 200))
-ggsave(file = "plots/NegNeg_Reset_PI_justposition.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+ ggsave(file = "plots/NegNeg_Reset_PI_justposition.png", width = 4.5, height = 2.5) 
+}
+
 ```
 
 4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
 ```{r}
 (PosPosC_plot <- mean_SD_plots_with_reset(position_neurons, "Positive", "Positive", "Continuous", 0, 200))
-ggsave(file = "plots/PosPos_Continuous_PI_justposition.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/PosPos_Continuous_PI_justposition.png", width = 4.5, height = 2.5)
+}
+
 ```
 
 5. Subset data by group then average rates for plotting          **Positive Positive Reset**
 ```{r}
 (PosPosR_plot <- mean_SD_plots_with_reset(position_neurons, "Positive", "Positive", "Reset", 0, 200))
-ggsave(file = "plots/PosPos_Reset_PI_justposition.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/PosPos_Reset_PI_justposition.png", width = 4.5, height = 2.5)
+}
+
 ```
 
 Remake the function above to not take reset group as an input
@@ -589,13 +579,19 @@ mean_SD_plots <- function(df, group_b, group_h, x_start = 30, x_end = 90){
 6. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
 (PosUC_plot <- mean_SD_plots(position_neurons, "Positive", "Negative", 0, 200))
-ggsave(file = "plots/PosNeg_PI_justposition.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/PosNeg_PI_justposition.png", width = 4.5, height = 2.5)
+}
+
 ```
 
 7. Subset data by group then average rates for plotting          **Positive Unclassified**
 ```{r}
 (NegUC_plot <- mean_SD_plots(position_neurons, "Negative", "Positive", 0, 200))
-ggsave(file = "plots/NegPos_PI_justposition.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/NegPos_PI_justposition.png", width = 4.5, height = 2.5)
+}
+
 ```
 
 
@@ -653,14 +649,19 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
 3. Subset data by group then average rates for plotting  **Negative coefficient with acceleration**
 ```{r}
 (pos_plot <- mean_SD_plots_outbound(accel_neurons_neg,  0, 200))
-ggsave(file = "plots/negative_relationship_waccel.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/negative_relationship_waccel.png", width = 4.5, height = 2.5)
+}
+
 ```
 
 
 3. Subset data by group then average rates for plotting **Positive coefficient with acceleration**
 ```{r}
 (pos_plot <- mean_SD_plots_outbound(accel_neurons_pos,  0, 200))
-ggsave(file = "plots/positive_relationship_waccel.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/positive_relationship_waccel.png", width = 4.5, height = 2.5)
+}
 ```
 
 
@@ -720,14 +721,19 @@ mean_SD_plots_outbound <- function(df, x_start = 30, x_end = 90){
 3. Subset data by group then average rates for plotting **Negative coefficient with acceleration**
 ```{r}
 (pos_plot <- mean_SD_plots_outbound(accel_neurons_neg,  0, 200))
-ggsave(file = "plots/negative_relationship_wallaccel.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/negative_relationship_wallaccel.png", width = 4.5, height = 2.5)
+}
+
 ```
 
 
 3. Subset data by group then average rates for plotting **Positive coefficient with acceleration**
 ```{r}
 (pos_plot <- mean_SD_plots_outbound(accel_neurons_pos,  0, 200))
-ggsave(file = "plots/positive_relationship_wallaccel.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/positive_relationship_wallaccel.png", width = 4.5, height = 2.5)
+}
 ```
 
 
@@ -751,14 +757,19 @@ speed_neurons_neg <- filter(speed_neurons, o_b_mod_coefs_speed > 0)
 3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
 ```{r}
 (pos_plot <- mean_SD_plots_outbound(speed_neurons_neg,  0, 200))
-ggsave(file = "plots/negative_relationship_wspeed.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/negative_relationship_wspeed.png", width = 4.5, height = 2.5)
+}
+
 ```
 
 
 3. Subset data by group then average rates for plotting          **Positive coefficient with speed**
 ```{r}
 (pos_plot <- mean_SD_plots_outbound(speed_neurons_pos,  0, 200))
-ggsave(file = "plots/positive_relationship_wspeed.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/positive_relationship_wspeed.png", width = 4.5, height = 2.5)
+}
 ```
 
 
@@ -781,12 +792,16 @@ all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
 3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
 ```{r}
 (pos_plot <- mean_SD_plots_outbound(all_speed_neurons_neg,  0, 200))
-ggsave(file = "plots/negative_relationship_wallspeed.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/negative_relationship_wallspeed.png", width = 4.5, height = 2.5)
+}
 ```
 
 
 3. Subset data by group then average rates for plotting          **positive coefficient with speed**
 ```{r}
 (pos_plot <- mean_SD_plots_outbound(all_speed_neurons_pos,  0, 200))
-ggsave(file = "plots/positive_relationship_wallspeed.png", width = 4.5, height = 2.5)
+if (save_figures==1) {
+  ggsave(file = "plots/positive_relationship_wallspeed.png", width = 4.5, height = 2.5)
+}
 ```
