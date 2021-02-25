@@ -105,7 +105,7 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
 1. Generate firing rate tibble for each cell
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward, spikes_in_time_run, spikes_in_time_try, session_id, cluster_id), join_rates))
+  mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward_allspeeds, spikes_in_time_run_allspeeds, spikes_in_time_try_allspeeds, session_id, cluster_id), join_rates))
 
 ```
 
@@ -130,7 +130,7 @@ compare_models_slope_lm <- function(df, run,try){
 To test just use the first two rows
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_lm))
+  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials_allspeeds, Avg_FiringRate_TryTrials_allspeeds), compare_models_slope_lm))
 ```
 
 Now we can classify cells based on their significance in the above model
@@ -204,8 +204,8 @@ add_position <- function(df, session_id, cluster_id) {
 1. Run this on all animals for try and run through trials (we already have coefficients for rewarded data from Figure 2)
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(asr_b_try = pmap(list(Avg_FiringRate_TryTrials, session_id, cluster_id), add_position),
-         asr_b_run = pmap(list(Avg_FiringRate_RunTrials, session_id, cluster_id), add_position)
+  mutate(asr_b_try = pmap(list(Avg_FiringRate_TryTrials_allspeeds, session_id, cluster_id), add_position),
+         asr_b_run = pmap(list(Avg_FiringRate_RunTrials_allspeeds, session_id, cluster_id), add_position)
          )
 ```
 
@@ -480,7 +480,7 @@ join_average_rates <- function(hit, run, try, session_id, cluster_id) {
 1. Generate firing rate tibble for each cell
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(avg_both_asr_b = pmap(list(Avg_FiringRate_HitTrials, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials, session_id, cluster_id), join_average_rates))
+  mutate(avg_both_asr_b = pmap(list(Avg_FiringRate_HitTrials_allspeeds, Avg_FiringRate_RunTrials_allspeeds, Avg_FiringRate_TryTrials_allspeeds, session_id, cluster_id), join_average_rates))
 ```
 
 
@@ -611,8 +611,8 @@ accel_neurons <- filter(spatial_firing, final_model_o_b == "A",  lm_group_b == "
 
 2. seperate based on whether they have a positive or negative relationship with acceleration
 ```{r}
-accel_neurons_pos <- filter(accel_neurons, o_b_mod_coefs_accel < 0)
-accel_neurons_neg <- filter(accel_neurons, o_b_mod_coefs_accel > 0)
+accel_neurons_pos <- filter(accel_neurons, o_b_mod_coefs_accel > 0)
+accel_neurons_neg <- filter(accel_neurons, o_b_mod_coefs_accel < 0)
 ```
 
 Remake the function above to not take reset group as an input
@@ -678,8 +678,8 @@ all_accel_neurons <- filter(spatial_firing, final_model_o_b == "A")
 
 2. seperate based on whether they have a positive or negative relationship with acceleration
 ```{r}
-accel_neurons_pos <- filter(all_accel_neurons, o_b_mod_coefs_accel < 0)
-accel_neurons_neg <- filter(all_accel_neurons, o_b_mod_coefs_accel > 0)
+accel_neurons_pos <- filter(all_accel_neurons, o_b_mod_coefs_accel > 0)
+accel_neurons_neg <- filter(all_accel_neurons, o_b_mod_coefs_accel < 0)
 ```
 
 Remake the function above to not take reset group as an input
@@ -743,8 +743,8 @@ speed_neurons <- filter(spatial_firing, final_model_o_b == "S",  lm_group_b == "
 
 2.seperate based on whether they have a positive or negative relationship with speed
 ```{r}
-speed_neurons_pos <- filter(speed_neurons, o_b_mod_coefs_speed < 0)
-speed_neurons_neg <- filter(speed_neurons, o_b_mod_coefs_speed > 0)
+speed_neurons_pos <- filter(speed_neurons, o_b_mod_coefs_speed > 0)
+speed_neurons_neg <- filter(speed_neurons, o_b_mod_coefs_speed < 0)
 ```
 
 
@@ -773,8 +773,8 @@ all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S")
 
 2.seperate based on whether they have a positive or negative relationship with speed
 ```{r}
-all_speed_neurons_pos <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
-all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
+all_speed_neurons_pos <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
+all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
 ```
 
 
