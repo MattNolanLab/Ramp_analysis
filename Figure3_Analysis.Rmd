@@ -32,7 +32,7 @@ mm_fit <- function(df, TT = 0) {
       Types = as.factor(df[[6]])
     )
   df <- df %>%
-    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == TT)
+    subset(Position >= 30 & Position <= 90 & Types == TT)
   
   if (length(df) == 1 | nrow(df) < 3)
     return(NA)
