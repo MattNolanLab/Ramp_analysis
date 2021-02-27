@@ -197,7 +197,7 @@ ggplot(a$spikes_in_time[[2]], aes(Position, Acceleration)) +
   geom_smooth()
 
 # look at first 12 sessions to save time.
-b <- unnest(a[12:23,], spikes_in_time)
+b <- unnest(a[1:12,], spikes_in_time)
 
 ggplot(b, aes(Position, Speed)) +
   geom_point() +

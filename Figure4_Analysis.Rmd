@@ -255,7 +255,7 @@ We will again focus exclusively on neurons that have a +/- slope (Figure 2) and 
 
 Function to plot data mean and SEM of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
 ```{r}
-mean_SEM_plots <- function(df, group_b, group_nb, x_start = 0, x_end = 60){
+mean_SEM_plots_BvsNB <- function(df, group_b, group_nb, x_start = 0, x_end = 60){
   df <- df %>%
     filter(lm_group_b == group_b,
            lm_group_nb == group_nb) %>%
@@ -295,7 +295,7 @@ mean_SEM_plots <- function(df, group_b, group_nb, x_start = 0, x_end = 60){
 
 Subset data by group then average rates for plotting          **Negative Cue**
 ```{r}
-(NegUC_plot <- mean_SEM_plots(position_neurons, "Negative", "Unclassified"))
+(NegUC_plot <- mean_SEM_plots_BvsNB(position_neurons, "Negative", "Unclassified"))
 
 if (save_figures == 1) {
   ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
@@ -305,7 +305,7 @@ if (save_figures == 1) {
 
 Subset data by group then average rates for plotting          **Positive Cue**
 ```{r}
-(PosUC_plot <- mean_SEM_plots(position_neurons, "Positive", "Unclassified"))
+(PosUC_plot <- mean_SEM_plots_BvsNB(position_neurons, "Positive", "Unclassified"))
 
 if (save_figures == 1) {
   ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
@@ -316,7 +316,7 @@ if (save_figures == 1) {
 Subset data by group then average rates for plotting          **Positive PI**
 
 ```{r}
-(PosPos_plot <- mean_SEM_plots(position_neurons, "Positive", "Positive"))
+(PosPos_plot <- mean_SEM_plots_BvsNB(position_neurons, "Positive", "Positive"))
 
 if (save_figures == 1) {
   ggsave(file = "plots/AverageRates_PositionCells_PosPI.png", width = 3.5, height = 2.5)
@@ -327,7 +327,7 @@ if (save_figures == 1) {
 Subset data by group then average rates for plotting          **Negative PI**
 
 ```{r}
-(NegNeg_plot <- mean_SEM_plots(position_neurons, "Negative", "Negative"))
+(NegNeg_plot <- mean_SEM_plots_BvsNB(position_neurons, "Negative", "Negative"))
 
 if (save_figures == 1) {
   ggsave(file = "plots/AverageRates_PositionCells_NegPI.png", width = 3.5, height = 2.5)
@@ -343,7 +343,7 @@ unclassified_neurons <- filter(spatial_firing, lm_group_b == "Unclassified")
 ```
 
 ```{r}
-(UCNeg_plot <- mean_SEM_plots(unclassified_neurons, "Unclassified", "Negative"))
+(UCNeg_plot <- mean_SEM_plots_BvsNB(unclassified_neurons, "Unclassified", "Negative"))
 
 if (save_figures == 1) {
   ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
@@ -353,7 +353,7 @@ if (save_figures == 1) {
 Subset data by group then average rates for plotting          **Positive PI only**
 
 ```{r}
-(UCPos_plot <- mean_SEM_plots(unclassified_neurons, "Unclassified", "Positive"))
+(UCPos_plot <- mean_SEM_plots_BvsNB(unclassified_neurons, "Unclassified", "Positive"))
 
 if (save_figures == 1) {
  ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5) 

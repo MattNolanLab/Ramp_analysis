@@ -429,7 +429,7 @@ spatial_firing <- spatial_firing %>%
 then add another column, which contains the slope in both the outbound and homebound and the reset activity
 
 ```{r}
-mark_track_category <- function(outbound, homebound, reset){
+mark_track_category_reset <- function(outbound, homebound, reset){
   if (is.na(outbound) ) {
     return( "None" )  
   } else if( (outbound == "Positive") & (homebound == "Negative")) {
@@ -459,8 +459,8 @@ mark_track_category <- function(outbound, homebound, reset){
 3. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_category)) %>%
-  mutate(track_reset_group_nb = pmap(list(lm_group_nb, lm_group_nb_h, reset_group_nb), mark_track_category)) 
+  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_category_reset)) %>%
+  mutate(track_reset_group_nb = pmap(list(lm_group_nb, lm_group_nb_h, reset_group_nb), mark_track_category_reset)) 
 
 ```
 
@@ -646,7 +646,8 @@ df_neg_cue <- df %>%
 
 5. Plot average rates                                           **Negative Negative Continuous**
 ```{r}
-ggplot(data=df_neg_cue) +
+mean_SEM_plots <- function(df){
+  ggplot(data=df) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
@@ -660,6 +661,9 @@ ggplot(data=df_neg_cue) +
         axis.text.y = element_text(size=14),
         legend.title = element_blank(),
         text = element_text(size=14))
+}
+
+mean_SEM_plots(df_neg_cue)
 
 if (save_figures == 1) {
  ggsave(file = "plots/Negneg_contiuous_mean.png", width = 3.5, height = 2.5) 
@@ -677,24 +681,7 @@ df_neg_cue <- df %>%
   dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
   
-```
-
-5. Plot data                                                    **Negative Negative Reset**
-```{r}
-ggplot(data=df_neg_cue) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
-  geom_line(aes(y=mean_b, x=Position), color = "black") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,30,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        legend.title = element_blank(),
-        text = element_text(size=14))
+mean_SEM_plots(df_neg_cue)
 
 if (save_figures == 1) {
  ggsave(file = "plots/negneg_reset_mean.png", width = 3.5, height = 2.5) 
@@ -710,25 +697,8 @@ df_pos_cue <- df %>%
   group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
-  
-```
 
-5. Plot data
-```{r}
-ggplot(data=df_pos_cue) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
-  geom_line(aes(y=mean_b, x=Position), color = "black") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        legend.title = element_blank(),
-        text = element_text(size=14))
+mean_SEM_plots(df_pos_cue)
 
 if (save_figures == 1) {
  ggsave(file = "plots/negpos_mean.png", width = 3.5, height = 2.5) 
@@ -745,27 +715,8 @@ df_pos_pi <- df %>%
   dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
   
-```
+mean_SEM_plots(df_pos_pi)
 
-
-5. Plot data                                                    **Positive Positive Continuous**
-```{r}
-ggplot(data=df_pos_pi) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
-  #geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sd_nb, ymax = mean_nb + sd_nb), fill = "Red2", alpha=0.05) +
-  geom_line(aes(y=mean_b, x=Position), color = "black") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,30,10), expand = c(0, 0)) +
-  #geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        legend.title = element_blank(),
-        text = element_text(size=14))
 
 if (save_figures == 1) {
   ggsave(file = "plots/pospos_continuous_mean.png", width = 3.5, height = 2.5) 
@@ -782,26 +733,8 @@ df_pos_pi <- df %>%
   group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
-  
-```
 
-
-5. Plot data                                                     **Positive Positive Reset**
-```{r}
-ggplot(data=df_pos_pi) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
-  geom_line(aes(y=mean_b, x=Position), color = "Black") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        legend.title = element_blank(),
-        text = element_text(size=14))
+mean_SEM_plots(df_pos_pi)
 
 if (save_figures == 1) {
   ggsave(file = "plots/pospos_reset_mean.png", width = 3.5, height = 2.5)
@@ -816,27 +749,9 @@ df_pos_pi <- df %>%
   group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
-```
 
 
-5. Plot data                                                        **Positive Negative**
-```{r}
-ggplot(data=df_pos_pi) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
-  geom_line(aes(y=mean_b, x=Position), color = "black") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        legend.title = element_blank(),
-        text = element_text(size=14), 
-        panel.grid = element_blank(),
-        panel.border = element_blank()) 
+mean_SEM_plots(df_pos_pi)
 
 if (save_figures == 1) {
   ggsave(file = "plots/posneg_mean.png", width = 3.5, height = 2.5)
@@ -852,26 +767,9 @@ df_pos_pi <- df %>%
   group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
-```
 
-5. Plot rates                                                     **Positive Unclassified**
-```{r}
-ggplot(data=df_pos_pi) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
-  geom_line(aes(y=mean_b, x=Position), color = "black") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12), 
-        panel.grid = element_blank(),
-        panel.border = element_blank()) 
+
+mean_SEM_plots(df_pos_pi)
 
 if (save_figures == 1) {
   ggsave(file = "plots/posnon_mean.png", width = 3.5, height = 2.5)
@@ -886,27 +784,8 @@ df_pos_pi <- df %>%
   group_by(Position) %>%
   dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
-  
-```
 
-5. Plot data                                                      **Negative Unclassified**
-```{r}
-ggplot(data=df_pos_pi) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
-  geom_line(aes(y=mean_b, x=Position), color = "black") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  scale_y_continuous(breaks=seq(5,25,5), expand = c(0, 0)) +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)\n", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12), 
-        panel.grid = element_blank(),
-        panel.border = element_blank()) 
+mean_SEM_plots(df_pos_pi)
 
 if (save_figures == 1) {
   ggsave(file = "plots/negnon_mean.png", width = 3.5, height = 2.5)
