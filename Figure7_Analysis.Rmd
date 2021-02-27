@@ -473,9 +473,9 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = 00, x_end = 200) {
              se_b = std.error(Rates, na.rm = TRUE))
  
  ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  annotate("rect", xmin=0, xmax=30, ymin=7,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=170, xmax=200, ymin=7,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=90, xmax=110, ymin=7,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
                   fill=factor(Reward_indicator)), alpha=0.1) +
    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
@@ -484,6 +484,7 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = 00, x_end = 200) {
    theme_classic() +
    labs(y = "Mean firing rate (Hz)", x = "Position") +
    xlim(x_start, x_end) +
+   ylim(7,20) +
    theme(axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12),
         legend.title = element_blank(),
