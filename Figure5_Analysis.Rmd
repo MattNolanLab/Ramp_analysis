@@ -646,7 +646,9 @@ df_neg_cue <- df %>%
 
 5. Plot average rates                                           **Negative Negative Continuous**
 ```{r}
-ggplot(data=df_neg_cue) +
+
+mean_SEM_plots <- function(df){
+  ggplot(data=df) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
@@ -660,6 +662,7 @@ ggplot(data=df_neg_cue) +
         axis.text.y = element_text(size=14),
         legend.title = element_blank(),
         text = element_text(size=14))
+}
 
 if (save_figures == 1) {
  ggsave(file = "plots/Negneg_contiuous_mean.png", width = 3.5, height = 2.5) 
