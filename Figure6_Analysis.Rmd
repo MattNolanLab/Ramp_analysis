@@ -255,6 +255,14 @@ df <- tibble(Position = rep(1:200, times=nrow(pi_data)),
              Homebound_beaconed = rep(pi_data$lm_group_p_h, each=200), 
              reset_group = rep(as.character(pi_data$reset_group_p), each=200))
 
+extract_cols_for_plot <- function(df){
+ df <- tibble(Position = rep(1:200, times=nrow(df)), 
+             Rates = unlist(df$Rates_averaged_rewarded_p), 
+             Outbound_beaconed = rep(df$lm_group_p, each=200), 
+             Homebound_beaconed = rep(df$lm_group_p_h, each=200), 
+             reset_group = rep(as.character(df$reset_group_p), each=200)) 
+}
+
 ```
 
 
@@ -269,21 +277,19 @@ df_neg_cue <- df %>%
 ```
 
 ```{r}
+spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
+  filter(reset_group == "Continuous") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots()
 
 
-ggplot(data=df_neg_cue) +
-  coord_cartesian(ylim = c(5,30)) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
-  geom_line(aes(y=mean_b, x=Position), color = "black") +
-  theme_classic() +
-  labs(y = "Mean firing rate (Hz)", x = "Position") +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        legend.title = element_blank(),
-        text = element_text(size=12))
+mean_SEM_plots(df_neg_cue)
 
 if (save_figures == 1) {
   ggsave(file = "plots/Negneg_continuous_mean_probe.png", width = 3.5, height = 2.5)
@@ -305,6 +311,18 @@ df_neg_cue <- df %>%
 ```
 
 ```{r}
+spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
+  filter(reset_group == "Reset") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots()
+
+
 ggplot(data=df_neg_cue) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
@@ -338,6 +356,18 @@ df_pos_cue <- df %>%
 
 
 ```{r}
+spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots()
+
+
+
 ggplot(data=df_pos_cue) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
@@ -373,6 +403,18 @@ df_pos_pi <- df %>%
 
 
 ```{r}
+spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
+  filter(reset_group == "Continuous") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots()
+
+
 ggplot(data=df_pos_pi) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
@@ -404,6 +446,18 @@ df_pos_pi <- df %>%
 
 
 ```{r}
+spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
+  filter(reset_group == "Reset") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots()
+
+
 ggplot(data=df_pos_pi) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
@@ -434,6 +488,18 @@ df_pos_pi <- df %>%
 
 
 ```{r}
+spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots()
+
+
+
 ggplot(data=df_pos_pi) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
@@ -464,6 +530,18 @@ df_pos_pi <- df %>%
 
 
 ```{r}
+spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed == "Positive" & Homebound_beaconed == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots()
+
+
+
 ggplot(data=df_pos_pi) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
@@ -494,6 +572,17 @@ df_pos_pi <- df %>%
 
 
 ```{r}
+spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed == "Negative" & Homebound_beaconed == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots()
+
+
 ggplot(data=df_pos_pi) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
