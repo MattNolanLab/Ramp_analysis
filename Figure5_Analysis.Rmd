@@ -398,34 +398,6 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
-Now, we can classify cells based on their predicted activity. 
-_second method_
-1. classify based on predict mean (Sarah method)
-
-```{r}
-mark_reset_group <- function(diff){
-  if (is.na(diff) ) {
-    return( "None" )
-  } else if( (diff > -1 & diff < 1)) {
-    return( "Continuous" )
-  } else if( (diff <= -1 | diff >= 1)) {
-    return( "Reset" ) 
-  } else {
-    return("None")
-  }
-}
-
-```
-
-2. Run on all cells
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(reset_group = map(predict_diff, mark_reset_group)) %>%
-  mutate(reset_group_nb = map(predict_diff_nb, mark_reset_group))
-
-```
-
-
 then add another column, which contains the slope in both the outbound and homebound and the reset activity
 
 ```{r}
