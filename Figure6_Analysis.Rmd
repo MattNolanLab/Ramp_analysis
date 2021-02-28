@@ -360,6 +360,19 @@ spatial_firing %>%
   mean_SEM_plots()
 
 
+# -/+ on beaconed but not probe trials
+spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
+  filter(Outbound_beaconed_p != "Negative" | Homebound_beaconed_p != "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots()
+
+
 if (save_figures == 1) {
   ggsave(file = "plots/Negpos_mean_probe.png", width = 3.5, height = 2.5)
 }
