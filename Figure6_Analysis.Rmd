@@ -269,7 +269,7 @@ mean_SEM_plots_comp <- function(df){
   plot <- mean_SEM_plots(df)
   
   plot +
-    geom_ribbon(aes(x=Position, y=mean_c, ymin = mean_c - sd_c, ymax = mean_c + sd_c), fill = "grey70", alpha=0.5) +
+    geom_ribbon(aes(x=Position, y=mean_c, ymin = mean_c - sem_c, ymax = mean_c + sem_c), fill = "grey70", alpha=0.5) +
     geom_line(aes(y=mean_c, x=Position), color = "Red") 
 }
 ```
@@ -284,10 +284,10 @@ mean_SEM_plots_comp <- function(df){
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
   filter(reset_group == "Continuous") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp())
 
@@ -310,10 +310,10 @@ spatial_firing %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
   filter(reset_group == "Reset") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -326,10 +326,10 @@ spatial_firing %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
   filter(reset_group == "Reset") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -342,10 +342,10 @@ spatial_firing %>%
   filter(Outbound_beaconed_p != "Negative" | Homebound_beaconed_p != "Negative") %>%
   filter(reset_group == "Reset") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -369,10 +369,10 @@ spatial_firing %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Positive") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -384,10 +384,10 @@ spatial_firing %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Positive") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -400,10 +400,10 @@ spatial_firing %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
   filter(Outbound_beaconed_p != "Negative" | Homebound_beaconed_p != "Positive") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -427,10 +427,10 @@ spatial_firing %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
   filter(reset_group == "Continuous") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -443,10 +443,10 @@ spatial_firing %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
   filter(reset_group == "Continuous") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -467,10 +467,10 @@ spatial_firing %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
   filter(reset_group == "Reset") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -483,10 +483,10 @@ spatial_firing %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
   filter(reset_group == "Reset") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -506,10 +506,10 @@ spatial_firing %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Negative") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -521,10 +521,10 @@ spatial_firing %>%
   filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Negative") %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Negative") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -542,10 +542,10 @@ spatial_firing %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Unclassified") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
@@ -563,10 +563,10 @@ spatial_firing %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Unclassified") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
-                   sd_b = std.error(Rates, na.rm = TRUE),
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
-                   sd_c = std.error(Rates_c, na.rm = TRUE)) %>%
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 

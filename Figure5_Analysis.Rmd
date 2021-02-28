@@ -639,7 +639,7 @@ df_neg_cue <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
   subset(group == "Continuous") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
   
 ```
@@ -651,8 +651,8 @@ mean_SEM_plots <- function(df){
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - sd_b, ymax = mean_b + sd_b), fill = "grey70", alpha=0.5) +
-  geom_line(aes(y=mean_b, x=Position), color = "Black") +
+  geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = "grey70", alpha=0.5) +
+  geom_line(aes(y=mean_r, x=Position), color = "Black") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
   scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
@@ -683,7 +683,7 @@ df_neg_cue <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
   subset(group == "Reset") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
   
 mean_SEM_plots(df_neg_cue)
@@ -700,7 +700,7 @@ if (save_figures == 1) {
 df_pos_cue <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
 
 mean_SEM_plots(df_pos_cue)
@@ -717,7 +717,7 @@ df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
   subset(group == "Continuous") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
   
 mean_SEM_plots(df_pos_pi)
@@ -736,7 +736,7 @@ df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
   subset(group == "Reset") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE), sd_b = std.error(Rates, na.rm = TRUE)) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE), sem_r = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
 
 mean_SEM_plots(df_pos_pi)
@@ -752,7 +752,7 @@ if (save_figures == 1) {
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
 
 
@@ -770,7 +770,7 @@ if (save_figures == 1) {
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Unclassified") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
 
 
@@ -787,7 +787,7 @@ if (save_figures == 1) {
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Unclassified") %>%
   group_by(Position) %>%
-  dplyr::summarise(mean_b = mean(Rates), sd_b = std.error(Rates)) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
 
 mean_SEM_plots(df_pos_pi)
