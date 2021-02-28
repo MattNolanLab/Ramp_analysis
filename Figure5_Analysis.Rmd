@@ -644,7 +644,7 @@ df_neg_cue <- df %>%
   
 ```
 
-5. Plot average rates                                           **Negative Negative Continuous**
+Function to plot mean and SEM of firing rate as a function of position.
 ```{r}
 mean_SEM_plots <- function(df){
   ggplot(data=df) +
@@ -663,6 +663,11 @@ mean_SEM_plots <- function(df){
         text = element_text(size=14))
 }
 
+```
+
+
+5. Plot average rates                                           **Negative Negative Continuous**
+```{r}
 mean_SEM_plots(df_neg_cue)
 
 if (save_figures == 1) {
