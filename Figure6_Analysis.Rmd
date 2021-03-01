@@ -277,7 +277,8 @@ mean_SEM_plots_comp <- function(df){
 
 
 ```{r}
-(spatial_firing %>%
+# -/-(C) on probe trials
+spatial_firing %>%
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
@@ -289,7 +290,23 @@ mean_SEM_plots_comp <- function(df){
                    mean_c = mean(Rates_c, na.rm = TRUE),
                    sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
-  mean_SEM_plots_comp())
+  mean_SEM_plots_comp()
+
+# -/-(C) on beaconed and probe trials
+spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
+  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
+  filter(reset_group == "Continuous") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots_comp()
 
 if (save_figures == 1) {
   ggsave(file = "plots/Negneg_continuous_mean_probe.png", width = 3.5, height = 2.5)
@@ -332,6 +349,12 @@ spatial_firing %>%
                    sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/Negneg_reset_mean_probe.png", width = 3.5, height = 2.5)
+}
+
 
 # -/-(O) on beaconed but not probe trials
 spatial_firing %>%
@@ -392,6 +415,11 @@ spatial_firing %>%
   mean_SEM_plots_comp()
 
 
+if (save_figures == 1) {
+  ggsave(file = "plots/Negpos_mean_probe.png", width = 3.5, height = 2.5)
+}
+
+
 # -/+ on beaconed but not probe trials
 spatial_firing %>%
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
@@ -406,11 +434,6 @@ spatial_firing %>%
                    sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
-
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Negpos_mean_probe.png", width = 3.5, height = 2.5)
-}
 
 
 ```
@@ -536,6 +559,7 @@ if (save_figures == 1) {
 
 
 ```{r}
+# +/UC on probe trials
 spatial_firing %>%
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
@@ -557,6 +581,7 @@ if (save_figures == 1) {
 
 
 ```{r}
+# -/UC on probe trials
 spatial_firing %>%
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
