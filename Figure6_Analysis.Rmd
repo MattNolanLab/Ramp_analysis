@@ -631,77 +631,77 @@ negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative"
 ```{r}
 # Beaconed: pospos_r
 # stays the same
-pospos_r_pospos_r <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Reset"))
+pospos_r_pospos_r <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
 
 # homebound changes
 pospos_r_posneg <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
 pospos_r_posnon <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-pospos_r_pospos <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Continuous"))
+pospos_r_pospos <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
 
 # outbound changes
 pospos_r_negpos <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
 pospos_r_negnon <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-pospos_r_negneg <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Continuous"))
-pospos_r_negneg_r <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Reset"))
+pospos_r_negneg <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
+pospos_r_negneg_r <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
 
 # Beaconed: pospos_c
 # stays the same
-pospos_pospos <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Continuous"))
+pospos_pospos <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
 
 # homebound changes
 pospos_posneg <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
 pospos_posnon <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-pospos_pospos_r <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Reset"))
+pospos_pospos_r <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
 
 # outbound changes
 pospos_negpos <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
 pospos_negnon <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-pospos_negneg <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Continuous"))
-pospos_negneg_r <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Reset"))
+pospos_negneg <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
+pospos_negneg_r <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
 
 # Beaconed: posneg
 posneg_posneg <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
 
 posneg_posnon <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-posneg_pospos <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Continuous"))
-posneg_pospos_r <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Reset"))
+posneg_pospos <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
+posneg_pospos_r <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
 
 posneg_negpos <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
 posneg_negnon <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-posneg_negneg <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Continuous"))
-posneg_negneg_r <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Reset"))
+posneg_negneg <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
+posneg_negneg_r <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
 
 
 # Beaconed: negneg_r
 # stays the same
-negneg_r_negneg_r <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Reset"))
+negneg_r_negneg_r <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
 
 # homebound changes
 negneg_r_negpos <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
 negneg_r_negnon <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negneg_r_negneg <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Continuous"))
+negneg_r_negneg <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
 
 # outbound changes
 negneg_r_posneg <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
 negneg_r_posnon <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negneg_r_pospos <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Continuous"))
-negneg_r_pospos_r <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Reset"))
+negneg_r_pospos <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
+negneg_r_pospos_r <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
 
 
 # Beaconed: negneg_c
 # stays the same
-negneg_negneg <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Continuous"))
+negneg_negneg <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
 
 # homebound changes
 negneg_negpos <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
 negneg_negnon <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negneg_negneg_r <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Reset"))
+negneg_negneg_r <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
 
 # outbound changes
 negneg_posneg <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
 negneg_posnon <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negneg_pospos <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Continuous"))
-negneg_pospos_r <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Reset"))
+negneg_pospos <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
+negneg_pospos_r <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
 
 
 # Beaconed: negpos
@@ -710,14 +710,14 @@ negpos_negpos <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "
 
 # homebound changes
 negpos_negnon <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negpos_negneg <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Continuous"))
-negpos_negneg_r <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_nb == "Reset"))
+negpos_negneg <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
+negpos_negneg_r <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
 
 # Outbound changes
 negpos_posneg <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
 negpos_posnon <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negpos_pospos <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Continuous"))
-negpos_pospos_r <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_nb == "Reset"))
+negpos_pospos <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
+negpos_pospos_r <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
 
 ```
 
@@ -892,97 +892,6 @@ data_long <- data_long %>%
                     
 ```
 
-
-
-
-<!-- ```{r} -->
-<!-- pospos <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive") -->
-<!-- posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative") -->
-<!-- negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive") -->
-<!-- negneg <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative") -->
-<!-- posnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified") -->
-<!-- negnon <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Unclassified") -->
-
-<!-- ``` -->
-
-```{r}
-# pospos_posneg <-nrow(subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-# pospos_negpos <-nrow(subset(pospos, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-# pospos_negnon <-nrow(subset(pospos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-# pospos_posnon <-nrow(subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-# pospos_pospos <-nrow(subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-# pospos_negneg <-nrow(subset(pospos, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-# 
-# negpos_posneg <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-# negpos_negpos <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-# negpos_negnon <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-# negpos_posnon <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-# negpos_pospos <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-# negpos_negneg <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-# 
-# posneg_posneg <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-# posneg_negpos <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-# posneg_negnon <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-# posneg_posnon <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-# posneg_pospos <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-# posneg_negneg <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-# 
-# negneg_posneg <-nrow(subset(negneg, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-# negneg_negpos <-nrow(subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-# negneg_negnon <-nrow(subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-# negneg_posnon <-nrow(subset(negneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-# negneg_pospos <-nrow(subset(negneg, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-# negneg_negneg <-nrow(subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-# 
-# negnon_posneg <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-# negnon_negpos <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-# negnon_negnon <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-# negnon_posnon <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-# negnon_pospos <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-# negnon_negneg <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-# 
-# posnon_posneg <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-# posnon_negpos <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-# posnon_negnon <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-# posnon_posnon <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-# posnon_pospos <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-# posnon_negneg <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-```
-
-```{r}
-
-# data_long <- tibble(value=c(pospos_pospos, pospos_posneg, pospos_negpos,pospos_posnon, pospos_negnon, pospos_negneg,
-#                             
-#                             negpos_pospos, negpos_posneg, negpos_negpos, negpos_posnon, negpos_negnon, negpos_negneg,
-#                             
-#                             posneg_pospos, posneg_posneg, posneg_negpos, posneg_posnon, posneg_negnon, posneg_negneg,
-# 
-#                             posnon_pospos, posnon_posneg, posnon_negpos, posnon_posnon, posnon_negnon, posnon_negneg,
-# 
-#                             negnon_pospos, negnon_posneg, negnon_negpos, negnon_posnon, negnon_negnon, negnon_negneg,
-# 
-#                             negneg_pospos, negneg_posneg, negneg_negpos, negneg_posnon, negneg_negnon, negneg_negneg),
-#                     
-#                       source= c("+ +","+ +", "+ +", "+ +", "+ +", "+ +",
-#                                 "- +","- +", "- +", "- +", "- +", "- +",
-#                                 "+ -","+ -", "+ -", "+ -",  "+ -", "+ -",
-#                                 "+ non","+ non", "+ non", "+ non",  "+ non", "+ non",
-#                                 "- non","- non", "- non", "- non", "- non", "- non",
-#                                 "- -","- -", "- -", "- -", "- -", "- -"),
-#                     
-#                      target= c(" + +"," + -"," - +"," + non"," - non"," - -",
-#                                " + +"," + -"," - +" ," + non"," - non", " - -",
-#                                " + +"," + -"," - +" ," + non"," - non", " - -",
-#                                " + +"," + -"," - +" ," + non"," - non", " - -",
-#                                " + +"," + -"," - +" ," + non"," - non", " - -",
-#                                " + +"," + -"," - +" ," + non"," - non", " - -"))
-# 
-# 
-# data_long <- data_long %>% 
-#   filter(value > 0)                           
-#                     
-```
 
 ```{r}
 # From these flows we need to create a node data frame: it lists every entities involved in the flow
