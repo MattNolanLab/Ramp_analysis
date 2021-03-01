@@ -646,13 +646,13 @@ df_neg_cue <- df %>%
 
 Function to plot mean and SEM of firing rate as a function of position.
 ```{r}
-mean_SEM_plots <- function(df){
+mean_SEM_plots <- function(df, colour1 = "black"){
   ggplot(data=df) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = "grey70", alpha=0.5) +
-  geom_line(aes(y=mean_r, x=Position), color = "Black") +
+  geom_line(aes(y=mean_r, x=Position), color = colour1) +
   theme_classic() +
   scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
   scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +

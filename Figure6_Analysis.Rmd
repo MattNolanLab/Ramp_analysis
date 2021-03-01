@@ -265,12 +265,12 @@ Use the pipe to subset data:
 
 Function to add extra trace in Rates_c to a mean_SEM_plot.
 ```{r}
-mean_SEM_plots_comp <- function(df){
-  plot <- mean_SEM_plots(df)
+mean_SEM_plots_comp <- function(df, colour1 = "red", colour2 = "#E69F00"){
+  plot <- mean_SEM_plots(df, colour1)
   
   plot +
     geom_ribbon(aes(x=Position, y=mean_c, ymin = mean_c - sem_c, ymax = mean_c + sem_c), fill = "grey70", alpha=0.5) +
-    geom_line(aes(y=mean_c, x=Position), color = "Red") 
+    geom_line(aes(y=mean_c, x=Position), color = colour2) 
 }
 ```
 
