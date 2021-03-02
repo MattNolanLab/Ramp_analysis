@@ -182,7 +182,7 @@ reset <- pi_data %>% filter(reset_group_p == "Reset")
 continuous <- pi_data %>% filter(reset_group_p == "Continuous")
 ```
 
-2. Plot scatter of slopes on outbound&homebound
+2. Plot scatter of slopes on beaconed&probe
 ```{r}
 
 ggplot() + 
@@ -209,6 +209,33 @@ if (save_figures == 1) {
 ```
 
 
+
+
+2. Plot scatter of offset on beacconed&probe
+```{r}
+
+ggplot() + 
+    geom_point(data=continuous,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b)))) +
+    geom_point(data=reset,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b))), shape=1) +
+    coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
+    xlab("Beaconed offset") +
+    ylab("Probe offset") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=17),
+          axis.text.y = element_text(size=17),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/offset_comparison.png", width = 4, height = 4) 
+}
+```
 
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
 
@@ -265,7 +292,7 @@ mean_SEM_plots_comp <- function(df, colour1 = "red", colour2 = "#E69F00"){
   
   plot +
     geom_ribbon(aes(x=Position, y=mean_c, ymin = mean_c - sem_c, ymax = mean_c + sem_c), fill = "grey70", alpha=0.5) +
-    geom_line(aes(y=mean_c, x=Position), color = colour2) 
+    geom_line(aes(y=mean_c, x=Position), color = "black") 
 }
 ```
 
