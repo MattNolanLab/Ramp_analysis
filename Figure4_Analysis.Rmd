@@ -279,14 +279,15 @@ mean_SEM_plots_BvsNB <- function(df, group_b, group_nb, x_start = 0, x_end = 60)
   geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - se_nb, ymax = mean_nb + se_nb), fill = "Red2", alpha=0.05) +
   geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
   geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
+  annotate("rect", xmin=20, xmax=60, ymin=3.5,ymax=4.5, alpha=0.2, fill="Chartreuse4") +
   theme_classic() +
-  labs(y = "Mean firing rate (Hz)", x = "Position") +
+  labs(y = "Mean firing rate (Hz)", x = "Location (cm)") +
   xlim(x_start, x_end) +
   #scale_x_discrete(breaks=c("40","60","80"), labels=c("10", "30", "50")) +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
         legend.title = element_blank(),
-        text = element_text(size=12))
+        text = element_text(size=14))
 }
 ```
 

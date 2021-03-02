@@ -129,6 +129,7 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 2. Run on all cells in dataframe
 ```{r}
 spatial_firing <- spatial_firing  %>%
+    select(-contains('final_model_o_b')) %>%
     mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel), model_comparison))
            #final_model_o_nb  = pmap(list(o_mm_p_nb_pos, o_mm_p_nb_speed, o_mm_p_nb_accel), model_comparison))#%>%
     #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
@@ -391,7 +392,7 @@ data_coef_pos_neg <- data_coef %>%
 
 (pos_neg_coef_plot <- standard_plot(data_coef_pos_neg))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_positive_negative_cells1.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_positive_negative_cells.png", width = 3, height = 2.5)
 }  
     
 ```
@@ -425,7 +426,7 @@ _Plot coefficients for all cells_
 5. Split by positive slope _PA cells_
 ```{r}
 data_coef_pos_PA <- data_coef %>%
-  subset(group == "PA") %>%
+  subset(group == "PS") %>%
   subset(lm_result == "Positive" )
 
 (pos_PA_coef_plot <- standard_plot(data_coef_pos_PA))
@@ -437,7 +438,7 @@ if (save_figures == 1) {
 6. Split by negative slope
 ```{r}
 data_coef_neg_PA <- data_coef %>%
-  subset(group == "PA") %>%
+  subset(group == "PS") %>%
   subset(lm_result == "Negative" )
 
 (neg_PA_coef_plot <- standard_plot(data_coef_neg_PA))
