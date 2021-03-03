@@ -102,14 +102,7 @@ Now, we can classify cells based on their predicted activity.
 ```
 
 
-then tag along with the slope _this is defined in Figure 5_
 
-2. Run on all cells 
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(track_reset_group_p = pmap(list(lm_group_p, lm_group_p_h, reset_group_p), mark_track_category_reset))
-
-```
 
 ### ------------------------------------------------------------------------------------------ ### 
 
