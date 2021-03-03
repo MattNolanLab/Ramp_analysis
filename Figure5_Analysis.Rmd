@@ -586,7 +586,7 @@ mean_SEM_plots <- function(df, colour1 = "black"){
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = "Blue", alpha=0.5) +
+  geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = "Blue", alpha=0.2) +
   geom_line(aes(y=mean_r, x=Position), color = "Blue") +
   theme_classic() +
   scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
