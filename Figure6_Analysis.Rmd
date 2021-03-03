@@ -112,20 +112,17 @@ Now, we can classify cells based on their predicted activity.
 - do this for both negative and positive slopes in the outbound zone
 
 
-1. extract only neurons that are driven by path integration (as determined by CueAnalysis.0100.Rmd - i.e. Figure 4)
-```{r}
-pi_data <- subset(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
-```
-
-2. subset based on position
-```{r}
-pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
+extract only neurons that are positive or negative in the outbound zone (as determined by Figure 2) and subset based on position encoding (Figure 3)
 
 3. Plot bar charts 
 ```{r}
 
-ggplot(data=subset(pi_data,lm_group_p == "Negative"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
+df <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  filter(track_category == "pospos" | track_category == "negneg")
+  
+ggplot(data=subset(df,lm_group_p == "Negative"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
   coord_cartesian(xlim=c(-5,5)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
   scale_fill_manual(values=c("grey","violetred2")) +
@@ -144,7 +141,7 @@ if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_homebound_mean_PInegative_pi.png",width = 4, height = 2.5)
 }
 
-ggplot(data=subset(pi_data, lm_group_p == "Positive"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
+ggplot(data=subset(df, lm_group_p == "Positive"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
   coord_cartesian(xlim=c(-5,5)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
   scale_fill_manual(values=c("grey","chartreuse3")) +
@@ -169,14 +166,19 @@ if (save_figures == 1) {
 
 ## plot outbound and homebound slopes for each neuron - seperated by whether they reset or are continuous 
 
-1. Extract reset and continuous neurons
-```{r}
-reset <- pi_data %>% filter(reset_group_p == "Reset")
-continuous <- pi_data %>% filter(reset_group_p == "Continuous")
-```
-
 2. Plot scatter of slopes on beaconed&probe
 ```{r}
+
+reset <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(reset_group_p == "Reset")
+
+continuous <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(reset_group_p == "Continuous")
+
 
 ggplot() + 
     geom_point(data=continuous,aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
@@ -201,7 +203,9 @@ if (save_figures == 1) {
 ```
 Calculate r2 and p value for liner correlation of the above data
 ```{r}
-pi_data_for_regression <- pi_data %>% 
+pi_data_for_regression <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   select(asr_b_h_rewarded_fit_slope, asr_p_h_rewarded_fit_slope)
 
 model <- lm(asr_b_h_rewarded_fit_slope ~ asr_p_h_rewarded_fit_slope, data = pi_data_for_regression)
@@ -215,6 +219,17 @@ params <- select(glance(model), r.squared, p.value)
 
 2. Plot scatter of offset on beacconed&probe
 ```{r}
+reset <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  filter(track_category == "pospos" | track_category == "negneg") %>% 
+  filter(reset_group_p == "Reset")
+
+continuous <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  filter(track_category == "pospos" | track_category == "negneg") %>% 
+  filter(reset_group_p == "Continuous")
 
 ggplot() + 
     geom_point(data=continuous,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b))), shape=1) +
@@ -240,7 +255,9 @@ if (save_figures == 1) {
 
 Calculate r2 and p value for liner correlation of the above data
 ```{r}
-pi_data_for_offset_regression <- pi_data %>% 
+pi_data_for_offset_regression <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   select(predict_diff, predict_diff_p)
 
 model <- lm(predict_diff ~ predict_diff_p, data = pi_data_for_offset_regression)
@@ -313,7 +330,6 @@ mean_SEM_plots_comp <- function(df, colour1 = "red", colour2 = "#E69F00"){
 ```{r}
 # -/-(C) on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
@@ -328,7 +344,6 @@ spatial_firing %>%
 
 # -/-(C) on beaconed and probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
@@ -355,7 +370,6 @@ if (save_figures == 1) {
 ```{r}
 # -/-(O) on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
@@ -370,7 +384,6 @@ spatial_firing %>%
 
 # -/-(O) on beaconed and probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
@@ -392,7 +405,6 @@ if (save_figures == 1) {
 
 # -/-(O) on beaconed but not probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
@@ -421,7 +433,6 @@ if (save_figures == 1) {
 ```{r}
 # -/+ on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Positive") %>%
@@ -435,7 +446,6 @@ spatial_firing %>%
 
 # -/+ on beaconed and probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
@@ -456,7 +466,6 @@ if (save_figures == 1) {
 
 # -/+ on beaconed but not probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
@@ -480,7 +489,6 @@ if (save_figures == 1) {
 ```{r}
 # +/+(C)on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
@@ -495,7 +503,6 @@ spatial_firing %>%
 
 # +/+(C) on probe and beaconed trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
@@ -520,7 +527,6 @@ if (save_figures == 1) {
 ```{r}
 # +/+(O) on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
@@ -535,7 +541,6 @@ spatial_firing %>%
 
 #+/+(O) on beaconed and probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
@@ -560,7 +565,6 @@ if (save_figures == 1) {
 ```{r}
 # +/- on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Negative") %>%
@@ -574,7 +578,6 @@ spatial_firing %>%
 
 # +/- on beaconed and probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Negative") %>%
@@ -597,7 +600,6 @@ if (save_figures == 1) {
 ```{r}
 # +/UC on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Unclassified") %>%
@@ -619,7 +621,6 @@ if (save_figures == 1) {
 ```{r}
 # -/UC on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Unclassified") %>%
