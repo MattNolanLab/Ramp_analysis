@@ -398,42 +398,6 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
-then add another column, which contains the slope in both the outbound and homebound and the reset activity
-
-```{r}
-mark_track_category_reset <- function(outbound, homebound, reset){
-  if (is.na(outbound) ) {
-    return( "None" )  
-  } else if( (outbound == "Positive") & (homebound == "Negative")) {
-    return( "+ -" ) 
-  } else if( (outbound == "Positive") & (homebound == "Positive") & (reset == "Continuous")) {
-    return( "+ +" )
-  } else if( (outbound == "Positive") & (homebound == "Positive") & (reset == "Reset")) {
-    return( "+ + R" )
-  } else if( (outbound == "Negative") & (homebound == "Positive")) {
-    return( "- +" )
-  } else if( (outbound == "Negative") & (homebound == "Negative") & (reset == "Continuous")) {
-    return( "- -" )
-  } else if( (outbound == "Negative") & (homebound == "Negative") & (reset == "Reset")) {
-    return( "- - R" )
-  } else if( (outbound == "Negative") & (homebound == "Unclassified")) {
-    return( "- none" )
-  } else if( (outbound == "Positive") & (homebound == "Unclassified")) {
-    return( "+ none" )
-    
-  } else {
-    return("None")
-  }
-}
-
-```
-
-3. Run on all cells
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_category_reset)) 
-
-```
 
 ### ------------------------------------------------------------------------------------------ ### 
 
