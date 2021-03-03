@@ -121,12 +121,7 @@ spatial_firing <- spatial_firing %>%
 
 1. extract only neurons that are driven by path integration (as determined by CueAnalysis.0100.Rmd - i.e. Figure 4)
 ```{r}
-pi_data <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
-```
-
-
-```{r}
-pi_data <- subset(pi_data, track_catagory_p == "pospos" | track_catagory_p == "negneg")
+pi_data <- subset(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
 ```
 
 2. subset based on position
@@ -195,7 +190,6 @@ ggplot() +
     geom_point(data=reset,aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
     coord_cartesian(ylim = c(-.7,.7), xlim = c(-.7,.7)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed slope") +
     ylab("Probe slope") +
     theme_classic() +
@@ -234,7 +228,6 @@ ggplot() +
     geom_point(data=reset,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b)))) +
     coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed offset") +
     ylab("Probe offset") +
     theme_classic() +
