@@ -431,8 +431,7 @@ mark_track_category_reset <- function(outbound, homebound, reset){
 3. Run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_category_reset)) %>%
-  mutate(track_reset_group_nb = pmap(list(lm_group_nb, lm_group_nb_h, reset_group_nb), mark_track_category_reset)) 
+  mutate(track_reset_group = pmap(list(lm_group_b, lm_group_b_h, reset_group), mark_track_category_reset)) 
 
 ```
 
