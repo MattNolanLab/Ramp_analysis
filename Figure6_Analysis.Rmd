@@ -117,6 +117,11 @@ Now, we can classify cells based on their predicted activity.
 pi_data <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
+
+```{r}
+pi_data <- subset(pi_data, track_catagory_p == "pospos" | track_catagory_p == "negneg")
+```
+
 2. subset based on position
 ```{r}
 pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
@@ -179,8 +184,8 @@ continuous <- pi_data %>% filter(reset_group_p == "Continuous")
 ```{r}
 
 ggplot() + 
-    geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
-    geom_point(data=reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
+    geom_point(data=continuous,aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
+    geom_point(data=reset,aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
     coord_cartesian(ylim = c(-.7,.7), xlim = c(-.7,.7)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
@@ -200,7 +205,17 @@ if (save_figures == 1) {
  ggsave(file = "plots/slope_comparison_probe_reset.png", width = 4, height = 4) 
 }
 ```
+Calculate r2 and p value for liner correlation of the above data
+```{r}
+pi_data_for_regression <- pi_data %>% 
+  select(asr_b_h_rewarded_fit_slope, asr_p_h_rewarded_fit_slope)
 
+model <- lm(asr_b_h_rewarded_fit_slope ~ asr_p_h_rewarded_fit_slope, data = pi_data_for_regression)
+#summary(model)
+# get the model parameters
+params <- select(glance(model), r.squared, p.value)
+
+```
 
 
 
@@ -208,8 +223,8 @@ if (save_figures == 1) {
 ```{r}
 
 ggplot() + 
-    geom_point(data=continuous,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b)))) +
-    geom_point(data=reset,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b))), shape=1) +
+    geom_point(data=continuous,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b))), shape=1) +
+    geom_point(data=reset,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b)))) +
     coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
@@ -228,6 +243,17 @@ ggplot() +
 if (save_figures == 1) {
  ggsave(file = "plots/offset_comparison.png", width = 4, height = 4) 
 }
+```
+
+Calculate r2 and p value for liner correlation of the above data
+```{r}
+pi_data_for_offset_regression <- pi_data %>% 
+  select(predict_diff, predict_diff_p)
+
+model <- lm(predict_diff ~ predict_diff_p, data = pi_data_for_offset_regression)
+summary(model)
+# get the model parameters
+params_offset <- select(glance(model), r.squared, p.value)
 ```
 
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
