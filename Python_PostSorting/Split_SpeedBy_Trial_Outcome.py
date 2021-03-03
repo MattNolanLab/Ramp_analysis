@@ -8,17 +8,26 @@ def split_and_save_speed_data(spike_data):
     spike_data["speed_in_time_reward"] = ""
     spike_data["speed_in_time_try"] = ""
     spike_data["speed_in_time_run"] = ""
-    spike_data["speed_in_time_reward_allspeeds"] = ""
-    spike_data["speed_in_time_try_allspeeds"] = ""
-    spike_data["speed_in_time_run_allspeeds"] = ""
     for cluster in range(len(spike_data)):
         try_trials = np.array(spike_data.loc[cluster, 'try_trialid'])
         runthru_trials = np.array(spike_data.loc[cluster, 'run_through_trialid'])
         rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
 
-        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)/10 #convert to hz
+        speed=np.array((spike_data.iloc[cluster].spike_rate_in_time[1].real)/10)-10 #convert to hz
         position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
         trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
+
+        # remove outliers
+        mean_speed = np.nanmean(speed)
+        sd_speed = np.nanstd(speed)
+        upper_speed_sd = mean_speed+(sd_speed*3)
+
+        data = np.vstack((speed, position, trials))
+        data=data.transpose()
+        data = data[data[:,0] < upper_speed_sd,:]
+        speed = data[:,0]
+        position = data[:,1]
+        trials = data[:,2]
 
         rewarded_speed = speed[np.isin(trials,rewarded_trials)]
         rewarded_position = position[np.isin(trials,rewarded_trials)]
@@ -58,7 +67,7 @@ def extract_time_binned_speed_by_outcome(spike_data):
     spike_data["Speed_mean_run"] = ""
     spike_data["Speed_mean_rewarded"] = ""
     for cluster in range(len(spike_data)):
-        speed=np.array(spike_data.iloc[cluster].speed_in_time_try[0])-10
+        speed=np.array(spike_data.iloc[cluster].speed_in_time_try[0])
         position=np.array(spike_data.iloc[cluster].speed_in_time_try[1])
         speed = convolve_with_scipy(speed)
 
@@ -75,7 +84,7 @@ def extract_time_binned_speed_by_outcome(spike_data):
         spike_data.at[cluster, 'Speed_mean_try'] = list(binned_speed)
 
 
-        speed=np.array(spike_data.iloc[cluster].speed_in_time_run[0])-10
+        speed=np.array(spike_data.iloc[cluster].speed_in_time_run[0])
         position=np.array(spike_data.iloc[cluster].speed_in_time_run[1])
         speed = convolve_with_scipy(speed)
 
@@ -92,7 +101,7 @@ def extract_time_binned_speed_by_outcome(spike_data):
         spike_data.at[cluster, 'Speed_mean_run'] = list(binned_speed)
 
 
-        speed=np.array(spike_data.iloc[cluster].speed_in_time_reward[0])-10
+        speed=np.array(spike_data.iloc[cluster].speed_in_time_reward[0])
         position=np.array(spike_data.iloc[cluster].speed_in_time_reward[1])
         speed = convolve_with_scipy(speed)
 
