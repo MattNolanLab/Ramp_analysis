@@ -119,8 +119,8 @@ extract only neurons that are positive or negative in the outbound zone (as dete
 
 df <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_category == "pospos" | track_category == "negneg")
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  filter(track_category_p == "pospos" | track_category_p == "negneg")
   
 ggplot(data=subset(df,lm_group_p == "Negative"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
   coord_cartesian(xlim=c(-5,5)) +
@@ -171,12 +171,12 @@ if (save_figures == 1) {
 
 reset <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   filter(reset_group_p == "Reset")
 
 continuous <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   filter(reset_group_p == "Continuous")
 
 
@@ -205,7 +205,7 @@ Calculate r2 and p value for liner correlation of the above data
 ```{r}
 pi_data_for_regression <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   select(asr_b_h_rewarded_fit_slope, asr_p_h_rewarded_fit_slope)
 
 model <- lm(asr_b_h_rewarded_fit_slope ~ asr_p_h_rewarded_fit_slope, data = pi_data_for_regression)
@@ -221,13 +221,13 @@ params <- select(glance(model), r.squared, p.value)
 ```{r}
 reset <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   filter(track_category == "pospos" | track_category == "negneg") %>% 
   filter(reset_group_p == "Reset")
 
 continuous <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   filter(track_category == "pospos" | track_category == "negneg") %>% 
   filter(reset_group_p == "Continuous")
 
@@ -257,7 +257,7 @@ Calculate r2 and p value for liner correlation of the above data
 ```{r}
 pi_data_for_offset_regression <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   select(predict_diff, predict_diff_p)
 
 model <- lm(predict_diff ~ predict_diff_p, data = pi_data_for_offset_regression)
