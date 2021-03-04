@@ -112,16 +112,17 @@ Now, we can classify cells based on their predicted activity.
 - do this for both negative and positive slopes in the outbound zone
 
 
-extract only neurons that are positive or negative in the outbound zone (as determined by Figure 2) and subset based on position encoding (Figure 3)
-
-3. Plot bar charts 
+1. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 2) and subset based on position encoding (Figure 3) and are ++ or -- in beaconed trials
 ```{r}
-
 df <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   filter(track_category == "pospos" | track_category == "negneg")
   
+```
+
+2. Plot bar charts 
+```{r}
 ggplot(data=subset(df,lm_group_p == "Negative"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
   coord_cartesian(xlim=c(-5,5)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
@@ -165,21 +166,25 @@ if (save_figures == 1) {
 
 
 ## plot outbound and homebound slopes for each neuron - seperated by whether they reset or are continuous 
-
-2. Plot scatter of slopes on beaconed&probe
+1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 3) and reset activity in probe trials
 ```{r}
-
 reset <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   filter(reset_group_p == "Reset")
+```
 
+2. same as above for continuous reset activity
+```{r}
 continuous <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   filter(reset_group_p == "Continuous")
 
+```
 
+3. Plot scatter of slopes on beaconed&probe
+```{r}
 ggplot() + 
     geom_point(data=continuous,aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
     geom_point(data=reset,aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
@@ -216,8 +221,7 @@ params <- select(glance(model), r.squared, p.value)
 ```
 
 
-
-2. Plot scatter of offset on beacconed&probe
+1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 3) and reset activity in probe trials and ++ or -- on beaconed trials
 ```{r}
 reset <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
@@ -225,12 +229,20 @@ reset <- spatial_firing %>%
   filter(track_category == "pospos" | track_category == "negneg") %>% 
   filter(reset_group_p == "Reset")
 
+```
+
+2. same as above for continuous neurons
+```{r}
 continuous <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   filter(track_category == "pospos" | track_category == "negneg") %>% 
   filter(reset_group_p == "Continuous")
 
+```
+
+3. Plot scatter of offset on beacconed&probe
+```{r}
 ggplot() + 
     geom_point(data=continuous,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b))), shape=1) +
     geom_point(data=reset,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b)))) +
@@ -258,6 +270,7 @@ Calculate r2 and p value for liner correlation of the above data
 pi_data_for_offset_regression <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(track_category == "pospos" | track_category == "negneg") %>% 
   select(predict_diff, predict_diff_p)
 
 model <- lm(predict_diff ~ predict_diff_p, data = pi_data_for_offset_regression)
