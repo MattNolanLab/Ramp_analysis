@@ -355,7 +355,6 @@ calc_predict_diff <- function(rates, fit)
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_')) %>%
-  select(-contains('predict_params_nb_')) %>%
   mutate(predict_params = map(normalised_rates, predict_homebound)) %>%
   unnest_wider(predict_params, names_sep = "_", names_repair = "universal") 
 
@@ -405,8 +404,8 @@ spatial_firing <- spatial_firing %>%
 1. extract neurons that are ++ or -- on beaconed trials, position encoding (Figure 3) and driven by path integration (Figure 4)
 ```{r}
 df_position_pi <- spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")  %>% 
   filter(track_category == "pospos" | track_category == "negneg") %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
   
 ```
