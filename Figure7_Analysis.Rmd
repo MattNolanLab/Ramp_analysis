@@ -480,7 +480,7 @@ spatial_firing <- spatial_firing %>%
 
 1. subset by outbound ramps (Figure 2) and cells that are modulated by position (Figure 3)
 ```{r}
-position_ramps <- subset(spatial_firing, final_model_o_b == "P")
+position_ramps <- subset(ramps, final_model_o_b == "P")
 ```
 
 2. Plot slope coefficient for rewarded trials and run through trials
@@ -496,7 +496,7 @@ plot_offset_comparison <- function(offset1, offset2, factor1){
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     scale_fill_manual(values=c("black", "red", "blue")) +
     scale_color_manual(values=c("black", "red", "blue")) +
-    xlab("offset") +
+    xlab("offset(rewarded)") +
     ylab(expression("offset")) +
     theme_classic() +
     theme(axis.text.x = element_text(size=14),
@@ -530,9 +530,35 @@ if (save_figures == 1) {
 
 ```
 
+Do the same as above but for ALL cells that are modulated by position as determined by Figure 3 (Figure3_Analysis.Rmd) i.e. PS, P, PA, PSA
+
+1. subset by outbound ramps (Figure 2) and cells that are modulated by position (Figure 3)
+```{r}
+allposition_ramps <- subset(ramps, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. Plot offset for rewarded trials and run through trials
+```{r}
+plot_offset_comparison (allposition_ramps$predict_diff, allposition_ramps$predict_diff_run, allposition_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/OffsetScatter_reward_vs_run_allposition.png", width = 4, height = 3.5)
+}
+```
+
+3. Plot offset for rewarded trials and trials where the animal tries to stop
+```{r}
+plot_offset_comparison (allposition_ramps$predict_diff, allposition_ramps$predict_diff_try, allposition_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/OffsetScatter_reward_vs_try_allposition.png", width = 4, height = 3.5)
+}
+
+```
 
 
-Do the same as above but for ALL cells that are modulated by speed as determined by Figure 3 (Figure3_Analysis.Rmd), regardless of classification in Figure 2
+
+Do the same as above but for ALL cells that are modulated by speed as determined by Figure 3 (Figure3_Analysis.Rmd), regardless of classification in Figure 2 i.e. S
 
 1. subset by outbound ramps (Figure 2) and cells that are modulated by acceleration (Figure 3)
 ```{r}
@@ -560,7 +586,9 @@ if (save_figures == 1) {
 ```
 
 
+
 ### ----------------------------------------------------------------------------------------- ###
+
 
 Now we want to examine if there are differences in the reset activity between trial types (hit, try, run). To do this, we can plot population rate for rewarded and failed trials across whole track. 
 
@@ -639,8 +667,118 @@ position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b
   mean_SEM_plots_by_Outcome(0,200))
 
 if (save_figures==1) {
-  ggsave(file = "plots/NegNeg_Continuous_PI_justposition.png", width = 4.5, height = 2.5)
+  ggsave(file = "plots/NegNeg_Continuous_PI_allposition.png", width = 4.5, height = 2.5)
 }
+
+```
+
+3. Subset data by group then average rates for plotting          **Negative Negative Reset**
+```{r}
+(NegNegR_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Negative",
+         reset_group == "Reset") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+if (save_figures==1) {
+ ggsave(file = "plots/NegNeg_Reset_PI_allposition.png", width = 4.5, height = 2.5) 
+}
+
+```
+
+4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
+```{r}
+(PosPosC_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Positive",
+         reset_group == "Continuous") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/PosPos_Continuous_PI_allposition.png", width = 4.5, height = 2.5)
+}
+
+```
+
+5. Subset data by group then average rates for plotting          **Positive Positive Reset**
+```{r}
+(PosPosR_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Positive",
+         reset_group == "Reset") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+if (save_figures==1) {
+  ggsave(file = "plots/PosPos_Reset_PI_allposition.png", width = 4.5, height = 2.5)
+}
+
+```
+
+6. Subset data by group then average rates for plotting          **Positive Unclassified**
+```{r}
+(PosUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/PosNeg_PI_allposition.png", width = 4.5, height = 2.5)
+}
+
+```
+
+7. Subset data by group then average rates for plotting          **Positive Unclassified**
+```{r}
+(NegUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Positive") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/NegPos_PI_allposition.png", width = 4.5, height = 2.5)
+}
+
+```
+
+
+
+
+Repeat above for just position neurons
+
+1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
+```{r}
+position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P")
+```
+
+
+_note: no neurons for this group so will not run_
+2. Subset data by group then average rates for plotting          **Negative Negative Continuous**
+```{r}
+#(NegNegC_plot <- position_neurons %>%
+#  filter(lm_group_b == "Negative",
+#         lm_group_b_h == "Negative",
+#         reset_group == "Continuous") %>%
+#  select(avg_both_asr_b) %>%
+#  unnest(c(avg_both_asr_b)) %>%
+#  mean_SEM_plots_by_Outcome(0,200))
+
+#if (save_figures==1) {
+#  ggsave(file = "plots/NegNeg_Continuous_PI_justposition.png", width = 4.5, height = 2.5)
+#}
 
 ```
 
@@ -725,6 +863,7 @@ if (save_figures==1) {
 }
 
 ```
+
 
 
 
