@@ -480,33 +480,25 @@ if (save_figures == 1) {
 
 ## now plot scatter of slopes for outbound and slopes for homebound with neurons marked accordng to whether they are reset or continuous
 
-1. 
+1. Here we subset neurons based on position encoding (Figure 3) and path integrating (Figure 4) and either reset or contiuous firing. io
 ```{r}
-data <- spatial_firing %>% filter(track_category == "pospos" | track_category == "negneg" | track_category == "posneg"| track_category == "negpos" | track_category == "posnon"| track_category == "negnon")
+position_neurons_reset <- spatial_firing  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")  %>% 
+  filter(reset_group == "Reset")
+
+position_neurons_continuous <- spatial_firing  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")  %>% 
+  filter(reset_group == "Continuous")
 ```
 
-2. 
-```{r}
-pi_data <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
-```
-
-3. subset based on position
-```{r}
-position_neurons <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-4. 
-```{r}
-reset <- position_neurons %>% filter(reset_group == "Reset")
-continuous <- position_neurons %>% filter(reset_group == "Continuous")
-```
-
-5. 
+2. Plot scatter plot
 ```{r}
 
 ggplot() + 
-    geom_jitter(data=continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
-    geom_jitter(data=reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
+    geom_point(data=position_neurons_continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
+    geom_point(data=position_neurons_reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
     coord_cartesian(ylim = c(-.6,.6), xlim = c(-.6,.6)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
@@ -730,195 +722,6 @@ mean_SEM_plots(df_pos_pi)
 if (save_figures == 1) {
   ggsave(file = "plots/negnon_mean.png", width = 3.5, height = 2.5)
 }
-```
-
-
-
-
-
-
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
-
-
-### Sankey Diagrams
-
-Now we want to plot a sankey diagram showing the slope of neurons in the outbound and homebound region. 
-
-1.
-```{r}
-data <- spatial_firing %>% filter(track_category == "pospos" | track_category == "negneg" | track_category == "posneg"| track_category == "negpos" | track_category == "posnon"| track_category == "negnon")
-
-pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
-
-pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-2. 
-```{r}
-
-pi_positive <-subset(pi_data, lm_group_b == "Positive")
-pi_negative <-subset(pi_data, lm_group_b == "Negative")
-pi_none <-subset(pi_data, lm_group_b == "Unclassified")
-
-pi_positive_pos <-nrow(subset(pi_positive, lm_group_b_h == "Positive"))
-pi_positive_neg <-nrow(subset(pi_positive, lm_group_b_h == "Negative"))
-pi_positive_none <-nrow(subset(pi_positive, lm_group_b_h == "Unclassified"))
-pi_negative_pos <-nrow(subset(pi_negative, lm_group_b_h == "Positive"))
-pi_negative_neg <-nrow(subset(pi_negative, lm_group_b_h == "Negative"))
-pi_negative_none <-nrow(subset(pi_negative, lm_group_b_h == "Unclassified"))
-pi_none_pos <-nrow(subset(pi_none, lm_group_b_h == "Positive"))
-pi_none_neg <-nrow(subset(pi_none, lm_group_b_h == "Negative"))
-pi_none_none <-nrow(subset(pi_none, lm_group_b_h == "Unclassified"))
-
-pi_positive_pos_num <-nrow(subset(pi_positive, lm_group_b_h == "Positive"))
-pi_positive_neg_num <-nrow(subset(pi_positive, lm_group_b_h == "Negative"))
-pi_positive_none_num <-nrow(subset(pi_positive, lm_group_b_h == "Unclassified"))
-pi_negative_pos_num <-nrow(subset(pi_negative, lm_group_b_h == "Positive"))
-pi_negative_neg_num <-nrow(subset(pi_negative, lm_group_b_h == "Negative"))
-pi_negative_none_num <-nrow(subset(pi_negative, lm_group_b_h == "Unclassified"))
-pi_none_pos_num <-nrow(subset(pi_none, lm_group_b_h == "Positive"))
-pi_none_neg_num <-nrow(subset(pi_none, lm_group_b_h == "Negative"))
-pi_none_none_num <-nrow(subset(pi_none, lm_group_b_h == "Unclassified"))
-
-```
-
-```{r}
-
-data_long <- tibble(value=c(pi_positive_pos, pi_positive_neg, pi_positive_none, pi_negative_pos,pi_negative_neg, pi_negative_none, pi_none_pos, pi_none_neg, pi_none_none), 
-                    
-                      source= c("Positive","Positive", "Positive", "Negative", "Negative", "Negative", "None","None", "None"),
-                     target= c(" Positive"," Negative", " None"," Positive"," Negative", " None"," Positive"," Negative", " None"))
-
-
-data_long <- data_long %>% 
-  filter(value > 0)                           
-                    
-```
-
-```{r}
-# From these flows we need to create a node data frame: it lists every entities involved in the flow
-nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
- 
-```
-
-```{r}
-# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
-data_long$IDsource=match(data_long$source, nodes$name)-1 
-data_long$IDtarget=match(data_long$target, nodes$name)-1
-```
-
-```{r}
-# prepare colour scale
-ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
-
-# Make the Network
-sankeyNetwork(Links = data_long, Nodes = nodes,
-              Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", LinkGroup='source',
-              sinksRight=FALSE, colourScale=ColourScal,
-              nodeWidth=40, fontSize=13, nodePadding=20)
-
-if (save_figures == 1) {
-  ggsave(file = "plots/model_movement.png", width = 24, height = 18)
-}
-```
-
-
-
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
-
-1. 
-```{r}
-data <- spatial_firing %>% filter(track_category == "pospos" | track_category == "negneg")
-
-```
-
-# filter for pi neurons
-```{r}
-pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
-
-pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-
-```
-
-
-# filter for negative > negative & positive > positive
-```{r}
-negneg_pineurons <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative")
-posos_pineurons <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
-negpos_pineurons<-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
-posneg_pineurons<-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
-
-```
-
-## raw numbers 
-```{r}
-negneg_pineurons_reset <- nrow(subset(negneg_pineurons, reset_group == "Reset"))
-negneg_pineurons_cont <-nrow(subset(negneg_pineurons, reset_group == "Continuous"))
-
-pospos_pineurons_reset <-nrow(subset(posos_pineurons, reset_group == "Reset"))
-pospos_pineurons_cont <-nrow(subset(posos_pineurons, reset_group == "Continuous"))
-```
-
-
-```{r}
-
-data_long <- tibble(value=c(negneg_pineurons_reset, negneg_pineurons_cont, pospos_pineurons_reset, pospos_pineurons_cont), 
-                    
-                      source= c("Negative > Negative","Negative > Negative", "Positive > Positive", "Positive > Positive"),
-                     target= c("Reset", "Continuous", "Reset", "Continuous"))
-
-
-data_long <- data_long %>% 
-  filter(value > 0)                           
-                    
-```
-
-```{r}
-# From these flows we need to create a node data frame: it lists every entities involved in the flow
-nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
- 
-```
-
-```{r}
-# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
-data_long$IDsource=match(data_long$source, nodes$name)-1 
-data_long$IDtarget=match(data_long$target, nodes$name)-1
-```
-
-
-```{r}
-# A connection data frame is a list of flows with intensity for each flow
-ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","F56666", "#FDE725FF","#B4DE2CFF" ,"#F56666", "#B4DE2CFF","FDE725FF", "#B4DE2CFF", "#B4DE2CFF"])'
-
-#ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
-
-
-links <- data.frame(
-  source=c("Positive1","Positive1", "Reset1", "Continuous1", "Negative1", "Negative1",  "Reset2", "Continuous2"), 
-  target=c("Reset1","Continuous1", "Positive2", "Positive2", "Reset2", "Continuous2", "Negative2", "Negative2"), 
-  value=c(pospos_pineurons_reset,pospos_pineurons_cont, pospos_pineurons_reset, pospos_pineurons_cont, negneg_pineurons_reset, negneg_pineurons_cont ,negneg_pineurons_reset, negneg_pineurons_cont))
-  
-# From these flows we need to create a node data frame: it lists every entities involved in the flow
-nodes <- data.frame(
-  name=c(as.character(links$source), 
-  as.character(links$target)) %>% unique()
-)
- 
-# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
-links$IDsource <- match(links$source, nodes$name)-1 
-links$IDtarget <- match(links$target, nodes$name)-1
- 
-# Make the Network
-p <- sankeyNetwork(Links = links, Nodes = nodes,
-              Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", LinkGroup='source',
-              sinksRight=FALSE, colourScale=ColourScal,
-              nodeWidth=30, fontSize=13, nodePadding=15)
-
-p
-
-
 ```
 
 
