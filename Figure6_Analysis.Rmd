@@ -355,6 +355,10 @@ spatial_firing %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
+if (save_figures == 1) {
+  ggsave(file = "plots/Negneg_continuous_probe_JustP.png", width = 3.5, height = 2.5)
+}
+
 # -/-(C) on beaconed and probe trials
 spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
@@ -371,7 +375,7 @@ spatial_firing %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_continuous_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Negneg_continuous_probe_BandP.png", width = 3.5, height = 2.5)
 }
 ```
 
@@ -395,6 +399,10 @@ spatial_firing %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
+if (save_figures == 1) {
+  ggsave(file = "plots/Negneg_reset_probe_JustP.png", width = 3.5, height = 2.5)
+}
+
 # -/-(O) on beaconed and probe trials
 spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
@@ -412,7 +420,7 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_reset_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Negneg_reset_probe_BandP.png", width = 3.5, height = 2.5)
 }
 
 
@@ -434,7 +442,7 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_reset_mean_probe_justPI.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Negneg_reset_probe_JustB.png", width = 3.5, height = 2.5)
 }
 
 
@@ -457,6 +465,10 @@ spatial_firing %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
+if (save_figures == 1) {
+  ggsave(file = "plots/NegPos_reset_probe_JustP.png", width = 3.5, height = 2.5)
+}
+
 # -/+ on beaconed and probe trials
 spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
@@ -473,7 +485,7 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negpos_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Negpos_reset_probe_BandP.png", width = 3.5, height = 2.5)
 }
 
 
@@ -492,7 +504,7 @@ spatial_firing %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negpos_mean_probe_justPI.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Negpos_reset_probe_JustB.png", width = 3.5, height = 2.5)
 }
 ```
 
@@ -514,6 +526,10 @@ spatial_firing %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
+if (save_figures == 1) {
+  ggsave(file = "plots/Pospos_continuous_probe_JustP.png", width = 3.5, height = 2.5)
+}
+
 # +/+(C) on probe and beaconed trials
 spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
@@ -531,7 +547,7 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_continuous_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Pospos_continuous_probe_BandP.png", width = 3.5, height = 2.5)
 }
 ```
 
@@ -552,6 +568,10 @@ spatial_firing %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
+if (save_figures == 1) {
+  ggsave(file = "plots/Pospos_reset_probe_JustP.png", width = 3.5, height = 2.5) 
+}
+
 #+/+(O) on beaconed and probe trials
 spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
@@ -569,7 +589,7 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_reset_mean_probe.png", width = 3.5, height = 2.5) 
+  ggsave(file = "plots/Pospos_reset_probe_BandP.png", width = 3.5, height = 2.5) 
 }
 ```
 
@@ -589,6 +609,10 @@ spatial_firing %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
+if (save_figures == 1) {
+  ggsave(file = "plots/Posneg_reset_probe_JustP.png", width = 3.5, height = 2.5)
+}
+
 # +/- on beaconed and probe trials
 spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
@@ -605,7 +629,7 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Posneg_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Posneg_reset_probe_BandP.png", width = 3.5, height = 2.5)
 }
 ```
 
@@ -625,7 +649,7 @@ spatial_firing %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/posnon_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/posnon_reset_probe_JustB.png", width = 3.5, height = 2.5)
 }
 ```
 
@@ -646,7 +670,7 @@ spatial_firing %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/negnon_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/negnon_reset_probe_JustP.png", width = 3.5, height = 2.5)
 }
 ```
 
