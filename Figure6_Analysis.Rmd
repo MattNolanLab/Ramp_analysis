@@ -120,7 +120,7 @@ extract only neurons that are positive or negative in the outbound zone (as dete
 df <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_category_p == "pospos" | track_category_p == "negneg")
+  filter(track_catagory == "pospos" | track_catagory == "negneg")
   
 ggplot(data=subset(df,lm_group_p == "Negative"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
   coord_cartesian(xlim=c(-5,5)) +
@@ -222,13 +222,13 @@ params <- select(glance(model), r.squared, p.value)
 reset <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_category == "pospos" | track_category == "negneg") %>% 
+  filter(track_catagory_p == "pospos" | track_catagory_p == "negneg") %>% 
   filter(reset_group_p == "Reset")
 
 continuous <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_category == "pospos" | track_category == "negneg") %>% 
+  filter(track_catagory_p == "pospos" | track_catagory_p == "negneg") %>% 
   filter(reset_group_p == "Continuous")
 
 ggplot() + 

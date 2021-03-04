@@ -9,13 +9,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------ ### 
 
 
 ## Script aims to determine if ramp activity resets or is continuous across the reward zone
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------ ### 
 
 
 ### First, we need to classify neurons based on their ramp activity in the homebound region, similar to that done in figure 2 analysis. 
@@ -374,8 +374,8 @@ spatial_firing <- spatial_firing %>%
 ### ------------------------------------------------------------------------------------------ ### 
 
 Now, we can classify cells based on their predicted activity. 
-_first method_
-1. Function to classify neurons based on offset (Matt code that does it based on prediction)
+
+1. Function to classify neurons based on offset 
 
 ```{r}
 mark_reset_group_predict <- function(offset){
@@ -407,30 +407,22 @@ spatial_firing <- spatial_firing %>%
 - do only for neurons that have slopes in outbound zone
 - do this for both negative and positive slopes in the outbound zone
 
-1. extract neurons with slope on outbound & homebound
+1. extract neurons that are ++ or -- on beaconed trials, position encoding (Figure 3) and driven by path integration (Figure 4)
 ```{r}
-data <- subset(spatial_firing, track_category == "pospos" | track_category == "negneg" | track_category == "posneg" | track_category == "negpos" | track_category == "negnon" | track_category == "posnon")
-```
-
-2. extract only neurons that are driven by path integration (as determined by Figure 4 Analysis)
-```{r}
-pi_data <- subset(data, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
-```
-
-3. subset based on position
-```{r}
-position_neurons <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+df_position_pi <- spatial_firing %>%
+  filter(track_category == "pospos" | track_category == "negneg") %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+  
 ```
 
 4. Plot bar charts - positive neurons
 ```{r}
-ggplot(data=subset(position_neurons, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+ggplot(data=subset(df_position_pi, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
   coord_cartesian(xlim=c(-5,5)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
   scale_fill_manual(values=c(  "grey", "chartreuse3","chartreuse3")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  #geom_vline(xintercept = 1, color="black", linetype="dotted") +
-  #geom_vline(xintercept = -1, color="black", linetype="dotted") +
   labs(y="Density", x="") +
   theme_classic() +
   theme(axis.text.x = element_text(size=13),
@@ -447,16 +439,13 @@ if (save_figures == 1) {
 ```
 
 5. Plot bar charts - Negative neurons
-
 ```{r}
 
-ggplot(data=subset(position_neurons,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+ggplot(data=subset(df_position_pi,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
   coord_cartesian(xlim=c(-5,5)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
   scale_fill_manual(values=c( "grey", "violetred2","violetred2")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  #geom_vline(xintercept = 1, color="black", linetype="dotted") +
-  #geom_vline(xintercept = -1, color="black", linetype="dotted") +
   labs(y="Density", x="") +
   theme_classic() +
   theme(axis.text.x = element_text(size=13),
@@ -475,12 +464,12 @@ if (save_figures == 1) {
 
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------ ### 
 
 
 ## now plot scatter of slopes for outbound and slopes for homebound with neurons marked accordng to whether they are reset or continuous
 
-1. Here we subset neurons based on position encoding (Figure 3) and path integrating (Figure 4) and either reset or contiuous firing. io
+1. Here we subset neurons based on position encoding (Figure 3) and path integrating (Figure 4) and either reset or contiuous firing. 
 ```{r}
 position_neurons_reset <- spatial_firing  %>% 
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
@@ -521,11 +510,11 @@ if (save_figures == 1) {
 
 
 
-### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
+### ------------------------------------------------------------------------------------------ ### 
 
 Now we want to plot population rate across whole track for diff groups so we can visualise the average firing rate
 
-cue_group_os are as follows :
+groups are as follows :
 
 outbound homebound  reset
     +       +         n
@@ -539,7 +528,6 @@ outbound homebound  reset
     
     
 1. Split data based on cue independant/cue dependant
-
 ```{r}
 position_neurons <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
