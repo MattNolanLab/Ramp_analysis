@@ -27,7 +27,7 @@ i.e. posneg = positive in outbound, negative in homebound
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_catagory_p = map2(lm_group_p, lm_group_p_h, mark_track_category))
+  mutate(track_category_p = map2(lm_group_p, lm_group_p_h, mark_track_category))
 
 ```
 
@@ -120,7 +120,7 @@ extract only neurons that are positive or negative in the outbound zone (as dete
 df <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_catagory == "pospos" | track_catagory == "negneg")
+  filter(track_category == "pospos" | track_category == "negneg")
   
 ggplot(data=subset(df,lm_group_p == "Negative"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
   coord_cartesian(xlim=c(-5,5)) +
@@ -222,13 +222,13 @@ params <- select(glance(model), r.squared, p.value)
 reset <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_catagory_p == "pospos" | track_catagory_p == "negneg") %>% 
+  filter(track_category == "pospos" | track_category == "negneg") %>% 
   filter(reset_group_p == "Reset")
 
 continuous <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_catagory_p == "pospos" | track_catagory_p == "negneg") %>% 
+  filter(track_category == "pospos" | track_category == "negneg") %>% 
   filter(reset_group_p == "Continuous")
 
 ggplot() + 
@@ -299,7 +299,7 @@ extract_cols_for_plot <- function(df){
              Homebound_beaconed_b = rep(df$lm_group_b_h, each=200), 
              Outbound_beaconed_p = rep(df$lm_group_p, each=200), 
              Homebound_beaconed_p = rep(df$lm_group_p_h, each=200), 
-             reset_group = rep(as.character(df$reset_group_p), each=200)) 
+             reset_group = rep(as.character(df$reset_group), each=200)) 
 }
 
 ```
@@ -646,12 +646,12 @@ We first ask this question for all neurons whose classification is independent o
 
 1. Split by path integrating neurons (Figure 4)
 ```{r}
-pi_data <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+pi_data <- subset(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
 ```
 
 2. subset based on position encoding neurons (Figure 3)
 ```{r}
-pi_data <-subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
 The groups we want to consider are +/+(O), +/+(C), +/-, -/-(O), -/-(C) and -/+. In addition for probe trials there will be a group 'other' for activity that is no longer in one of these categories.
