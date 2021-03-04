@@ -430,6 +430,134 @@ if (save_figures == 1) {
 }
 ```
 
+### ----------------------------------------------------------------------------------------- ###
+
+## Calculate and plot offset 
+
+Now, we want to find out if within the speed group - is their firing rate reset or continue across the reward region?
+
+To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
+
+First, normalise firing rates. 
+
+1. make function to load rates and normalise
+```{r}
+normalise_rates <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  return(x)
+}
+
+```
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates_try = map(Avg_FiringRate_TryTrials, normalise_rates), 
+         normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates))
+```
+
+Then, predict firing rate in homebound region based on fit from real data in outbound region
+
+Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
+
+2. Run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('predict_params_try_')) %>%
+  select(-contains('predict_params_run_')) %>%
+  mutate(predict_params_try = map(normalised_rates_try, predict_homebound),
+         predict_params_run = map(normalised_rates_run, predict_homebound)) %>%
+  unnest_wider(predict_params_try, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(predict_params_run, names_sep = "_", names_repair = "universal") 
+
+spatial_firing <- spatial_firing %>%
+  mutate(
+         predict_diff_try = map2_dbl(normalised_rates_try, predict_params_try_fit, calc_predict_diff),
+         predict_diff_run = map2_dbl(normalised_rates_run, predict_params_run_fit, calc_predict_diff))
+
+```
+
+1. subset by outbound ramps (Figure 2) and cells that are modulated by position (Figure 3)
+```{r}
+position_ramps <- subset(spatial_firing, final_model_o_b == "P")
+```
+
+2. Plot slope coefficient for rewarded trials and run through trials
+```{r}
+plot_offset_comparison <- function(offset1, offset2, factor1){
+  df <- tibble(x_offset = unlist(offset1), y_offset = unlist(offset2), fac = factor1)
+  ggplot(data=df, aes(x = x_offset,
+                                y = y_offset, 
+                                fill = factor(unlist(fac)),
+                                color = factor(unlist(fac)))) +
+    coord_cartesian(xlim=c(-5,5), y=c(-5,5)) +
+    geom_point(alpha=0.3) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    scale_fill_manual(values=c("black", "red", "blue")) +
+    scale_color_manual(values=c("black", "red", "blue")) +
+    xlab("offset") +
+    ylab(expression("offset")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=14), 
+          legend.text=element_text(size=14), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+}
+
+```
+
+2. Plot offset for rewarded trials and run through trials
+```{r}
+plot_offset_comparison (position_ramps$predict_diff, position_ramps$predict_diff_run, position_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/OffsetScatter_reward_vs_run_justposition.png", width = 4, height = 3.5)
+}
+```
+
+
+3. Plot offset for rewarded trials and trials where the animal tries to stop
+```{r}
+plot_offset_comparison (position_ramps$predict_diff, position_ramps$predict_diff_try, position_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/OffsetScatter_reward_vs_try_justposition.png", width = 4, height = 3.5)
+}
+
+```
+
+
+
+Do the same as above but for ALL cells that are modulated by speed as determined by Figure 3 (Figure3_Analysis.Rmd), regardless of classification in Figure 2
+
+1. subset by outbound ramps (Figure 2) and cells that are modulated by acceleration (Figure 3)
+```{r}
+allspeed_ramps <- subset(spatial_firing, final_model_o_b == "S")
+```
+
+2. Plot offset for rewarded trials and run through trials
+```{r}
+plot_offset_comparison (allspeed_ramps$predict_diff, allspeed_ramps$predict_diff_run, allspeed_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/OffsetScatter_reward_vs_run_allspeed.png", width = 4, height = 3.5)
+}
+
+```
+
+3. Plot offset for rewarded trials and trials where the animal tries to stop
+```{r}
+plot_offset_comparison (allspeed_ramps$predict_diff, allspeed_ramps$predict_diff_try, allspeed_ramps$reward_interaction_id)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/OffsetScatter_reward_vs_try_allspeed.png", width = 4, height = 3.5)
+}
+
+```
 
 
 ### ----------------------------------------------------------------------------------------- ###
@@ -473,9 +601,9 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = 00, x_end = 200) {
              se_b = std.error(Rates, na.rm = TRUE))
  
  ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=7,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=7,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=7,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  annotate("rect", xmin=0, xmax=30, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=170, xmax=200, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=90, xmax=110, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
                   fill=factor(Reward_indicator)), alpha=0.1) +
    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
@@ -484,7 +612,7 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = 00, x_end = 200) {
    theme_classic() +
    labs(y = "Mean firing rate (Hz)", x = "Position") +
    xlim(x_start, x_end) +
-   ylim(7,20) +
+   #ylim(7,20) +
    theme(axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12),
         legend.title = element_blank(),
