@@ -115,9 +115,8 @@ Now, we can classify cells based on their predicted activity.
 1. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 2) and subset based on position encoding (Figure 3) and are ++ or -- in beaconed trials
 ```{r}
 df <- spatial_firing %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_category == "pospos" | track_category == "negneg")
+  filter(track_category_p == "pospos" | track_category_p == "negneg")
   
 ```
 
@@ -169,7 +168,6 @@ if (save_figures == 1) {
 1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 3) and reset activity in probe trials
 ```{r}
 reset <- spatial_firing %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   filter(reset_group_p == "Reset")
 ```
@@ -177,7 +175,6 @@ reset <- spatial_firing %>%
 2. same as above for continuous reset activity
 ```{r}
 continuous <- spatial_firing %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   filter(reset_group_p == "Continuous")
 
@@ -186,14 +183,37 @@ continuous <- spatial_firing %>%
 3. Plot scatter of slopes on beaconed&probe
 ```{r}
 ggplot() + 
-    geom_point(data=continuous,aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
-    geom_point(data=reset,aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
+    geom_point(data=subset(continuous, track_category_p == "pospos" | track_category_p == "negneg"),
+               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=1, alpha=0.8) +
+    geom_point(data=subset(reset, track_category_p == "pospos" | track_category_p == "negneg"),
+               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+
+      geom_point(data=subset(continuous, track_category_p == "posneg" | track_category_p == "negpos"),
+                 aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                     y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                     color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_point(data=subset(reset, track_category_p == "posneg" | track_category_p == "negpos"),
+               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+      geom_point(data=subset(continuous, track_category_p == "posnon" | track_category_p == "negnon"),
+                 aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                     y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                     color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +
+    geom_point(data=subset(reset, track_category_p == "posnon" | track_category_p == "negnon"),
+               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
     coord_cartesian(ylim = c(-.7,.7), xlim = c(-.7,.7)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed slope") +
     ylab("Probe slope") +
     theme_classic() +
-    scale_color_manual(values=c("violetred2", "chartreuse3")) +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
     theme(axis.text.x = element_text(size=17),
           axis.text.y = element_text(size=17),
           legend.position="bottom", 
@@ -224,9 +244,8 @@ params <- select(glance(model), r.squared, p.value)
 1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 3) and reset activity in probe trials and ++ or -- on beaconed trials
 ```{r}
 reset <- spatial_firing %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_category == "pospos" | track_category == "negneg") %>% 
+  filter(track_category_p == "pospos" | track_category_p == "negneg") %>% 
   filter(reset_group_p == "Reset")
 
 ```
@@ -234,9 +253,8 @@ reset <- spatial_firing %>%
 2. same as above for continuous neurons
 ```{r}
 continuous <- spatial_firing %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_category == "pospos" | track_category == "negneg") %>% 
+  filter(track_category_p == "pospos" | track_category_p == "negneg") %>% 
   filter(reset_group_p == "Continuous")
 
 ```
@@ -251,7 +269,7 @@ ggplot() +
     xlab("Beaconed offset") +
     ylab("Probe offset") +
     theme_classic() +
-    scale_color_manual(values=c("violetred2", "chartreuse3")) +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
     theme(axis.text.x = element_text(size=17),
           axis.text.y = element_text(size=17),
           legend.position="bottom", 
