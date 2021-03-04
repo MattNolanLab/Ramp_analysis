@@ -197,8 +197,7 @@ mark_track_category <- function(outbound, homebound){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_category = map2(lm_group_b, lm_group_b_h, mark_track_category)) %>%
-  mutate(track_category_nb = map2(lm_group_nb, lm_group_nb_h, mark_track_category))
+  mutate(track_category = map2(lm_group_b, lm_group_b_h, mark_track_category))
 
 ```
 
@@ -290,8 +289,7 @@ normalise_rates <- function(df){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates)) %>%
-  mutate(normalised_rates_nb = map(Rates_averaged_rewarded_nb, normalise_rates))
+  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
 
 ```
 
@@ -359,14 +357,11 @@ spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_')) %>%
   select(-contains('predict_params_nb_')) %>%
   mutate(predict_params = map(normalised_rates, predict_homebound)) %>%
-  mutate(predict_params_nb = map(normalised_rates_nb, predict_homebound)) %>%
-  unnest_wider(predict_params, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(predict_params_nb, names_sep = "_", names_repair = "universal")
+  unnest_wider(predict_params, names_sep = "_", names_repair = "universal") 
 
 spatial_firing <- spatial_firing %>%
   mutate(offset = pmap_chr(list(normalised_rates, predict_params_lwr, predict_params_upr), offset_test),
-         predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff),
-         predict_diff_nb = map2_dbl(normalised_rates_nb, predict_params_nb_fit, calc_predict_diff))
+         predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff))
 
 ```
 
