@@ -102,84 +102,6 @@ Now, we can classify cells based on their predicted activity.
 ```
 
 
-### ------------------------------------------------------------------------------------------ ### 
-
-## Calculate number of neurons that areset/switch/continuous across outbound and homebound
-
-
-1. First, select cells that are position encoding (figure 3)
-```{r}
-position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-2. Select cells that are path integrating i.e. have slopes on both the beaconed and non-beaconed (Figure 4)
-```{r}
-pi_data <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
-```
-
-3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
-```{r}
-
-pospos <-subset(position_cells, lm_group_b == "Positive" & lm_group_b_h == "Positive")
-negneg <-subset(position_cells, lm_group_b == "Negative" & lm_group_b_h == "Negative")
-
-posneg <-subset(position_cells, lm_group_b == "Positive" & lm_group_b_h == "Negative")
-negpos <-subset(position_cells, lm_group_b == "Negative" & lm_group_b_h == "Positive")
-
-posnon <-subset(position_cells, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
-negnon <-subset(position_cells, lm_group_b == "Negative" & lm_group_b_h == "Unclassified")
-
-```
-
-4. Have a look at slopes in this group
-```{r}
-posneg <- posneg %>%
-  select(lm_group_nb, lm_group_nb_h, lm_group_p, lm_group_p_h)
-```
-
-
-5. for +- and -+ groups as classified on beaconed trials, how many are the same on probe?
-```{r}
-posneg_same_probe <-subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative")
-negpos_same_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive")
-
-```
-
-6. for +- and -+ groups as classified on beaconed trials, how many unclassified on probe?
-```{r}
-posneg_un_probe <-subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified")
-negpos_un_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified")
-
-```
-
-7. 
-```{r}
-pospos_r <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Reset")
-pospos_c <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Continuous")
-negneg_r <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Reset")
-negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Continuous")
-
-```
-
-```{r}
-pospos_r_same <-subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset")
-pospos_c_same <-subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous")
-negneg_r_same <-subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset")
-negneg_c_same <-subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous")
-
-```
-
-
-4. calculate number of neurons that switch slope, stay the same or are reset/continuous
-```{r}
-switch_slope <- nrow(posneg) + nrow(negpos)
-only_outbound_slope <- nrow(posnon) + nrow(negnon)
-same_slope <- nrow(pospos) + nrow(negneg)
-same_slope_reset <- nrow(pospos_r) + nrow(negneg_r)
-same_slope_continuous <- nrow(pospos_c) + nrow(negneg_c)
-
-```
-
 
 
 ### ------------------------------------------------------------------------------------------ ### 
@@ -1128,4 +1050,84 @@ if (save_figures == 1) {
 ```
 
 
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## Calculate number of neurons that areset/switch/continuous across outbound and homebound
+
+
+1. First, select cells that are position encoding (figure 3)
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. Select cells that are path integrating i.e. have slopes on both the beaconed and non-beaconed (Figure 4)
+```{r}
+pi_data <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+```
+
+3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
+```{r}
+
+pospos <-subset(position_cells, lm_group_b == "Positive" & lm_group_b_h == "Positive")
+negneg <-subset(position_cells, lm_group_b == "Negative" & lm_group_b_h == "Negative")
+
+posneg <-subset(position_cells, lm_group_b == "Positive" & lm_group_b_h == "Negative")
+negpos <-subset(position_cells, lm_group_b == "Negative" & lm_group_b_h == "Positive")
+
+posnon <-subset(position_cells, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
+negnon <-subset(position_cells, lm_group_b == "Negative" & lm_group_b_h == "Unclassified")
+
+```
+
+4. Have a look at slopes in this group
+```{r}
+posneg <- posneg %>%
+  select(lm_group_nb, lm_group_nb_h, lm_group_p, lm_group_p_h)
+```
+
+
+5. for +- and -+ groups as classified on beaconed trials, how many are the same on probe?
+```{r}
+posneg_same_probe <-subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative")
+negpos_same_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive")
+
+```
+
+6. for +- and -+ groups as classified on beaconed trials, how many unclassified on probe?
+```{r}
+posneg_un_probe <-subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified")
+negpos_un_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified")
+
+```
+
+7. 
+```{r}
+pospos_r <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Reset")
+pospos_c <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Continuous")
+negneg_r <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Reset")
+negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Continuous")
+
+```
+
+```{r}
+pospos_r_same <-subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset")
+pospos_c_same <-subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous")
+negneg_r_same <-subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset")
+negneg_c_same <-subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous")
+
+```
+
+
+4. calculate number of neurons that switch slope, stay the same or are reset/continuous
+```{r}
+switch_slope <- nrow(posneg) + nrow(negpos)
+only_outbound_slope <- nrow(posnon) + nrow(negnon)
+same_slope <- nrow(pospos) + nrow(negneg)
+same_slope_reset <- nrow(pospos_r) + nrow(negneg_r)
+same_slope_continuous <- nrow(pospos_c) + nrow(negneg_c)
+
+```
 
