@@ -102,6 +102,84 @@ Now, we can classify cells based on their predicted activity.
 ```
 
 
+### ------------------------------------------------------------------------------------------ ### 
+
+## Calculate number of neurons that areset/switch/continuous across outbound and homebound
+
+
+1. First, select cells that are position encoding (figure 3)
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. Select cells that are path integrating i.e. have slopes on both the beaconed and non-beaconed (Figure 4)
+```{r}
+pi_data <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+```
+
+3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
+```{r}
+
+pospos <-subset(position_cells, lm_group_b == "Positive" & lm_group_b_h == "Positive")
+negneg <-subset(position_cells, lm_group_b == "Negative" & lm_group_b_h == "Negative")
+
+posneg <-subset(position_cells, lm_group_b == "Positive" & lm_group_b_h == "Negative")
+negpos <-subset(position_cells, lm_group_b == "Negative" & lm_group_b_h == "Positive")
+
+posnon <-subset(position_cells, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
+negnon <-subset(position_cells, lm_group_b == "Negative" & lm_group_b_h == "Unclassified")
+
+```
+
+4. Have a look at slopes in this group
+```{r}
+posneg <- posneg %>%
+  select(lm_group_nb, lm_group_nb_h, lm_group_p, lm_group_p_h)
+```
+
+
+5. for +- and -+ groups as classified on beaconed trials, how many are the same on probe?
+```{r}
+posneg_same_probe <-subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative")
+negpos_same_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive")
+
+```
+
+6. for +- and -+ groups as classified on beaconed trials, how many unclassified on probe?
+```{r}
+posneg_un_probe <-subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified")
+negpos_un_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified")
+
+```
+
+7. 
+```{r}
+pospos_r <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Reset")
+pospos_c <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Continuous")
+negneg_r <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Reset")
+negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Continuous")
+
+```
+
+```{r}
+pospos_r_same <-subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset")
+pospos_c_same <-subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous")
+negneg_r_same <-subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset")
+negneg_c_same <-subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous")
+
+```
+
+
+4. calculate number of neurons that switch slope, stay the same or are reset/continuous
+```{r}
+switch_slope <- nrow(posneg) + nrow(negpos)
+only_outbound_slope <- nrow(posnon) + nrow(negnon)
+same_slope <- nrow(pospos) + nrow(negneg)
+same_slope_reset <- nrow(pospos_r) + nrow(negneg_r)
+same_slope_continuous <- nrow(pospos_c) + nrow(negneg_c)
+
+```
+
 
 
 ### ------------------------------------------------------------------------------------------ ### 
@@ -169,6 +247,7 @@ if (save_figures == 1) {
 ```{r}
 reset <- spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(reset_group_p == "Reset")
 ```
 
@@ -176,6 +255,7 @@ reset <- spatial_firing %>%
 ```{r}
 continuous <- spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(reset_group_p == "Continuous")
 
 ```
@@ -230,6 +310,7 @@ Calculate r2 and p value for liner correlation of the above data
 ```{r}
 pi_data_for_regression <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   select(asr_b_h_rewarded_fit_slope, asr_p_h_rewarded_fit_slope)
 
@@ -719,6 +800,8 @@ posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
 negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
 negneg_r <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Reset")
 negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Continuous")
+posnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
+negnon <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Unclassified")
 
 ```
 
@@ -813,6 +896,34 @@ negpos_posneg <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "
 negpos_posnon <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
 negpos_pospos <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
 negpos_pospos_r <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+
+
+# Beaconed: posnon
+posnon_posneg <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
+
+posnon_posnon <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
+posnon_pospos <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
+posnon_pospos_r <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+
+posnon_negpos <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
+posnon_negnon <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
+posnon_negneg <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
+posnon_negneg_r <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+
+# Beaconed: negnon
+# stays the same
+negnon_negpos <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
+
+# homebound changes
+negnon_negnon <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
+negnon_negneg <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
+negnon_negneg_r <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+
+# Outbound changes
+negnon_posneg <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
+negnon_posnon <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
+negnon_pospos <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
+negnon_pospos_r <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
 
 ```
 
