@@ -207,14 +207,17 @@ spatial_firing <- spatial_firing %>%
 
 _Figure 5 stats_
 
+1. First, select cells that are position encoding (figure 3)
 ```{r}
 position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
+2. Select cells that are path integrating i.e. have slopes on both the beaconed and non-beaconed (Figure 4)
 ```{r}
 pi_data <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
 
+3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
 ```{r}
 
 pospos <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
@@ -234,8 +237,7 @@ negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative"
 
 ```
 
-_Figure 5_
-
+4. calculate number of neurons that switch slope, stay the same or are reset/continuous
 ```{r}
 switch_slope <- nrow(posneg) + nrow(negpos)
 only_outbound_slope <- nrow(posnon) + nrow(negnon)
