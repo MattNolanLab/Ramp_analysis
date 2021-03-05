@@ -646,7 +646,7 @@ save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
 }
 
 if (save_figures == 1) {
-  save_pheatmap_png(myheatmap, "my_heatmap_all2.png")
+  save_pheatmap_png(myheatmap, "plots/my_heatmap_all.png")
 }
 ```
 
