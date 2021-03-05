@@ -555,3 +555,107 @@ data_coef_PSA_cue_neg <- data_coef_2 %>%
 
 standard_plot(data_coef_PSA_cue_pos)
 ```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+_Figure 4C stats_
+
+Compare coefficients for position, speed and acceleration from lmer model for neurons that maintain slope on beaconed and non beaconed
+_focus on all position neurons (Figure 3) that have positive or negative slope (Figure 2)_
+
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA" )
+
+position_ramp_cells <- subset(position_cells, lm_group_b == "Negative" | lm_group_b == "Positive")
+
+```
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save <- select(position_ramp_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble()
+
+```
+
+1. put data into a tibble for plotting
+```{r}
+data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
+                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
+                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
+                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
+                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
+                    group = c(as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b)), 
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save)),
+                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
+```
+
+2. run anova
+```{r}
+one.way <- aov(coef ~ coef_type, data = data_coef)
+
+summary(one.way)
+```
+
+3. Post hoc Tukey's test
+```{r}
+tukey.test <- TukeyHSD(one.way)
+tukey.test$coef_type
+```
+
+
+same as above but split by positive or negative slope
+_focus on all position neurons (Figure 3) that have positive or negative slopes (Figure2)_
+
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+```{r}
+pos_position_cells <- subset(spatial_firing, lm_group_b == "Positive")
+neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
+
+```
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble()
+
+```
+
+1. put data into a tibble for plotting
+```{r}
+data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
+                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
+                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
+                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
+                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
+                    group = c(as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b)), 
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save)),
+                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
+```
+
+2. run anova
+```{r}
+one.way <- aov(coef ~ coef_type, data = data_coef)
+
+summary(one.way)
+```
+
+3. Post hoc Tukey's test
+```{r}
+tukey.test <- TukeyHSD(one.way)
+tukey.test$coef_type
+```
+
