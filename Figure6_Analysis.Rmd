@@ -116,7 +116,7 @@ Now, we can classify cells based on their predicted activity.
 ```{r}
 df <- spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_category_p == "pospos" | track_category_p == "negneg")
+  filter(track_category == "pospos" | track_category == "negneg")
   
 ```
 
@@ -245,8 +245,8 @@ params <- select(glance(model), r.squared, p.value)
 ```{r}
 reset <- spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_category_p == "pospos" | track_category_p == "negneg") %>% 
-  filter(reset_group_p == "Reset")
+  filter(track_category == "pospos" | track_category == "negneg") %>% 
+  filter(reset_group == "Reset")
 
 ```
 
@@ -254,8 +254,8 @@ reset <- spatial_firing %>%
 ```{r}
 continuous <- spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(track_category_p == "pospos" | track_category_p == "negneg") %>% 
-  filter(reset_group_p == "Continuous")
+  filter(track_category == "pospos" | track_category == "negneg") %>% 
+  filter(reset_group == "Continuous")
 
 ```
 

@@ -423,27 +423,27 @@ if (save_figures == 1) {
 
 _Plot coefficients for all cells_
 
-5. Split by positive slope _PA cells_
+5. Split by positive slope _PS cells_
 ```{r}
-data_coef_pos_PA <- data_coef %>%
+data_coef_pos_PS <- data_coef %>%
   subset(group == "PS") %>%
   subset(lm_result == "Positive" )
 
-(pos_PA_coef_plot <- standard_plot(data_coef_pos_PA))
+(pos_PS_coef_plot <- standard_plot(data_coef_pos_PS))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositivePAcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_PositivePScells.png", width = 3, height = 2.5)
 }
 ```
 
 6. Split by negative slope
 ```{r}
-data_coef_neg_PA <- data_coef %>%
+data_coef_neg_PS <- data_coef %>%
   subset(group == "PS") %>%
   subset(lm_result == "Negative" )
 
-(neg_PA_coef_plot <- standard_plot(data_coef_neg_PA))
+(neg_PS_coef_plot <- standard_plot(data_coef_neg_PS))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativePAcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_NegativePScells.png", width = 3, height = 2.5)
 }
 ```
 
