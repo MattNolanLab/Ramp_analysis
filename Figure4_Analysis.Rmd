@@ -61,6 +61,61 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
+### ----------------------------------------------------------------------------------------- ###
+
+_Figure 4B-E stats_
+position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
+1. extract position cells
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+
+position_ramp_cells <- subset(position_cells, lm_group_b == "Negative" | lm_group_b == "Positive")
+
+```
+
+2. from above, extract position neurons that are ramp like in beaconed trials
+```{r}
+pos_position_cells <- subset(position_ramp_cells, lm_group_b == "Positive")
+neg_position_cells <- subset(position_ramp_cells, lm_group_b == "Negative")
+```
+
+3. find neurons that maintain ramp polarity in the non beaconed trial
+```{r}
+posnb_position_cells <- nrow(subset(pos_position_cells, lm_group_nb == "Positive"))
+negnb_position_cells <- nrow(subset(neg_position_cells, lm_group_nb == "Negative"))
+
+```
+
+4. calculate numbers of neurons that stay the same slope in beaconed and non beaconed
+```{r}
+total <- nrow(pos_position_cells) + nrow(neg_position_cells)
+neurons_same <- (posnb_position_cells + negnb_position_cells)
+```
+
+Do the same as above but for neurons that switch ramp polarity in the non beaconed trial
+
+1. extract position ramp neurons that switch ramp polarity on the non-beaconed trial
+```{r}
+posnb_position_cells <- nrow(subset(pos_position_cells, lm_group_nb != "Positive"))
+negnb_position_cells <- nrow(subset(neg_position_cells, lm_group_nb != "Negative"))
+```
+
+2. calculate number of neurons that change slope on beaconed and non beaconed
+```{r}
+total <- nrow(pos_position_cells) + nrow(neg_position_cells)
+neurons_diff <- (posnb_position_cells + negnb_position_cells)
+```
+
+3. finally, also want to calculate numbers of neurons that are unclassified on beaconed and ramp like on non-beaconed
+```{r}
+un_position_cells <- subset(spatial_firing, lm_group_b == "Unclassified")
+unnb_position_cells <- nrow(subset(un_position_cells, lm_group_nb == "Positive" | lm_group_nb == "Negative"))
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
 
 Visualise the proportion of cells that fit the above criteria.  
 
