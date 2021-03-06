@@ -1134,6 +1134,14 @@ negneg_c_same <-subset(negneg_c, track_category_p == "negneg" & reset_group_p ==
 
 ```
 
+```{r}
+pospos_r_switch <-subset(pospos_r, track_category_p == "pospos" & reset_group_p == "Continuous")
+negneg_r_switch <-subset(negneg_r, track_category_p == "negneg" & reset_group_p == "Continuous")
+
+pospos_r_same <-subset(pospos_r, track_category_p == "posnon")
+negneg_r_same <-subset(negneg_r, track_category_p == "negnon")
+
+```
 
 4. calculate number of neurons that switch slope, stay the same or are reset/continuous
 ```{r}
