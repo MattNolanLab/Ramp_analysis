@@ -201,52 +201,6 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
-### ------------------------------------------------------------------------------------------ ### 
-
-## Calculate number of neurons that areset/switch/continuous across outbound and homebound
-
-_Figure 5 stats_
-
-1. First, select cells that are position encoding (figure 3)
-```{r}
-position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-2. Select cells that are path integrating i.e. have slopes on both the beaconed and non-beaconed (Figure 4)
-```{r}
-pi_data <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
-```
-
-3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
-```{r}
-
-pospos <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
-negneg <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative")
-
-posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
-negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
-
-posnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
-negnon <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Unclassified")
-
-
-pospos_r <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Reset")
-pospos_c <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Continuous")
-negneg_r <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Reset")
-negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Continuous")
-
-```
-
-4. calculate number of neurons that switch slope, stay the same or are reset/continuous
-```{r}
-switch_slope <- nrow(posneg) + nrow(negpos)
-only_outbound_slope <- nrow(posnon) + nrow(negnon)
-same_slope <- nrow(pospos) + nrow(negneg)
-same_slope_reset <- nrow(pospos_r) + nrow(negneg_r)
-same_slope_continuous <- nrow(pospos_c) + nrow(negneg_c)
-
-```
-
 
 ### ------------------------------------------------------------------------------------------ ### 
 
@@ -753,5 +707,50 @@ if (save_figures == 1) {
 }
 ```
 
+### ------------------------------------------------------------------------------------------ ### 
+
+## Calculate number of neurons that areset/switch/continuous across outbound and homebound
+
+_Figure 5 stats_
+
+1. First, select cells that are position encoding (figure 3)
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. Select cells that are path integrating i.e. have slopes on both the beaconed and non-beaconed (Figure 4)
+```{r}
+pi_data <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+```
+
+3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
+```{r}
+
+pospos <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
+negneg <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative")
+
+posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
+negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
+
+posnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
+negnon <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Unclassified")
+
+
+pospos_r <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Reset")
+pospos_c <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Continuous")
+negneg_r <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Reset")
+negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Continuous")
+
+```
+
+4. calculate number of neurons that switch slope, stay the same or are reset/continuous
+```{r}
+switch_slope <- nrow(posneg) + nrow(negpos)
+only_outbound_slope <- nrow(posnon) + nrow(negnon)
+same_slope <- nrow(pospos) + nrow(negneg)
+same_slope_reset <- nrow(pospos_r) + nrow(negneg_r)
+same_slope_continuous <- nrow(pospos_c) + nrow(negneg_c)
+
+```
 
 
