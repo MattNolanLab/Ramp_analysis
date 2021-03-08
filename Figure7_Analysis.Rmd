@@ -478,6 +478,11 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
+1. subset by outbound ramps (Figure 2) and cells that are modulated by speed (Figure 3)
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+```
+
 1. subset by outbound ramps (Figure 2) and cells that are modulated by position (Figure 3)
 ```{r}
 position_ramps <- subset(ramps, final_model_o_b == "P")
