@@ -1103,7 +1103,7 @@ same_slope_continuous <- nrow(pospos_c) + nrow(negneg_c)
 
 ### ------------------------------------------------------------------------------------------ ### 
 
-## is the grouping, dictated by anything experimental?
+## is the grouping, i.e. neurons that are ++(o) in beaconed but not probe - dictated by anything?
 
 1. First, select cells that are position encoding (figure 3)
 ```{r}
@@ -1116,20 +1116,7 @@ position_cells <- subset(position_cells, cue_group_o == "Positive-PI" | cue_grou
 ```
 
 3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
-```{r}
 
-pospos <-subset(position_cells, track_category == "pospos")
-negneg <-subset(position_cells, track_category == "negneg")
-
-posneg <-subset(position_cells, track_category == "posneg")
-negpos <-subset(position_cells, track_category == "negpos")
-
-posnon <-subset(position_cells, track_category == "posnon")
-negnon <-subset(position_cells, track_category == "negnon")
-
-```
-
-4. 
 ```{r}
 pospos_r <-subset(position_cells, track_category == "pospos" & reset_group == "Reset")
 pospos_c <-subset(position_cells, track_category == "pospos" & reset_group == "Continuous")
@@ -1138,13 +1125,14 @@ negneg_c <-subset(position_cells, track_category == "negneg" & reset_group == "C
 
 ```
 
-
+4. find ones that stay the same on beaconed and probe trials
 ```{r}
 pospos_r_same <-subset(pospos_r, track_category_p == "pospos" & reset_group_p == "Reset")
 negneg_r_same <-subset(negneg_r, track_category_p == "negneg" & reset_group_p == "Reset")
 
 ```
 
+5. Find ones that switch i.e. either become continuous or something else on the homebound zone
 ```{r}
 pospos_r_switch <-subset(pospos_r, track_category_p == "pospos" & reset_group_p == "Continuous")
 negneg_r_switch <-subset(negneg_r, track_category_p == "negneg" & reset_group_p == "Continuous")
@@ -1155,7 +1143,7 @@ negneg_r_un <-subset(negneg_r, track_category_p != "negneg")
 ```
 
 
-
+6. Plot scatter of training day versus trial number for these groups above
 ```{r}
 ggplot() + 
     geom_point(data=pospos_r_same,aes(x = as.numeric(Day_numeric), 
@@ -1186,6 +1174,7 @@ if (save_figures == 1) {
 ```
 
 
+7. Plot scatter of slope from linear model versus r.squared value s for these groups above
 
 ```{r}
 ggplot() + 
@@ -1219,7 +1208,7 @@ if (save_figures == 1) {
 ```
 
 
-
+7. Plot scatter of offset in beaconed trials versus offset in probe trials for these groups above
 ```{r}
 ggplot() + 
     geom_point(data=pospos_r_same,aes(x = as.numeric(predict_diff), 
