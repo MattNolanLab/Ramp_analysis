@@ -736,14 +736,14 @@ The groups we want to consider are +/+(O), +/+(C), +/-, -/-(O), -/-(C) and -/+. 
 
 3. Split by linear model result (figure 2) in outbound and homebound region for beaconed trials
 ```{r}
-pospos_r <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Reset")
-pospos_c <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Continuous")
-posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
-negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
-negneg_r <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Reset")
-negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Continuous")
-posnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
-negnon <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Unclassified")
+pospos_r <-subset(pi_data, track_category == "pospos" & reset_group == "Reset")
+pospos_c <-subset(pi_data, track_category == "pospos" & reset_group == "Continuous")
+posneg <-subset(pi_data,track_category == "posneg")
+negpos <-subset(pi_data, track_category == "negpos")
+negneg_r <-subset(pi_data, track_category == "negneg" & reset_group == "Reset")
+negneg_c <-subset(pi_data, track_category == "negneg" & reset_group == "Continuous")
+posnon <-subset(pi_data, track_category == "posnon")
+negnon <-subset(pi_data, track_category == "negnon")
 
 ```
 
@@ -751,121 +751,121 @@ negnon <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Unclassifie
 ```{r}
 # Beaconed: pospos_r
 # stays the same
-pospos_r_pospos_r <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+pospos_r_pospos_r <-nrow(subset(pospos_r, track_category_p == "pospos" & reset_group_p == "Reset"))
 
 # homebound changes
-pospos_r_posneg <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-pospos_r_posnon <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-pospos_r_pospos <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
+pospos_r_posneg <-nrow(subset(pospos_r, track_category_p == "posneg"))
+pospos_r_posnon <-nrow(subset(pospos_r, track_category_p == "posnon"))
+pospos_r_pospos <-nrow(subset(pospos_r, track_category_p == "pospos" & reset_group_p == "Continuous"))
 
 # outbound changes
-pospos_r_negpos <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-pospos_r_negnon <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-pospos_r_negneg <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-pospos_r_negneg_r <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+pospos_r_negpos <-nrow(subset(pospos_r, track_category_p == "negpos"))
+pospos_r_negnon <-nrow(subset(pospos_r, track_category_p == "negnon"))
+pospos_r_negneg <-nrow(subset(pospos_r, track_category_p == "negneg" & reset_group_p == "Continuous"))
+pospos_r_negneg_r <-nrow(subset(pospos_r, track_category_p == "negneg" & reset_group_p == "Reset"))
 
 # Beaconed: pospos_c
 # stays the same
-pospos_pospos <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
+pospos_pospos <-nrow(subset(pospos_c, track_category_p == "pospos" & reset_group_p == "Continuous"))
 
 # homebound changes
-pospos_posneg <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-pospos_posnon <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-pospos_pospos_r <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+pospos_posneg <-nrow(subset(pospos_c, track_category_p == "posneg"))
+pospos_posnon <-nrow(subset(pospos_c,track_category_p == "posnon"))
+pospos_pospos_r <-nrow(subset(pospos_c, track_category_p == "pospos" & reset_group_p == "Reset"))
 
 # outbound changes
-pospos_negpos <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-pospos_negnon <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-pospos_negneg <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-pospos_negneg_r <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+pospos_negpos <-nrow(subset(pospos_c, track_category_p == "negpos"))
+pospos_negnon <-nrow(subset(pospos_c, track_category_p == "negnon"))
+pospos_negneg <-nrow(subset(pospos_c, track_category_p == "negneg" & reset_group_p == "Continuous"))
+pospos_negneg_r <-nrow(subset(pospos_c, track_category_p == "negneg" & reset_group_p == "Reset"))
 
 # Beaconed: posneg
-posneg_posneg <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
+posneg_posneg <-nrow(subset(posneg, track_category_p == "posneg"))
 
-posneg_posnon <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-posneg_pospos <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-posneg_pospos_r <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+posneg_posnon <-nrow(subset(posneg, track_category_p == "posnon"))
+posneg_pospos <-nrow(subset(posneg, track_category_p == "pospos" & reset_group_p == "Continuous"))
+posneg_pospos_r <-nrow(subset(posneg, track_category_p == "pospos" & reset_group_p == "Reset"))
 
-posneg_negpos <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-posneg_negnon <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-posneg_negneg <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-posneg_negneg_r <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+posneg_negpos <-nrow(subset(posneg, track_category_p == "negpos"))
+posneg_negnon <-nrow(subset(posneg, track_category_p == "negnon"))
+posneg_negneg <-nrow(subset(posneg, track_category_p == "negneg" & reset_group_p == "Continuous"))
+posneg_negneg_r <-nrow(subset(posneg, track_category_p == "negneg" & reset_group_p == "Reset"))
 
 
 # Beaconed: negneg_r
 # stays the same
-negneg_r_negneg_r <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+negneg_r_negneg_r <-nrow(subset(negneg_r, track_category_p == "negneg" & reset_group_p == "Reset"))
 
 # homebound changes
-negneg_r_negpos <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-negneg_r_negnon <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negneg_r_negneg <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
+negneg_r_negpos <-nrow(subset(negneg_r, track_category_p == "negpos"))
+negneg_r_negnon <-nrow(subset(negneg_r, track_category_p == "negnon"))
+negneg_r_negneg <-nrow(subset(negneg_r, track_category_p == "negneg" & reset_group_p == "Continuous"))
 
 # outbound changes
-negneg_r_posneg <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negneg_r_posnon <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negneg_r_pospos <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-negneg_r_pospos_r <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+negneg_r_posneg <-nrow(subset(negneg_r, track_category_p == "posneg"))
+negneg_r_posnon <-nrow(subset(negneg_r,track_category_p == "posnon"))
+negneg_r_pospos <-nrow(subset(negneg_r, track_category_p == "pospos" & reset_group_p == "Continuous"))
+negneg_r_pospos_r <-nrow(subset(negneg_r, track_category_p == "pospos" & reset_group_p == "Reset"))
 
 
 # Beaconed: negneg_c
 # stays the same
-negneg_negneg <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
+negneg_negneg <-nrow(subset(negneg_c, track_category_p == "negneg" & reset_group_p == "Continuous"))
 
 # homebound changes
-negneg_negpos <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-negneg_negnon <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negneg_negneg_r <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+negneg_negpos <-nrow(subset(negneg_c, track_category_p == "negpos"))
+negneg_negnon <-nrow(subset(negneg_c, track_category_p == "negnon"))
+negneg_negneg_r <-nrow(subset(negneg_c, track_category_p == "negneg" & reset_group_p == "Reset"))
 
 # outbound changes
-negneg_posneg <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negneg_posnon <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negneg_pospos <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-negneg_pospos_r <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+negneg_posneg <-nrow(subset(negneg_c, track_category_p == "posneg"))
+negneg_posnon <-nrow(subset(negneg_c, track_category_p == "posnon"))
+negneg_pospos <-nrow(subset(negneg_c, track_category_p == "pospos" & reset_group_p == "Continuous"))
+negneg_pospos_r <-nrow(subset(negneg_c, track_category_p == "pospos" & reset_group_p == "Reset"))
 
 
 # Beaconed: negpos
 # stays the same
-negpos_negpos <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
+negpos_negpos <-nrow(subset(negpos, track_category_p == "negpos"))
 
 # homebound changes
-negpos_negnon <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negpos_negneg <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-negpos_negneg_r <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+negpos_negnon <-nrow(subset(negpos, track_category_p == "negnon"))
+negpos_negneg <-nrow(subset(negpos, track_category_p == "negneg" & reset_group_p == "Continuous"))
+negpos_negneg_r <-nrow(subset(negpos, track_category_p == "negneg" & reset_group_p == "Reset"))
 
 # Outbound changes
-negpos_posneg <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negpos_posnon <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negpos_pospos <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-negpos_pospos_r <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+negpos_posneg <-nrow(subset(negpos, track_category_p == "posneg"))
+negpos_posnon <-nrow(subset(negpos, track_category_p == "posnon"))
+negpos_pospos <-nrow(subset(negpos, track_category_p == "pospos" & reset_group_p == "Continuous"))
+negpos_pospos_r <-nrow(subset(negpos, track_category_p == "pospos" & reset_group_p == "Reset"))
 
 
 # Beaconed: posnon
-posnon_posneg <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
+posnon_posneg <-nrow(subset(posnon, track_category_p == "posneg"))
 
-posnon_posnon <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-posnon_pospos <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-posnon_pospos_r <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+posnon_posnon <-nrow(subset(posnon, track_category_p == "posnon"))
+posnon_pospos <-nrow(subset(posnon, track_category_p == "pospos" & reset_group_p == "Continuous"))
+posnon_pospos_r <-nrow(subset(posnon, track_category_p == "pospos" & reset_group_p == "Reset"))
 
-posnon_negpos <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-posnon_negnon <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-posnon_negneg <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-posnon_negneg_r <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+posnon_negpos <-nrow(subset(posnon, track_category_p == "negpos"))
+posnon_negnon <-nrow(subset(posnon, track_category_p == "negnon"))
+posnon_negneg <-nrow(subset(posnon, track_category_p == "negneg" & reset_group_p == "Continuous"))
+posnon_negneg_r <-nrow(subset(posnon, track_category_p == "negneg" & reset_group_p == "Reset"))
 
 # Beaconed: negnon
 # stays the same
-negnon_negpos <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
+negnon_negpos <-nrow(subset(negnon, track_category_p == "negpos"))
 
 # homebound changes
-negnon_negnon <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negnon_negneg <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-negnon_negneg_r <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+negnon_negnon <-nrow(subset(negnon, track_category_p == "negnon"))
+negnon_negneg <-nrow(subset(negnon, track_category_p == "negneg" & reset_group_p == "Continuous"))
+negnon_negneg_r <-nrow(subset(negnon, track_category_p == "negneg" & reset_group_p == "Reset"))
 
 # Outbound changes
-negnon_posneg <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negnon_posnon <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negnon_pospos <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-negnon_pospos_r <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+negnon_posneg <-nrow(subset(negnon, track_category_p == "posneg"))
+negnon_posnon <-nrow(subset(negnon, track_category_p == "posnon"))
+negnon_pospos <-nrow(subset(negnon, track_category_p == "pospos" & reset_group_p == "Continuous"))
+negnon_pospos_r <-nrow(subset(negnon, track_category_p == "pospos" & reset_group_p == "Reset"))
 
 ```
 
@@ -919,7 +919,7 @@ data_long <-
       pospos_r_negnon,
       pospos_r_negneg,
       pospos_r_negneg_r,
-      pospos_pospos_r,
+      pospos_r_pospos_r,
       
       negneg_r_pospos,
       negneg_r_posneg,
@@ -1152,4 +1152,99 @@ same_slope_reset <- nrow(pospos_r) + nrow(negneg_r)
 same_slope_continuous <- nrow(pospos_c) + nrow(negneg_c)
 
 ```
+
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## is the grouping, dictated by anything experimental?
+
+1. First, select cells that are position encoding (figure 3)
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. Select cells that are path integrating i.e. have slopes on both the beaconed and non-beaconed (Figure 4)
+```{r}
+position_cells <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+```
+
+3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
+```{r}
+
+pospos <-subset(position_cells, track_category == "pospos")
+negneg <-subset(position_cells, track_category == "negneg")
+
+posneg <-subset(position_cells, track_category == "posneg")
+negpos <-subset(position_cells, track_category == "negpos")
+
+posnon <-subset(position_cells, track_category == "posnon")
+negnon <-subset(position_cells, track_category == "negnon")
+
+```
+
+5. for +- and -+ groups as classified on beaconed trials, how many are the same on probe?
+```{r}
+posneg_same_probe <-subset(posneg, track_category_p == "posneg")
+negpos_same_probe <-subset(negpos, track_category_p == "negpos")
+
+posneg_diff_probe <-subset(posneg, track_category_p != "posneg")
+negpos_diff_probe <-subset(negpos, track_category_p != "negpos")
+
+```
+
+
+```{r}
+ggplot() + 
+    geom_point(data=posneg_same_probe,aes(x = as.numeric(Day_numeric), y = as.numeric(hit_trials_number), color=factor(unlist(lm_group_b))), shape=1, colour = "chartreuse3") +
+    geom_point(data=posneg_diff_probe,aes(x = as.numeric(Day_numeric), y = as.numeric(hit_trials_number), color=factor(unlist(lm_group_b))), colour = "chartreuse3") +
+    geom_point(data=negpos_same_probe,aes(x = as.numeric(Day_numeric), y = as.numeric(hit_trials_number), color=factor(unlist(lm_group_b))), shape=1, colour = "violetred2") +
+    geom_point(data=negpos_diff_probe,aes(x = as.numeric(Day_numeric), y = as.numeric(hit_trials_number), color=factor(unlist(lm_group_b))), colour = "violetred2") +    
+  #coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
+    #geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Beaconed offset") +
+    ylab("Probe offset") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    theme(axis.text.x = element_text(size=17),
+          axis.text.y = element_text(size=17),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/test_fig6.png", width = 4, height = 4) 
+}
+```
+
+7. 
+```{r}
+pospos_r <-subset(position_cells, track_category == "pospos" & reset_group == "Reset")
+pospos_c <-subset(position_cells, track_category == "pospos" & reset_group == "Continuous")
+negneg_r <-subset(position_cells, track_category == "negneg" & reset_group == "Reset")
+negneg_c <-subset(position_cells, track_category == "negneg" & reset_group == "Continuous")
+
+```
+
+
+```{r}
+pospos_r_same <-subset(pospos_r, track_category_p == "pospos" & reset_group_p == "Reset")
+pospos_c_same <-subset(pospos_c, track_category_p == "pospos" & reset_group_p == "Continuous")
+negneg_r_same <-subset(negneg_r, track_category_p == "negneg" & reset_group_p == "Reset")
+negneg_c_same <-subset(negneg_c, track_category_p == "negneg" & reset_group_p == "Continuous")
+
+```
+
+```{r}
+pospos_r_switch <-subset(pospos_r, track_category_p == "pospos" & reset_group_p == "Continuous")
+negneg_r_switch <-subset(negneg_r, track_category_p == "negneg" & reset_group_p == "Continuous")
+
+pospos_r_un <-subset(pospos_r, track_category_p == "posnon")
+negneg_r_un <-subset(negneg_r, track_category_p == "negnon")
+
+```
+
 
