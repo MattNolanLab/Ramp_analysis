@@ -46,12 +46,6 @@ spatial_firing <- spatial_firing %>%
          run_trials_number = map(spikes_in_time_run,trial_adder))
 ```
 
-filter dataset for having enough trials
-```{r}
-spatial_firing_enoughtrials <- spatial_firing %>%
-  filter(run_trials_number > 3 & try_trials_number > 3)
-```
-
 
 ### --------------------------------------------------------------------------------------- ###
 
@@ -227,6 +221,12 @@ spatial_firing$asr_b_try_fit_pval
 spatial_firing$asr_b_try_fit_slope
 spatial_firing$asr_b_try_fit_r.squared
 
+
+First, filter dataset for having enough trials
+```{r}
+spatial_firing_enoughtrials <- spatial_firing %>%
+  filter(run_trials_number > 3 & try_trials_number > 3)
+```
 
 
 Now we can plot the slope coefficients for each trial type, marked by whether or not the cells are significantly modulated by trial type (hit, try, run)
@@ -452,7 +452,7 @@ normalise_rates <- function(df){
 
 2. run on all cells
 ```{r}
-spatial_firing <- spatial_firing %>%
+spatial_firing_enoughtrials <- spatial_firing_enoughtrials %>%
   mutate(normalised_rates_try = map(Avg_FiringRate_TryTrials, normalise_rates), 
          normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates))
 ```
@@ -463,7 +463,7 @@ Predict mean and confidence intervals for firing rate at the start of the homebo
 
 2. Run on all neurons
 ```{r}
-spatial_firing <- spatial_firing %>%
+spatial_firing_enoughtrials <- spatial_firing_enoughtrials %>%
   select(-contains('predict_params_try_')) %>%
   select(-contains('predict_params_run_')) %>%
   mutate(predict_params_try = map(normalised_rates_try, predict_homebound),
@@ -471,7 +471,7 @@ spatial_firing <- spatial_firing %>%
   unnest_wider(predict_params_try, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(predict_params_run, names_sep = "_", names_repair = "universal") 
 
-spatial_firing <- spatial_firing %>%
+spatial_firing_enoughtrials <- spatial_firing_enoughtrials %>%
   mutate(
          predict_diff_try = map2_dbl(normalised_rates_try, predict_params_try_fit, calc_predict_diff),
          predict_diff_run = map2_dbl(normalised_rates_run, predict_params_run_fit, calc_predict_diff))
