@@ -474,28 +474,32 @@ position_neurons_continuous <- spatial_firing  %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")  %>% 
   filter(reset_group == "Continuous")
+
+position_neurons_all <- spatial_firing  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") 
 ```
 
 2. Plot scatter plot
 ```{r}
 
 ggplot() + 
-    geom_point(data=subset(position_neurons_reset, track_category == "pospos" | track_category == "negneg"),
+    geom_point(data=subset(position_neurons_all, track_category == "pospos" | track_category == "negneg"),
                aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), alpha=0.8) +
-    geom_point(data=subset(position_neurons_reset, track_category == "posneg" | track_category == "negpos"),
+    geom_point(data=subset(position_neurons_all, track_category == "posneg" | track_category == "negpos"),
                aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
-    geom_point(data=subset(position_neurons_reset, track_category == "posnon" | track_category == "negnon"),
+    geom_point(data=subset(position_neurons_all, track_category == "posnon" | track_category == "negnon"),
                aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
-      geom_point(data=subset(position_neurons_continuous, track_category == "pospos" | track_category == "negneg"),
-               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
-                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
-                   color=factor(unlist(lm_group_b))), shape=1, alpha=0.8) +
+    #geom_point(data=subset(position_neurons_continuous, track_category == "pospos" | track_category == "negneg"),
+               #aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+               #    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+               #    color=factor(unlist(lm_group_b))), shape=1, alpha=0.8) +
 
       #geom_point(data=position_neurons_reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
     #geom_point(data=position_neurons_continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
@@ -620,6 +624,23 @@ if (save_figures == 1) {
 ```
 
 
+4. Subset data by group then average rates for plotting          **Negative Negative Reset**
+
+```{r}
+df_neg_cue <- df %>%
+  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+  
+mean_SEM_plots(df_neg_cue)
+
+if (save_figures == 1) {
+ ggsave(file = "plots/negneg_all_mean.png", width = 3.5, height = 2.5) 
+}
+```
+
+
 
 4. Subset data by group then average rates for plotting          **Negative Positive**
 ```{r}
@@ -671,6 +692,23 @@ if (save_figures == 1) {
   ggsave(file = "plots/pospos_reset_mean.png", width = 3.5, height = 2.5)
 }
 ```
+4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+  
+mean_SEM_plots(df_pos_pi)
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/pospos_all_mean.png", width = 3.5, height = 2.5) 
+}
+```
+
+
 
 4. Subset data by group then average rates for plotting          **Positive Negative**
 
