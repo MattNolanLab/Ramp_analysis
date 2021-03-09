@@ -406,7 +406,6 @@ spatial_firing <- spatial_firing %>%
 ```{r}
 df_position_pi <- spatial_firing %>%
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")  %>% 
-  filter(track_category == "pospos" | track_category == "negneg") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
   
 ```
@@ -414,7 +413,7 @@ df_position_pi <- spatial_firing %>%
 4. Plot bar charts - positive neurons
 ```{r}
 ggplot(data=subset(df_position_pi, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
-  coord_cartesian(xlim=c(-5,5)) +
+  coord_cartesian(xlim=c(-6,6)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
   scale_fill_manual(values=c(  "grey", "chartreuse3","chartreuse3")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
@@ -475,15 +474,36 @@ position_neurons_continuous <- spatial_firing  %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")  %>% 
   filter(reset_group == "Continuous")
+
+position_neurons_all <- spatial_firing  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") 
 ```
 
 2. Plot scatter plot
 ```{r}
 
 ggplot() + 
-    geom_point(data=position_neurons_continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
-    geom_point(data=position_neurons_reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
-    coord_cartesian(ylim = c(-.6,.6), xlim = c(-.6,.6)) +
+    geom_point(data=subset(position_neurons_all, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_point(data=subset(position_neurons_all, track_category == "posneg" | track_category == "negpos"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_point(data=subset(position_neurons_all, track_category == "posnon" | track_category == "negnon"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
+    #geom_point(data=subset(position_neurons_continuous, track_category == "pospos" | track_category == "negneg"),
+               #aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+               #    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+               #    color=factor(unlist(lm_group_b))), shape=1, alpha=0.8) +
+
+      #geom_point(data=position_neurons_reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
+    #geom_point(data=position_neurons_continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
+    coord_cartesian(ylim = c(-.45,.61), xlim = c(-.45,.45)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
     xlab("Outbound slope") +
@@ -556,13 +576,13 @@ df_neg_cue <- df %>%
 
 Function to plot mean and SEM of firing rate as a function of position.
 ```{r}
-mean_SEM_plots <- function(df, colour1 = "black"){
+mean_SEM_plots <- function(df, colour1 = "blue"){
   ggplot(data=df) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = "Blue", alpha=0.2) +
-  geom_line(aes(y=mean_r, x=Position), color = "Blue") +
+  geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
+  geom_line(aes(y=mean_r, x=Position), color = colour1) +
   theme_classic() +
   scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
   scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
@@ -578,7 +598,7 @@ mean_SEM_plots <- function(df, colour1 = "black"){
 
 5. Plot average rates                                           **Negative Negative Continuous**
 ```{r}
-mean_SEM_plots(df_neg_cue)
+mean_SEM_plots(df_neg_cue, colour1 = "black")
 
 if (save_figures == 1) {
  ggsave(file = "plots/Negneg_contiuous_mean.png", width = 3.5, height = 2.5) 
@@ -596,10 +616,27 @@ df_neg_cue <- df %>%
   dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
   
-mean_SEM_plots(df_neg_cue)
+mean_SEM_plots(df_neg_cue, colour1 = "black")
 
 if (save_figures == 1) {
  ggsave(file = "plots/negneg_reset_mean.png", width = 3.5, height = 2.5) 
+}
+```
+
+
+4. Subset data by group then average rates for plotting          **Negative Negative Reset**
+
+```{r}
+df_neg_cue <- df %>%
+  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+  
+mean_SEM_plots(df_neg_cue, colour1 = "black")
+
+if (save_figures == 1) {
+ ggsave(file = "plots/negneg_all_mean.png", width = 3.5, height = 2.5) 
 }
 ```
 
@@ -613,7 +650,7 @@ df_pos_cue <- df %>%
   dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
 
-mean_SEM_plots(df_pos_cue)
+mean_SEM_plots(df_pos_cue, colour1 = "black")
 
 if (save_figures == 1) {
  ggsave(file = "plots/negpos_mean.png", width = 3.5, height = 2.5) 
@@ -630,7 +667,7 @@ df_pos_pi <- df %>%
   dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
   
-mean_SEM_plots(df_pos_pi)
+mean_SEM_plots(df_pos_pi, colour1 = "black")
 
 
 if (save_figures == 1) {
@@ -649,12 +686,29 @@ df_pos_pi <- df %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE), sem_r = std.error(Rates, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169))
 
-mean_SEM_plots(df_pos_pi)
+mean_SEM_plots(df_pos_pi, colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/pospos_reset_mean.png", width = 3.5, height = 2.5)
 }
 ```
+4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+  mutate(Position = rep(-30:169))
+  
+mean_SEM_plots(df_pos_pi, colour1 = "black")
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/pospos_all_mean.png", width = 3.5, height = 2.5) 
+}
+```
+
+
 
 4. Subset data by group then average rates for plotting          **Positive Negative**
 
@@ -666,7 +720,7 @@ df_pos_pi <- df %>%
   mutate(Position = rep(-30:169))
 
 
-mean_SEM_plots(df_pos_pi)
+mean_SEM_plots(df_pos_pi, colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/posneg_mean.png", width = 3.5, height = 2.5)
@@ -684,7 +738,7 @@ df_pos_pi <- df %>%
   mutate(Position = rep(-30:169))
 
 
-mean_SEM_plots(df_pos_pi)
+mean_SEM_plots(df_pos_pi, colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/posnon_mean.png", width = 3.5, height = 2.5)
@@ -700,13 +754,14 @@ df_pos_pi <- df %>%
   dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
   mutate(Position = rep(-30:169))
 
-mean_SEM_plots(df_pos_pi)
+mean_SEM_plots(df_pos_pi, colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/negnon_mean.png", width = 3.5, height = 2.5)
 }
 ```
 
+###
 ### ------------------------------------------------------------------------------------------ ### 
 
 ## Calculate number of neurons that areset/switch/continuous across outbound and homebound
