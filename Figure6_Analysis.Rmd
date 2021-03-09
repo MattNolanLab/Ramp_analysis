@@ -169,7 +169,7 @@ if (save_figures == 1) {
 ## plot outbound and homebound slopes for each neuron - seperated by whether they reset or are continuous 
 1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 3) and reset activity in probe trials
 ```{r}
-reset <- spatial_firing %>%
+slope_df <- spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(reset_group == "Reset")
@@ -179,7 +179,7 @@ reset <- spatial_firing %>%
 2. Plot scatter of slopes on beaconed&probe
 ```{r}
 ggplot() + 
-    geom_point(data=subset(reset, track_category == "pospos" | track_category == "negneg"),
+    geom_point(data=subset(slope_df, track_category == "pospos" | track_category == "negneg"),
                aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), alpha=0.8) +
@@ -191,7 +191,6 @@ ggplot() +
                aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
-    coord_cartesian(ylim = c(-.7,.7), xlim = c(-.7,.7)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed slope") +
     ylab("Probe slope") +
@@ -226,7 +225,7 @@ params <- select(glance(model), r.squared, p.value)
 
 1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 3) and reset activity in probe trials and ++ or -- on beaconed trials
 ```{r}
-reset <- spatial_firing %>%
+offset_df <- spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(track_category == "pospos" | track_category == "negneg") %>% 
@@ -234,21 +233,11 @@ reset <- spatial_firing %>%
 
 ```
 
-2. same as above for continuous neurons
-```{r}
-continuous <- spatial_firing %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
-  filter(track_category == "pospos" | track_category == "negneg") %>% 
-  filter(reset_group == "Continuous")
-
-```
-
-3. Plot scatter of offset on beacconed&probe
+2. Plot scatter of offset on beacconed&probe
 ```{r}
 ggplot() + 
-    geom_point(data=reset,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b)))) +
-    coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
+    geom_jitter(data=offset_df,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(track_category))),alpha=0.8) +
+    #coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed offset") +
     ylab("Probe offset") +
@@ -855,14 +844,6 @@ negnon_pospos_r <-nrow(subset(negnon, track_category_p == "pospos" & reset_group
 data_long <-
   tibble(
     value = c(
-      negpos_pospos,
-      negpos_posneg,
-      negpos_negpos,
-      negpos_posnon,
-      negpos_negnon,
-      negpos_negneg,
-      negpos_negneg_r,
-      negpos_pospos_r,
       
       posneg_pospos,
       posneg_posneg,
@@ -882,6 +863,15 @@ data_long <-
       pospos_r_negneg_r,
       pospos_r_pospos_r,
       
+      negpos_pospos,
+      negpos_posneg,
+      negpos_negpos,
+      negpos_posnon,
+      negpos_negnon,
+      negpos_negneg,
+      negpos_negneg_r,
+      negpos_pospos_r,
+      
       negneg_r_pospos,
       negneg_r_posneg,
       negneg_r_negpos,
@@ -893,14 +883,6 @@ data_long <-
     ),
     
     source = c(
-      "- +",
-      "- +",
-      "- +",
-      "- +",
-      "- +",
-      "- +",
-      "- +",
-      "- +",
       "+ -",
       "+ -",
       "+ -",
@@ -917,6 +899,14 @@ data_long <-
       "+ + R",
       "+ + R",
       "+ + R",
+      "- +",
+      "- +",
+      "- +",
+      "- +",
+      "- +",
+      "- +",
+      "- +",
+      "- +",
       "- - R",
       "- - R",
       "- - R",
@@ -928,22 +918,6 @@ data_long <-
     ),
     
     target = c(
-      " + +",
-      " + -",
-      " - +",
-      " + non",
-      " - non",
-      " - -",
-      " - - R",
-      " + + R",
-      " + +",
-      " + -",
-      " - +" ,
-      " + non",
-      " - non",
-      " - -",
-      " - - R",
-      " + + R",
       " + +",
       " + -",
       " - +" ,
