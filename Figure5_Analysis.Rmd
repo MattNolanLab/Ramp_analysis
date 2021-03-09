@@ -406,7 +406,6 @@ spatial_firing <- spatial_firing %>%
 ```{r}
 df_position_pi <- spatial_firing %>%
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")  %>% 
-  filter(track_category == "pospos" | track_category == "negneg") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
   
 ```
@@ -414,7 +413,7 @@ df_position_pi <- spatial_firing %>%
 4. Plot bar charts - positive neurons
 ```{r}
 ggplot(data=subset(df_position_pi, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
-  coord_cartesian(xlim=c(-5,5)) +
+  coord_cartesian(xlim=c(-6,6)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
   scale_fill_manual(values=c(  "grey", "chartreuse3","chartreuse3")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
@@ -481,9 +480,26 @@ position_neurons_continuous <- spatial_firing  %>%
 ```{r}
 
 ggplot() + 
-    geom_point(data=position_neurons_continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
-    geom_point(data=position_neurons_reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
-    coord_cartesian(ylim = c(-.6,.6), xlim = c(-.6,.6)) +
+    geom_point(data=subset(position_neurons_reset, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_point(data=subset(position_neurons_reset, track_category == "posneg" | track_category == "negpos"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_point(data=subset(position_neurons_reset, track_category == "posnon" | track_category == "negnon"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
+      geom_point(data=subset(position_neurons_continuous, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=1, alpha=0.8) +
+
+      #geom_point(data=position_neurons_reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
+    #geom_point(data=position_neurons_continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
+    coord_cartesian(ylim = c(-.45,.61), xlim = c(-.45,.45)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
     xlab("Outbound slope") +
@@ -707,6 +723,7 @@ if (save_figures == 1) {
 }
 ```
 
+###
 ### ------------------------------------------------------------------------------------------ ### 
 
 ## Calculate number of neurons that areset/switch/continuous across outbound and homebound
