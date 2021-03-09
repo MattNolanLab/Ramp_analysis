@@ -1021,12 +1021,27 @@ negnon <-subset(position_cells, track_category == "negnon")
 
 ```
 
+```{r}
+total_cells <- (nrow(pospos) + nrow(negneg) + nrow(posneg) + nrow(negpos) + nrow(posnon) + nrow(negnon))
+```
 
 5. for +- and -+ groups as classified on beaconed trials, how many are the same on probe?
 ```{r}
 posneg_same_probe <-subset(posneg, track_category_p == "posneg")
 negpos_same_probe <-subset(negpos, track_category_p == "negpos")
 
+negneg_same_probe <-subset(negneg, track_category_p == "negneg")
+pospos_same_probe <-subset(pospos, track_category_p == "pospos")
+
+posnon_same_probe <-subset(posnon, track_category_p == "posnon")
+negnon_same_probe <-subset(negnon, track_category_p == "negnon")
+
+```
+
+```{r}
+total_cells_same_on_probe <- (nrow(pospos_same_probe) + nrow(negneg_same_probe) + 
+                                nrow(posneg_same_probe) + nrow(negpos_same_probe) + 
+                                nrow(posnon_same_probe) + nrow(negnon_same_probe))
 ```
 
 6. for +- and -+ groups as classified on beaconed trials, how many unclassified on probe?
@@ -1038,7 +1053,7 @@ negpos_un_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unc
 
 7. 
 ```{r}
-pospos_r <-subset(position_cells, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Reset")
+pospos_r <-subset(position_cells, track_category == "pospos" & reset_group == "Reset")
 pospos_c <-subset(position_cells, track_category == "pospos" & reset_group == "Continuous")
 negneg_r <-subset(position_cells, track_category == "negneg" & reset_group == "Reset")
 negneg_c <-subset(position_cells, track_category == "negneg" & reset_group == "Continuous")
