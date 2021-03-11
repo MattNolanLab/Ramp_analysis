@@ -480,6 +480,36 @@ if (save_figures == 1) {
 ```
 
 
+_Plot coefficients for just position cells_
+
+
+6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position only.
+
+```{r}
+data_coef_pos_SA <- data_coef %>%
+  subset(group == "SA") %>%
+  subset(lm_result == "Positive")
+
+(pos_SA_coef_plot <- standard_plot(data_coef_pos_SA))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_PositiveSAcells.png", width = 3, height = 2.5)
+}
+```
+
+
+
+6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position only.
+
+```{r}
+data_coef_neg_SA <- data_coef %>%
+  subset(group == "SA") %>%
+  subset(lm_result == "Negative")
+
+(neg_SA_coef_plot <- standard_plot(data_coef_neg_SA))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_NegativeSAcells.png", width = 3, height = 2.5)
+}
+```
 
 6c. Plot coefficients for cells classified in Figure 2 as being unclassified but that have 'significant' positional coefficients in the mixed effect model.
 
