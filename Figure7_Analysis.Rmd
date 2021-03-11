@@ -986,6 +986,142 @@ Repeat above plots but for speed encoding neurons, regardless of classification 
 
 1. Split data based on speed encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
+all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S" )
+```
+
+2.seperate based on whether they have a positive or negative relationship with speed
+```{r}
+all_speed_neurons_pos <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
+all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
+```
+
+
+3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
+```{r}
+(All_Speed_Neg_plot <- all_speed_neurons %>%
+  filter(o_b_mod_coefs_speed < 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+if (save_figures==1) {
+  ggsave(file = "plots/negative_relationship_JustSpeed.png", width = 4.5, height = 2.5)
+}
+```
+
+
+3. Subset data by group then average rates for plotting          **positive coefficient with speed**
+```{r}
+(All_Speed_Pos_plot <- all_speed_neurons %>%
+  filter(o_b_mod_coefs_speed > 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+if (save_figures==1) {
+  ggsave(file = "plots/positive_relationship_JustSpeed.png", width = 4.5, height = 2.5)
+}
+```
+
+
+
+
+
+
+Repeat above plots but for speed encoding neurons, regardless of classification in Figure 2.
+
+1. Split data based on speed encoding group (Figure 3) as we are only interested in these neurons here
+```{r}
+all_speed_neurons <- filter(spatial_firing,final_model_o_b == "A")
+```
+
+2.seperate based on whether they have a positive or negative relationship with speed
+```{r}
+all_speed_neurons_pos <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
+all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
+```
+
+
+3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
+```{r}
+(All_Speed_Neg_plot <- all_speed_neurons %>%
+  filter(o_b_mod_coefs_speed < 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+if (save_figures==1) {
+  ggsave(file = "plots/negative_relationship_JustAccel.png", width = 4.5, height = 2.5)
+}
+```
+
+
+3. Subset data by group then average rates for plotting          **positive coefficient with speed**
+```{r}
+(All_Speed_Pos_plot <- all_speed_neurons %>%
+  filter(o_b_mod_coefs_speed > 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+if (save_figures==1) {
+  ggsave(file = "plots/positive_relationship_JustAccel.png", width = 4.5, height = 2.5)
+}
+```
+
+
+
+
+
+
+Repeat above plots but for speed encoding neurons, regardless of classification in Figure 2.
+
+1. Split data based on speed encoding group (Figure 3) as we are only interested in these neurons here
+```{r}
+all_speed_neurons <- filter(spatial_firing, final_model_o_b == "SA")
+```
+
+2.seperate based on whether they have a positive or negative relationship with speed
+```{r}
+all_speed_neurons_pos <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
+all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
+```
+
+
+3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
+```{r}
+(All_Speed_Neg_plot <- all_speed_neurons %>%
+  filter(o_b_mod_coefs_speed < 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+if (save_figures==1) {
+  ggsave(file = "plots/negative_relationship_SpeedandAccel.png", width = 4.5, height = 2.5)
+}
+```
+
+
+3. Subset data by group then average rates for plotting          **positive coefficient with speed**
+```{r}
+(All_Speed_Pos_plot <- all_speed_neurons %>%
+  filter(o_b_mod_coefs_speed > 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(0,200))
+
+if (save_figures==1) {
+  ggsave(file = "plots/positive_relationship_JSpeedandAccel.png", width = 4.5, height = 2.5)
+}
+```
+
+
+
+
+Repeat above plots but for speed encoding neurons, regardless of classification in Figure 2.
+
+1. Split data based on speed encoding group (Figure 3) as we are only interested in these neurons here
+```{r}
 all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A")
 ```
 
@@ -1005,7 +1141,7 @@ all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
   mean_SEM_plots_by_Outcome(0,200))
 
 if (save_figures==1) {
-  ggsave(file = "plots/negative_relationship_wallspeed.png", width = 4.5, height = 2.5)
+  ggsave(file = "plots/negative_relationship_AllSpeed.png", width = 4.5, height = 2.5)
 }
 ```
 
@@ -1019,7 +1155,7 @@ if (save_figures==1) {
   mean_SEM_plots_by_Outcome(0,200))
 
 if (save_figures==1) {
-  ggsave(file = "plots/positive_relationship_wallspeed.png", width = 4.5, height = 2.5)
+  ggsave(file = "plots/positive_relationship_AllSpeed.png", width = 4.5, height = 2.5)
 }
 ```
 
@@ -1051,6 +1187,9 @@ data <- tibble(session_id = rep(unlist(df$unique_id), times=3),
                     predict = c(as.numeric(df$predict_diff),
                              as.numeric(df$predict_diff_run),
                              as.numeric(df$predict_diff_try)),
+                    coef = c(as.numeric(df$o_b_mod_coefs_pos),
+                             as.numeric(df$o_b_mod_coefs_speed),
+                             as.numeric(df$o_b_mod_coefs_accel)),
                     type = rep(c("Hit", "Run", "Try"),
                                     each = nrow(df)),
                     lm_group_b = rep(as.character(df$lm_group_b), times=3))
@@ -1134,6 +1273,9 @@ data <- tibble(session_id = rep(unlist(df$unique_id), times=3),
                     predict = c(as.numeric(df$predict_diff),
                              as.numeric(df$predict_diff_run),
                              as.numeric(df$predict_diff_try)),
+                    coef = c(as.numeric(df$o_b_mod_coefs_pos),
+                             as.numeric(df$o_b_mod_coefs_speed),
+                             as.numeric(df$o_b_mod_coefs_accel)),
                     type = rep(c("Hit", "Run", "Try"),
                                     each = nrow(df)),
                     lm_group_b = rep(as.character(df$lm_group_b), times=3))
@@ -1203,7 +1345,7 @@ summary(one.way)
 1. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 2) and subset based on position encoding (Figure 3) and are ++ or -- in beaconed trials
 ```{r}
 df <- spatial_firing %>%
-  filter(final_model_o_b == "S" | final_model_o_b == "A" | final_model_o_b == "SA") %>%
+  filter(final_model_o_b == "S") %>%
   filter(track_category == "pospos" | track_category == "negneg") 
 
 ```
@@ -1218,6 +1360,7 @@ data <- tibble(session_id = rep(unlist(df$unique_id), times=3),
                     coef = c(as.numeric(df$o_b_mod_coefs_speed),
                              as.numeric(df$o_b_mod_coefs_speed),
                              as.numeric(df$o_b_mod_coefs_speed)),
+
                     type = rep(c("Hit", "Run", "Try"),
                                     each = nrow(df)),
                     lm_group_b = rep(as.character(df$lm_group_b), times=3))
@@ -1226,7 +1369,7 @@ data <- tibble(session_id = rep(unlist(df$unique_id), times=3),
 
 2. Plot bar charts 
 ```{r}
-ggplot(data=subset(data,lm_group_b == "Negative"), aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+ggplot(data=subset(data,coef < 0), aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
   coord_cartesian(ylim=c(-3.5,5.5)) +
   geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
   stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
@@ -1247,7 +1390,7 @@ if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_fig7_neg_AllSpeed.png",width = 4, height = 2.5)
 }
 
-ggplot(data=subset(data,lm_group_b == "Positive"), aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+ggplot(data=subset(data,coef > 0), aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
   coord_cartesian(ylim=c(-4,3)) +
   geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
   stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
@@ -1271,13 +1414,15 @@ if (save_figures == 1) {
 2. run anova
 ```{r}
 data_pos <- data %>%
-  filter(lm_group_b == "Positive") 
+  #filter(lm_group_b == "Positive") 
+  filter(coef > 0) 
 
 one.way <- aov(predict ~ type, data = data_pos)
 summary(one.way)
 
 data_neg <- data %>%
-  filter(lm_group_b == "Negative") 
+  #filter(lm_group_b == "Negative") 
+  filter(coef < 0) 
 
 one.way <- aov(predict ~ type, data = data_neg)
 summary(one.way)
