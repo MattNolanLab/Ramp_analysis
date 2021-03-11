@@ -452,7 +452,7 @@ normalise_rates <- function(df){
 
 2. run on all cells
 ```{r}
-spatial_firing_enoughtrials <- spatial_firing_enoughtrials %>%
+spatial_firing <- spatial_firing %>%
   mutate(normalised_rates_try = map(Avg_FiringRate_TryTrials, normalise_rates), 
          normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates))
 ```
@@ -463,7 +463,7 @@ Predict mean and confidence intervals for firing rate at the start of the homebo
 
 2. Run on all neurons
 ```{r}
-spatial_firing_enoughtrials <- spatial_firing_enoughtrials %>%
+spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_try_')) %>%
   select(-contains('predict_params_run_')) %>%
   mutate(predict_params_try = map(normalised_rates_try, predict_homebound),
@@ -471,7 +471,7 @@ spatial_firing_enoughtrials <- spatial_firing_enoughtrials %>%
   unnest_wider(predict_params_try, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(predict_params_run, names_sep = "_", names_repair = "universal") 
 
-spatial_firing_enoughtrials <- spatial_firing_enoughtrials %>%
+spatial_firing <- spatial_firing %>%
   mutate(
          predict_diff_try = map2_dbl(normalised_rates_try, predict_params_try_fit, calc_predict_diff),
          predict_diff_run = map2_dbl(normalised_rates_run, predict_params_run_fit, calc_predict_diff))
@@ -497,10 +497,10 @@ plot_offset_comparison <- function(offset1, offset2, factor1){
                                 fill = factor(unlist(fac)),
                                 color = factor(unlist(fac)))) +
     coord_cartesian(xlim=c(-5,5), y=c(-5,5)) +
-    geom_point(alpha=0.3) +
+    geom_point(alpha=0.8) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    scale_fill_manual(values=c("black", "red", "blue")) +
-    scale_color_manual(values=c("black", "red", "blue")) +
+    scale_fill_manual(values=c("firebrick1", "darkorange", "darkorchid1", "darkslategray")) +
+    scale_color_manual(values=c("firebrick1", "darkorange", "darkorchid1", "darkslategray")) +
     xlab("offset(rewarded)") +
     ylab(expression("offset")) +
     theme_classic() +
@@ -514,6 +514,7 @@ plot_offset_comparison <- function(offset1, offset2, factor1){
 }
 
 ```
+  scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
 
 2. Plot offset for rewarded trials and run through trials
 ```{r}
@@ -544,7 +545,7 @@ allposition_ramps <- subset(ramps, final_model_o_b == "P" | final_model_o_b == "
 
 2. Plot offset for rewarded trials and run through trials
 ```{r}
-plot_offset_comparison (allposition_ramps$predict_diff, allposition_ramps$predict_diff_run, allposition_ramps$reward_interaction_id)
+plot_offset_comparison (allposition_ramps$predict_diff, allposition_ramps$predict_diff_run, allposition_ramps$final_model_o_b)
 
 if (save_figures == 1) {
   ggsave(file = "plots/OffsetScatter_reward_vs_run_allposition.png", width = 4, height = 3.5)
@@ -553,7 +554,7 @@ if (save_figures == 1) {
 
 3. Plot offset for rewarded trials and trials where the animal tries to stop
 ```{r}
-plot_offset_comparison (allposition_ramps$predict_diff, allposition_ramps$predict_diff_try, allposition_ramps$reward_interaction_id)
+plot_offset_comparison (allposition_ramps$predict_diff, allposition_ramps$predict_diff_try, allposition_ramps$final_model_o_b)
 
 if (save_figures == 1) {
   ggsave(file = "plots/OffsetScatter_reward_vs_try_allposition.png", width = 4, height = 3.5)
@@ -661,28 +662,11 @@ position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b
 ```
 
 
-2. Subset data by group then average rates for plotting          **Negative Negative Continuous**
-```{r}
-(NegNegC_plot <- position_neurons %>%
-  filter(lm_group_b == "Negative",
-         lm_group_b_h == "Negative",
-         reset_group == "Continuous") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(0,200))
-
-if (save_figures==1) {
-  ggsave(file = "plots/NegNeg_Continuous_PI_allposition.png", width = 4.5, height = 2.5)
-}
-
-```
-
 3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
 (NegNegR_plot <- position_neurons %>%
   filter(lm_group_b == "Negative",
-         lm_group_b_h == "Negative",
-         reset_group == "Reset") %>%
+         lm_group_b_h == "Negative") %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
   mean_SEM_plots_by_Outcome(0,200))
@@ -693,29 +677,12 @@ if (save_figures==1) {
 
 ```
 
-4. Subset data by group then average rates for plotting          **Positive Positive Continuous**
-```{r}
-(PosPosC_plot <- position_neurons %>%
-  filter(lm_group_b == "Positive",
-         lm_group_b_h == "Positive",
-         reset_group == "Continuous") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(0,200))
-
-
-if (save_figures==1) {
-  ggsave(file = "plots/PosPos_Continuous_PI_allposition.png", width = 4.5, height = 2.5)
-}
-
-```
 
 5. Subset data by group then average rates for plotting          **Positive Positive Reset**
 ```{r}
 (PosPosR_plot <- position_neurons %>%
   filter(lm_group_b == "Positive",
-         lm_group_b_h == "Positive",
-         reset_group == "Reset") %>%
+         lm_group_b_h == "Positive") %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
   mean_SEM_plots_by_Outcome(0,200))
@@ -1019,7 +986,7 @@ Repeat above plots but for speed encoding neurons, regardless of classification 
 
 1. Split data based on speed encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
-all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S")
+all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A")
 ```
 
 2.seperate based on whether they have a positive or negative relationship with speed
@@ -1054,4 +1021,264 @@ if (save_figures==1) {
 if (save_figures==1) {
   ggsave(file = "plots/positive_relationship_wallspeed.png", width = 4.5, height = 2.5)
 }
+```
+
+
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## plot violin plots of mean apsolute difference between predicted and real
+
+- do only for neurons that have slopes in outbound zone
+- do this for both negative and positive slopes in the outbound zone
+
+
+1. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 2) and subset based on position encoding (Figure 3) and are ++ or -- in beaconed trials
+```{r}
+df <- spatial_firing %>%
+  filter(final_model_o_b == "P") %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(track_category == "pospos" | track_category == "negneg") 
+  
+```
+
+
+```{r}
+data <- tibble(session_id = rep(unlist(df$unique_id), times=3), 
+                    cluster_id = rep(df$cluster_id, times=3), 
+                    predict = c(as.numeric(df$predict_diff),
+                             as.numeric(df$predict_diff_run),
+                             as.numeric(df$predict_diff_try)),
+                    type = rep(c("Hit", "Run", "Try"),
+                                    each = nrow(df)),
+                    lm_group_b = rep(as.character(df$lm_group_b), times=3))
+
+```
+
+2. Plot bar charts 
+```{r}
+ggplot(data=subset(data,lm_group_b == "Negative"), aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+  coord_cartesian(ylim=c(-3.5,5.5)) +
+  geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_point(alpha=0.3) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  scale_fill_manual(values=c("grey","red", "blue")) +
+  labs(y="Offset", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictProbe_fig7_neg_JustPosition.png",width = 4, height = 2.5)
+}
+
+
+ggplot(data=subset(data, lm_group_b == "Positive"), aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+  coord_cartesian(ylim=c(-4,3)) +
+  geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_point(alpha=0.3) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  scale_fill_manual(values=c("grey","red", "blue")) +
+  labs(y="Offset", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictProbe_fig7_pos_JustPosition.png",width = 4, height = 2.5)
+}
+```
+
+
+2. run anova
+```{r}
+data_pos <- data %>%
+  filter(lm_group_b == "Positive") 
+
+one.way <- aov(predict ~ type, data = data_pos)
+summary(one.way)
+
+data_neg <- data %>%
+  filter(lm_group_b == "Negative") 
+
+one.way <- aov(predict ~ type, data = data_neg)
+summary(one.way)
+```
+
+```{r}
+df <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(track_category == "pospos" | track_category == "negneg") 
+  
+```
+
+
+```{r}
+data <- tibble(session_id = rep(unlist(df$unique_id), times=3), 
+                    cluster_id = rep(df$cluster_id, times=3), 
+                    predict = c(as.numeric(df$predict_diff),
+                             as.numeric(df$predict_diff_run),
+                             as.numeric(df$predict_diff_try)),
+                    type = rep(c("Hit", "Run", "Try"),
+                                    each = nrow(df)),
+                    lm_group_b = rep(as.character(df$lm_group_b), times=3))
+
+```
+
+2. Plot bar charts 
+```{r}
+ggplot(data=subset(data,lm_group_b == "Negative"), aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+  coord_cartesian(ylim=c(-3.5,5.5)) +
+  geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_point(alpha=0.3) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  scale_fill_manual(values=c("grey","red", "blue")) +
+  labs(y="Offset", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictProbe_fig7_neg_AllPosition.png",width = 4, height = 2.5)
+}
+
+
+ggplot(data=subset(data, lm_group_b == "Positive"), aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+  coord_cartesian(ylim=c(-4,3)) +
+  geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_point(alpha=0.3) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  scale_fill_manual(values=c("grey","red", "blue")) +
+  labs(y="Offset", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictProbe_fig7_pos_AllPosition.png",width = 4, height = 2.5)
+}
+```
+2. run anova
+```{r}
+data_pos <- data %>%
+  filter(lm_group_b == "Positive") 
+
+one.way <- aov(predict ~ type, data = data_pos)
+summary(one.way)
+
+data_neg <- data %>%
+  filter(lm_group_b == "Negative") 
+
+one.way <- aov(predict ~ type, data = data_neg)
+summary(one.way)
+```
+
+1. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 2) and subset based on position encoding (Figure 3) and are ++ or -- in beaconed trials
+```{r}
+df <- spatial_firing %>%
+  filter(final_model_o_b == "S" | final_model_o_b == "A" | final_model_o_b == "SA") %>%
+  filter(track_category == "pospos" | track_category == "negneg") 
+
+```
+
+
+```{r}
+data <- tibble(session_id = rep(unlist(df$unique_id), times=3), 
+                    cluster_id = rep(df$cluster_id, times=3), 
+                    predict = c(as.numeric(df$predict_diff),
+                             as.numeric(df$predict_diff_run),
+                             as.numeric(df$predict_diff_try)),
+                    coef = c(as.numeric(df$o_b_mod_coefs_speed),
+                             as.numeric(df$o_b_mod_coefs_speed),
+                             as.numeric(df$o_b_mod_coefs_speed)),
+                    type = rep(c("Hit", "Run", "Try"),
+                                    each = nrow(df)),
+                    lm_group_b = rep(as.character(df$lm_group_b), times=3))
+
+```
+
+2. Plot bar charts 
+```{r}
+ggplot(data=subset(data,lm_group_b == "Negative"), aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+  coord_cartesian(ylim=c(-3.5,5.5)) +
+  geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_point(alpha=0.3) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  scale_fill_manual(values=c("grey","red", "blue")) +
+  labs(y="Offset", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictProbe_fig7_neg_AllSpeed.png",width = 4, height = 2.5)
+}
+
+ggplot(data=subset(data,lm_group_b == "Positive"), aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+  coord_cartesian(ylim=c(-4,3)) +
+  geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_point(alpha=0.3) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  scale_fill_manual(values=c("grey","red", "blue")) +
+  labs(y="Offset", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictProbe_fig7_pos_AllSpeed.png",width = 4, height = 2.5)
+}
+```
+2. run anova
+```{r}
+data_pos <- data %>%
+  filter(lm_group_b == "Positive") 
+
+one.way <- aov(predict ~ type, data = data_pos)
+summary(one.way)
+
+data_neg <- data %>%
+  filter(lm_group_b == "Negative") 
+
+one.way <- aov(predict ~ type, data = data_neg)
+summary(one.way)
 ```
