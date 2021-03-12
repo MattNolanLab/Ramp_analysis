@@ -151,28 +151,6 @@ spatial_firing <- spatial_firing %>%
   mutate(reward_interaction_id = map(pval_slope, mark_neurons_sig))
 ```
 
-### ----------------------------------------------------------------------------- ###
-
-
-## Figure 7 stats
-
-Find proportion & numbers of neurons that are significant/non-significiant
-
-```{r}
-ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & reward_interaction_id != "NA")
-```
-
-```{r}
-sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ramps_with_enough_trials)*100
-nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps_with_enough_trials)*100
-```
-```{r}
-sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
-nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))
-```
-
-
 
 ### ----------------------------------------------------------------------------- ###
 
@@ -222,14 +200,67 @@ spatial_firing$asr_b_try_fit_slope
 spatial_firing$asr_b_try_fit_r.squared
 
 
+
+
+### ----------------------------------------------------------------------------- ###
+
+## Calculate offset for run and try trials
+
+We want to find out if within the position and speed groups - is their firing rate reset or continue across the reward region?
+
+To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
+
+First, normalise firing rates. 
+
+1. make function to load rates and normalise
+```{r}
+normalise_rates <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  return(x)
+}
+
+```
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates_try = map(Avg_FiringRate_TryTrials, normalise_rates), 
+         normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates))
+```
+
+Then, predict firing rate in homebound region based on fit from real data in outbound region
+
+Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
+
+2. Run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('predict_params_try_')) %>%
+  select(-contains('predict_params_run_')) %>%
+  mutate(predict_params_try = map(normalised_rates_try, predict_homebound),
+         predict_params_run = map(normalised_rates_run, predict_homebound)) %>%
+  unnest_wider(predict_params_try, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(predict_params_run, names_sep = "_", names_repair = "universal") 
+
+spatial_firing <- spatial_firing %>%
+  mutate(
+         predict_diff_try = map2_dbl(normalised_rates_try, predict_params_try_fit, calc_predict_diff),
+         predict_diff_run = map2_dbl(normalised_rates_run, predict_params_run_fit, calc_predict_diff))
+
+```
+
+
+### ----------------------------------------------------------------------------- ###
+
+Now we want to plot the slope coefficients for each trial type, marked by whether or not the cells are significantly modulated by trial type (hit, try, run)
+
 First, filter dataset for having enough trials
 ```{r}
 spatial_firing_enoughtrials <- spatial_firing %>%
   filter(run_trials_number > 3 & try_trials_number > 3)
 ```
 
-
-Now we can plot the slope coefficients for each trial type, marked by whether or not the cells are significantly modulated by trial type (hit, try, run)
 
 1. subset by outbound ramps (Figure 2) and cells that are modulated by position alone (Figure 3)
 
@@ -432,51 +463,6 @@ if (save_figures == 1) {
 
 ### ----------------------------------------------------------------------------------------- ###
 
-## Calculate and plot offset 
-
-Now, we want to find out if within the speed group - is their firing rate reset or continue across the reward region?
-
-To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
-
-First, normalise firing rates. 
-
-1. make function to load rates and normalise
-```{r}
-normalise_rates <- function(df){
-  df <- tibble(Rates = unlist(df), Position = rep(1:200))
-  x <- scale(df$Rates, center=TRUE, scale=TRUE)
-  return(x)
-}
-
-```
-
-2. run on all cells
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_try = map(Avg_FiringRate_TryTrials, normalise_rates), 
-         normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates))
-```
-
-Then, predict firing rate in homebound region based on fit from real data in outbound region
-
-Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
-
-2. Run on all neurons
-```{r}
-spatial_firing <- spatial_firing %>%
-  select(-contains('predict_params_try_')) %>%
-  select(-contains('predict_params_run_')) %>%
-  mutate(predict_params_try = map(normalised_rates_try, predict_homebound),
-         predict_params_run = map(normalised_rates_run, predict_homebound)) %>%
-  unnest_wider(predict_params_try, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(predict_params_run, names_sep = "_", names_repair = "universal") 
-
-spatial_firing <- spatial_firing %>%
-  mutate(
-         predict_diff_try = map2_dbl(normalised_rates_try, predict_params_try_fit, calc_predict_diff),
-         predict_diff_run = map2_dbl(normalised_rates_run, predict_params_run_fit, calc_predict_diff))
-
-```
 
 1. subset by outbound ramps (Figure 2) and cells that are modulated by speed (Figure 3)
 ```{r}
@@ -1478,3 +1464,26 @@ if (save_figures == 1) {
 }
   
 ```
+
+
+### ----------------------------------------------------------------------------- ###
+
+
+## Figure 7 stats
+
+Find proportion & numbers of neurons that are significant/non-significiant
+
+```{r}
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & reward_interaction_id != "NA")
+```
+
+```{r}
+sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ramps_with_enough_trials)*100
+nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps_with_enough_trials)*100
+```
+```{r}
+sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
+nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))
+```
+
