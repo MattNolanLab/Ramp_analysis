@@ -646,7 +646,7 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = 00, x_end = 200) {
    theme_classic() +
    labs(y = "Mean firing rate (Hz)", x = "Position") +
    xlim(x_start, x_end) +
-   ylim(5,19) +
+   #ylim(5,19) +
    theme(axis.text.x = element_text(size=12),
         axis.text.y = element_text(size=12),
         legend.title = element_blank(),
