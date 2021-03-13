@@ -43,7 +43,9 @@ trial_adder <- function(df) {
 
 spatial_firing <- spatial_firing %>%
   mutate(try_trials_number = map(spikes_in_time_try,trial_adder),
-         run_trials_number = map(spikes_in_time_run,trial_adder))
+         run_trials_number = map(spikes_in_time_run,trial_adder),
+         hit_trials_number = map(spikes_in_time_reward,trial_adder))
+
 ```
 
 
@@ -1074,7 +1076,7 @@ Repeat above plots but for speed encoding neurons, regardless of classification 
 
 1. Split data based on speed encoding group (Figure 3) as we are only interested in these neurons here
 ```{r}
-all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A")
+all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA")
 ```
 
 2.seperate based on whether they have a positive or negative relationship with speed
@@ -1094,7 +1096,7 @@ all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
   mean_SEM_plots_by_Outcome(0,200))
 
 if (save_figures==1) {
-  ggsave(file = "plots/negative_relationship_AllSpeed_splitbycoef.png", width = 4.5, height = 2.5)
+  ggsave(file = "plots/negative_relationship_AllSpeed.png", width = 4.5, height = 2.5)
 }
 ```
 
@@ -1109,7 +1111,7 @@ if (save_figures==1) {
   mean_SEM_plots_by_Outcome(0,200))
 
 if (save_figures==1) {
-  ggsave(file = "plots/positive_relationship_AllSpeed_splitbycoef.png", width = 4.5, height = 2.5)
+  ggsave(file = "plots/positive_relationship_AllSpeed.png", width = 4.5, height = 2.5)
 }
 ```
 
@@ -1287,7 +1289,7 @@ _plots for all speed encoding encoding neurons (S, A, SA)_
 1. extract only neurons that are subset based on speed encoding (S, SA, A) (Figure 3) and are ++ or -- in beaconed trials
 ```{r}
 df <- data %>%
-  filter(final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A") %>%
+  filter(final_model_o_b == "S" | final_model_o_b == "SA" ) %>%
   filter(track_category == "pospos" | track_category == "negneg") 
 
 ```
@@ -1316,53 +1318,25 @@ if (save_figures == 1) {
 2. run anova on above data
 ```{r}
 data_pos <- df %>%
-  #filter(lm_group_b == "Positive") 
-  subset(coef > 0)
+  filter(lm_group_b == "Positive") 
 
-one.way <- aov(predict ~ type, data = data_pos)
+
+one.way <- lm(predict ~ type, data = data_pos)
+car::Anova(one.way)
 summary(one.way)
 
 data_neg <- df %>%
-  #filter(lm_group_b == "Negative") 
-  subset(coef < 0)
+  filter(lm_group_b == "Negative") 
 
-one.way <- aov(predict ~ type, data = data_neg)
+
+one.way <- lm(predict ~ type, data = data_neg)
+car::Anova(one.way)
+summary(one.way)
+
+one.way <- ano(predict ~ type, data = data_neg)
 summary(one.way)
 ```
 
-
-
-_plots for speed and speed and acceleration encoding encoding neurons (S, SA)_
-
-
-1. extract only neurons that are subset based on speed and speed and acceleration encoding (Figure 3) (S, SA) and are ++ or -- in beaconed trials
-```{r}
-df <- data %>%
-  filter(final_model_o_b == "S" | final_model_o_b == "SA") %>%
-  filter(track_category == "pospos" | track_category == "negneg") 
-
-```
-
-
-5. Select cells classified in Figure 2 as having positive or negative slopes and plot
-```{r}
-data_pos <- df %>%
-  subset(lm_group_b == "Positive") 
-
-(pos_neg_coef_plot <- standard_pos_violin_plot(data_pos))
-if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_fig7_pos_SandSA.png",width = 4, height = 2.5)
-}
-
-data_pos <- df %>%
-  subset(lm_group_b == "Negative")
-
-(pos_neg_coef_plot <- standard_neg_violin_plot(data_pos))
-if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_fig7_neg_SandSA.png",width = 4, height = 2.5)
-}
-  
-```
 
 
 
