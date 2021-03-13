@@ -336,7 +336,7 @@ offset_test <- function(rates, lwr, upr){
    return("Pos")
  }
 
- if (rates < lwr) {
+ if (rates <= lwr) {
    return("Neg")
  }
     return("None")
