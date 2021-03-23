@@ -19,21 +19,20 @@ mm_fit_home <- function(df, TT = 0) {
     tibble(
       Rates = as.numeric(Re(df[[1]])),
       Position = as.numeric(Re(df[[2]])),
-      Acceleration = as.numeric(Re(df[[3]])),
-      Speed = as.numeric(Re(df[[4]])),
+      Acceleration = as.numeric(Re(df[[4]])),
+      Speed = as.numeric(Re(df[[3]])),
       Trials = as.factor(df[[5]]),
       Types = as.factor(df[[6]])
     )
   df <- df %>%
-    subset(Position >= 110 & Position <= 170 & Speed > 3 & Types == TT)
+    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == TT)
   
   if (length(df) == 1 | nrow(df) < 3)
     return(NA)
-  
+
   df_int <-
     lme4::lmer(
-      Rates ~ Position + Speed + Acceleration + (1 |
-                                                   Trials),
+      Rates ~ Position + Speed + Acceleration + (1 + Position | Trials),
       data = df,
       na.action = na.exclude
     )

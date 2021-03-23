@@ -423,7 +423,7 @@ _Figure 7_
 
 ```{r}
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & reward_interaction_id != "NA")
+ramps_with_enough_trials <- subset(ramps, run_trials_number >= 3 & try_trials_number >= 3)
 ```
 
 ```{r}
@@ -431,8 +431,8 @@ sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ra
 nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps_with_enough_trials)*100
 ```
 ```{r}
-sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
-nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))
+sig_ramps <- nrow(subset(ramps_with_enough_trials, reward_interaction_id == "Significant"))
+nonsig_ramps <- nrow(subset(ramps_with_enough_trials, reward_interaction_id == "Not-Significant"))
 ```
 
 
@@ -445,6 +445,7 @@ nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))
 ```{r}
 trial_adder <- function(trials) {
   x<-length(trials)
+  #print(x)
   return(x)
 }
 

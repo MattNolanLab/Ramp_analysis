@@ -27,7 +27,7 @@ i.e. posneg = positive in outbound, negative in homebound
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(track_catagory_p = map2(lm_group_p, lm_group_p_h, mark_track_category))
+  mutate(track_category_p = map2(lm_group_p, lm_group_p_h, mark_track_category))
 
 ```
 
@@ -112,25 +112,18 @@ Now, we can classify cells based on their predicted activity.
 - do this for both negative and positive slopes in the outbound zone
 
 
-1. extract only neurons that are driven by path integration (as determined by CueAnalysis.0100.Rmd - i.e. Figure 4)
+1. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 2) and subset based on position encoding (Figure 3) and are ++ or -- in beaconed trials
 ```{r}
-pi_data <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+df <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(track_category == "pospos" | track_category == "negneg") 
+  
 ```
 
-
+2. Plot bar charts 
 ```{r}
-pi_data <- subset(pi_data, track_catagory_p == "pospos" | track_catagory_p == "negneg")
-```
-
-2. subset based on position
-```{r}
-pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-3. Plot bar charts 
-```{r}
-
-ggplot(data=subset(pi_data,lm_group_p == "Negative"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
+ggplot(data=subset(df,lm_group_b == "Negative"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
   coord_cartesian(xlim=c(-5,5)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
   scale_fill_manual(values=c("grey","violetred2")) +
@@ -149,7 +142,7 @@ if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_homebound_mean_PInegative_pi.png",width = 4, height = 2.5)
 }
 
-ggplot(data=subset(pi_data, lm_group_p == "Positive"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
+ggplot(data=subset(df, lm_group_b == "Positive"), aes(x = unlist(predict_diff_p), fill=as.factor(unlist(reset_group_p)))) +
   coord_cartesian(xlim=c(-5,5)) +
   geom_histogram(aes(y=..count..), alpha=0.5) +
   scale_fill_manual(values=c("grey","chartreuse3")) +
@@ -173,26 +166,34 @@ if (save_figures == 1) {
 
 
 ## plot outbound and homebound slopes for each neuron - seperated by whether they reset or are continuous 
-
-1. Extract reset and continuous neurons
+1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 3) and reset activity in probe trials
 ```{r}
-reset <- pi_data %>% filter(reset_group_p == "Reset")
-continuous <- pi_data %>% filter(reset_group_p == "Continuous")
+slope_df <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
+
 
 2. Plot scatter of slopes on beaconed&probe
 ```{r}
-
 ggplot() + 
-    geom_point(data=continuous,aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
-    geom_point(data=reset,aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
-    coord_cartesian(ylim = c(-.7,.7), xlim = c(-.7,.7)) +
+    geom_point(data=subset(slope_df, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_point(data=subset(slope_df, track_category == "posneg" | track_category == "negpos"),
+               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_point(data=subset(slope_df, track_category == "posnon" | track_category == "negnon"),
+               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed slope") +
     ylab("Probe slope") +
     theme_classic() +
-    scale_color_manual(values=c("violetred2", "chartreuse3")) +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
     theme(axis.text.x = element_text(size=17),
           axis.text.y = element_text(size=17),
           legend.position="bottom", 
@@ -207,31 +208,38 @@ if (save_figures == 1) {
 ```
 Calculate r2 and p value for liner correlation of the above data
 ```{r}
-pi_data_for_regression <- pi_data %>% 
+pi_data_for_regression <- spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   select(asr_b_h_rewarded_fit_slope, asr_p_h_rewarded_fit_slope)
 
 model <- lm(asr_b_h_rewarded_fit_slope ~ asr_p_h_rewarded_fit_slope, data = pi_data_for_regression)
-#summary(model)
+summary(model)
 # get the model parameters
 params <- select(glance(model), r.squared, p.value)
 
 ```
 
 
+1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 3) and reset activity in probe trials and ++ or -- on beaconed trials
+```{r}
+offset_df <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(track_category == "pospos" | track_category == "negneg")
+
+```
 
 2. Plot scatter of offset on beacconed&probe
 ```{r}
-
 ggplot() + 
-    geom_point(data=continuous,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b))), shape=1) +
-    geom_point(data=reset,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(lm_group_b)))) +
-    coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
+    geom_jitter(data=offset_df,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(track_category))),alpha=0.8) +
+    #coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed offset") +
     ylab("Probe offset") +
     theme_classic() +
-    scale_color_manual(values=c("violetred2", "chartreuse3")) +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
     theme(axis.text.x = element_text(size=17),
           axis.text.y = element_text(size=17),
           legend.position="bottom", 
@@ -247,7 +255,10 @@ if (save_figures == 1) {
 
 Calculate r2 and p value for liner correlation of the above data
 ```{r}
-pi_data_for_offset_regression <- pi_data %>% 
+pi_data_for_offset_regression <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(track_category == "pospos" | track_category == "negneg") %>% 
   select(predict_diff, predict_diff_p)
 
 model <- lm(predict_diff ~ predict_diff_p, data = pi_data_for_offset_regression)
@@ -289,7 +300,9 @@ extract_cols_for_plot <- function(df){
              Homebound_beaconed_b = rep(df$lm_group_b_h, each=200), 
              Outbound_beaconed_p = rep(df$lm_group_p, each=200), 
              Homebound_beaconed_p = rep(df$lm_group_p_h, each=200), 
-             reset_group = rep(as.character(df$reset_group_p), each=200)) 
+             cue_group_o = rep(df$cue_group_o, each=200), 
+             reset_group = rep(as.character(df$reset_group), each=200), 
+             reset_group_p = rep(as.character(df$reset_group_p), each=200)) 
 }
 
 ```
@@ -306,41 +319,24 @@ Use the pipe to subset data:
 
 Function to add extra trace in Rates_c to a mean_SEM_plot.
 ```{r}
-mean_SEM_plots_comp <- function(df, colour1 = "red", colour2 = "#E69F00"){
+mean_SEM_plots_comp <- function(df, colour1 = "blue", colour2 = "black"){
   plot <- mean_SEM_plots(df, colour1)
   
   plot +
-    geom_ribbon(aes(x=Position, y=mean_c, ymin = mean_c - sem_c, ymax = mean_c + sem_c), fill = "grey70", alpha=0.5) +
-    geom_line(aes(y=mean_c, x=Position), color = "black") 
+    geom_ribbon(aes(x=Position, y=mean_c, ymin = mean_c - sem_c, ymax = mean_c + sem_c), fill = colour2, alpha=0.2) +
+    geom_line(aes(y=mean_c, x=Position), color = colour2) 
 }
 ```
 
 
 
 ```{r}
-# -/-(C) on probe trials
+# -/- on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
-  filter(reset_group == "Continuous") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-30:169)) %>%
-  mean_SEM_plots_comp()
-
-# -/-(C) on beaconed and probe trials
-spatial_firing %>%
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
-  filter(reset_group == "Continuous") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
                    sem_r = std.error(Rates, na.rm = TRUE),
@@ -350,39 +346,16 @@ spatial_firing %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_continuous_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Negneg_reset_probe_JustP.png", width = 3.5, height = 2.5)
 }
-```
 
-
-
-
-
-
-```{r}
-# -/-(O) on probe trials
+# -/- on beaconed and probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
-  filter(reset_group == "Reset") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-30:169)) %>%
-  mean_SEM_plots_comp()
-
-# -/-(O) on beaconed and probe trials
-spatial_firing %>%
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
-  filter(reset_group == "Reset") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
                    sem_r = std.error(Rates, na.rm = TRUE),
@@ -393,18 +366,37 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_reset_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Negneg_reset_probe_BandP.png", width = 3.5, height = 2.5)
+}
+
+# -/- on beaconed and probe trials
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
+  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots_comp()
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/Negneg_all_probe_BandP.png", width = 3.5, height = 2.5)
 }
 
 
-# -/-(O) on beaconed but not probe trials
+# -/- on beaconed but not probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
   filter(Outbound_beaconed_p != "Negative" | Homebound_beaconed_p != "Negative") %>%
-  filter(reset_group == "Reset") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
                    sem_r = std.error(Rates, na.rm = TRUE),
@@ -416,7 +408,7 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_reset_mean_probe_justPI.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Negneg_reset_probe_JustB.png", width = 3.5, height = 2.5)
 }
 
 
@@ -428,9 +420,9 @@ if (save_figures == 1) {
 ```{r}
 # -/+ on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Positive") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
@@ -440,11 +432,15 @@ spatial_firing %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
+if (save_figures == 1) {
+  ggsave(file = "plots/NegPos_reset_probe_JustP.png", width = 3.5, height = 2.5)
+}
+
 # -/+ on beaconed and probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Positive") %>%
   group_by(Position) %>%
@@ -457,15 +453,15 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negpos_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Negpos_reset_probe_BandP.png", width = 3.5, height = 2.5)
 }
 
 
 # -/+ on beaconed but not probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
   filter(Outbound_beaconed_p != "Negative" | Homebound_beaconed_p != "Positive") %>%
   group_by(Position) %>%
@@ -477,21 +473,21 @@ spatial_firing %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negpos_mean_probe_justPI.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Negpos_reset_probe_JustB.png", width = 3.5, height = 2.5)
 }
 ```
 
 
 
 
+
 ```{r}
-# +/+(C)on probe trials
+# +/+ on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
-  filter(reset_group == "Continuous") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
                    sem_r = std.error(Rates, na.rm = TRUE),
@@ -499,52 +495,16 @@ spatial_firing %>%
                    sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
-
-# +/+(C) on probe and beaconed trials
-spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
-  filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
-  filter(reset_group == "Continuous") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-30:169)) %>%
-  mean_SEM_plots_comp()
-
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_continuous_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Pospos_reset_probe_JustP.png", width = 3.5, height = 2.5) 
 }
-```
 
-
-
-```{r}
-# +/+(O) on probe trials
+#+/+ on beaconed and probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
-  filter(reset_group == "Reset") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-30:169)) %>%
-  mean_SEM_plots_comp()
-
-#+/+(O) on beaconed and probe trials
-spatial_firing %>%
   filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
   filter(reset_group == "Reset") %>%
@@ -558,7 +518,27 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_reset_mean_probe.png", width = 3.5, height = 2.5) 
+  ggsave(file = "plots/Pospos_reset_probe_BandP.png", width = 3.5, height = 2.5) 
+}
+
+#+/+ on beaconed and probe trials
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
+  filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots_comp()
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/Pospos_all_probe_BandP.png", width = 3.5, height = 2.5) 
 }
 ```
 
@@ -567,9 +547,9 @@ if (save_figures == 1) {
 ```{r}
 # +/- on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Negative") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
@@ -579,11 +559,15 @@ spatial_firing %>%
   mutate(Position = rep(-30:169)) %>%
   mean_SEM_plots_comp()
 
+if (save_figures == 1) {
+  ggsave(file = "plots/Posneg_reset_probe_JustP.png", width = 3.5, height = 2.5)
+}
+
 # +/- on beaconed and probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Negative") %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Negative") %>%
   group_by(Position) %>%
@@ -596,7 +580,7 @@ spatial_firing %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Posneg_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/Posneg_reset_probe_BandP.png", width = 3.5, height = 2.5)
 }
 ```
 
@@ -604,9 +588,9 @@ if (save_figures == 1) {
 ```{r}
 # +/UC on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Unclassified") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
@@ -617,7 +601,7 @@ spatial_firing %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/posnon_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/posnon_reset_probe_JustB.png", width = 3.5, height = 2.5)
 }
 ```
 
@@ -626,9 +610,9 @@ if (save_figures == 1) {
 ```{r}
 # -/UC on probe trials
 spatial_firing %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Unclassified") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
@@ -639,8 +623,52 @@ spatial_firing %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/negnon_mean_probe.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/negnon_reset_probe_JustP.png", width = 3.5, height = 2.5)
 }
+```
+```{r}
+# -/- on beaconed but not probe trials
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
+  filter(Outbound_beaconed_p == "Negative" | Homebound_beaconed_p == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots_comp()
+
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/Negneg_reset_probe_negUNonProbe.png", width = 3.5, height = 2.5)
+}
+
+# -/- on beaconed but not probe trials
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
+  filter(Outbound_beaconed_p == "Positive" | Homebound_beaconed_p == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-30:169)) %>%
+  mean_SEM_plots_comp()
+
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/Pospos_reset_probe_negUNonProbe.png", width = 3.5, height = 2.5)
+}
+
 ```
 
 
@@ -657,113 +685,99 @@ pi_data <- subset(spatial_firing, cue_group_o == "Positive-PI" | cue_group_o == 
 
 2. subset based on position encoding neurons (Figure 3)
 ```{r}
-pi_data <-subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+pi_data <-subset(pi_data, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
 The groups we want to consider are +/+(O), +/+(C), +/-, -/-(O), -/-(C) and -/+. In addition for probe trials there will be a group 'other' for activity that is no longer in one of these categories.
 
 3. Split by linear model result (figure 2) in outbound and homebound region for beaconed trials
 ```{r}
-pospos_r <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Reset")
-pospos_c <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive" & reset_group == "Continuous")
-posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
-negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
-negneg_r <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Reset")
-negneg_c <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative" & reset_group == "Continuous")
+pospos <-subset(pi_data, track_category == "pospos")
+posneg <-subset(pi_data,track_category == "posneg")
+negpos <-subset(pi_data, track_category == "negpos")
+negneg <-subset(pi_data, track_category == "negneg")
+posnon <-subset(pi_data, track_category == "posnon")
+negnon <-subset(pi_data, track_category == "negnon")
 
 ```
 
 3. Split by linear model result (figure 5) in outbound and homebound region for beaconed trials
 ```{r}
-# Beaconed: pospos_r
+# Beaconed: pospos
 # stays the same
-pospos_r_pospos_r <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+pospos_pospos <-nrow(subset(pospos, track_category_p == "pospos"))
 
 # homebound changes
-pospos_r_posneg <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-pospos_r_posnon <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-pospos_r_pospos <-nrow(subset(pospos_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
+pospos_posneg <-nrow(subset(pospos, track_category_p == "posneg"))
+pospos_posnon <-nrow(subset(pospos, track_category_p == "posnon"))
 
 # outbound changes
-pospos_r_negpos <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-pospos_r_negnon <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-pospos_r_negneg <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-pospos_r_negneg_r <-nrow(subset(pospos_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+pospos_negpos <-nrow(subset(pospos, track_category_p == "negpos"))
+pospos_negnon <-nrow(subset(pospos, track_category_p == "negnon"))
+pospos_negneg <-nrow(subset(pospos, track_category_p == "negneg"))
 
-# Beaconed: pospos_c
-# stays the same
-pospos_pospos <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-
-# homebound changes
-pospos_posneg <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-pospos_posnon <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-pospos_pospos_r <-nrow(subset(pospos_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
-
-# outbound changes
-pospos_negpos <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-pospos_negnon <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-pospos_negneg <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-pospos_negneg_r <-nrow(subset(pospos_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
 
 # Beaconed: posneg
-posneg_posneg <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
+posneg_posneg <-nrow(subset(posneg, track_category_p == "posneg"))
 
-posneg_posnon <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-posneg_pospos <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-posneg_pospos_r <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+posneg_posnon <-nrow(subset(posneg, track_category_p == "posnon"))
+posneg_pospos <-nrow(subset(posneg, track_category_p == "pospos"))
 
-posneg_negpos <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-posneg_negnon <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-posneg_negneg <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-posneg_negneg_r <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+posneg_negpos <-nrow(subset(posneg, track_category_p == "negpos"))
+posneg_negnon <-nrow(subset(posneg, track_category_p == "negnon"))
+posneg_negneg <-nrow(subset(posneg, track_category_p == "negneg"))
 
 
-# Beaconed: negneg_r
+# Beaconed: negneg
 # stays the same
-negneg_r_negneg_r <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+negneg_negneg <-nrow(subset(negneg, track_category_p == "negneg"))
 
 # homebound changes
-negneg_r_negpos <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-negneg_r_negnon <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negneg_r_negneg <-nrow(subset(negneg_r, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
+negneg_negpos <-nrow(subset(negneg, track_category_p == "negpos"))
+negneg_negnon <-nrow(subset(negneg, track_category_p == "negnon"))
 
 # outbound changes
-negneg_r_posneg <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negneg_r_posnon <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negneg_r_pospos <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-negneg_r_pospos_r <-nrow(subset(negneg_r, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
-
-
-# Beaconed: negneg_c
-# stays the same
-negneg_negneg <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-
-# homebound changes
-negneg_negpos <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-negneg_negnon <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negneg_negneg_r <-nrow(subset(negneg_c, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
-
-# outbound changes
-negneg_posneg <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negneg_posnon <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negneg_pospos <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-negneg_pospos_r <-nrow(subset(negneg_c, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+negneg_posneg <-nrow(subset(negneg, track_category_p == "posneg"))
+negneg_posnon <-nrow(subset(negneg,track_category_p == "posnon"))
+negneg_pospos <-nrow(subset(negneg, track_category_p == "pospos"))
 
 
 # Beaconed: negpos
 # stays the same
-negpos_negpos <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
+negpos_negpos <-nrow(subset(negpos, track_category_p == "negpos"))
 
 # homebound changes
-negpos_negnon <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negpos_negneg <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Continuous"))
-negpos_negneg_r <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative" & reset_group_p == "Reset"))
+negpos_negnon <-nrow(subset(negpos, track_category_p == "negnon"))
+negpos_negneg <-nrow(subset(negpos, track_category_p == "negneg"))
 
 # Outbound changes
-negpos_posneg <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negpos_posnon <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negpos_pospos <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Continuous"))
-negpos_pospos_r <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive" & reset_group_p == "Reset"))
+negpos_posneg <-nrow(subset(negpos, track_category_p == "posneg"))
+negpos_posnon <-nrow(subset(negpos, track_category_p == "posnon"))
+negpos_pospos <-nrow(subset(negpos, track_category_p == "pospos"))
+
+
+# Beaconed: posnon
+posnon_posneg <-nrow(subset(posnon, track_category_p == "posneg"))
+
+posnon_posnon <-nrow(subset(posnon, track_category_p == "posnon"))
+posnon_pospos <-nrow(subset(posnon, track_category_p == "pospos"))
+
+posnon_negpos <-nrow(subset(posnon, track_category_p == "negpos"))
+posnon_negnon <-nrow(subset(posnon, track_category_p == "negnon"))
+posnon_negneg <-nrow(subset(posnon, track_category_p == "negneg"))
+
+# Beaconed: negnon
+# stays the same
+negnon_negpos <-nrow(subset(negnon, track_category_p == "negpos"))
+
+# homebound changes
+negnon_negnon <-nrow(subset(negnon, track_category_p == "negnon"))
+negnon_negneg <-nrow(subset(negnon, track_category_p == "negneg" ))
+
+# Outbound changes
+negnon_posneg <-nrow(subset(negnon, track_category_p == "posneg"))
+negnon_posnon <-nrow(subset(negnon, track_category_p == "posnon"))
+negnon_pospos <-nrow(subset(negnon, track_category_p == "pospos"))
 
 ```
 
@@ -774,14 +788,20 @@ negpos_pospos_r <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h ==
 data_long <-
   tibble(
     value = c(
+    
+      posneg_pospos,
+      posneg_posneg,
+      posneg_negpos,
+      posneg_posnon,
+      posneg_negnon,
+      posneg_negneg,
+      
       pospos_pospos,
       pospos_posneg,
       pospos_negpos,
       pospos_posnon,
       pospos_negnon,
       pospos_negneg,
-      pospos_negneg_r,
-      pospos_pospos_r,
       
       negpos_pospos,
       negpos_posneg,
@@ -789,89 +809,34 @@ data_long <-
       negpos_posnon,
       negpos_negnon,
       negpos_negneg,
-      negpos_negneg_r,
-      negpos_pospos_r,
-      
-      posneg_pospos,
-      posneg_posneg,
-      posneg_negpos,
-      posneg_posnon,
-      posneg_negnon,
-      posneg_negneg,
-      posneg_negneg_r,
-      posneg_pospos_r,
       
       negneg_pospos,
       negneg_posneg,
       negneg_negpos,
       negneg_posnon,
       negneg_negnon,
-      negneg_negneg,
-      negneg_negneg_r,
-      negneg_pospos_r,
-      
-      pospos_r_pospos,
-      pospos_r_posneg,
-      pospos_r_negpos,
-      pospos_r_posnon,
-      pospos_r_negnon,
-      pospos_r_negneg,
-      pospos_r_negneg_r,
-      pospos_pospos_r,
-      
-      negneg_r_pospos,
-      negneg_r_posneg,
-      negneg_r_negpos,
-      negneg_r_posnon,
-      negneg_r_negnon,
-      negneg_r_negneg,
-      negneg_r_negneg_r,
-      negneg_r_pospos_r
+      negneg_negneg
     ),
     
     source = c(
-      "+ +",
-      "+ +",
-      "+ +",
-      "+ +",
-      "+ +",
-      "+ +",
-      "+ +",
-      "+ +",
-      "- +",
-      "- +",
-      "- +",
-      "- +",
-      "- +",
-      "- +",
-      "- +",
-      "- +",
       "+ -",
       "+ -",
       "+ -",
       "+ -",
       "+ -",
       "+ -",
-      "+ -",
-      "+ -",
-      "- -",
-      "- -",
-      "- -",
-      "- -",
-      "- -",
-      "- -",
-      "- -",
-      "- -",
       "+ + R",
       "+ + R",
       "+ + R",
       "+ + R",
       "+ + R",
       "+ + R",
-      "+ + R",
-      "+ + R",
-      "- - R",
-      "- - R",
+      "- +",
+      "- +",
+      "- +",
+      "- +",
+      "- +",
+      "- +",
       "- - R",
       "- - R",
       "- - R",
@@ -883,52 +848,28 @@ data_long <-
     target = c(
       " + +",
       " + -",
-      " - +",
+      " - +" ,
       " + non",
       " - non",
       " - -",
-      " - - R",
-      " + + R",
       " + +",
       " + -",
       " - +" ,
       " + non",
       " - non",
       " - -",
-      " - - R",
-      " + + R",
       " + +",
       " + -",
       " - +" ,
       " + non",
       " - non",
       " - -",
-      " - - R",
-      " + + R",
       " + +",
       " + -",
       " - +" ,
       " + non",
       " - non",
-      " - -",
-      " - - R",
-      " + + R",
-      " + +",
-      " + -",
-      " - +" ,
-      " + non",
-      " - non",
-      " - -",
-      " - - R",
-      " + + R",
-      " + +",
-      " + -",
-      " - +" ,
-      " + non",
-      " - non",
-      " - -",
-      " - - R",
-      " + + R"
+      " - -"
     )
   )
 
@@ -967,5 +908,99 @@ if (save_figures == 1) {
 }
 ```
 
+
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## Calculate number of neurons that areset/switch/continuous across outbound and homebound
+
+
+1. First, select cells that are position encoding (figure 3)
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. Select cells that are path integrating i.e. have slopes on both the beaconed and non-beaconed (Figure 4)
+```{r}
+position_cells <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+```
+
+3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
+```{r}
+
+pospos <-subset(position_cells, track_category == "pospos")
+negneg <-subset(position_cells, track_category == "negneg")
+
+posneg <-subset(position_cells, track_category == "posneg")
+negpos <-subset(position_cells, track_category == "negpos")
+
+posnon <-subset(position_cells, track_category == "posnon")
+negnon <-subset(position_cells, track_category == "negnon")
+
+```
+
+```{r}
+total_cells <- (nrow(pospos) + nrow(negneg))
+```
+
+5. for +- and -+ groups as classified on beaconed trials, how many are the same on probe?
+```{r}
+posneg_same_probe <-subset(posneg, track_category_p == "posneg")
+negpos_same_probe <-subset(negpos, track_category_p == "negpos")
+
+negneg_same_probe <-subset(negneg, track_category_p == "negneg")
+pospos_same_probe <-subset(pospos, track_category_p == "pospos")
+
+posnon_same_probe <-subset(posnon, track_category_p == "posnon")
+negnon_same_probe <-subset(negnon, track_category_p == "negnon")
+
+```
+
+```{r}
+total_cells_same_on_probe <- (nrow(pospos_same_probe) + nrow(negneg_same_probe))
+```
+
+6. for +- and -+ groups as classified on beaconed trials, how many unclassified on probe?
+```{r}
+posneg_un_probe <-subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified" | lm_group_p_h == "NA")
+negpos_un_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified" | lm_group_p_h == "NA")
+
+```
+
+7. 
+```{r}
+pospos_r <-subset(position_cells, track_category == "pospos" & reset_group == "Reset")
+pospos_c <-subset(position_cells, track_category == "pospos" & reset_group == "Continuous")
+negneg_r <-subset(position_cells, track_category == "negneg" & reset_group == "Reset")
+negneg_c <-subset(position_cells, track_category == "negneg" & reset_group == "Continuous")
+
+```
+
+```{r}
+pospos_r_same <-subset(pospos_r, track_category_p == "pospos")
+negneg_r_same <-subset(negneg_r, track_category_p == "negneg")
+
+```
+
+```{r}
+pospos_r_switch <-subset(pospos_r, track_category_p == "pospos" & reset_group_p == "Continuous")
+negneg_r_switch <-subset(negneg_r, track_category_p == "negneg" & reset_group_p == "Continuous")
+
+pospos_r_same <-subset(pospos_r, track_category_p == "posnon")
+negneg_r_same <-subset(negneg_r, track_category_p == "negnon")
+
+```
+
+4. calculate number of neurons that switch slope, stay the same or are reset/continuous
+```{r}
+switch_slope <- nrow(posneg) + nrow(negpos)
+only_outbound_slope <- nrow(posnon) + nrow(negnon)
+same_slope <- nrow(pospos) + nrow(negneg)
+same_slope_reset <- nrow(pospos_r) + nrow(negneg_r)
+same_slope_continuous <- nrow(pospos_c) + nrow(negneg_c)
+
+```
 
 
