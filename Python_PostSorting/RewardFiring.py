@@ -94,10 +94,6 @@ def split_time_data_by_reward(spike_data, prm):
         rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data_filtered, rewarded_trials)
         spike_data = drop_nb_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
 
-        rewarded_locations = np.array(spike_data.loc[cluster, 'rewarded_locations'])
-        rewarded_locations = rewarded_locations[~np.isnan(rewarded_locations)]
-        locations = np.array(np.append(rewarded_locations, rewarded_locations[0:14]))
-        spike_data.at[cluster,"rewarded_locations"] = list(locations)
     return spike_data
 
 
