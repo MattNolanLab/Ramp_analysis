@@ -41,7 +41,7 @@ def extract_data_from_frame(spike_data, cluster):
     types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
     trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
 
-    window = signal.gaussian(2, std=2)
+    window = signal.gaussian(2, std=3)
     speed = signal.convolve(speed, window, mode='same')/ sum(window)
     data = np.vstack((rates, speed, position, trials, types))
     data=data.transpose()
@@ -94,10 +94,6 @@ def split_time_data_by_reward(spike_data, prm):
         rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data_filtered, rewarded_trials)
         spike_data = drop_nb_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
 
-        rewarded_locations = np.array(spike_data.loc[cluster, 'rewarded_locations'])
-        rewarded_locations = rewarded_locations[~np.isnan(rewarded_locations)]
-        locations = np.array(np.append(rewarded_locations, rewarded_locations[0:14]))
-        spike_data.at[cluster,"rewarded_locations"] = list(locations)
     return spike_data
 
 
@@ -146,7 +142,7 @@ def drop_nb_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i
 
 
 def convolve_with_scipy(rate):
-    window = signal.gaussian(2, std=2)
+    window = signal.gaussian(2, std=3)
     convolved_rate = signal.convolve(rate, window, mode='same')/ sum(window)
     return convolved_rate
 
