@@ -54,7 +54,7 @@ def split_trials(data, rewarded_trials):
 
 
 def convolve_with_scipy(rate):
-    window = signal.gaussian(2, std=2)
+    window = signal.gaussian(2, std=3)
     convolved_rate = signal.convolve(rate, window, mode='same')/ sum(window)
     return convolved_rate
 
@@ -228,7 +228,7 @@ def extract_time_binned_firing_rate_runthru_allspeeds(spike_data):
         position=np.array(spike_data.iloc[cluster].spikes_in_time_run[2])
         trials=np.array(spike_data.iloc[cluster].spikes_in_time_run[3], dtype= np.int32)
         types=np.array(spike_data.iloc[cluster].spikes_in_time_run[4], dtype= np.int32)
-        window = signal.gaussian(2, std=2)
+        window = signal.gaussian(2, std=3)
 
         # stack data
         data = np.vstack((rates,speed,position,types, trials))
@@ -279,7 +279,7 @@ def extract_time_binned_firing_rate_try_allspeeds(spike_data):
         position=np.array(spike_data.iloc[cluster].spikes_in_time_try[2])
         trials=np.array(spike_data.iloc[cluster].spikes_in_time_try[3], dtype= np.int32)
         types=np.array(spike_data.iloc[cluster].spikes_in_time_try[4], dtype= np.int32)
-        window = signal.gaussian(2, std=2)
+        window = signal.gaussian(2, std=3)
 
         # stack data
         data = np.vstack((rates,speed,position,types, trials))
@@ -330,7 +330,7 @@ def extract_time_binned_firing_rate_rewarded_allspeeds(spike_data):
         position=np.array(spike_data.iloc[cluster].spikes_in_time_reward[2])
         trials=np.array(spike_data.iloc[cluster].spikes_in_time_reward[3], dtype= np.int32)
         types=np.array(spike_data.iloc[cluster].spikes_in_time_reward[4], dtype= np.int32)
-        window = signal.gaussian(2, std=2)
+        window = signal.gaussian(2, std=3)
 
         # stack data
         data = np.vstack((rates,speed,position,types, trials))
