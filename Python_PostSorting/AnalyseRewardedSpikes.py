@@ -21,7 +21,7 @@ def extract_time_binned_firing_rate_rewarded(spike_data):
         position=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[2])
         trials=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[3], dtype= np.int32)
         types=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[4], dtype= np.int32)
-        window = signal.gaussian(2, std=2)
+        window = signal.gaussian(2, std=3)
 
         # stack data
         data = np.vstack((rates,speed,position,types, trials))
@@ -93,7 +93,7 @@ def extract_time_binned_firing_rate_rewarded(spike_data):
 
 
 def plot_rewarded_firing_rate(spike_data, prm):
-    save_path = prm.get_local_recording_folder_path() + '/Figures/Average_Rates_rewarded'
+    save_path = prm.get_local_recording_folder_path() + '/Figures/Firing_Rate_Maps'
     if os.path.exists(save_path) is False:
         os.makedirs(save_path)
 
@@ -146,7 +146,7 @@ def plot_rewarded_firing_rate(spike_data, prm):
 
 
 def plot_rewarded_nb_firing_rate(spike_data, prm):
-    save_path = prm.get_local_recording_folder_path() + '/Figures/Average_Rates_rewarded'
+    save_path = prm.get_local_recording_folder_path() + '/Figures/Firing_Rate_Maps'
     if os.path.exists(save_path) is False:
         os.makedirs(save_path)
 
@@ -204,9 +204,69 @@ def plot_rewarded_nb_firing_rate(spike_data, prm):
 
 
 
+def plot_rewarded_p_firing_rate(spike_data, prm):
+    save_path = prm.get_local_recording_folder_path() + '/Figures/Firing_Rate_Maps'
+    if os.path.exists(save_path) is False:
+        os.makedirs(save_path)
+
+    for cluster in range(len(spike_data)):
+        cluster_index = spike_data.cluster_id.values[cluster] - 1
+        position_array=np.arange(0,200,1)
+        rates=np.array(spike_data.loc[cluster, 'Rates_averaged_rewarded_b'])
+        sd_rates=np.array(spike_data.loc[cluster, 'Rates_sd_rewarded_b'])
+
+        rates_nb=np.array(spike_data.loc[cluster, 'Rates_averaged_rewarded_p'])
+        sd_rates_nb=np.array(spike_data.loc[cluster, 'Rates_sd_rewarded_p'])
+
+        speed_histogram = plt.figure(figsize=(4,3))
+        ax = speed_histogram.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
+        ax.plot(position_array,rates, '-', color='Black')
+        ax.fill_between(position_array, rates-sd_rates,rates+sd_rates, facecolor = 'Black', alpha = 0.2)
+
+        ax.plot(position_array,rates_nb, '-', color='Red')
+        ax.fill_between(position_array, rates_nb-sd_rates_nb,rates_nb+sd_rates_nb, facecolor = 'Red', alpha = 0.2)
+
+        plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+        plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
+        plt.xlim(0,200)
+        ax.yaxis.set_ticks_position('left')
+        ax.xaxis.set_ticks_position('bottom')
+        Python_PostSorting.plot_utility.style_track_plot(ax, 200)
+
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(True)
+        ax.spines['bottom'].set_visible(True)
+        ax.tick_params(
+            axis='both',  # changes apply to the x-axis
+            which='both',  # both major and minor ticks are affected
+            bottom=True,  # ticks along the bottom edge are off
+            top=False,  # ticks along the top edge are off
+            right=False,
+            left=True,
+            labelleft=True,
+            labelbottom=True,
+            labelsize=16,
+            length=5,
+            width=1.5)  # labels along the bottom edge are off
+
+        ax.axvline(0, linewidth = 2.5, color = 'black') # bold line on the y axis
+        ax.axhline(0, linewidth = 2.5, color = 'black') # bold line on the x axis
+        ax.set_ylim(0)
+        plt.locator_params(axis = 'x', nbins  = 4)
+        ax.set_xticklabels(['10', '30', '50'])
+        plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+        plt.savefig(save_path + '/time_binned_Rates_histogram_' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + 'rewarded_p.png', dpi=200)
+        plt.close()
+
+    return spike_data
+
+
+
 def plot_rewarded_rates(spike_data, prm):
     spike_data = plot_rewarded_firing_rate(spike_data, prm)
     spike_data = plot_rewarded_nb_firing_rate(spike_data, prm)
+    spike_data = plot_rewarded_p_firing_rate(spike_data, prm)
     return spike_data
 
 
