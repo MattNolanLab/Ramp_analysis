@@ -83,3 +83,42 @@ ggsave(file = "Figure1_Schematic.png", width = 10, height = 4)
 
 ```
 
+# Now make version with multiple place fields and a resetting ramp
+```{r}
+(fields_ensemble <- ggplot(tb_f, aes(x, y)) +
+  geom_line(aes(colour = id)) +
+  labs(y = "Firing rate",
+       x = "Location") +
+  theme_cowplot() +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position="none", 
+        axis.text.x = element_text(size=0),
+        axis.text.y = element_text(size=0),
+        legend.title = element_blank(),
+        text = element_text(size=17)))
+
+ggsave(file = "MultipleFields.png", width = 4, height = 2)
+```
+```{r}
+ramp_reset <- c(x/1000, x/1000)
+x_2 <- c(x,1000+x)
+tb_r_r <- tibble(x = x_2, y = ramp_reset)
+
+
+(ramp <- ggplot(tb_r_r, aes(x, y)) +
+  geom_line() +
+  labs(y = "Firing rate",
+       x = "Location") +
+  theme_cowplot() +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        legend.position="none", 
+        axis.text.x = element_text(size=0),
+        axis.text.y = element_text(size=0),
+        legend.title = element_blank(),
+        text = element_text(size=17)))
+
+ggsave(file = "ResettingRamp.png", width = 4, height = 2)
+```
+
