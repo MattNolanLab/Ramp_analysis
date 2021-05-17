@@ -21,6 +21,10 @@ import Python_PostSorting.FirstStopAnalysis_behaviour
 import Python_PostSorting.Split_By_Trial_Outcome
 import Python_PostSorting.PlotFiringRate
 import Python_PostSorting.Split_SpeedBy_Trial_Outcome
+import Python_PostSorting.MakePlots_newcontext
+import Python_PostSorting.ContextAnalysis
+import Python_PostSorting.FR_relative_to_Behaviour
+
 import numpy as np
 import pandas as pd
 
@@ -121,7 +125,7 @@ def main():
     print('-------------------------------------------------------------')
     print('-------------------------------------------------------------')
 
-    server_path= '/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis/'
+    server_path= '/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis'
     initialize_parameters(server_path)
     print('Processing ' + str(server_path))
 
@@ -131,13 +135,13 @@ def main():
 
     # CURATION (for spike data frame only)
     spike_data = Python_PostSorting.Curation.remove_false_positives(spike_data)
-    spike_data = Python_PostSorting.Curation.curate_data(spike_data)
-    spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data)
+    #spike_data = Python_PostSorting.Curation.curate_data(spike_data)
+    #spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data)
     spike_data = add_mouse_to_frame(spike_data)
 
     # Add brain region and ramp score data for each neuron to dataframe
-    spike_data = Python_PostSorting.Add_BrainRegion_Classifier.load_brain_region_data_into_frame(spike_data)
-    spike_data = Python_PostSorting.FitAnalysis.load_Teris_ramp_score_data_into_frame(spike_data)
+    #spike_data = Python_PostSorting.Add_BrainRegion_Classifier.load_brain_region_data_into_frame(spike_data)
+    #spike_data = Python_PostSorting.FitAnalysis.load_Teris_ramp_score_data_into_frame(spike_data)
 
     # Basic plots for each neuron
     #Python_PostSorting.MakePlots.plot_rewarded_spikes_on_track2(server_path,spike_data)  ## for all example cells
@@ -153,14 +157,23 @@ def main():
     #spike_data = Python_PostSorting.PlotFiringRate.plot_rewarded_rates(spike_data, prm)
 
     spike_data = Python_PostSorting.RewardFiring.split_time_data_by_reward(spike_data, prm)
-    spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_rewarded(spike_data)
+    #spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_rewarded(spike_data)
     #spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_rates(spike_data, prm)
 
+    # Split data by TRIAL OUTCOME (HIT) : Analysis for ...
+    #spike_data = Python_PostSorting.FR_relative_to_Behaviour.plot_rewarded_spikes_on_track(server_path,spike_data)
+    #spike_data = Python_PostSorting.FR_relative_to_Behaviour.split_spikes_on_track_relative_to_reward(spike_data)
+    #spike_data = Python_PostSorting.FR_relative_to_Behaviour.plot_spikes_on_track_relative_to_reward(server_path, spike_data)
+
+    spike_data = Python_PostSorting.FR_relative_to_Behaviour.calculate_positions_relative_to_reward(spike_data)
+    spike_data = Python_PostSorting.FR_relative_to_Behaviour.plot_positions_relative_to_reward(spike_data)
+    spike_data = Python_PostSorting.FR_relative_to_Behaviour.plot_rewarded_firing_rate(spike_data, prm)
+
     # Split data by TRIAL OUTCOME (HIT/TRY/RUN) : Analysis for Figure 7
-    spike_data = Python_PostSorting.Split_By_Trial_Outcome.split_time_data_by_trial_outcome(spike_data, prm)
-    spike_data = Python_PostSorting.Split_By_Trial_Outcome.extract_time_binned_firing_rate_runthru_allspeeds(spike_data)
-    spike_data = Python_PostSorting.Split_By_Trial_Outcome.extract_time_binned_firing_rate_try_allspeeds(spike_data)
-    spike_data = Python_PostSorting.Split_By_Trial_Outcome.extract_time_binned_firing_rate_rewarded_allspeeds(spike_data)
+    #spike_data = Python_PostSorting.Split_By_Trial_Outcome.split_time_data_by_trial_outcome(spike_data, prm)
+    #spike_data = Python_PostSorting.Split_By_Trial_Outcome.extract_time_binned_firing_rate_runthru_allspeeds(spike_data)
+    #spike_data = Python_PostSorting.Split_By_Trial_Outcome.extract_time_binned_firing_rate_try_allspeeds(spike_data)
+    #spike_data = Python_PostSorting.Split_By_Trial_Outcome.extract_time_binned_firing_rate_rewarded_allspeeds(spike_data)
 
     #spike_data = Python_PostSorting.Split_SpeedBy_Trial_Outcome.split_and_save_speed_data(spike_data)
     #spike_data = Python_PostSorting.Split_SpeedBy_Trial_Outcome.extract_time_binned_speed_by_outcome(spike_data)
@@ -168,12 +181,12 @@ def main():
     #spike_data = Python_PostSorting.SplitDataBySpeed.calc_histo_speed(spike_data)
 
     # calculate acceleration and plot instant rates : ## Analysis for Figure 3
-    spike_data = Python_PostSorting.CalculateAcceleration.generate_acceleration_rewarded_trials(spike_data, server_path)
+    #spike_data = Python_PostSorting.CalculateAcceleration.generate_acceleration_rewarded_trials(spike_data, server_path)
     #Python_PostSorting.MakePlots.plot_color_coded_instant_rates_according_to_segment(server_path, spike_data)
 
     # SAVE DATAFRAMES for R
-    spike_data = drop_columns_from_frame(spike_data)
-    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/All_cohort_4.pkl')
+    #spike_data = drop_columns_from_frame(spike_data)
+    #spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/All_cohort_4.pkl')
 
 
 
