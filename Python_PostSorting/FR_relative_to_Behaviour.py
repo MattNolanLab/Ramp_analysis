@@ -17,17 +17,18 @@ The following functions aim to recalculate position relative to reward position,
 """
 
 
-def remake_trial_numbers(rewarded_beaconed_trial_numbers):
-    unique_trials = np.unique(rewarded_beaconed_trial_numbers)
+def remake_trial_numbers(trial_numbers):
+    unique_trials = np.unique(trial_numbers)
     new_trial_numbers = []
     trial_n = 1
     for trial in unique_trials:
-        trial_data = rewarded_beaconed_trial_numbers[rewarded_beaconed_trial_numbers == trial]# get data only for each tria
+        trial_data = trial_numbers[trial_numbers == trial]# get data only for each tria
         num_stops_per_trial = len(trial_data)
         new_trials = np.repeat(trial_n, num_stops_per_trial)
         new_trial_numbers = np.append(new_trial_numbers, new_trials)
-        trial_n +=1
-    return new_trial_numbers, unique_trials
+        trial_n += 1
+    return new_trial_numbers, unique_trials, np.unique(new_trial_numbers)
+
 
 
 def style_vr_plot(ax, hor):
@@ -51,14 +52,16 @@ def style_vr_plot(ax, hor):
     ax.axhline(hor, linewidth = 2.5, color = 'black') # bold line on the x axis
     return ax
 
-'''
-def remake_rewarded_trial_numbers(old_trial_numbers, new_trial_numbers, rewarded_trials):
-    new_trial_numbers = []
 
-    for row in rewarded_trials:
-        
-    return
-'''
+def renumber_stop_trials(unique_trial_numbers, old_unique_trial_numbers, stop_trials):
+    new_trial_array = []
+    for rowcount, row in enumerate(stop_trials):
+        new_trial = unique_trial_numbers[old_unique_trial_numbers[:] == row]
+        #new_trial = unique_trial_numbers[np.isin(old_unique_trial_numbers,row)]
+        new_trial_array = np.append(new_trial_array, new_trial )
+
+    return new_trial_array
+
 
 def plot_rewarded_spikes_on_track(recording_folder,spike_data):
     print('plotting spike rasters for rewarded trials...')
@@ -70,28 +73,57 @@ def plot_rewarded_spikes_on_track(recording_folder,spike_data):
         cluster_index = spike_data.cluster_id.values[cluster] - 1
         spikes_on_track = plt.figure(figsize=(4,3))
         ax = spikes_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
+
         rewarded_locations = np.array(spike_data.at[cluster, 'rewarded_locations'], dtype=np.int16)
         rewarded_trials = np.array(spike_data.at[cluster, 'rewarded_trials'], dtype=np.int16)
-        #rewarded_trials = np.unique(np.array(spike_data.loc[cluster,'rewarded_trials']))
-        ##rewarded_trials = rewarded_trials[~np.isnan(rewarded_trials)]
-        #rewarded_locations = np.unique(np.array(spike_data.loc[cluster,'rewarded_locations']))
-        #rewarded_locations = rewarded_locations[~np.isnan(rewarded_locations)]
+        stop_locations = np.array(spike_data.at[cluster, 'stop_location_cm'], dtype=np.int16)
+        stop_trials = np.array(spike_data.at[cluster, 'stop_trial_number'], dtype=np.int16)
 
-        spike_position_cm, spike_trial_numbers = split_trials_by_reward(spike_data, cluster, rewarded_trials)
+        data = split_stops_by_reward(stop_locations, stop_trials, rewarded_trials)
 
-        ax.plot(spike_position_cm, spike_trial_numbers, '|', color='Black', markersize=2.5)
-        ax.plot(rewarded_locations, rewarded_trials, '>', color='Red', markersize=3)
+        spike_position_cm, spike_trial_numbers = split_spikes_by_reward(spike_data, cluster, rewarded_trials)
+        spike_trial_numbers, old_unique_trial_numbers, unique_trial_numbers = remake_trial_numbers(spike_trial_numbers) # this is for the sake of plotting so it doesnt show large gaps where failed trials are
 
-        #ax.plot(spike_data.at[cluster,"rewarded_locations"], spike_data.at[cluster,"rewarded_trials"], '>', color='Red', markersize=3)
+        stop_locations = data[data[:,1] > 0, 0]
+        stop_trials = data[data[:,1] > 0, 1]
+        new_rewarded_trials, old_unique_trial_numbers, unique_trial_numbers = remake_trial_numbers(rewarded_trials) # this is for the sake of plotting so it doesnt show large gaps where failed trials are
 
-        plt.ylabel('Spikes on trials', fontsize=10, labelpad = 10)
-        plt.xlabel('Location (cm)', fontsize=10, labelpad = 10)
+        stop_trials = renumber_stop_trials(unique_trial_numbers, old_unique_trial_numbers, stop_trials)  # this is for the sake of plotting as above
+
+        rewarded_trials = unique_trial_numbers[np.isin(old_unique_trial_numbers,rewarded_trials)]  # this is for the sake of plotting as above
+
+        ax.plot(spike_position_cm, spike_trial_numbers, '|', color='Black', markersize=1.5)
+        ax.plot(rewarded_locations[:len(rewarded_trials)], rewarded_trials, '>', color='Red', markersize=2)
+        ax.plot(stop_locations, stop_trials-1, 'o', color='DodgerBlue', markersize=1.5)
+
+        plt.ylabel('Spikes on trials', fontsize=16, labelpad = 10)
+        plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
         plt.xlim(0,200)
         ax.yaxis.set_ticks_position('left')
         ax.xaxis.set_ticks_position('bottom')
+        ax.yaxis.set_ticks_position('left')
+        ax.xaxis.set_ticks_position('bottom')
+
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(True)
+        ax.spines['bottom'].set_visible(True)
+        ax.tick_params(
+            axis='both',  # changes apply to the x-axis
+            which='both',  # both major and minor ticks are affected
+            bottom=True,  # ticks along the bottom edge are off
+            top=False,  # ticks along the top edge are off
+            right=False,
+            left=True,
+            labelleft=True,
+            labelbottom=True,
+            labelsize=16,
+            length=5,
+            width=1.5)  # labels along the bottom edge are off
+
         Python_PostSorting.plot_utility.style_track_plot(ax, 200)
         style_vr_plot(ax, 0)
-        plt.ylim(0,80)
+        plt.ylim(0)
         plt.locator_params(axis = 'y', nbins  = 4)
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
         plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_track_firing_Cluster_' + str(cluster_index +1) + '_rewarded.png', dpi=200)
@@ -99,28 +131,29 @@ def plot_rewarded_spikes_on_track(recording_folder,spike_data):
     return spike_data
 
 
-def split_trials_by_reward(spike_data, cluster_index, rewarded_trials):
-    trials = np.array(spike_data.at[cluster_index, 'trial_number'])
-    locations = np.array(spike_data.at[cluster_index, 'x_position_cm'])
-
-    #take firing locations when on rewarded trials
-    rewarded_position_cm = locations[np.isin(trials,rewarded_trials)]
-
-    #take firing trial numbers when on rewarded trials
-    rewarded_trial_numbers = trials[np.isin(trials,rewarded_trials)]
+def split_spikes_by_reward(spike_data, cluster, rewarded_trials):
+    trials = np.array(spike_data.at[cluster, 'trial_number'])
+    locations = np.array(spike_data.at[cluster, 'x_position_cm'])
+    rewarded_position_cm = locations[np.isin(trials,rewarded_trials)]#take firing locations when on rewarded trials
+    rewarded_trial_numbers = trials[np.isin(trials,rewarded_trials)]#take firing trial numbers when on rewarded trials
     return rewarded_position_cm, rewarded_trial_numbers
 
 
+def split_stops_by_reward(locations, trials, rewarded_trials):
+    rewarded_position_cm = locations[np.isin(trials,rewarded_trials)] #take stop locations when on rewarded trials
+    rewarded_trial_numbers = trials[np.isin(trials,rewarded_trials)]     #take stop trial numbers when on rewarded trials
+    data=np.vstack((rewarded_position_cm, rewarded_trial_numbers))
+    data=np.transpose(data)
+    return data
 
-def split_spikes_on_track_relative_to_reward(spike_data):
+
+def calculate_spikes_on_track_relative_to_reward(spike_data):
     spike_data["spike_trajectories_by_reward"] = ""
 
     for cluster in range(len(spike_data)):
-        cluster_index = spike_data.cluster_id.values[cluster] - 1
-
         rewarded_locations = np.array(spike_data.at[cluster, 'rewarded_locations'], dtype=np.int16)
         rewarded_trials = np.array(spike_data.at[cluster, 'rewarded_trials'], dtype=np.int16)
-        spike_position_cm, spike_trial_numbers = split_trials_by_reward(spike_data, cluster, rewarded_trials)
+        spike_position_cm, spike_trial_numbers = split_spikes_by_reward(spike_data, cluster, rewarded_trials)
 
         # stack data
         data = np.vstack((spike_position_cm, spike_trial_numbers))
@@ -141,11 +174,42 @@ def split_spikes_on_track_relative_to_reward(spike_data):
                     new_position = row[0] - reward_bin
                     new_position_array = np.append(new_position_array, new_position)
 
-        trials, unique_trials = remake_trial_numbers(spike_trial_numbers)
-
-        data_new = np.vstack((new_position_array, trials[:len(new_position_array)]))
+        data_new = np.vstack((new_position_array, spike_trial_numbers[:len(new_position_array)]))
         data_new=data_new.transpose()
-        spike_data.at[cluster_index, 'spike_trajectories_by_reward'] = data_new
+        spike_data.at[cluster, 'spike_trajectories_by_reward'] = data_new
+
+    return spike_data
+
+
+def calculate_stops_on_track_relative_to_reward(spike_data):
+    spike_data["stop_trajectories_by_reward"] = ""
+
+    for cluster in range(len(spike_data)):
+        rewarded_locations = np.array(spike_data.at[cluster, 'rewarded_locations'], dtype=np.int16)
+        rewarded_trials = np.array(spike_data.at[cluster, 'rewarded_trials'], dtype=np.int16)
+        stop_locations = np.array(spike_data.at[cluster, 'stop_location_cm'], dtype=np.int16)
+        stop_trials = np.array(spike_data.at[cluster, 'stop_trial_number'], dtype=np.int16)
+        data = split_stops_by_reward(stop_locations, stop_trials, rewarded_trials)
+        stop_trials = data[data[:,1] > 0, 1]
+
+        # bin data over position bins
+        trial_numbers = np.unique(stop_trials)
+        new_position_array = np.zeros((0, 0)); new_position_array[:,:] = np.nan
+
+        for trialcount, trial in enumerate(trial_numbers):
+            if trial > 0.1:
+                trial_data = data[data[:,1] == trial,:]
+                reward_bin = rewarded_locations[np.isin(rewarded_trials,trial)]
+                if len(reward_bin) > 1:
+                    reward_bin = reward_bin[0]
+
+                for rowcount, row in enumerate(trial_data+1):
+                    new_position = row[0] - reward_bin
+                    new_position_array = np.append(new_position_array, new_position)
+
+        data_new = np.vstack((new_position_array, stop_trials[:len(new_position_array)]))
+        data_new=data_new.transpose()
+        spike_data.at[cluster, 'stop_trajectories_by_reward'] = data_new
 
     return spike_data
 
@@ -163,18 +227,53 @@ def plot_spikes_on_track_relative_to_reward(recording_folder,spike_data):
             spikes_on_track = plt.figure(figsize=(4,3))
             ax = spikes_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
             spike_trajectories = np.array(spike_data.at[cluster, 'spike_trajectories_by_reward'])
+            stop_trajectories = np.array(spike_data.at[cluster, 'stop_trajectories_by_reward'])
+            rewarded_trials = np.array(spike_data.at[cluster, 'rewarded_trials'], dtype=np.int16)
 
-            ax.plot(spike_trajectories[:,0], spike_trajectories[:,1], '|', color='Black', markersize=2.5)
-            #ax.plot(spike_data.at[cluster,"rewarded_locations"], spike_data.at[cluster,"rewarded_trials"], '>', color='Red', markersize=3)
+            spike_position = spike_trajectories[:,0]
+            spike_trial_numbers = spike_trajectories[:,1]
 
-            plt.ylabel('Spikes on trials', fontsize=10, labelpad = 10)
-            plt.xlabel('Location (cm)', fontsize=10, labelpad = 10)
+            stop_locations = stop_trajectories[stop_trajectories[:,1] > 0, 0]
+            stop_trials = stop_trajectories[stop_trajectories[:,1] > 0, 1]
+            data = split_stops_by_reward(stop_locations, stop_trials, rewarded_trials)
+
+            spike_trial_numbers, old_unique_trial_numbers, unique_trial_numbers = remake_trial_numbers(spike_trial_numbers) # this is for the sake of plotting so it doesnt show large gaps where failed trials are
+
+            stop_locations = data[data[:,1] > 0, 0]
+            stop_trials = data[data[:,1] > 0, 1]
+            new_rewarded_trials, old_unique_trial_numbers, unique_trial_numbers = remake_trial_numbers(rewarded_trials) # this is for the sake of plotting so it doesnt show large gaps where failed trials are
+            stop_trials = renumber_stop_trials(unique_trial_numbers, old_unique_trial_numbers, stop_trials)  # this is for the sake of plotting as above
+
+            ax.plot(spike_position, spike_trial_numbers, '|', color='Black', markersize=1.5)
+            ax.plot(stop_locations, stop_trials-1, 'o', color='DodgerBlue', markersize=1.5)
+
+            plt.ylabel('Spikes on trials', fontsize=16, labelpad = 10)
+            plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
             #plt.xlim(0,200)
             ax.yaxis.set_ticks_position('left')
             ax.xaxis.set_ticks_position('bottom')
             ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
-            #Python_PostSorting.plot_utility.style_track_plot(ax, 200)
-            plt.ylim(0,80)
+            plt.ylim(0)
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
+
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_visible(True)
+            ax.spines['bottom'].set_visible(True)
+            ax.tick_params(
+                axis='both',  # changes apply to the x-axis
+                which='both',  # both major and minor ticks are affected
+                bottom=True,  # ticks along the bottom edge are off
+                top=False,  # ticks along the top edge are off
+                right=False,
+                left=True,
+                labelleft=True,
+                labelbottom=True,
+                labelsize=16,
+                length=5,
+                width=1.5)  # labels along the bottom edge are off
+
             plt.locator_params(axis = 'y', nbins  = 4)
             plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
             plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_track_firing_Cluster_' + str(cluster_index +1) + '_rewarded.png', dpi=200)
