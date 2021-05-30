@@ -163,7 +163,7 @@ def plot_spikes_on_track_relative_to_FS(recording_folder,spike_data):
     for cluster in range(len(spike_data)):
         cluster_index = spike_data.cluster_id.values[cluster] - 1
         try:
-            spikes_on_track = plt.figure(figsize=(4,3))
+            spikes_on_track = plt.figure(figsize=(4,3.5))
             ax = spikes_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
             spike_trajectories = np.array(spike_data.at[cluster, 'spike_trajectories_by_FS'])
             stop_trajectories = np.array(spike_data.at[cluster, 'stop_trajectories_by_FS'])
@@ -192,7 +192,7 @@ def plot_spikes_on_track_relative_to_FS(recording_folder,spike_data):
             ax.yaxis.set_ticks_position('left')
             ax.xaxis.set_ticks_position('bottom')
             ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
-            plt.ylim(0)
+            plt.ylim(10, 20)
             ax.yaxis.set_ticks_position('left')
             ax.xaxis.set_ticks_position('bottom')
 
@@ -288,7 +288,6 @@ def plot_positions_relative_to_FS(spike_data):
         bins = np.arange(-100,100,1)
 
         if (cluster_data.size) > 3:
-            print(cluster_data.shape)
             trial_numbers = np.unique(cluster_data[:,2])
             binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0])); binned_data[:, :] = np.nan
             for tcount, trial in enumerate(trial_numbers):
@@ -321,7 +320,7 @@ def plot_positions_relative_to_FS(spike_data):
 
 
 def plot_FS_firing_rate(spike_data, prm):
-    print("I am plotting firing rate relative to reward...")
+    print("I am plotting firing rate relative to first stop...")
     save_path = prm.get_local_recording_folder_path() + '/Figures/Firing_Rate_Maps_reset_at_FS'
     if os.path.exists(save_path) is False:
         os.makedirs(save_path)
@@ -362,10 +361,7 @@ def plot_FS_firing_rate(spike_data, prm):
                 width=1.5)  # labels along the bottom edge are off
 
             ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
-            #ax.axhline(0, linewidth = 2.5, color = 'black') # bold line on the x axis
-            #ax.set_ylim(0)
             plt.locator_params(axis = 'x', nbins  = 4)
-            #ax.set_xticklabels(['10', '30', '50'])
             plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
             plt.savefig(save_path + '/time_binned_Rates_histogram_' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + '_FS.png', dpi=200)
             plt.close()
