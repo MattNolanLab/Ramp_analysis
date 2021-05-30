@@ -165,7 +165,7 @@ def calculate_first_stop_per_cell(spike_data):
         data=np.vstack((rewarded_stop_location_cm,rewarded_stop_trial_number))
         data = np.transpose(data)
 
-        data = data[data[:,0] > 32,:] # filter data for beaconed trials
+        data = data[data[:,0] > 52,:] # filter data for beaconed trials
         data = data[data[:,0] <= 150,:] # filter data for beaconed trials
 
         trials = data[:,1]
