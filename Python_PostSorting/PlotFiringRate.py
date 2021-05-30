@@ -22,6 +22,7 @@ def extract_time_binned_firing_rate_rewarded(spike_data):
         trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
 
         window = signal.gaussian(2, std=2)
+        rates = signal.convolve(rates, window, mode='same')/ sum(window)
 
         # stack data
         data = np.vstack((rates,speed,position,types, trials))
@@ -52,12 +53,13 @@ def extract_time_binned_firing_rate_rewarded(spike_data):
         data_b = pd.DataFrame(binned_data[:,:,0], dtype=None, copy=False)
         data_b = data_b.dropna(axis = 1, how = "all")
         data_b.reset_index(drop=True, inplace=True)
-        data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
+        #data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
         data_b = np.asarray(data_b)
         x = np.reshape(data_b, (data_b.shape[0]*data_b.shape[1]))
         x = signal.convolve(x, window, mode='same')/ sum(window)
         data_b = np.reshape(x, (data_b.shape[0], data_b.shape[1]))
         x = np.nanmean(data_b, axis=1)
+        x = signal.convolve(x, window, mode='same')/ sum(window)
         x_sd = np.nanstd(data_b, axis=1)
         spike_data.at[cluster, 'Rates_averaged_rewarded_b'] = list(x)# add data to dataframe
         spike_data.at[cluster, 'Rates_sd_rewarded_b'] = list(x_sd)
@@ -80,10 +82,10 @@ def extract_time_binned_firing_rate_rewarded(spike_data):
         data_p = data_p.dropna(axis = 1, how = "all")
         data_p.reset_index(drop=True, inplace=True)
         data_p = data_p.interpolate(method='linear', limit=None, limit_direction='both')
-        data_p = np.asarray(data_p)
-        x = np.reshape(data_p, (data_p.shape[0]*data_p.shape[1]))
-        x = signal.convolve(x, window, mode='same')/ sum(window)
-        data_p = np.reshape(x, (data_p.shape[0], data_p.shape[1]))
+        #data_p = np.asarray(data_p)
+        #x = np.reshape(data_p, (data_p.shape[0]*data_p.shape[1]))
+        #x = signal.convolve(x, window, mode='same')/ sum(window)
+        #data_p = np.reshape(x, (data_p.shape[0], data_p.shape[1]))
         x = np.nanmean(data_p, axis=1)
         x_sd = np.nanstd(data_p, axis=1)
         spike_data.at[cluster, 'Rates_averaged_rewarded_p'] = list(x)
@@ -93,7 +95,7 @@ def extract_time_binned_firing_rate_rewarded(spike_data):
 
 
 def plot_rewarded_firing_rate(spike_data, prm):
-    save_path = prm.get_local_recording_folder_path() + '/Figures/Firing_Rate_Maps'
+    save_path = prm.get_local_recording_folder_path() + '/Figures/rewarded_firing_rate'
     if os.path.exists(save_path) is False:
         os.makedirs(save_path)
 
@@ -146,7 +148,7 @@ def plot_rewarded_firing_rate(spike_data, prm):
 
 
 def plot_rewarded_nb_firing_rate(spike_data, prm):
-    save_path = prm.get_local_recording_folder_path() + '/Figures/Firing_Rate_Maps'
+    save_path = prm.get_local_recording_folder_path() + '/Figures/rewarded_firing_rate'
     if os.path.exists(save_path) is False:
         os.makedirs(save_path)
 
@@ -205,7 +207,7 @@ def plot_rewarded_nb_firing_rate(spike_data, prm):
 
 
 def plot_rewarded_p_firing_rate(spike_data, prm):
-    save_path = prm.get_local_recording_folder_path() + '/Figures/Firing_Rate_Maps'
+    save_path = prm.get_local_recording_folder_path() + '/Figures/rewarded_firing_rate'
     if os.path.exists(save_path) is False:
         os.makedirs(save_path)
 
