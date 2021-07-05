@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy import stats
+from scipy import signal
 
 def extract_firing_rate_data(spike_data, cluster_index):
     cluster_firings = pd.DataFrame({ 'firing_rate' :  spike_data.iloc[cluster_index].spike_rate_on_trials[0], 'trial_number' :  spike_data.iloc[cluster_index].spike_rate_on_trials[1], 'trial_type' :  spike_data.iloc[cluster_index].spike_rate_on_trials[2]})
@@ -12,24 +13,9 @@ def extract_smoothed_firing_rate_data(spike_data, cluster_index):
     return cluster_firings
 
 
-def extract_firing_num_data(spike_data, cluster_index):
-    cluster_firings = pd.DataFrame({ 'firing_rate' :  spike_data.loc[cluster_index].spike_num_on_trials[0], 'trial_number' :  spike_data.loc[cluster_index].spike_num_on_trials[1], 'trial_type' :  spike_data.loc[cluster_index].spike_num_on_trials[2]})
+def extract_harry_firing_rate_data(spike_data, cluster_index):
+    cluster_firings = pd.DataFrame({ 'firing_rate' :  spike_data.loc[cluster_index].fr_binned_in_space[0], 'trial_number' :  np.array(spike_data.loc[cluster_index].fr_binned_in_space[1], dtype=np.int16), 'trial_type' :  spike_data.loc[cluster_index].fr_binned_in_space[2]})
     return cluster_firings
-
-
-def extract_shuffled_firing_num_data(spike_data, cluster_index):
-    cluster_firings = pd.DataFrame({ 'firing_rate' :  spike_data.loc[cluster_index].shuffled_spike_num_on_trials[0], 'trial_number' :  spike_data.loc[cluster_index].shuffled_spike_num_on_trials[1], 'trial_type' :  spike_data.loc[cluster_index].shuffled_spike_num_on_trials[2], 'bins' :  spike_data.loc[cluster_index].shuffled_spike_num_on_trials[3]})
-    return cluster_firings
-
-
-def extract_shuffled_firing_rate_data(spike_data, cluster_index):
-    cluster_firings = pd.DataFrame({ 'firing_rate' :  spike_data.loc[cluster_index].shuffled_spike_rate_on_trials[0], 'trial_number' :  spike_data.loc[cluster_index].shuffled_spike_rate_on_trials[1], 'trial_type' :  spike_data.loc[cluster_index].shuffled_spike_rate_on_trials[2], 'bins' :  spike_data.loc[cluster_index].shuffled_spike_rate_on_trials[3]})
-    return cluster_firings
-
-
-def extract_average_speed_data(spike_data, cluster_index):
-    cluster_speed = pd.DataFrame({ 'speed_b' :  spike_data.loc[cluster_index].average_speed[0], 'speed_nb' :  spike_data.loc[cluster_index].average_speed[1], 'speed_p' :  spike_data.loc[cluster_index].average_speed[2]})
-    return cluster_speed
 
 
 def split_firing_data_by_trial_type(cluster_firings):
@@ -43,27 +29,45 @@ def reshape_and_average_over_trials(beaconed_cluster_firings, nonbeaconed_cluste
     beaconed_cluster_firings[beaconed_cluster_firings>100] = 100
     nonbeaconed_cluster_firings[nonbeaconed_cluster_firings>100] = 100
     probe_cluster_firings[probe_cluster_firings>100] = 100
+    probe_cluster_firings[probe_cluster_firings==0] = np.nan
+    window = signal.gaussian(2, std=3)
+
+    probe_cluster_firings = signal.convolve(probe_cluster_firings, window, mode='same')/ sum(window)
+    nonbeaconed_cluster_firings = signal.convolve(nonbeaconed_cluster_firings, window, mode='same')/ sum(window)
+    beaconed_cluster_firings = signal.convolve(beaconed_cluster_firings, window, mode='same')/ sum(window)
+    probe_cluster_firings = signal.convolve(probe_cluster_firings, window, mode='same')/ sum(window)
 
     beaconed_reshaped_hist = np.reshape(beaconed_cluster_firings, (int(beaconed_cluster_firings.size/200),200))
     nonbeaconed_reshaped_hist = np.reshape(nonbeaconed_cluster_firings, (int(nonbeaconed_cluster_firings.size/200), 200))
     probe_reshaped_hist = np.reshape(probe_cluster_firings, (int(probe_cluster_firings.size/200), 200))
-    average_beaconed_spike_rate = np.nanmean(beaconed_reshaped_hist, axis=0)
-    average_nonbeaconed_spike_rate = np.nanmean(nonbeaconed_reshaped_hist, axis=0)
-    average_probe_spike_rate = np.nanmean(probe_reshaped_hist, axis=0)
-    average_beaconed_spike_rate = np.nan_to_num(average_beaconed_spike_rate, copy=True)
-    average_nonbeaconed_spike_rate = np.nan_to_num(average_nonbeaconed_spike_rate, copy=True)
-    average_probe_spike_rate = np.nan_to_num(average_probe_spike_rate, copy=True)
 
-    average_beaconed_sd = np.nanstd(beaconed_reshaped_hist, axis=0)/2
+    data_b = pd.DataFrame(beaconed_reshaped_hist, dtype=None, copy=False)
+    data_b = data_b.interpolate(method='pad')
+    beaconed_reshaped_hist = np.asarray(data_b)
+
+    data_nb = pd.DataFrame(nonbeaconed_reshaped_hist, dtype=None, copy=False)
+    data_nb = data_nb.interpolate(method='pad')
+    nonbeaconed_reshaped_hist = np.asarray(data_nb)
+
+    data_p = pd.DataFrame(probe_reshaped_hist, dtype=None, copy=False)
+    data_p = data_p.interpolate(method='pad')
+    probe_reshaped_hist = np.asarray(data_p)
+
+    beaconed_reshaped_hist = np.nan_to_num(beaconed_reshaped_hist)
+    nonbeaconed_reshaped_hist = np.nan_to_num(nonbeaconed_reshaped_hist)
+    probe_reshaped_hist = np.nan_to_num(probe_reshaped_hist)
+
+
+    average_beaconed_spike_rate = np.nanmean(beaconed_reshaped_hist, axis=0)
+    average_beaconed_spike_rate = signal.convolve(average_beaconed_spike_rate, window, mode='same')/ sum(window)
+    average_nonbeaconed_spike_rate = np.nanmean(nonbeaconed_reshaped_hist, axis=0)
+    average_nonbeaconed_spike_rate = signal.convolve(average_nonbeaconed_spike_rate, window, mode='same')/ sum(window)
+    average_probe_spike_rate = np.nanmean(probe_reshaped_hist, axis=0)
+    average_probe_spike_rate = signal.convolve(average_probe_spike_rate, window, mode='same')/ sum(window)
+    average_beaconed_sd = np.nanstd(beaconed_reshaped_hist, axis=0)
 
     return np.array(average_beaconed_spike_rate, dtype=np.float16), np.array(average_nonbeaconed_spike_rate, dtype=np.float16), np.array(average_probe_spike_rate, dtype=np.float16), average_beaconed_sd
 
-
-def extract_average_shuffled_firing_rate_data(spike_data, cluster_index):
-    cluster_firings = extract_shuffled_firing_rate_data(spike_data, cluster_index)
-    beaconed_cluster_firings, nonbeaconed_cluster_firings, probe_cluster_firings = split_firing_data_by_trial_type(cluster_firings)
-    average_beaconed_spike_rate, average_nonbeaconed_spike_rate, average_probe_spike_rate = reshape_and_average_over_trials(np.array(beaconed_cluster_firings["firing_rate"]), np.array(nonbeaconed_cluster_firings["firing_rate"]), np.array(probe_cluster_firings["firing_rate"]), max(cluster_firings["trial_number"]))
-    return np.array(average_beaconed_spike_rate, dtype=np.float16), np.array(average_nonbeaconed_spike_rate, dtype=np.float16), np.array(average_probe_spike_rate, dtype=np.float16)
 
 
 def extract_average_firing_rate_data(spike_data, cluster_index):
@@ -80,18 +84,17 @@ def extract_smoothed_average_firing_rate_data(spike_data, cluster_index):
     return average_beaconed_spike_rate, average_nonbeaconed_spike_rate, average_probe_spike_rate, average_beaconed_sd
 
 
-def extract_average_firing_num_data(spike_data, cluster_index):
-    cluster_firings = extract_firing_num_data(spike_data, cluster_index)
-    beaconed_cluster_firings, nonbeaconed_cluster_firings, probe_cluster_firings = split_firing_data_by_trial_type(cluster_firings)
-    average_beaconed_spike_rate, average_nonbeaconed_spike_rate, average_probe_spike_rate, sd = reshape_and_average_over_trials(np.array(beaconed_cluster_firings["firing_rate"]), np.array(nonbeaconed_cluster_firings["firing_rate"]), np.array(probe_cluster_firings["firing_rate"]), max(cluster_firings["trial_number"]))
-    return average_beaconed_spike_rate, average_nonbeaconed_spike_rate, average_probe_spike_rate, sd
+def extract_harry_average_firing_rate_data(spike_data, cluster_index):
+    beaconed_spike_rate=np.array(spike_data.loc[cluster_index, 'fr_binned_in_space'])
+    avg_beaconed_spike_rate = np.nanmean(beaconed_spike_rate, axis=0)
+    window = signal.gaussian(3, std=4)
+    avg_beaconed_spike_rate = signal.convolve(avg_beaconed_spike_rate, window, mode='same')/ sum(window)
+    average_beaconed_sd = np.nanstd(beaconed_spike_rate, axis=0)/2
 
+    #beaconed_cluster_firings, nonbeaconed_cluster_firings, probe_cluster_firings = split_firing_data_by_trial_type(cluster_firings)
+    #average_beaconed_spike_rate, average_nonbeaconed_spike_rate, average_probe_spike_rate, average_beaconed_sd = reshape_and_average_over_trials(np.array(beaconed_cluster_firings["firing_rate"]), np.array(nonbeaconed_cluster_firings["firing_rate"]), np.array(probe_cluster_firings["firing_rate"]), max(cluster_firings["trial_number"]))
+    return avg_beaconed_spike_rate, average_beaconed_sd
 
-def extract_smoothed_average_firing_rate_data_tracks(spike_data, cluster_index):
-    cluster_firings = extract_smoothed_firing_rate_data(spike_data, cluster_index)
-    beaconed_cluster_firings, nonbeaconed_cluster_firings, probe_cluster_firings = split_firing_data_by_trial_type(cluster_firings)
-    average_beaconed_spike_rate, average_nonbeaconed_spike_rate, average_probe_spike_rate, sd = reshape_and_average_over_trials(np.array(beaconed_cluster_firings["firing_rate"]), np.array(nonbeaconed_cluster_firings["firing_rate"]), np.array(probe_cluster_firings["firing_rate"]), max(cluster_firings["trial_number"]))
-    return average_beaconed_spike_rate, average_nonbeaconed_spike_rate, average_probe_spike_rate, sd
 
 
 
