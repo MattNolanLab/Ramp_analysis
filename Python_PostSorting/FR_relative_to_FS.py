@@ -26,6 +26,7 @@ def run_firststop_aligned_analysis(server_path,spike_data, prm):
     spike_data = plot_positions_relative_to_FS(spike_data)
     #spike_data = plot_FS_firing_rate(spike_data, prm)
     #spike_data = plot_heatmap_by_trial(spike_data, prm)
+    spike_data = calculate_trial_by_trial_peaks(spike_data)
 
     #spike_data = calculate_positions_relative_to_FS_uncued(spike_data)
     #spike_data = plot_positions_relative_to_FS_uncued(spike_data)
@@ -392,6 +393,28 @@ def plot_positions_relative_to_FS(spike_data):
 
     return spike_data
 
+
+
+def calculate_trial_by_trial_peaks(spike_data):
+    spike_data["trial_peaks_max_fs"] = ""
+    spike_data["trial_peak_locations_max_fs"] = ""
+
+    for cluster in range(len(spike_data)):
+        cluster_data = np.array(spike_data.loc[cluster, 'FR_reset_at_FS_by_trial'])
+        peak_array = []
+        peak_array_locs = []
+        for colcount, col in enumerate(cluster_data):
+            trial_data = cluster_data[:,colcount]
+            region_of_interest = trial_data[60:110]
+            peak_location = np.argmax(region_of_interest)+60
+            peak_firingrate = np.max(region_of_interest)*10
+            peak_array = np.append(peak_array, peak_firingrate )
+            peak_array_locs = np.append(peak_array_locs, peak_location )
+
+        spike_data.at[cluster, 'trial_peaks_max_fs'] = list(peak_array)# add data to dataframe
+        spike_data.at[cluster, 'trial_peak_locations_max_fs'] = list(peak_array_locs)# add data to dataframe
+
+    return spike_data
 
 
 
