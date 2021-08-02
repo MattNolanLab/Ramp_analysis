@@ -16,6 +16,21 @@ The following functions aim to recalculate position relative to reward position,
 
 """
 
+def run_reward_aligned_analysis(server_path,spike_data, prm):
+    #spike_data = plot_rewarded_spikes_on_track(server_path,spike_data)
+    #spike_data = calculate_spikes_on_track_relative_to_reward(spike_data)
+    #spike_data = calculate_stops_on_track_relative_to_reward(spike_data)
+    #spike_data = plot_spikes_on_track_relative_to_reward(server_path, spike_data)
+    spike_data = calculate_positions_relative_to_reward(spike_data)
+    spike_data = plot_positions_relative_to_reward(spike_data)
+    #spike_data = plot_rewarded_firing_rate(spike_data, prm)
+    #spike_data = plot_heatmap_by_trial(spike_data, prm)
+    #spike_data = rewarded_firing_rate_by_trial(spike_data, prm)
+
+    #spike_data = Python_PostSorting.FR_relative_to_Behaviour.calculate_positions_relative_to_reward_uncued(spike_data)
+    #spike_data = Python_PostSorting.FR_relative_to_Behaviour.plot_positions_relative_to_reward_uncued(spike_data)
+    #spike_data = Python_PostSorting.FR_relative_to_Behaviour.plot_heatmap_by_trial_uncued(spike_data, prm)
+    return spike_data
 
 def remake_trial_numbers(trial_numbers):
     unique_trials = np.unique(trial_numbers)
@@ -123,7 +138,7 @@ def plot_rewarded_spikes_on_track(recording_folder,spike_data):
 
         Python_PostSorting.plot_utility.style_track_plot(ax, 200)
         style_vr_plot(ax, 0)
-        plt.ylim(10,20)
+        plt.ylim(30, 50)
         plt.locator_params(axis = 'y', nbins  = 4)
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
         plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_track_firing_Cluster_' + str(cluster_index +1) + '_rewarded.png', dpi=200)
@@ -253,7 +268,8 @@ def plot_spikes_on_track_relative_to_reward(recording_folder,spike_data):
             ax.yaxis.set_ticks_position('left')
             ax.xaxis.set_ticks_position('bottom')
             ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
-            plt.ylim(10,30)
+            #plt.ylim(30, 50)
+            plt.ylim(17.5, 24.5)
             ax.yaxis.set_ticks_position('left')
             ax.xaxis.set_ticks_position('bottom')
 
@@ -302,15 +318,24 @@ def calculate_positions_relative_to_reward(spike_data):
     spike_data["spikes_in_time_reset_at_rewarded"] = ""
 
     for cluster in range(len(spike_data)):
-        rates=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[0])
-        position=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[2])
-        trials=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[3], dtype= np.int32)
+        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[0])
+        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[1])
+        position=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[2])
+        trials=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[3], dtype= np.int32)
+        types=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[4], dtype= np.int32)
         rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
         rewarded_locations = np.array(spike_data.loc[cluster, 'rewarded_locations'])
+        window = signal.gaussian(2, std=2)
+        #rates = signal.convolve(rates, window, mode='same')/ sum(window)
 
         # stack data
-        data = np.vstack((rates,position, trials))
+        data = np.vstack((rates,position, trials, speed, types))
         data=data.transpose()
+        data = data[data[:,3] >= 3,:]
+        data = data[data[:,4] == 0,:]
+        rates = data[:,0]
+        trials = data[:,2]
+
         data_new = np.zeros((1,3))
         if data.shape[0] > 0:
             # bin data over position bins
@@ -334,11 +359,57 @@ def calculate_positions_relative_to_reward(spike_data):
 
 
 
+def calculate_positions_relative_to_reward_uncued(spike_data):
+    print("I am recalculating positions...")
+    spike_data["spikes_in_time_reset_at_rewarded_uncued"] = ""
+
+    for cluster in range(len(spike_data)):
+        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[0])
+        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[1])
+        position=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[2])
+        trials=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[3], dtype= np.int32)
+        types=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[4], dtype= np.int32)
+        rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
+        rewarded_locations = np.array(spike_data.loc[cluster, 'rewarded_locations'])
+        window = signal.gaussian(2, std=2)
+        #rates = signal.convolve(rates, window, mode='same')/ sum(window)
+
+        # stack data
+        data = np.vstack((rates,position, trials, speed, types))
+        data=data.transpose()
+        data = data[data[:,3] >= 3,:]
+        data = data[data[:,4] != 0,:]
+        rates = data[:,0]
+        trials = data[:,2]
+
+        data_new = np.zeros((1,3))
+        if data.shape[0] > 0:
+            # bin data over position bins
+            #trial_numbers = np.arange(min(trials),max(trials), 1)
+            trial_numbers = np.unique(data[:,2])
+            new_position_array = np.zeros((0, 0 )); new_position_array[:,:] = np.nan
+
+            for tcount, trial in enumerate(trial_numbers):
+                trial_data = data[data[:,2] == trial,:]
+                reward_location = rewarded_locations[np.isin(rewarded_trials,trial)]
+
+                for rowcount, row in enumerate(trial_data):
+                    new_position = row[1] - reward_location
+                    new_position_array = np.append(new_position_array, new_position)
+
+            data_new = np.vstack((rates,new_position_array, trials))
+            data_new=data_new.transpose()
+
+        spike_data.at[cluster, 'spikes_in_time_reset_at_rewarded_uncued'] = pd.DataFrame(data_new)
+    return spike_data
+
+
 
 
 
 def plot_positions_relative_to_reward(spike_data):
     print("I am binning based on recalculated positions...")
+    spike_data["FR_reset_at_reward_by_trial"] = ""
     spike_data["FR_reset_at_reward"] = ""
     spike_data["FR_sd_reset_at_reward"] = ""
 
@@ -372,12 +443,56 @@ def plot_positions_relative_to_reward(spike_data):
             x = signal.convolve(x, window, mode='same')/ sum(window)
             data_b = np.reshape(x, (data_b.shape[0], data_b.shape[1]))
             x = np.nanmean(data_b, axis=1)
+            #x = signal.convolve(x, window, mode='same')/ sum(window)
             x_sd = np.nanstd(data_b, axis=1)
             spike_data.at[cluster, 'FR_reset_at_reward'] = list(x)# add data to dataframe
             spike_data.at[cluster, 'FR_sd_reset_at_reward'] = list(x_sd)
+            spike_data.at[cluster, 'FR_reset_at_reward_by_trial'] = list(data_b)
 
     return spike_data
 
+
+
+
+def plot_positions_relative_to_reward_uncued(spike_data):
+    print("I am binning based on recalculated positions...")
+    spike_data["FR_reset_at_reward_by_trial_uncued"] = ""
+
+
+    for cluster in range(len(spike_data)):
+        cluster_data = np.array(spike_data.loc[cluster, 'spikes_in_time_reset_at_rewarded_uncued'])
+
+        # bin data over position bins
+        bins = np.arange(-100,100,1)
+
+        if (cluster_data.size) > 3:
+            trial_numbers = np.unique(cluster_data[:,2])
+            binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0])); binned_data[:, :] = np.nan
+            for tcount, trial in enumerate(trial_numbers):
+                trial_data = cluster_data[cluster_data[:,2] == trial,:]
+                if trial_data.shape[0] > 0:
+                    trial_rates = trial_data[:,0]
+                    trial_positions = trial_data[:,1]
+                    for bcount, b in enumerate(bins):
+                        rate_in_position = np.take(trial_rates, np.where(np.logical_and(trial_positions >= b, trial_positions < b+1)))
+                        average_rates = np.nanmean(rate_in_position)
+                        binned_data[bcount, tcount] = average_rates
+
+            #remove nans interpolate
+            data_b = pd.DataFrame(binned_data[:,:], dtype=None, copy=False)
+            data_b = data_b.dropna(axis = 1, how = "all")
+            data_b.reset_index(drop=True, inplace=True)
+            data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
+            data_b = np.asarray(data_b)
+            x = np.reshape(data_b, (data_b.shape[0]*data_b.shape[1]))
+            window = signal.gaussian(2, std=2)
+            x = signal.convolve(x, window, mode='same')/ sum(window)
+            data_b = np.reshape(x, (data_b.shape[0], data_b.shape[1]))
+            #spike_data.at[cluster, 'FR_reset_at_reward'] = list(x)# add data to dataframe
+            #spike_data.at[cluster, 'FR_sd_reset_at_reward'] = list(x_sd)
+            spike_data.at[cluster, 'FR_reset_at_reward_by_trial_uncued'] = list(data_b)
+
+    return spike_data
 
 
 def plot_rewarded_firing_rate(spike_data, prm):
@@ -423,10 +538,265 @@ def plot_rewarded_firing_rate(spike_data, prm):
 
             ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
             #ax.axhline(0, linewidth = 2.5, color = 'black') # bold line on the x axis
-            #ax.set_ylim(0)
+            ax.set_ylim(0)
             plt.locator_params(axis = 'x', nbins  = 4)
             #ax.set_xticklabels(['10', '30', '50'])
             plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
             plt.savefig(save_path + '/time_binned_Rates_histogram_' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + 'rewarded.png', dpi=200)
             plt.close()
+    return spike_data
+
+
+
+
+
+def plot_rewarded_firing_rate_by_trial(spike_data, prm):
+    print("I am plotting firing rate relative to reward for some trials...")
+    save_path = prm.get_local_recording_folder_path() + '/Figures/Firing_Rate_Maps_reset_at_reward_by_trial'
+    if os.path.exists(save_path) is False:
+        os.makedirs(save_path)
+
+    for cluster in range(len(spike_data)):
+        cluster_index = spike_data.cluster_id.values[cluster] - 1
+        position_array=np.arange(-100,100,1)
+        rates=np.array(spike_data.loc[cluster, 'FR_reset_at_reward_by_trial'])
+        #sd_rates=np.array(spike_data.loc[cluster, 'FR_sd_reset_at_reward'])
+
+        try:
+            trial1 = rates[:,17]
+            trial2 = rates[:,18]
+            trial3 = rates[:,19]
+            trial4 = rates[:,20]
+            trial5 = rates[:,21]
+            trial6 = rates[:,22]
+        except IndexError:
+            trial1 = rates[:,6]
+            trial2 = rates[:,7]
+            trial3 = rates[:,8]
+            trial4 = rates[:,9]
+            trial5 = rates[:,4]
+            trial6 = rates[:,5]
+
+        if rates.size > 1 :
+            speed_histogram = plt.figure(figsize=(4,12))
+            ax = speed_histogram.add_subplot(6, 1, 1)  # specify (nrows, ncols, axnum)
+            ax.plot(position_array, trial1, '-', color='Black')
+            plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+            #plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
+            plt.xlim(-100,100)
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_visible(True)
+            ax.spines['bottom'].set_visible(True)
+            ax.tick_params(
+                axis='both',  # changes apply to the x-axis
+                which='both',  # both major and minor ticks are affected
+                bottom=True,  # ticks along the bottom edge are off
+                top=False,  # ticks along the top edge are off
+                right=False,
+                left=True,
+                labelleft=True,
+                labelbottom=True,
+                labelsize=16,
+                length=5,
+                width=1.5)  # labels along the bottom edge are off
+            ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
+            ax.set_ylim(0)
+            plt.locator_params(axis = 'x', nbins  = 4)
+
+            ax = speed_histogram.add_subplot(6, 1, 2)  # specify (nrows, ncols, axnum)
+            ax.plot(position_array, trial2, '-', color='Black')
+            plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+            #plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
+            plt.xlim(-100,100)
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_visible(True)
+            ax.spines['bottom'].set_visible(True)
+            ax.tick_params(
+                axis='both',  # changes apply to the x-axis
+                which='both',  # both major and minor ticks are affected
+                bottom=True,  # ticks along the bottom edge are off
+                top=False,  # ticks along the top edge are off
+                right=False,
+                left=True,
+                labelleft=True,
+                labelbottom=True,
+                labelsize=16,
+                length=5,
+                width=1.5)  # labels along the bottom edge are off
+            ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
+            ax.set_ylim(0)
+            plt.locator_params(axis = 'x', nbins  = 4)
+
+            ax = speed_histogram.add_subplot(6, 1, 3)  # specify (nrows, ncols, axnum)
+            ax.plot(position_array, trial3, '-', color='Black')
+            plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+            #plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
+            plt.xlim(-100,100)
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_visible(True)
+            ax.spines['bottom'].set_visible(True)
+            ax.tick_params(
+                axis='both',  # changes apply to the x-axis
+                which='both',  # both major and minor ticks are affected
+                bottom=True,  # ticks along the bottom edge are off
+                top=False,  # ticks along the top edge are off
+                right=False,
+                left=True,
+                labelleft=True,
+                labelbottom=True,
+                labelsize=16,
+                length=5,
+                width=1.5)  # labels along the bottom edge are off
+            ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
+            ax.set_ylim(0)
+            plt.locator_params(axis = 'x', nbins  = 4)
+
+            ax = speed_histogram.add_subplot(6, 1, 4)  # specify (nrows, ncols, axnum)
+            ax.plot(position_array, trial4, '-', color='Black')
+            plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+            #plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
+            plt.xlim(-100,100)
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_visible(True)
+            ax.spines['bottom'].set_visible(True)
+            ax.tick_params(
+                axis='both',  # changes apply to the x-axis
+                which='both',  # both major and minor ticks are affected
+                bottom=True,  # ticks along the bottom edge are off
+                top=False,  # ticks along the top edge are off
+                right=False,
+                left=True,
+                labelleft=True,
+                labelbottom=True,
+                labelsize=16,
+                length=5,
+                width=1.5)  # labels along the bottom edge are off
+            ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
+            ax.set_ylim(0)
+            plt.locator_params(axis = 'x', nbins  = 4)
+
+            ax = speed_histogram.add_subplot(6, 1, 5)  # specify (nrows, ncols, axnum)
+            ax.plot(position_array, trial5, '-', color='Black')
+            plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+            #plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
+            plt.xlim(-100,100)
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_visible(True)
+            ax.spines['bottom'].set_visible(True)
+            ax.tick_params(
+                axis='both',  # changes apply to the x-axis
+                which='both',  # both major and minor ticks are affected
+                bottom=True,  # ticks along the bottom edge are off
+                top=False,  # ticks along the top edge are off
+                right=False,
+                left=True,
+                labelleft=True,
+                labelbottom=True,
+                labelsize=16,
+                length=5,
+                width=1.5)  # labels along the bottom edge are off
+            ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
+            ax.set_ylim(0)
+            plt.locator_params(axis = 'x', nbins  = 4)
+
+            ax = speed_histogram.add_subplot(6, 1, 6)  # specify (nrows, ncols, axnum)
+            ax.plot(position_array, trial6, '-', color='Black')
+            plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+            #plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
+            plt.xlim(-100,100)
+            ax.yaxis.set_ticks_position('left')
+            ax.xaxis.set_ticks_position('bottom')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['left'].set_visible(True)
+            ax.spines['bottom'].set_visible(True)
+            ax.tick_params(
+                axis='both',  # changes apply to the x-axis
+                which='both',  # both major and minor ticks are affected
+                bottom=True,  # ticks along the bottom edge are off
+                top=False,  # ticks along the top edge are off
+                right=False,
+                left=True,
+                labelleft=True,
+                labelbottom=True,
+                labelsize=16,
+                length=5,
+                width=1.5)  # labels along the bottom edge are off
+            ax.axvline(0, linewidth = 1.5, color = 'black') # bold line on the y axis
+            ax.set_ylim(0)
+            plt.locator_params(axis = 'x', nbins  = 4)
+
+            plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+            plt.savefig(save_path + '/time_binned_Rates_histogram_' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + 'rewarded.png', dpi=200)
+            plt.close()
+    return spike_data
+
+
+
+import seaborn as sns
+
+
+
+
+def plot_heatmap_by_trial(spike_data, prm):
+    print("I am plotting firing rate relative to reward for all trials as a heatmap...")
+    save_path = prm.get_local_recording_folder_path() + '/Figures/heatmaps_per_trial'
+    if os.path.exists(save_path) is False:
+        os.makedirs(save_path)
+
+    for cluster in range(len(spike_data)):
+        cluster_index = spike_data.cluster_id.values[cluster] - 1
+        rates=np.array(spike_data.loc[cluster, 'FR_reset_at_reward_by_trial'])
+
+        speed_histogram = plt.figure(figsize=(5,12))
+        ax = sns.heatmap(np.transpose(rates))
+        plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+        plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
+        plt.xlim(0,200)
+        ax.axvline(100, linewidth = 1.5, color = 'black') # bold line on the y axis
+        plt.locator_params(axis = 'x', nbins  = 4)
+        plt.savefig(save_path + '/heatmap_' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + 'rewarded.png', dpi=200)
+        plt.close()
+
+    return spike_data
+
+
+def plot_heatmap_by_trial_uncued(spike_data, prm):
+    print("I am plotting firing rate relative to reward for all trials as a heatmap...")
+    save_path = prm.get_local_recording_folder_path() + '/Figures/heatmaps_per_trial'
+    if os.path.exists(save_path) is False:
+        os.makedirs(save_path)
+
+    for cluster in range(len(spike_data)):
+        cluster_index = spike_data.cluster_id.values[cluster] - 1
+        rates=np.array(spike_data.loc[cluster, 'FR_reset_at_reward_by_trial_uncued'])
+
+        try:
+            speed_histogram = plt.figure(figsize=(5,12))
+            ax = sns.heatmap(np.transpose(rates))
+            plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
+            plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
+            plt.xlim(0,200)
+            ax.axvline(100, linewidth = 1.5, color = 'black') # bold line on the y axis
+            plt.locator_params(axis = 'x', nbins  = 4)
+            plt.savefig(save_path + '/heatmap_' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + 'rewarded_uncued.png', dpi=200)
+            plt.close()
+        except ValueError:
+            continue
+
     return spike_data
