@@ -18,8 +18,8 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LinearRegression
 from utils import getWrappedSubplots
 
-from .ramp_score import *
-from .sparse_analysis import addTrialStructure, findMatchingNeuron
+from .Ramp_score import *
+from .Sparse_analysos import addTrialStructure, findMatchingNeuron
 from tqdm.auto import tqdm
 
 
