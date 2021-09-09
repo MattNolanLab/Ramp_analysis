@@ -37,9 +37,9 @@ Required columns to concatinate from server:
 def concat_multi_dir(server_path, prm):
     #server_test_file = '//cmvm.datastore.ed.ac.uk/cmvm/sbms/groups/mnolan_NolanLab/ActiveProjects/Sarah/Data/PIProject_OptoEphys/Data/OpenEphys/_cohort3/M1_D31_2018-11-01_12-28-25/parameters.txt'
     server_test_file = '/Volumes/mnolan_NolanLab/ActiveProjects/Sarah/Data/test/M3_D2_2019-03-05_13-55-31/MountainSort/DataFrames/spatial_firing.pkl'
-    server_path = '/Volumes/mnolan_NolanLab/ActiveProjects/Sarah/Data/PIProject_OptoEphys/Data/OpenEphys/_cohort3/M6_sorted/'
+    server_path = '/Volumes/mnolan_NolanLab/ActiveProjects/Harry/for_sarah/'
 
-    local_output_path = prm.get_output_path() + '/M6_alldays_df.pkl'
+    local_output_path = prm.get_output_path() + '/test_days.pkl'
 
     if os.path.exists(server_path):
         print('I found the server.')
@@ -62,12 +62,11 @@ def concat_multi_dir(server_path, prm):
              'trial_number' 'trial_type' 
             
             '''
-            if ('spike_rate_on_trials' in spatial_firing) and ('beaconed_trial_number' in spatial_firing):
-                spatial_firing = spatial_firing[['session_id', 'cluster_id', 'tetrode', 'primary_channel', 'number_of_spikes', 'mean_firing_rate', 'isolation', 'noise_overlap', 'peak_snr', 'random_snippets', 'firing_times', 'avg_b_spike_rate', 'avg_nb_spike_rate', 'avg_p_spike_rate','x_position_cm', 'spike_num_on_trials', 'b_spike_num_on_trials', 'nb_spike_num_on_trials', 'p_spike_num_on_trials', 'spike_rate_on_trials', 'spike_rate_on_trials_smoothed', 'b_spike_rate_on_trials', 'nb_spike_rate_on_trials', 'p_spike_rate_on_trials', 'beaconed_position_cm', 'nonbeaconed_position_cm', 'probe_position_cm', 'beaconed_trial_number', 'nonbeaconed_trial_number', 'probe_trial_number']].copy()
+            #if ('spike_rate_on_trials' in spatial_firing) and ('beaconed_trial_number' in spatial_firing):
+            #    spatial_firing = spatial_firing[['session_id', 'cluster_id', 'tetrode', 'primary_channel', 'number_of_spikes', 'mean_firing_rate', 'isolation', 'noise_overlap', 'peak_snr', 'random_snippets', 'firing_times', 'avg_b_spike_rate', 'avg_nb_spike_rate', 'avg_p_spike_rate','x_position_cm', 'spike_num_on_trials', 'b_spike_num_on_trials', 'nb_spike_num_on_trials', 'p_spike_num_on_trials', 'spike_rate_on_trials', 'spike_rate_on_trials_smoothed', 'b_spike_rate_on_trials', 'nb_spike_rate_on_trials', 'p_spike_rate_on_trials', 'beaconed_position_cm', 'nonbeaconed_position_cm', 'probe_position_cm', 'beaconed_trial_number', 'nonbeaconed_trial_number', 'probe_trial_number']].copy()
 
-                spatial_firing_data = spatial_firing_data.append(spatial_firing)
-
-                print(spatial_firing_data.head())
+            spatial_firing_data = spatial_firing_data.append(spatial_firing)
+            print(spatial_firing_data.head())
     spatial_firing_data.to_pickle(local_output_path)
     return spatial_firing_data
 
@@ -86,7 +85,7 @@ def concat_multi_spatial_dir():
         processed_position_data = pd.DataFrame()
         os.path.isdir(recording_folder)
         spatial_data_frame_path = recording_folder + '/MountainSort/DataFrames/processed_position_data.pkl'
-        spike_data_frame_path = recording_folder + '/MountainSort/DataFrames/spatial_firing_all.pkl'
+        spike_data_frame_path = recording_folder + '/MountainSort/DataFrames/spatial_firing.pkl'
 
         if os.path.exists(spatial_data_frame_path):
 

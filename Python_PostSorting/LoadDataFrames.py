@@ -18,14 +18,17 @@ Required columns to concatinate from server:
 
 
 def process_allmice_dir(recording_folder, prm):
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort4_dataset.pkl'
+    #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort2_dataset.pkl'
+    #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/NewContext/data/M2_nc_all.pkl'
+    #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/spatial_firing.pkl'
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/concatenated_spike_data.pkl'
 
     if os.path.exists(prm.get_output_path()):
         print('I found the output folder.')
 
     os.path.isdir(recording_folder)
     if os.path.exists(spike_data_frame_path):
-        print('I found a firing data frame.')
+        print('I found a firing data frame.'),
         spike_data = pd.read_pickle(spike_data_frame_path)
 
         '''
