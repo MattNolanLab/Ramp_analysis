@@ -44,6 +44,22 @@ def process_allmice_dir(recording_folder, prm):
     return spike_data
 
 
+
+def process_allmice_dir_of(recording_folder, prm):
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/All_mice_of.pkl'
+
+
+    if os.path.exists(prm.get_output_path()):
+        print('I found the output folder.')
+
+    os.path.isdir(recording_folder)
+    if os.path.exists(spike_data_frame_path):
+        print('I found a firing data frame.'),
+        spike_data = pd.read_pickle(spike_data_frame_path)
+
+    return spike_data
+
+
 def add_combined_id_to_df(df_all_mice):
     animal_ids = [session_id.split('_')[0] for session_id in df_all_mice.session_id.values]
     dates = [session_id.split('_')[1] for session_id in df_all_mice.session_id.values]
