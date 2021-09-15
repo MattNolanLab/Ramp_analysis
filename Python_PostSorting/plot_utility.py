@@ -10,6 +10,18 @@ prm = Python_PostSorting.parameters.Parameters()
 colour functions are from https://gist.github.com/adewes/5884820
 '''
 
+def pandas_column_to_numpy_array(pandas_series):
+    new_array = []
+    for i in range(len(pandas_series)):
+        element = pandas_series.iloc[i]
+
+        if len(np.shape(element)) == 0:
+            new_array.append(element)
+        else:
+            new_array.extend(element)
+
+    return np.array(new_array)
+
 
 def draw_reward_zone():
     for stripe in range(8):
@@ -121,15 +133,15 @@ def style_vr_plot(ax):
         left=True,
         labelleft=True,
         labelbottom=True,
-        labelsize=16,
+        labelsize=18,
         length=5,
         width=1.5)  # labels along the bottom edge are off
 
     #ax.set_aspect('equal')
     ax.yaxis.set_ticks_position('left')
     ax.xaxis.set_ticks_position('bottom')
-    ax.spines['left'].set_linewidth(1.5)
-    ax.spines['bottom'].set_linewidth(1.5)
+    ax.spines['left'].set_linewidth(2)
+    ax.spines['bottom'].set_linewidth(2)
     return ax
 
 
