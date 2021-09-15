@@ -52,7 +52,7 @@ def plot_beaconed_spikes_on_track(recording_folder,spike_data):
         ax.xaxis.set_ticks_position('bottom')
         Python_PostSorting.plot_utility.style_track_plot(ax, 200)
         Python_PostSorting.plot_utility.style_vr_plot(ax)
-        plt.ylim(0,80)
+        plt.ylim(0)
         plt.locator_params(axis = 'y', nbins  = 4)
         plt.locator_params(axis = 'x', nbins  = 3)
         ax.set_xticklabels(['-30', '70', '170'])
@@ -76,8 +76,8 @@ def plot_beaconed_and_probe_spikes_on_track(recording_folder,spike_data):
         beaconed_position_cm, nonbeaconed_position_cm, probe_position_cm, beaconed_trial_number, nonbeaconed_trial_number, probe_trial_number = Python_PostSorting.ExtractFiringData.split_firing_by_trial_type(spike_data, cluster)
 
         ax.plot(beaconed_position_cm, beaconed_trial_number, '|', color='Black', markersize=2)
-        ax.plot(nonbeaconed_position_cm, nonbeaconed_trial_number, '|', color='Blue', markersize=2)
-        ax.plot(probe_position_cm, probe_trial_number, '|', color='Blue', markersize=1.5)
+        ax.plot(nonbeaconed_position_cm, nonbeaconed_trial_number, '|', color='Black', markersize=2)
+        ax.plot(probe_position_cm, probe_trial_number, '|', color='Black', markersize=1.5)
         plt.ylabel('Trials', fontsize=19, labelpad = 0)
         plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
         plt.xlim(0,200)
@@ -85,7 +85,7 @@ def plot_beaconed_and_probe_spikes_on_track(recording_folder,spike_data):
         ax.xaxis.set_ticks_position('bottom')
         Python_PostSorting.plot_utility.style_track_plot(ax, 200)
         Python_PostSorting.plot_utility.style_vr_plot(ax)
-        plt.ylim(0,110)
+        plt.ylim(0)
         plt.locator_params(axis = 'y', nbins  = 4)
         plt.locator_params(axis = 'x', nbins  = 3)
         ax.set_xticklabels(['-30', '70', '170'])
@@ -365,6 +365,75 @@ def plot_smoothed_firing_rate_maps_for_rewarded_trials(recording_folder, spike_d
         spike_data.at[cluster, 'Avg_rewarded_FR_in_space_beaconed'] = list(avg_beaconed_spike_rate)# add data to dataframe
         spike_data.at[cluster, 'Avg_rewarded_FR_in_space_nonbeaconed'] = list(avg_nonbeaconed_spike_rate)# add data to dataframe
         spike_data.at[cluster, 'Avg_rewarded_FR_in_space_probe'] = list(avg_probe_spike_rate)# add data to dataframe
+
+    return spike_data
+
+
+
+def plot_smoothed_firing_rate_maps_for_rewarded_trials_outbound(recording_folder, spike_data):
+
+    print('I am plotting smoothed firing rate maps for rewarded trials...')
+    save_path = recording_folder + '/Figures/spike_rate_smoothed_rewarded'
+    if os.path.exists(save_path) is False:
+        os.makedirs(save_path)
+    for cluster in range(len(spike_data)):
+        cluster_index = spike_data.cluster_id.values[cluster] - 1
+
+        avg_beaconed_spike_rate, avg_nonbeaconed_spike_rate, avg_probe_spike_rate, average_beaconed_sd = Python_PostSorting.ExtractFiringData.extract_smoothed_average_firing_rate_data_for_rewarded_trials(spike_data, cluster)
+        bins=np.arange(0,200,1)
+        #bins=np.arange(0.5,199.5,1)
+        avg_spikes_on_track = plt.figure(figsize=(3.7,3))
+        ax = avg_spikes_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
+        ax.plot(bins,avg_beaconed_spike_rate, '-', color='Black')
+        ax.fill_between(bins, avg_beaconed_spike_rate-average_beaconed_sd,avg_beaconed_spike_rate+average_beaconed_sd, facecolor = 'Black', alpha = 0.2)
+        ax.locator_params(axis = 'x', nbins=3)
+        plt.ylabel('Firing rate (hz)', fontsize=18, labelpad = 0)
+        plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
+        plt.xlim(30,90)
+        plt.locator_params(axis = 'y', nbins  = 4)
+        Python_PostSorting.plot_utility.style_vr_plot(ax)
+        #Python_PostSorting.plot_utility.style_track_plot(ax, 200)
+        ax.set_xticklabels(['0', '30', '60'])
+        plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+        plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_smoothed_rate_map_Cluster_' + str(cluster_index +1) + '_rewarded_out.png', dpi=200)
+        plt.close()
+
+        avg_spikes_on_track = plt.figure(figsize=(3.7,3))
+        ax = avg_spikes_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
+        ax.plot(bins, avg_probe_spike_rate, '-', color='Blue' , alpha=0.7)
+        ax.fill_between(bins, avg_probe_spike_rate-average_beaconed_sd,avg_probe_spike_rate+average_beaconed_sd, facecolor = 'Blue', alpha = 0.2)
+        ax.plot(bins, avg_beaconed_spike_rate, '-', color='Black')
+        ax.fill_between(bins, avg_beaconed_spike_rate-average_beaconed_sd,avg_beaconed_spike_rate+average_beaconed_sd, facecolor = 'Black', alpha = 0.2)
+        ax.locator_params(axis = 'x', nbins=3)
+        ax.set_xticklabels(['0', '30', '60'])
+        plt.ylabel('Firing rate (hz)', fontsize=18, labelpad = 0)
+        plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
+        plt.xlim(30,90)
+        plt.locator_params(axis = 'y', nbins  = 4)
+        Python_PostSorting.plot_utility.style_vr_plot(ax)
+        #Python_PostSorting.plot_utility.style_track_plot(ax, 200)
+        ax.set_xticklabels(['-30', '70', '170'])
+        plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+        plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_smoothed_rate_map_Cluster_' + str(cluster_index +1) + '_rewarded_p_out.png', dpi=200)
+        plt.close()
+
+        avg_spikes_on_track = plt.figure(figsize=(3.7,3))
+        ax = avg_spikes_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
+        ax.plot(bins, avg_nonbeaconed_spike_rate, '-', color='Blue', alpha=0.7)
+        ax.fill_between(bins, avg_nonbeaconed_spike_rate-average_beaconed_sd,avg_nonbeaconed_spike_rate+average_beaconed_sd, facecolor = 'Blue', alpha = 0.2)
+        ax.plot(bins, avg_beaconed_spike_rate, '-', color='Black')
+        ax.fill_between(bins, avg_beaconed_spike_rate-average_beaconed_sd,avg_beaconed_spike_rate+average_beaconed_sd, facecolor = 'Black', alpha = 0.2)
+        plt.ylabel('Firing rate (hz)', fontsize=18, labelpad = 0)
+        plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
+        plt.xlim(30,90)
+        plt.locator_params(axis = 'y', nbins  = 4)
+        ax.locator_params(axis = 'x', nbins=3)
+        Python_PostSorting.plot_utility.style_vr_plot(ax)
+        #Python_PostSorting.plot_utility.style_track_plot(ax, 200)
+        ax.set_xticklabels(['0', '30', '60'])
+        plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+        plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_smoothed_rate_map_Cluster_' + str(cluster_index +1) + '_rewarded_nb_out.png', dpi=200)
+        plt.close()
 
     return spike_data
 
