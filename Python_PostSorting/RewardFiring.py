@@ -36,22 +36,12 @@ def extract_data_from_frame(spike_data, cluster):
     rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
     rewarded_trials = rewarded_trials[~np.isnan(rewarded_trials)]
 
-    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10
+    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)
     speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
     position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
     types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
     trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
-    '''
-    window = signal.gaussian(2, std=3)
 
-    rates = np.asarray(pd.DataFrame({ 'rates' : pd.DataFrame(spike_data.iloc[cluster].spike_rate_in_time).iloc[:,0]}).explode('rates'))[:,0]
-    speed = np.asarray(pd.DataFrame({ 'speed' : pd.DataFrame(spike_data.iloc[cluster].spike_rate_in_time).iloc[:,1]}).explode('speed'))[:,0]
-    types = np.asarray(pd.DataFrame({ 'types' : pd.DataFrame(spike_data.iloc[cluster].spike_rate_in_time).iloc[:,4]}).explode('types'))[:,0]
-    trials = np.asarray(pd.DataFrame({ 'trials' : pd.DataFrame(spike_data.iloc[cluster].spike_rate_in_time).iloc[:,3]}).explode('trials'))[:,0]
-    position = np.asarray(pd.DataFrame({ 'position' : pd.DataFrame(spike_data.iloc[cluster].spike_rate_in_time).iloc[:,2]}).explode('position'))[:,0]
-    speed = signal.convolve(speed, window, mode='same')/ sum(window)
-    rates = signal.convolve(rates, window, mode='same')/ sum(window)
-    '''
     # stack data
     data = np.vstack((rates,speed,position,types, trials))
     data=data.transpose()
