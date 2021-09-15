@@ -178,7 +178,6 @@ def generate_spike_isi(server_path, spike_data):
     print('I am calculating the interspike interval ...')
     spike_data = add_column_to_dataframe(spike_data)
     for cluster in range(len(spike_data)):
-        print(spike_data.at[cluster, "session_id"], cluster)
         spike_locations = np.array(spike_data.at[cluster, "x_position_cm"])
         spike_trials = np.array(spike_data.at[cluster, "trial_number"], dtype=np.int16)
         spike_trialtype = np.array(spike_data.at[cluster, "trial_type"], dtype=np.int16)
@@ -190,59 +189,54 @@ def generate_spike_isi(server_path, spike_data):
         location_binned_isi = bin_isi_over_location(spike_isi, new_spike_locations)
         location_binned_cv2 = bin_cv_over_location(spike_isi, new_spike_locations, new_spike_trials)
         mean_isi = np.nanmean(spike_isi)
-        isi_diff, cv_diff = calculate_isi_for_max_location(spike_data, cluster, location_binned_isi, location_binned_cv2)
-        spike_data = add_beaconed_data_to_frame(spike_data, cluster, location_binned_isi, location_binned_cv2, mean_isi, isi_diff, cv_diff, cv)
+        #isi_diff, cv_diff = calculate_isi_for_max_location(spike_data, cluster, location_binned_isi, location_binned_cv2)
+        spike_data = add_beaconed_data_to_frame(spike_data, cluster, location_binned_isi, location_binned_cv2, mean_isi, cv)
 
         # uncomment if want to plot ISI and CV over location
-        plot_isi_data(server_path, spike_data, cluster, location_binned_isi, location_binned_cv2, prefix="beaconed")
+        #plot_isi_data(server_path, spike_data, cluster, location_binned_isi, location_binned_cv2, prefix="beaconed")
 
         ## nonbeaconed trial analysis
         spike_isi, cv, new_spike_locations, new_spike_trials = isi_by_trial(nonbeaconed_trials, nonbeaconed_locations)
         location_binned_isi = bin_isi_over_location(spike_isi, new_spike_locations)
         location_binned_cv2 = bin_cv_over_location(spike_isi, new_spike_locations, new_spike_trials)
         mean_isi = np.nanmean(spike_isi)
-        isi_diff, cv_diff = calculate_isi_for_max_location(spike_data, cluster, location_binned_isi, location_binned_cv2)
-        spike_data = add_nonbeaconed_data_to_frame(spike_data, cluster, location_binned_cv2, mean_isi, isi_diff, cv_diff, cv)
+        #isi_diff, cv_diff = calculate_isi_for_max_location(spike_data, cluster, location_binned_isi, location_binned_cv2)
+        spike_data = add_nonbeaconed_data_to_frame(spike_data, cluster, location_binned_cv2, mean_isi, cv)
 
-        plot_isi_data(server_path, spike_data, cluster, location_binned_isi, location_binned_cv2, prefix="nonbeaconed")
+        # plot_isi_data(server_path, spike_data, cluster, location_binned_isi, location_binned_cv2, prefix="nonbeaconed")
 
         ## probe trial analysis
         spike_isi, cv, new_spike_locations, new_spike_trials = isi_by_trial(probe_trials, probe_locations)
         location_binned_isi = bin_isi_over_location(spike_isi, new_spike_locations)
         location_binned_cv2 = bin_cv_over_location(spike_isi, new_spike_locations, new_spike_trials)
         mean_isi = np.nanmean(spike_isi)
-        isi_diff, cv_diff = calculate_isi_for_max_location(spike_data, cluster, location_binned_isi, location_binned_cv2)
-        spike_data = add_probe_data_to_frame(spike_data, cluster, location_binned_cv2, mean_isi, isi_diff, cv_diff, cv)
+        #isi_diff, cv_diff = calculate_isi_for_max_location(spike_data, cluster, location_binned_isi, location_binned_cv2)
+        spike_data = add_probe_data_to_frame(spike_data, cluster, location_binned_cv2, mean_isi, cv)
 
-        plot_isi_data(server_path, spike_data, cluster, location_binned_isi, location_binned_cv2, prefix="probe")
+        #plot_isi_data(server_path, spike_data, cluster, location_binned_isi, location_binned_cv2, prefix="probe")
+    print('I have finished calculating the interspike interval ...')
 
     return spike_data
 
 
 
-def add_beaconed_data_to_frame(spike_data, cluster, location_binned_interspike_interval, location_binned_cv2, mean_isi, isi_diff, cv_diff, cv):
+def add_beaconed_data_to_frame(spike_data, cluster, location_binned_interspike_interval, location_binned_cv2, mean_isi, cv):
     spike_data.at[cluster, "location_binned_interspike_interval"] = location_binned_interspike_interval
     spike_data.at[cluster, "location_binned_cv2"] = location_binned_cv2
     spike_data.at[cluster, "mean_interspike_interval_b"] = np.float(mean_isi)
     spike_data.at[cluster, "mean_cv2_b"] = np.nanmean(cv)
-    spike_data.at[cluster, "isi_diff_b"] = isi_diff
-    spike_data.at[cluster, "cv_diff_b"] = cv_diff
     return spike_data
 
 
-def add_nonbeaconed_data_to_frame(spike_data, cluster, location_binned_cv2, mean_isi, isi_diff, cv_diff, cv):
+def add_nonbeaconed_data_to_frame(spike_data, cluster, location_binned_cv2, mean_isi, cv):
     spike_data.at[cluster, "mean_interspike_interval_nb"] = np.float(mean_isi)
     spike_data.at[cluster, "mean_cv2_nb"] = np.nanmean(cv)
-    spike_data.at[cluster, "isi_diff_nb"] = isi_diff
-    spike_data.at[cluster, "cv_diff_nb"] = cv_diff
     return spike_data
 
 
-def add_probe_data_to_frame(spike_data, cluster, location_binned_cv2, mean_isi, isi_diff, cv_diff, cv):
+def add_probe_data_to_frame(spike_data, cluster, location_binned_cv2, mean_isi, cv):
     spike_data.at[cluster, "mean_interspike_interval_p"] = np.float(mean_isi)
     spike_data.at[cluster, "mean_cv2_p"] = np.nanmean(cv)
-    spike_data.at[cluster, "isi_diff_p"] = isi_diff
-    spike_data.at[cluster, "cv_diff_p"] = cv_diff
     return spike_data
 
 
