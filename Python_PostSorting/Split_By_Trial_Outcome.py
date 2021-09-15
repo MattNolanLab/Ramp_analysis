@@ -136,7 +136,7 @@ def split_and_save_data_with_all_speeds(spike_data):
         runthru_trials = np.array(spike_data.loc[cluster, 'run_through_trialid'])
         rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
 
-        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10
+        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)
         speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real, dtype=np.float32)
         position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real, dtype=np.float32)
         trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
@@ -221,6 +221,7 @@ def drop_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i, j
 def extract_time_binned_firing_rate_runthru_allspeeds(spike_data):
     spike_data["Avg_FiringRate_RunTrials"] = ""
     spike_data["SD_FiringRate_RunTrials"] = ""
+    spike_data["FiringRate_RunTrials_trials"] = ""
 
     for cluster in range(len(spike_data)):
         rates=np.array(spike_data.iloc[cluster].spikes_in_time_run[0])
@@ -262,9 +263,11 @@ def extract_time_binned_firing_rate_runthru_allspeeds(spike_data):
             x_sd = np.nanstd(data_b, axis=1)
             spike_data.at[cluster, 'Avg_FiringRate_RunTrials'] = list(x)# add data to dataframe
             spike_data.at[cluster, 'SD_FiringRate_RunTrials'] = list(x_sd)
+            spike_data.at[cluster, 'FiringRate_RunTrials_trials'] = list(data_b)# add data to dataframe
         else:
             spike_data.at[cluster, 'Avg_FiringRate_RunTrials'] = np.nan
             spike_data.at[cluster, 'SD_FiringRate_RunTrials'] = np.nan
+            spike_data.at[cluster, 'FiringRate_RunTrials_trials'] = np.nan# add data to dataframe
     return spike_data
 
 
@@ -272,6 +275,7 @@ def extract_time_binned_firing_rate_runthru_allspeeds(spike_data):
 def extract_time_binned_firing_rate_try_allspeeds(spike_data):
     spike_data["Avg_FiringRate_TryTrials"] = ""
     spike_data["SD_FiringRate_TryTrials"] = ""
+    spike_data["FiringRate_TryTrials_trials"] = ""
 
     for cluster in range(len(spike_data)):
         speed=np.array(spike_data.iloc[cluster].spikes_in_time_try[1])
@@ -313,8 +317,10 @@ def extract_time_binned_firing_rate_try_allspeeds(spike_data):
             x_sd = np.nanstd(data_b, axis=1)
             spike_data.at[cluster, 'Avg_FiringRate_TryTrials'] = list(x)# add data to dataframe
             spike_data.at[cluster, 'SD_FiringRate_TryTrials'] = list(x_sd)
+            spike_data.at[cluster, 'FiringRate_TryTrials_trials'] = list(data_b)
         else:
             spike_data.at[cluster, 'Avg_FiringRate_TryTrials'] = np.nan
+            spike_data.at[cluster, 'FiringRate_TryTrials_trials'] = np.nan
             spike_data.at[cluster, 'SD_FiringRate_TryTrials'] = np.nan
     return spike_data
 
