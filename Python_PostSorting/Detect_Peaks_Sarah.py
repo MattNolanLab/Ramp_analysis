@@ -160,6 +160,6 @@ def run_peak_analysis(df):
 
     dfs_comb = pd.concat([df_out, df_home])
 
-    return dfs_comb
+    return df_out
 
 
