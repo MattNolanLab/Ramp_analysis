@@ -1,0 +1,120 @@
+---
+title: "RampCodes_Figure2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+title: "RampCodes_Figure2"
+author: "Sarah Tennant & Matt Nolan"
+date: "20/10/2021"
+output: html_document
+---
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+
+## Script aims to determine if ramp activity resets or is continuous across the reward zone in PROBE trials 
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+First, classify neurons based on their slope activity in the outbound and homebound region in probe trials (similar to beaconed trials in Figure5_Analysis.Rmd)
+
+i.e. pospos = positive in outbound, positive in homebound
+i.e. posneg = positive in outbound, negative in homebound
+
+1. To mark cells based on cue_groups use function 'mark_track_category' defined in Figure 5.
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(track_category_p = map2(lm_group_p, lm_group_p_h, mark_track_category))
+
+```
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+Now, we want to find out if within pospos and negneg cue_groups - is their firing rate reset or continue across the reward region?
+
+To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
+
+First, normalise firing rates. 
+
+1. make function to load rates and normalise
+```{r}
+normalise_rates <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:199))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  return(x)
+}
+
+```
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates_p = map(Rates_averaged_rewarded_p, normalise_rates))
+```
+
+Then, predict firing rate in homebound region based on fit from real data in outbound region
+
+Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
+
+2. Run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('predict_params_p_')) %>%
+  mutate(predict_params_p = map(normalised_rates_p, predict_homebound)) %>%
+  unnest_wider(predict_params_p, names_sep = "_", names_repair = "universal")
+
+spatial_firing <- spatial_firing %>%
+  mutate(offset_p = pmap_chr(list(normalised_rates_p, predict_params_p_lwr, predict_params_p_upr), offset_test),
+         predict_diff_p = map2_dbl(normalised_rates_p, predict_params_p_fit, calc_predict_diff))
+
+```
+
+
+Now, we can classify cells based on their predicted activity. 
+
+1. Function to classify neurons based on offset (Matt code that does it based on prediction)
+
+Use function 'mark_reset_group_predict' defined in Figure 5.
+
+2. Run on all cells
+```{r}
+#spatial_firing <- spatial_firing %>%
+#  mutate(reset_group_p = map(offset_p, mark_reset_group_predict))
+
+```
+
+4. Classify neurons based on absolute difference between predicted and real as either "Continuous" or "Reset"
+
+## catagorised based on predict alone, ignoring slope?
+
+Now, we can classify cells based on their predicted activity. 
+
+1. Function to classify neurons based on predict mean _this is defined in Figure 5_
+
+2. Run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(reset_group_p = map(offset_p, mark_reset_group_predict))
+```
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## Seperate 
+
+```{r}
+spatial_firing_high  <- subset(spatial_firing, max_trial_number >= 60 )
+```
+
+### ------------------------------------------------------------------------------------------ ### 

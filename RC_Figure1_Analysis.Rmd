@@ -1,0 +1,1117 @@
+---
+title: "RampCodes_Figure1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+---
+title: "RampCodes_Figure1"
+author: "Sarah Tennant & Matt Nolan"
+date: "20/10/2021"
+output: html_document
+---
+
+## Analysis of neurons recorded from the parahippocampal areas during virtual navigation
+
+The aim of this analysis is to identify all ramp cells within a specified dataset (all mice or all days for one mouse) and perform analysis to investigate their firing properties. 
+1. Identify cells that represent location by ramping their firing rate using LM modeling 
+2. Subset data by model fit (r2 value)
+3. Compare firing rates of cells in this group
+
+
+To set up, including loading packages and data, first run SetUp.Rmd.
+
+### ----------------------------------------------------------------------------------------- ###
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Average firing rate (for LM modelling)
+
+The linear model uses firing rate data binned in space. For this we want to load average firing rate over trials from the data frame for each cluster. 
+- Map over "Rates_averaged" column and extract averaged rates
+- Add position for each point (data is binned into 200, 1 cm bins )
+- Insert result back into dataframe
+- Do this for beaconed, nonbeaconed and probe trials
+- Do this for shuffled spike rate (beaconed)
+
+1. Write function to add position
+```{r}
+add_position <- function(df, session_id, cluster_id) {
+  len = length(unlist(df))
+  df <- tibble(Rates = unlist(df), Position = rep(1:len)) 
+  if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
+  df
+}
+```
+
+2. Run on dataframe : Average trials with reward
+
+input columns: 
+Rates_averaged_rewarded_b = beaconed trials
+Rates_averaged_rewarded_nb = non-beaconed and probe trials
+Rates_averaged_rewarded_p = probe trials only
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(asr_b_rewarded = pmap(list(Rates_averaged_rewarded_b, session_id, cluster_id), add_position),
+         asr_nb_rewarded = pmap(list(Rates_averaged_rewarded_nb, session_id, cluster_id), add_position),
+         asr_p_rewarded = pmap(list(Rates_averaged_rewarded_p, session_id, cluster_id), add_position)
+         )
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+# Run simple linear model to examine relationship between firing rate and position
+_note:for now we are only interested in the outbound region of the track (30 - 90 cm)_
+
+1. Make function to run linear model
+```{r}
+lm_helper <- function(df,
+                      startbin,
+                      endbin) {
+ # Check for NAs
+  if (all(is.na(df$Rates))) {
+    df <-
+      tibble(
+        r.squared = c(NA),
+        p.value = c(NA),
+        intercept = c(NA),
+        slope = c(NA)
+      )
+    return(df)
+  }
+
+  df <- df %>%
+    subset(Position >= startbin & Position <= endbin)
+  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
+
+  # get the model parameters
+  params <- select(glance(df_fit), r.squared, p.value)
+  # get the coefficients
+  coeffs <- tidy(df_fit)
+  # combine the parameters and coefficients
+  params$intercept <- coeffs$estimate[[1]]
+  params$slope <- coeffs$estimate[[2]]
+  return(params)
+}
+```
+
+2. run lm on all cells.
+Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('asr_b_o_rewarded_fit_')) %>%
+  select(-contains('asr_nb_o_rewarded_fit_')) %>%
+  select(-contains('asr_p_o_rewarded_fit_')) %>%
+  mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_helper),
+         asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_helper),
+         asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_helper)) %>%
+  unnest_wider(asr_b_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_nb_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_p_o_rewarded_fit, names_sep = "_", names_repair = "universal")
+```
+
+Linear model results are stored in:
+spatial_firing$asr_b_o_rewarded_fit_slope
+spatial_firing$asr_b_o_rewarded_fit_intercept
+spatial_firing$asr_b_o_rewarded_fit_p.value
+spatial_firing$asr_b_o_rewarded_fit_r.squared
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Identification of ramp cells in dataset 
+
+Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled data sets.
+
+
+1. Function to generate shuffles
+- shuffles spikes using sample() function
+- runs lm
+- extracts coefficients
+- stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
+```{r}
+#library(gdata)
+# shuffles defines the number of shuffes. Use a smaller value for testing.
+shuffle_rates <- function(df, startbin, endbin, shuffles = 1000) {
+  df_modified <- data.frame(neuron=as.numeric(),
+                 slope=as.numeric(), 
+                 rsquared=as.numeric(), 
+                 pval=vector())
+  names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
+  x <- 1
+  repeat {
+  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:199))
+  df_mod <- lm_helper(shuff_df, startbin, endbin)
+  data <- data.frame(as.numeric(x), df_mod$slope, df_mod$r.squared, df_mod$p.value)
+  names(data) <- c("neuron", "slope", "r.squared", "p.value")
+  df_modified <- rbind(df_modified,data)
+
+  x = x+1
+  if (x == shuffles){ 
+  break
+  }
+  }
+return(df_modified)
+}
+```
+
+2. Run if shuffles haven't already been generated.
+```{r}
+# Uncomment the line below to load pre-saved shuffled data
+# spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
+
+# Check to see if the column shuffle_results exists. If it does then don't run again.
+shuffles <- 10
+if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
+  spatial_firing <- spatial_firing %>%
+    mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_nb_o = pmap(list(Rates_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
+}
+
+if (save_results == 1) {
+  saveRDS(spatial_firing, "SpatialFiring_with_10_shuffles_final_of.Rda")
+  # And use this to save a truncated version. Useful for testing code.
+  # saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
+}
+#To reload use:
+# spatial_firing <- readRDS("SpatialFiring_with_1000_shuffles.Rda")
+```
+
+
+### ---------------------------------------------------------------------------- ### 
+
+### classify neurons based on shuffle activity
+
+If outside the 95% of the shuffled data set, a neuron is considered to have ramp like activity along the track. 
+
+First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron 
+
+1. write function to find min and max slope for shuffled datasets 
+```{r}
+
+extract_min_shuffle_slopes <- function(df){
+  df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
+  if (all(is.na(df$slopes))) {
+    return(NA)
+  }
+  min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
+  return(min_slope_o)
+}
+
+extract_max_shuffle_slopes <- function(df){
+  df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
+    if (all(is.na(df$slopes))) {
+    return(NA)
+  }
+  max_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[2]][1]
+  return(max_slope_o)
+}
+
+```
+
+2. Run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('shuffle_min_slope_')) %>%
+  select(-contains('shuffle_max_slope_')) %>%
+  mutate(shuffle_min_slope_b_o = map_dbl(shuffle_results_b_o, extract_min_shuffle_slopes),
+         shuffle_max_slope_b_o = map_dbl(shuffle_results_b_o, extract_max_shuffle_slopes),
+         shuffle_min_slope_nb_o = map_dbl(shuffle_results_nb_o, extract_min_shuffle_slopes),
+         shuffle_max_slope_nb_o = map_dbl(shuffle_results_nb_o, extract_max_shuffle_slopes),
+         shuffle_min_slope_p_o = map_dbl(shuffle_results_p_o, extract_min_shuffle_slopes),
+         shuffle_max_slope_p_o = map_dbl(shuffle_results_p_o, extract_max_shuffle_slopes))
+
+```
+
+
+We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
+
+1. Extract shuffle results (slopes and r2 for each shuffle)
+
+2. run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('shuffle_results_b_o_')) %>%
+  select(-contains('shuffle_results_nb_o_')) %>%
+  select(-contains('shuffle_results_p_o_')) %>%
+  unnest_wider(shuffle_results_b_o, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(shuffle_results_nb_o, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(shuffle_results_p_o, names_sep = "_", names_repair = "universal")
+```
+
+
+Then we want to correct the pvals of the lm, to account for multiple comparisons
+
+1. put all pvalues into tibble then adjust using p.adjust from - package
+```{r}
+p_vals_b <- tibble(pvals = spatial_firing$asr_b_o_rewarded_fit_p.value)
+adu_p_b <- tibble(adjust_pval_b_o = p.adjust(p_vals_b$pvals, "BH"))
+
+```
+
+2. bind new adjusted pvalues to dataframe
+```{r}
+spatial_firing <- cbind(spatial_firing, adu_p_b)
+```
+
+3. do the same for non-beaconed trials
+```{r}
+p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_o_rewarded_fit_p.value)
+adu_p_nb <- tibble(adjust_pval_nb_o = p.adjust(p_vals_nb$pvals, "BH"))
+spatial_firing <- cbind(spatial_firing, adu_p_nb)
+```
+
+4. do the same for probe trials 
+```{r}
+p_vals_p <- tibble(pvals = spatial_firing$asr_p_o_rewarded_fit_p.value)
+adu_p_p <- tibble(adjust_pval_p_o = p.adjust(p_vals_p$pvals, "BH"))
+spatial_firing <- cbind(spatial_firing, adu_p_p)
+```
+
+
+### ----------------------------------------------------------------------------------------- ### 
+
+Now we want to classify neurons, taking the adjusted significance into account
+
+```{r}
+compare_slopes <-
+  function(min_slope = 1,
+           max_slope = 1,
+           slope = 1,
+           pval = 1) {
+    if (any(is.na(list(min_slope, max_slope, slope, pval)))) {
+      return("Unclassified")
+    }
+    if (pval > 0.01) {
+      return("Unclassified")
+    } else if (slope < min_slope & pval < 0.01) {
+      return("Negative")
+    } else if (slope > max_slope & pval < 0.01) {
+      return("Positive")
+    } else if (slope > min_slope & slope < max_slope) {
+      return("Unclassified")
+    } else {
+      return("Unclassified")
+    }
+  }
+
+spatial_firing <- spatial_firing %>%
+  mutate(
+    lm_group_b = pmap(
+      list(
+        shuffle_min_slope_b_o,
+        shuffle_max_slope_b_o,
+        asr_b_o_rewarded_fit_slope,
+        adjust_pval_b_o
+      ),
+      compare_slopes
+    ),
+    lm_group_nb = pmap(
+      list(
+        shuffle_min_slope_nb_o,
+        shuffle_max_slope_nb_o,
+        asr_nb_o_rewarded_fit_slope,
+        adjust_pval_nb_o
+      ),
+      compare_slopes
+    ),
+    lm_group_p = pmap(
+      list(
+        shuffle_min_slope_p_o,
+        shuffle_max_slope_p_o,
+        asr_p_o_rewarded_fit_slope,
+        adjust_pval_p_o
+      ),
+      compare_slopes
+    )
+  )
+
+```
+
+
+Linear model classification is stored in:
+spatial_firing$lm_group_b
+spatial_firing$lm_group_nb
+spatial_firing$lm_group_p
+
+
+### ---------------------------------------------------------------------------- ### 
+
+### Classify neurons based on their ramp activity in the homebound region, similar to that done above. 
+
+### ---------------------------------------------------------------------------- ### 
+
+
+# Run simple linear model to examine relationship between firing rate and position
+_note:for now we are only interested in the homebound region of the track (110 - 170 cm)_
+
+
+1. Make function to run linear model
+
+Use lm_helper defined above.
+
+
+2. run lm on all cells.
+Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('asr_b_h_rewarded_fit_')) %>%
+  select(-contains('asr_nb_h_rewarded_fit_')) %>%
+  select(-contains('asr_p_h_rewarded_fit_')) %>%
+  mutate(asr_b_h_rewarded_fit = pmap(list(asr_b_rewarded, 110, 170), lm_helper),
+         asr_nb_h_rewarded_fit = pmap(list(asr_nb_rewarded, 110, 170), lm_helper),
+         asr_p_h_rewarded_fit = pmap(list(asr_p_rewarded, 110, 170), lm_helper)) %>%
+  unnest_wider(asr_b_h_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_nb_h_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_p_h_rewarded_fit, names_sep = "_", names_repair = "universal")
+```
+
+Linear model results are stored in:
+spatial_firing$asr_b_h_rewarded_fit_pval
+spatial_firing$asr_b_h_rewarded_fit_slope
+spatial_firing$asr_b_h_rewarded_fit_r.squared
+
+
+### ---------------------------------------------------------------------------- ### 
+
+
+## Identification of homebound ramp cells in dataset 
+
+Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled datasets
+
+Beause the homebound zone is the same length as the outbound zone, and as shuffling is across the full track length, we can use the shuffle results previously generated.
+
+### classify neurons based on shuffle activity
+
+If outside the 95% of the shuffled dataset, a neuron is considered to have ramp like activity along the track. 
+
+First we want to correct the pvals of the lm, to account for multiple comparisons
+
+1. put all pvalues into tibble then adjust using p.adjust from - package
+```{r}
+p_vals_b <- tibble(pvals = spatial_firing$asr_b_h_rewarded_fit_p.value)
+adu_p_b <- tibble(adjust_pval_b_h = p.adjust(p_vals_b$pvals, "BH"))
+
+```
+
+2. bind new adjusted pvalues to dataframe
+```{r}
+spatial_firing <- cbind(spatial_firing, adu_p_b)
+```
+
+3. do the same for non-beaconed trials
+```{r}
+p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_h_rewarded_fit_p.value)
+adu_p_nb <- tibble(adjust_pval_nb_h = p.adjust(p_vals_nb$pvals, "BH"))
+spatial_firing <- cbind(spatial_firing, adu_p_nb)
+```
+
+3. do the same for probe trials 
+```{r}
+p_vals_p <- tibble(pvals = spatial_firing$asr_p_h_rewarded_fit_p.value)
+adu_p_p <- tibble(adjust_pval_p_h = p.adjust(p_vals_p$pvals, "BH"))
+spatial_firing <- cbind(spatial_firing, adu_p_p)
+```
+
+Now we want to classify neurons, taking the adjusted significance into account
+
+Uses the function compare_slopes from above.
+
+#compare_slopes(spatial_firing$shuffle_min_slope_b_o[[1]], spatial_firing$shuffle_max_slope_b_o, spatial_firing$asr_b_h_rewarded_fit_slope[[1]], spatial_firing$adjust_pval_b_h)
+
+```{r}
+
+spatial_firing <- spatial_firing %>%
+  mutate(
+    lm_group_b_h = pmap(
+      list(
+        shuffle_min_slope_b_o,
+        shuffle_max_slope_b_o,
+        asr_b_h_rewarded_fit_slope,
+        adjust_pval_b_h
+      ),
+      compare_slopes
+    ),
+    lm_group_nb_h = pmap(
+      list(
+        shuffle_min_slope_nb_o,
+        shuffle_max_slope_nb_o,
+        asr_nb_h_rewarded_fit_slope,
+        adjust_pval_nb_h
+      ),
+      compare_slopes
+    ),
+    lm_group_p_h = pmap(
+      list(
+        shuffle_min_slope_p_o,
+        shuffle_max_slope_p_o,
+        asr_p_h_rewarded_fit_slope,
+        adjust_pval_p_h
+      ),
+      compare_slopes
+    )
+  )
+
+```
+
+Linear model classification is stored in:
+spatial_firing$lm_group_b_h
+spatial_firing$lm_group_nb_h
+spatial_firing$lm_group_p_h
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+
+Now, we can classify cells based on their activity in the outbound and homebound region
+
+i.e. pospos = positive in outbound, positive in homebound
+i.e. posneg = positive in outbound, negative in homebound
+
+1. write function to mark cells based on groups
+```{r}
+mark_track_category <- function(outbound, homebound){
+  if( outbound == "Positive" & homebound == "Negative") {
+    return( "posneg" ) 
+  } else if( outbound == "Positive" & homebound == "Positive") {
+    return( "pospos" )
+  } else if( outbound == "Negative" & homebound == "Positive") {
+    return( "negpos" )
+  } else if( outbound == "Negative" & homebound == "Negative") {
+    return( "negneg" )
+  } else if( outbound == "Negative" & homebound == "Unclassified") {
+    return( "negnon" )
+  } else if( outbound == "Positive" & homebound == "Unclassified") {
+    return( "posnon" )
+  } else {
+    return("None")
+  }
+}
+
+```
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(track_category = map2(lm_group_b, lm_group_b_h, mark_track_category))
+
+```
+
+
+1. write function to mark cells based on groups
+```{r}
+mark_numeric_track_category <- function(outbound, homebound){
+  if( outbound == "Positive" & homebound == "Negative") {
+    return( as.numeric(2) ) 
+  } else if( outbound == "Positive" & homebound == "Positive") {
+    return( as.numeric(1) )
+  } else if( outbound == "Negative" & homebound == "Positive") {
+    return( as.numeric(5) )
+  } else if( outbound == "Negative" & homebound == "Negative") {
+    return( as.numeric(4) )
+  } else if( outbound == "Negative" & homebound == "Unclassified") {
+    return( as.numeric(6) )
+  } else if( outbound == "Positive" & homebound == "Unclassified") {
+    return( as.numeric(3) )
+  } else {
+    return(as.numeric(0))
+  }
+}
+
+```
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(track_category_numeric = map2(lm_group_b, lm_group_b_h, mark_numeric_track_category))
+
+```
+
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## Does firing rate reset or continue across the reward zone region? 
+
+### ------------------------------------------------------------------------------------------ ### 
+
+Now, we want to find out if within pospos and negneg groups - are their firing rate reset or continue across the reward region?
+
+To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
+
+
+First, normalise firing rates. 
+
+1. make function to load rates and normalise
+```{r}
+normalise_rates <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:199))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  return(x)
+}
+
+```
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
+
+```
+
+Then, predict firing rate in homebound region based on fit from real data in outbound region
+
+1. make function to predict firing rate
+```{r}
+lm_predict <- function(df){
+  new.data <- data.frame(Position =df$Position)
+}
+```
+
+3. Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
+```{r}
+predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 110, predict_end = 115){
+  # check for NAs
+  if(all(is.na(df))) 
+    return(NA)
+  # Make track column
+  df <- tibble(Rates = unlist(df), Position=rep(1:199))
+  # fit
+  model <- lm(Rates ~ Position, data = filter(df, Position >= fit_start, Position <= fit_end))
+  # predict
+  homebound_prediction_pos <- tibble(Position = rep(1:199))
+  #homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "confidence")
+  homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "prediction", level = 0.99) 
+  as.tibble(homebound_prediction)
+}
+
+
+```
+
+Test whether data lies outside of confidence intervals
+```{r}
+offset_test <- function(rates, lwr, upr){
+    # check for NAs
+ if(all(is.na(rates))) 
+    return(NA)
+  rates <- mean(as.double(rates[110:115]))
+  upr <- mean(as.double(upr[110:115]))
+  lwr <- mean(as.double(lwr[110:115]))
+ if(rates > upr) {
+   return("Pos")
+ }
+
+ if (rates <= lwr) {
+   return("Neg")
+ }
+    return("None")
+
+}
+```
+
+Calculate difference between mean rate and predicted mean rate at the start of the homebound zone
+```{r}
+calc_predict_diff <- function(rates, fit)
+{
+  diff <- mean(as.double(rates[110:115])) - mean(as.double(fit[110:115]))
+  }
+```
+
+2. Run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('predict_params_')) %>%
+  mutate(predict_params = map(normalised_rates, predict_homebound)) %>%
+  unnest_wider(predict_params, names_sep = "_", names_repair = "universal") 
+
+spatial_firing <- spatial_firing %>%
+  mutate(offset = pmap_chr(list(normalised_rates, predict_params_lwr, predict_params_upr), offset_test),
+         predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff))
+
+```
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## Do ramping neurons encode speed, position or acceleration?
+
+### ------------------------------------------------------------------------------------------ ### 
+
+
+## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
+
+Function to fit mixed effect models
+```{r}
+mm_fit <- function(df, TT = 0) {
+  if (length(df) == 1)
+    return(NA)
+  df <-
+    tibble(
+      Rates = as.numeric(Re(df[[1]])),
+      Position = as.numeric(Re(df[[2]])),
+      Acceleration = as.numeric(Re(df[[4]])),
+      Speed = as.numeric(Re(df[[3]])),
+      Trials = as.factor(df[[5]]),
+      Types = as.factor(df[[6]])
+    )
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == TT)
+  
+  if (length(df) == 1 | nrow(df) < 4)
+    return(NA)
+
+  df_int <-
+    lme4::lmer(
+      Rates ~ Position + Speed + Acceleration + (1 + Position | Trials),
+      data = df,
+      na.action = na.exclude
+    )
+
+}
+```
+
+
+Function to extract P values for each coefficient from the model
+```{r}
+mm_function <- function(mm, session_id) {
+  if (is.na(mm)) {
+    return(tibble(pos = NA, speed = NA, accel = NA))
+  }
+    print(session_id)
+    modelAnova <- car::Anova(mm)
+    return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
+                  speed = modelAnova$"Pr(>Chisq)"[[2]],
+                  accel = modelAnova$"Pr(>Chisq)"[[3]])
+}
+```
+
+Function to extract P values for each coefficient from the model
+```{r}
+
+mm_pvalues <- function(mm, session_id) {
+  tryCatch({
+      mm_function(mm,session_id)
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+   
+```
+
+
+2. Run on all cells.
+Note here, there may be some overfitting with the mixed effect model. This is likely because some  coefficients likely do not vary with position. However, we can't address this by tailoring the model to each cell as we want to treat each cell the same way. The standardized coefficients should still be interpretable.
+See discussion in ?isSingular and here: https://stats.stackexchange.com/questions/378939/dealing-with-singular-fit-in-mixed-models
+```{r, warning=FALSE}
+spatial_firing <- spatial_firing  %>%
+  select(-contains('o_mm_p_b_')) %>%
+  mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit),
+         #o_mm_nb = map2(spikes_in_time, 1, mm_fit),
+         o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues)) %>%
+         #o_mm_p_nb = map(o_mm_nb, mm_pvalues))
+  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal") #%>%
+  #unnest_wider(o_mm_p_nb, names_sep = "_", names_repair = "universal")
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+## Select best model 
+
+1. Write function to categorise neurons based on significant model coefficients
+```{r}
+
+model_comparison <- function(null_pos, null_speed, null_accel){
+  pval <- 0.01
+  if( is.na(null_pos) & is.na(null_accel)) {
+    return( "None" )
+  
+  } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
+    return( "P" )
+    
+  } else if( null_pos > pval & null_accel > pval & null_speed < pval) {
+    return( "S" ) 
+    
+  } else if( null_pos > pval & null_accel < pval & null_speed > pval) {
+    return( "A" )
+    
+  } else if( null_pos < pval & null_accel > pval & null_speed < pval) {
+    return("PS")
+    
+  } else if( null_pos < pval & null_accel < pval & null_speed > pval) {
+    return( "PA" )
+        
+  } else if( null_pos > pval & null_accel < pval & null_speed < pval) {
+    return("SA")
+
+  } else if( null_pos < pval & null_accel < pval & null_speed < pval) {
+    return("PSA")
+    
+  } else {
+    return("None")
+  }
+}
+
+```
+
+
+2. Run on all cells in dataframe
+```{r}
+spatial_firing <- spatial_firing  %>%
+    select(-contains('final_model_o_b')) %>%
+    mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel), model_comparison))
+           #final_model_o_nb  = pmap(list(o_mm_p_nb_pos, o_mm_p_nb_speed, o_mm_p_nb_accel), model_comparison))#%>%
+    #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
+
+```
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Calculate standardized coefficients for position, speed and acceleration in LMER model
+
+
+1. Load functions to calculate and extract standardised coefficients for each variable in the lmer
+```{r}
+source("Functions_StdCoef_lmer.R")
+```
+
+1. calculate and extract standardized coefficients for position, speed and acceleration
+
+Function to calculate standardized coefficients from the model fits
+```{r}
+std_coef <- function(mm) {
+  tryCatch({
+  mod <- stdCoef.merMod(mm) 
+  mod_coefs <- tibble(pos = mod[2,1],
+                      speed = mod[3,1],
+                      accel = mod[4,1])
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+  
+```
+
+
+3. Run on all cells
+```{r, warning=FALSE}
+
+spatial_firing <- spatial_firing  %>%
+  select(-contains('o_b_mod_coefs_')) %>%
+  mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
+  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal")
+```
+
+Standardized coefficients are in:
+spatial_firing$o_b_mod_coefs_pos
+spatial_firing$o_b_mod_coefs_speed
+spatial_firing$o_b_mod_coefs_accel
+
+
+1. make unique id for each neuron (session_id + cluster_id)
+```{r}
+# First make a function to concatenate session id and cluster id
+make_unique_id <- function(session,cluster) {
+  x <- paste(session, cluster, sep="_")
+  return(as.character(x))
+}
+
+# run on all cells
+spatial_firing <- spatial_firing  %>%
+  mutate(unique_id = map2(session_id, cluster_id, make_unique_id))
+
+```
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## Plot population rates 
+
+### ------------------------------------------------------------------------------------------ ### 
+
+
+Now we want to plot population rate across whole track for diff groups so we can visualise the average firing rate
+
+groups are as follows :
+
+outbound homebound  reset
+    +       +         n
+    +       +         y
+    +       -         -
+    +      non        -
+    -       +         -
+    -       -         n
+    -       -         y
+    -      non        -
+    
+    
+
+1. Subset data based on position encoding
+```{r}
+pi_data <-subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+2. make tibble with average firing rates and classifications : 
+```{r}
+bin = 199
+df <- tibble(session_id = rep(pi_data$session_id, each=bin),
+             Position = rep(1:bin, times=nrow(pi_data)), 
+             Rates = unlist(pi_data$Rates_averaged_rewarded_b), 
+             Outbound_beaconed = rep(pi_data$lm_group_b, each=bin), 
+             Homebound_beaconed = rep(pi_data$lm_group_b_h, each=bin))
+
+```
+
+
+Function to plot mean and SEM of firing rate as a function of position.
+```{r}
+mean_SEM_plots <- function(df, colour1 = "blue"){
+  ggplot(data=df) +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
+  geom_line(aes(y=mean_r, x=Position), color = colour1) +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  #scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
+  labs(y = "Mean firing rate (Hz)", x = "Position") +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.title = element_blank(),
+        text = element_text(size=18),
+        plot.margin = margin(21, 25, 5, 20))
+}
+
+```
+
+
+
+3. Subset data by group then average rates for plotting          **Negative Negative**
+```{r}
+df_neg_cue <- df %>%
+  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+  mutate(Position = rep(-29:169))
+  
+mean_SEM_plots(df_neg_cue, colour1 = "black")
+
+if (save_figures == 1) {
+ ggsave(file = "plots/negneg_mean.png",  width = 3.6, height = 2.9) 
+}
+```
+
+
+3. Subset data by group then average rates for plotting          **Negative Positive**
+```{r}
+df_pos_cue <- df %>%
+  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+  mutate(Position = rep(-29:169))
+
+mean_SEM_plots(df_pos_cue, colour1 = "black")
+
+if (save_figures == 1) {
+ ggsave(file = "plots/negpos_mean.png", width = 3.6, height = 2.9) 
+}
+```
+
+
+3. Subset data by group then average rates for plotting          **Positive Positive **
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+  mutate(Position = rep(-29:169))
+  
+mean_SEM_plots(df_pos_pi, colour1 = "black")
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/pospos_mean.png", width = 3.6, height = 2.9) 
+}
+```
+
+
+3. Subset data by group then average rates for plotting          **Positive Negative**
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+  mutate(Position = rep(-29:169))
+
+
+mean_SEM_plots(df_pos_pi, colour1 = "black")
+
+if (save_figures == 1) {
+  ggsave(file = "plots/posneg_mean.png", width = 3.6, height = 2.9)
+}
+```
+
+
+3. Subset data by group then average rates for plotting          **Positive Unclassified**
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+  mutate(Position = rep(-29:169))
+
+
+mean_SEM_plots(df_pos_pi, colour1 = "black")
+
+if (save_figures == 1) {
+  ggsave(file = "plots/posnon_mean.png", width = 3.6, height = 2.9)
+}
+```
+
+3. Subset data by group then average rates for plotting          **Negative Unclassified**
+```{r}
+df_pos_pi <- df %>%
+  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+  mutate(Position = rep(-29:169))
+
+mean_SEM_plots(df_pos_pi, colour1 = "black")
+
+if (save_figures == 1) {
+  ggsave(file = "plots/negnon_mean.png", width = 3.6, height = 2.9)
+}
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+# Plot heat map of firing rate across location for all neurons
+
+First, reorder the dataframe with ramps according to slope.
+_For start ramps, steepest slope should be negative - thus will have the highest cluster id_
+```{r}
+start_ramps<-spatial_firing[order(unlist(spatial_firing$track_category_numeric),spatial_firing$asr_b_o_rewarded_fit_slope),]
+start_ramps<-start_ramps %>% filter(track_category_numeric != 0)
+start_ramp_number = nrow(start_ramps)
+new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
+start_ramps <- cbind(start_ramps, new_cluster_id)
+```
+
+Then, scale firing rate for all neurons
+
+1. make function to load rates and normalise
+2. Run on dataframe 
+```{r}
+normalise_rates_outbound <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:199))
+  df <- df %>%
+    filter(Position >=30, Position <= 170)
+  x <- normalit(df$Rates)
+  return(x)
+}
+
+start_ramps <- start_ramps %>%
+  mutate(normalised_rates_o = map(Rates_averaged_rewarded_b, normalise_rates_outbound))
+```
+
+Add position to normalised rates for plotting
+```{r}
+add_position <- function(df) {
+  df <- tibble(Rates = unlist(df), Position = rep(31:171))
+}
+
+start_ramps <- start_ramps %>%
+  mutate(normalised_rates_o = map(normalised_rates_o, add_position)) 
+
+```
+
+Extract columns (normalised rates) for plotting into a tibble
+```{r}
+concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o))
+```
+
+Now the firing rates have been normalised and the data in the right format we want to make annotations for the heatmap
+
+First, extract ramp score from the dataframe for annotating heatmap
+_since its a list of three (outbound/homebound/all) we extract the first one_
+```{r}
+start_ramps <- start_ramps %>%
+  mutate(start_ramp_score = map(ramp_score, ~.x[1]))
+  
+```
+
+Put ramp scores alongisde lm results and brain region classifier in tibble for annotating heatmap
+```{r}
+ramp_result <- tibble(ramp_score = as.numeric(start_ramps$start_ramp_score))
+brain_region <- tibble(region = as.character(start_ramps$brain_region))
+lm_result <- tibble(result = as.character(start_ramps$lm_group_b))
+lm_result_homebound <- tibble(result_homebound = as.character(start_ramps$lm_group_b_h))
+track_result <- tibble(track_cat = as.numeric(start_ramps$track_category_numeric))
+cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
+```
+
+Now we can plot the heatmap with annotations using pheatmap
+```{r}
+library(viridis)
+#convert data to wide format
+wide_DF <- concat_firing_start %>% spread(Position, Rates)
+
+#remove unused column
+wide_DF <- subset(wide_DF, select=-c(new_cluster_id))
+
+#rownames(wide_DF) <- seq(length=nrow(wide_DF))
+# Generte data (modified the mydf slightly)
+rownames(wide_DF) <- paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_")
+
+# data for annotation rows in seperate dataframe
+#mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), region = brain_region, ramp_score=ramp_result, track_catagory=track_result)
+mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), region = brain_region, track_catagory=track_result)
+
+# change the color of annotation to what you want: (eg: "navy", "darkgreen")
+Var1        <- c("violetred2", "black", "chartreuse3")
+names(Var1) <- c("Negative", "Unclassified", "Positive")
+
+Var2        <- c("coral2", "deepskyblue2", "deepskyblue2", "blueviolet" , "grey29")
+names(Var2) <- c("PS", "UN", "RH", "MEC", "V1")
+
+#Var3        <- c("violetred2", "black", "chartreuse3")
+#names(Var3) <- c("Negative", "Unclassified", "Positive")
+
+
+#anno_col <- list(region = Var2, ramp_score = brewer.pal(11,"RdBu"), track_cat = viridis(7))
+#anno_col <- list(track_cat = viridis(7))
+anno_col <- list(region = Var2, track_cat = viridis(7))
+
+#, ramp_score = brewer.pal(11,"RdBu")
+myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, annotation_colors = anno_col, show_rownames = F, show_colnames = F )
+
+```
+
+Save the heatmap (bit of a nightmare here...)
+```{r}
+save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+
+if (save_figures == 1) {
+  save_pheatmap_png(myheatmap, "plots/my_heatmap_all_update.png")
+}
+```
