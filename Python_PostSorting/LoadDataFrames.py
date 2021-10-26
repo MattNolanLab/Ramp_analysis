@@ -18,7 +18,7 @@ Required columns to concatinate from server:
 
 
 def process_allmice_dir(recording_folder, prm):
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort2_dataset.pkl'
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort1_dataset.pkl'
 
     if os.path.exists(prm.get_output_path()):
         print('I found the output folder.')
