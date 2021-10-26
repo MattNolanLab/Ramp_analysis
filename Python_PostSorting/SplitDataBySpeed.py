@@ -8,7 +8,7 @@ def extract_data_from_frame(spike_data, cluster):
     rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
     rewarded_trials = rewarded_trials[~np.isnan(rewarded_trials)]
     rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10 # convert from 100 ms sampling rate to Hz
-    speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real/10) # convert from 100 ms sampling rate to Hz
+    speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real) # convert from 100 ms sampling rate to Hz
     position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
     types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
     trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)

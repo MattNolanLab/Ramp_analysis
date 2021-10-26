@@ -5,14 +5,11 @@ import os
 
 
 """
-
 ## the following code calculates the mean spike width for each cluster
-
 1. extract snippets
 2. calculate mean snippet
 3. calculate half width of mean snippet
 4. insert into dataframe
-
 """
 
 def plot_snippet_method(mean_snippet,snippet_height,half_height, intercept_line):
