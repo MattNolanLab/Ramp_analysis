@@ -284,7 +284,7 @@ nodes_pos <- data.frame(name=c(as.character(data_long_pos$source), as.character(
 Plot Sankey diagram
 ```{r}
 # prepare colour scale
-ColourScal ='d3.scaleOrdinal() .range(["#FDE725FF","#B4DE2CFF","#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
+ColourScal ='d3.scaleOrdinal() .range(["#66cd00","#EE3A8C", "#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
 
 # Make the Network
 sankeyNetwork(Links = data_long_pos, Nodes = nodes_pos,
@@ -310,7 +310,7 @@ We will again focus exclusively on neurons that have a +/- slope (Figure 2) and 
 
 Function to plot data mean and SEM of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
 ```{r}
-mean_SEM_plots_BvsNB <- function(df, group_b, group_nb, x_start = 0, x_end = 60){
+mean_SEM_plots_BvsNB <- function(df, group_b, group_nb, x_start = -10, x_end = 70){
   df <- df %>%
     filter(lm_group_b == group_b,
            lm_group_nb == group_nb) %>%
@@ -330,14 +330,17 @@ mean_SEM_plots_BvsNB <- function(df, group_b, group_nb, x_start = 0, x_end = 60)
              se_nb = std.error(Rates_averaged_rewarded_nb, na.rm = TRUE))
  
  ggplot(data=df) +
+  annotate("rect", xmin=-10, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=70, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b), fill = "grey70", alpha=0.2) +
   geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - se_nb, ymax = mean_nb + se_nb), fill = "Red2", alpha=0.05) +
   geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
   geom_line(aes(y=mean_nb, x=Position), color = "Red2") +
-  annotate("rect", xmin=20, xmax=60, ymin=3.5,ymax=4.5, alpha=0.2, fill="Chartreuse4") +
+  #nnotate("rect", xmin=-10, xmax=70, ymin=3.5,ymax=4.5, alpha=0.2, fill="Chartreuse4") +
   theme_classic() +
   labs(y = "Mean firing rate (Hz)", x = "Location (cm)") +
   xlim(x_start, x_end) +
+  ylim(5, 15) +
   #scale_x_discrete(breaks=c("40","60","80"), labels=c("10", "30", "50")) +
   theme(axis.text.x = element_text(size=14),
         axis.text.y = element_text(size=14),
@@ -353,7 +356,7 @@ Subset data by group then average rates for plotting          **Negative Cue**
 (NegUC_plot <- mean_SEM_plots_BvsNB(position_neurons, "Negative", "Unclassified"))
 
 if (save_figures == 1) {
-  ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3.2, height = 2.5)
 }
 ```
 
@@ -363,7 +366,7 @@ Subset data by group then average rates for plotting          **Positive Cue**
 (PosUC_plot <- mean_SEM_plots_BvsNB(position_neurons, "Positive", "Unclassified"))
 
 if (save_figures == 1) {
-  ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3.2, height = 2.5)
 }
 ```
 
@@ -374,7 +377,7 @@ Subset data by group then average rates for plotting          **Positive PI**
 (PosPos_plot <- mean_SEM_plots_BvsNB(position_neurons, "Positive", "Positive"))
 
 if (save_figures == 1) {
-  ggsave(file = "plots/AverageRates_PositionCells_PosPI.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/AverageRates_PositionCells_PosPI.png", width = 3.2, height = 2.5)
 }
 ```
 
@@ -385,7 +388,7 @@ Subset data by group then average rates for plotting          **Negative PI**
 (NegNeg_plot <- mean_SEM_plots_BvsNB(position_neurons, "Negative", "Negative"))
 
 if (save_figures == 1) {
-  ggsave(file = "plots/AverageRates_PositionCells_NegPI.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/AverageRates_PositionCells_NegPI.png", width = 3.2, height = 2.5)
 }
 ```
 
@@ -401,7 +404,7 @@ unclassified_neurons <- filter(spatial_firing, lm_group_b == "Unclassified")
 (UCNeg_plot <- mean_SEM_plots_BvsNB(unclassified_neurons, "Unclassified", "Negative"))
 
 if (save_figures == 1) {
-  ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
+  ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.2, height = 2.5)
 }
 ```
 
@@ -411,7 +414,7 @@ Subset data by group then average rates for plotting          **Positive PI only
 (UCPos_plot <- mean_SEM_plots_BvsNB(unclassified_neurons, "Unclassified", "Positive"))
 
 if (save_figures == 1) {
- ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5) 
+ ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.2, height = 2.5) 
 }
 ```
 
@@ -617,14 +620,13 @@ position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_
 ```
 
 ```{r}
-pos_position_cells <- subset(spatial_firing, lm_group_b == "Positive")
-neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
+position_cells <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 
 ```
 
 2. take only columns we need for the rest of the analysis
 ```{r}
-spatial_firing_save <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+spatial_firing_save <- select(position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
   unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
     final_model_o_b, lm_group_b)) %>%
   as.tibble()
@@ -643,7 +645,9 @@ data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), time
                               as.character(spatial_firing_save$final_model_o_b)), 
                     coef_type = rep(c("P", "S", "A"),
                                     each = nrow(spatial_firing_save)),
-                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
+                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3),
+                    cue_group = rep(as.character(spatial_firing_save$cue_group_o), times=3)
+)
 ```
 
 2. run anova
