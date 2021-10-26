@@ -50,16 +50,28 @@ mm_fit <- function(df, TT = 0) {
 
 Function to extract P values for each coefficient from the model
 ```{r}
-mm_pvalues <- function(mm) {
+mm_function <- function(mm, session_id) {
   if (is.na(mm)) {
     return(tibble(pos = NA, speed = NA, accel = NA))
   }
+    print(session_id)
     modelAnova <- car::Anova(mm)
     return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
                   speed = modelAnova$"Pr(>Chisq)"[[2]],
                   accel = modelAnova$"Pr(>Chisq)"[[3]])
 }
+```
 
+Function to extract P values for each coefficient from the model
+```{r}
+
+mm_pvalues <- function(mm, session_id) {
+  tryCatch({
+      mm_function(mm,session_id)
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+   
 ```
 
 
@@ -69,11 +81,10 @@ See discussion in ?isSingular and here: https://stats.stackexchange.com/question
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
   select(-contains('o_mm_p_b_')) %>%
-  #select(-contains('o_mm_p_nb_')) %>%
   mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit),
          #o_mm_nb = map2(spikes_in_time, 1, mm_fit),
-         o_mm_p_b = map(o_mm_b, mm_pvalues)) %>%
-         #o_mm_p_nb = map(o_mm_nb, mm_pvalues)) %>%
+         o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues)) %>%
+         #o_mm_p_nb = map(o_mm_nb, mm_pvalues))
   unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal") #%>%
   #unnest_wider(o_mm_p_nb, names_sep = "_", names_repair = "universal")
 ```
@@ -269,7 +280,7 @@ ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, lev
         legend.text=element_text(size=16), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 if (save_figures == 1) {
-  ggsave(file = "plots/LMERProportions_beaconed.png", width = 4, height = 5.5)
+  ggsave(file = "plots/LMERProportions_beaconed_update.png", width = 4, height = 5.5)
 }
 ```
 
@@ -289,13 +300,17 @@ source("Functions_StdCoef_lmer.R")
 Function to calculate standardized coefficients from the model fits
 ```{r}
 std_coef <- function(mm) {
+  tryCatch({
   mod <- stdCoef.merMod(mm) 
   mod_coefs <- tibble(pos = mod[2,1],
                       speed = mod[3,1],
                       accel = mod[4,1])
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
   
 ```
+
 
 3. Run on all cells
 ```{r, warning=FALSE}
@@ -373,7 +388,7 @@ standard_plot <- function(df) {
   stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
   geom_jitter(alpha=0.05) +
   scale_fill_manual(values=c("firebrick1","gold","dodgerblue2")) +
-  labs(y = "std coef \n", x="\n model parameter") +
+  labs(y = "std coef", x="\n model parameter") +
   theme_classic() +
   theme(axis.text.x = element_text(size=14),
         axis.text.y = element_text(size=12),
