@@ -7,3 +7,164 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+### ------------------------------------------------------------------------------------------ ### 
+
+### ------------------------------------------------------------------------------------------ ### 
+
+Now, we can classify cells based on their predicted activity. 
+
+1. Function to classify neurons based on offset 
+
+```{r}
+mark_reset_group_predict <- function(offset){
+  if (is.na(offset) ) {
+    return( "None" )
+  } else if( offset == "None") {
+    return( "Continuous" )
+  } else if( ( offset == "Neg" ||  offset == "Pos")) {
+    return( "Reset" ) 
+  }
+}
+
+```
+
+2. Run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(reset_group = map(offset, mark_reset_group_predict))
+
+```
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+
+
+## plot bar chart of mean apsolute difference between predicted and real
+
+- do only for neurons that have slopes in outbound zone
+- do this for both negative and positive slopes in the outbound zone
+
+1. extract neurons that are ++ or -- on beaconed trials, position encoding (Figure 3) and driven by path integration (Figure 4)
+```{r}
+df_position_pi <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+  
+```
+
+4. Plot bar charts - positive neurons
+```{r}
+ggplot(data=subset(df_position_pi, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+  coord_cartesian(xlim=c(-6,6)) +
+  geom_histogram(aes(y=..count..), alpha=0.5) +
+  scale_fill_manual(values=c(  "grey", "chartreuse3","chartreuse3")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Density", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictHomeboundMean_positive.png",width = 4, height = 2.5)
+}
+```
+
+5. Plot bar charts - Negative neurons
+```{r}
+
+ggplot(data=subset(df_position_pi,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+  coord_cartesian(xlim=c(-5,5)) +
+  geom_histogram(aes(y=..count..), alpha=0.5) +
+  scale_fill_manual(values=c( "grey", "violetred2","violetred2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Density", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictHomeboundMean_negative.png",width = 4, height = 2.5)
+}
+```
+
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+
+## now plot scatter of slopes for outbound and slopes for homebound with neurons marked accordng to whether they are reset or continuous
+
+1. Here we subset neurons based on position encoding (Figure 3) and path integrating (Figure 4) and either reset or contiuous firing. 
+```{r}
+position_neurons_reset <- spatial_firing  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
+  filter(reset_group == "Reset")
+
+position_neurons_continuous <- spatial_firing  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
+  filter(reset_group == "Continuous")
+
+position_neurons_all <- spatial_firing  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
+```
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_point(data=subset(position_neurons_all, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_point(data=subset(position_neurons_all, track_category == "posneg" | track_category == "negpos"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_point(data=subset(position_neurons_all, track_category == "posnon" | track_category == "negnon"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
+    #geom_point(data=subset(position_neurons_continuous, track_category == "pospos" | track_category == "negneg"),
+               #aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+               #    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+               #    color=factor(unlist(lm_group_b))), shape=1, alpha=0.8) +
+
+      #geom_point(data=position_neurons_reset,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b)))) +
+    #geom_point(data=position_neurons_continuous,aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), color=factor(unlist(lm_group_b))), shape=1) +
+    coord_cartesian(ylim = c(-.45,.61), xlim = c(-.45,.45)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
+    xlab("Outbound slope") +
+    ylab("Homebound slope") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/slope_comparison_reset.png", width = 4, height = 4) 
+}
+```
+
