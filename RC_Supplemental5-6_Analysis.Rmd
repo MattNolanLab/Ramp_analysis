@@ -1,0 +1,178 @@
+---
+title: "LMERhomebound"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
+
+Function to fit mixed effect models
+```{r}
+mm_fit_home <- function(df, TT = 0) {
+  tryCatch({
+    if (length(df) == 1)
+      return(NA)
+    df <-
+      tibble(
+        Rates = as.numeric(Re(df[[1]])),
+        Position = as.numeric(Re(df[[2]])),
+        Acceleration = as.numeric(Re(df[[4]])),
+        Speed = as.numeric(Re(df[[3]])),
+        Trials = as.factor(df[[5]]),
+        Types = as.factor(df[[6]])
+      )
+    df <- df %>%
+      subset(Position >= 110 & Position <= 170 & Speed >= 3 & Types == TT)
+    
+    if (length(df) == 1 | nrow(df) < 4)
+      return(NA)
+  
+    df_int <-
+      lme4::lmer(
+        Rates ~ Position + Speed + Acceleration + (1 + Position | Trials),
+        data = df,
+        na.action = na.exclude
+      )
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+
+}
+```
+
+
+Function to extract P values for each coefficient from the model
+```{r}
+mm_function <- function(mm, session_id) {
+  if (is.na(mm)) {
+    return(tibble(pos = NA, speed = NA, accel = NA))
+  }
+    print(session_id)
+    modelAnova <- car::Anova(mm)
+    return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
+                  speed = modelAnova$"Pr(>Chisq)"[[2]],
+                  accel = modelAnova$"Pr(>Chisq)"[[3]])
+}
+```
+
+Function to extract P values for each coefficient from the model
+```{r}
+
+mm_pvalues <- function(mm, session_id) {
+  tryCatch({
+      mm_function(mm,session_id)
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+   
+```
+
+2. Run on all cells 
+```{r, warning=FALSE}
+spatial_firing <- spatial_firing  %>%
+  select(-contains('h_mm_p_b_')) %>%
+  mutate(h_mm_b = map2(spikes_in_time, 0, mm_fit_home),
+         h_mm_p_b = map(h_mm_b, session_id, mm_pvalues)) %>%
+  unnest_wider(h_mm_p_b, names_sep = "_", names_repair = "universal")
+```
+
+Model p values are stored in:
+spatial_firing$h_mm_p_b_pos
+spatial_firing$h_mm_p_b_accel
+spatial_firing$h_mm_p_b_speed
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+## Select best model 
+
+1. Write function to categorise neurons based on significant model coefficients
+```{r}
+
+model_comparison <- function(null_pos, null_speed, null_accel){
+  pval <- 0.01
+  if( is.na(null_pos) & is.na(null_accel)) {
+    return( "None" )
+  
+  } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
+    return( "P" )
+    
+  } else if( null_pos > pval & null_accel > pval & null_speed < pval) {
+    return( "S" ) 
+    
+  } else if( null_pos > pval & null_accel < pval & null_speed > pval) {
+    return( "A" )
+    
+  } else if( null_pos < pval & null_accel > pval & null_speed < pval) {
+    return("PS")
+    
+  } else if( null_pos < pval & null_accel < pval & null_speed > pval) {
+    return( "PA" )
+        
+  } else if( null_pos > pval & null_accel < pval & null_speed < pval) {
+    return("SA")
+
+  } else if( null_pos < pval & null_accel < pval & null_speed < pval) {
+    return("PSA")
+    
+  } else {
+    return("None")
+  }
+}
+
+```
+
+
+2. Run on all cells in dataframe
+```{r}
+spatial_firing <- spatial_firing  %>%
+    mutate(final_model_h_b  = pmap(list(h_mm_p_b_pos, h_mm_p_b_speed, h_mm_p_b_accel), model_comparison))
+
+```
+
+
+
+
+## save dataset for harry
+
+2. take only columns we need for the rest of the analysis
+```{r}
+if(save_figures == 1) {
+  spatial_firing_save <- select(spatial_firing, session_id, cluster_id, lm_group_b, final_model_o_b, lm_group_b_h) %>%
+    unnest(cols = c(session_id, cluster_id, lm_group_b, final_model_o_b, lm_group_b_h)) %>%
+  as.tibble()
+}
+```
+
+3. save to csv file _this is for matching to plots from python_
+```{r}
+write_csv2(spatial_firing_save, "all_results_linearmodel.csv")
+```
+
+
+```{r}
+saveRDS(spatial_firing_save, "SpatialFiring_dataset.Rda")
+
+```
+
+
+## save dataset for harry
+
+2. take only columns we need for the rest of the analysis
+```{r}
+if(save_figures == 1) {
+  spatial_firing_save <- select(spatial_firing, session_id, cluster_id, track_category) %>%
+    unnest(cols = c(session_id, cluster_id, track_category)) %>%
+  as.tibble()
+}
+```
+
+3. save to csv file _this is for matching to plots from python_
+```{r}
+write_csv2(spatial_firing_save, "all_results_linearmodel.csv")
+```
+
