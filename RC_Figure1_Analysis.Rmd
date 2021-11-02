@@ -853,7 +853,18 @@ position_cells <- subset(ramp_cells, final_model_o_b == "P" | final_model_o_b ==
 
 1. Load functions to calculate and extract standardised coefficients for each variable in the lmer
 ```{r}
-source("Functions_StdCoef_lmer.R")
+#1. Function to calculate standardized coefficients for a LMER
+#https://stackoverflow.com/questions/25142901/standardized-coefficients-for-lmer-model 
+
+
+stdCoef.merMod <- function(object) {
+  sdy <- sd(getME(object,"y"))
+  sdx <- apply(getME(object,"X"), 2, sd)
+  sc <- fixef(object)*sdx/sdy
+  se.fixef <- coef(summary(object))[,"Std. Error"]
+  se <- se.fixef*sdx/sdy
+  return(data.frame(stdcoef=sc, stdse=se))
+}
 ```
 
 1. calculate and extract standardized coefficients for position, speed and acceleration
