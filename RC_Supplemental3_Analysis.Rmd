@@ -8,6 +8,44 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+```{r}
+spatial_firing_example <- spatial_firing %>%
+  filter(Mouse == "M6", Day_numeric == "31", cohort == "3")
+```
+
+Function to plot mean and SEM of firing rate as a function of position.
+```{r}
+position_o = c(0:60)
+position_h = c(80:140)
+Position = c(-29:169)
+rates = unlist(unlist(spatial_firing_example$normalised_rates[1]))
+rates_o <- rates[30:90]
+rates_h <- rates[110:170]
+
+ggplot() +
+  geom_point(aes(x=position, y=rates), color = "grey", alpha = 0.5) +
+  geom_point(aes(x=position_o, y=rates_o)) +
+  #geom_smooth(aes(x=position_o, y=rates_o), method = "lm", se = FALSE, color ="red") +
+  geom_point(aes(x=position_h, y=rates_h)) +
+  #geom_smooth(aes(x=position_h, y=rates_h), method = "lm", se = FALSE, color ="red") +
+  theme_classic() +
+  annotate("rect", xmin=-30, xmax=0, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  #scale_y_continuous(breaks=seq(15,60,10), expand = c(0, 0)) +
+  labs(y = "\nZ-scored firing rate", x = "\nLocation (cm)") +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.title = element_blank(),
+        text = element_text(size=18),
+        plot.margin = margin(21, 25, 5, 20))
+ ggsave(file = "plots/ExampleZ-score_Shuffled.png",  width = 4.5, height = 3.5) 
+
+```
+
+
+
 ### ------------------------------------------------------------------------------------------ ### 
 
 ### ------------------------------------------------------------------------------------------ ### 
