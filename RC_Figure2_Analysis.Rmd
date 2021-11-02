@@ -1089,11 +1089,40 @@ data <- data  %>%
 
 
 ```{r}
-spatial_firing_save <- select(spatial_firing,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p','spikes_in_time', 'lm_group_b', 'lm_group_nb', 'lm_group_p', 'final_model_o_b', 'lm_group_b_h', 'lm_group_nb_h', 'lm_group_p_h'))
+spatial_firing_save <- select(spatial_firing,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number', 'spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'lm_group_b', 'lm_group_nb', 'lm_group_p', 'final_model_o_b', 'lm_group_b_h', 'lm_group_nb_h', 'lm_group_p_h'))
 ```
 
 ```{r}
 saveRDS(spatial_firing_save, "SpatialFiringSave_final_of.Rda")
 
 ```
+
+
+
+```{r}
+spatial_firing_save <- select(spatial_firing,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number', 'spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'lm_group_b', 'lm_group_nb', 'lm_group_p', 'final_model_o_b', 'lm_group_b_h', 'lm_group_nb_h', 'lm_group_p_h', 'asr_b_o_rewarded_fit_slope', 'asr_b_o_rewarded_fit_r.squared', 'asr_b_h_rewarded_fit_slope', 'asr_b_h_rewarded_fit_r.squared', 'asr_p_o_rewarded_fit_slope', 'asr_p_o_rewarded_fit_r.squared', 'asr_p_h_rewarded_fit_slope', 'asr_p_h_rewarded_fit_r.squared'))
+```
+
+## Save to csv file _this is for matching to plots from python_
+```{r}
+spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
+                              cluster_id = spatial_firing_save$cluster_id,
+                              lm_group_b =  as.character(spatial_firing_save$lm_group_b),
+                              lm_group_nb =  as.character(spatial_firing_save$lm_group_nb),
+                              lm_group_p =  as.character(spatial_firing_save$lm_group_p),
+                              final_model_o_b =  as.character(spatial_firing_save$final_model_o_b),
+                              lm_group_b_h =  as.character(spatial_firing_save$lm_group_b_h),
+                              lm_group_nb_h =  as.character(spatial_firing_save$lm_group_nb_h),
+                              lm_group_p_h =  as.character(spatial_firing_save$lm_group_p_h),
+                              r_squared_outbound_b =  spatial_firing_save$asr_b_o_rewarded_fit_r.squared,
+                              slope_outbound_b =  spatial_firing_save$asr_b_o_rewarded_fit_slope,
+                              r_squared_homebound_b =  spatial_firing_save$asr_b_h_rewarded_fit_r.squared,
+                              slope_homebound_b =  spatial_firing_save$asr_b_h_rewarded_fit_slope,                                                    r_squared_outbound_p =  spatial_firing_save$asr_p_o_rewarded_fit_r.squared,
+                              slope_outbound_p =  spatial_firing_save$asr_p_o_rewarded_fit_slope,
+                              r_squared_homebound_p =  spatial_firing_save$asr_p_h_rewarded_fit_r.squared,
+                              slope_homebound_p =  spatial_firing_save$asr_p_h_rewarded_fit_slope         )
+
+write.table(spatial_firing_save, "AllMice_LinearModelResults.txt", quote=FALSE, sep="\t")
+```
+
 
