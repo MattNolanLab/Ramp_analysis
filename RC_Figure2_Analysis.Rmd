@@ -157,7 +157,8 @@ ggplot() +
     geom_point(data=subset(slope_df, track_category == "posnon" | track_category == "negnon"),
                aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
-                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) + 
+    geom_smooth(data=subset(slope_df, track_category != "None"),aes(x=asr_b_h_rewarded_fit_slope, y=asr_p_h_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed slope") +
     ylab("Probe slope") +
@@ -206,6 +207,7 @@ ggplot() +
                aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
+    geom_smooth(data=subset(slope_df, track_category != "None"),aes(x=asr_b_o_rewarded_fit_slope, y=asr_p_o_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed slope") +
     ylab("Probe slope") +
@@ -251,6 +253,7 @@ offset_df <- spatial_firing_high  %>%
 ggplot() + 
     geom_jitter(data=offset_df,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(track_category))),alpha=0.8) +
     #coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
+    geom_smooth(data=offset_df,aes(x=predict_diff, y=predict_diff_p), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed offset") +
     ylab("Probe offset") +
@@ -318,10 +321,7 @@ extract_cols_for_plot <- function(df){
              Outbound_beaconed_b = rep(df$lm_group_b, each=bin), 
              Homebound_beaconed_b = rep(df$lm_group_b_h, each=bin), 
              Outbound_beaconed_p = rep(df$lm_group_p, each=bin), 
-             Homebound_beaconed_p = rep(df$lm_group_p_h, each=bin), 
-             cue_group_o = rep(df$cue_group_o, each=bin), 
-             reset_group = rep(as.character(df$reset_group), each=bin), 
-             reset_group_p = rep(as.character(df$reset_group_p), each=bin)) 
+             Homebound_beaconed_p = rep(df$lm_group_p_h, each=bin)) 
 }
 
 ```
@@ -354,8 +354,8 @@ mean_SEM_plots_comp <- function(df, colour1 = "blue", colour2 = "black"){
 spatial_firing_high  %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
+  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Unclassified") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
                    sem_r = std.error(Rates, na.rm = TRUE),
@@ -365,14 +365,46 @@ spatial_firing_high  %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_reset_probe_JustP.png",width = 3.6, height = 2.9)
+  ggsave(file = "plots/Negneg_probe_JustB.png",width = 3.6, height = 2.9)
+}
+
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
+  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Negative") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/Negneg_probe_outboundchange.png",width = 3.6, height = 2.9)
+}
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
+  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/Negneg_probe_homeboundchange.png",width = 3.6, height = 2.9)
 }
 
 # -/- on beaconed and probe trials
 spatial_firing_high  %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
   filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
   group_by(Position) %>%
@@ -385,49 +417,7 @@ spatial_firing_high  %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_reset_probe_BandP.png", width = 3.6, height = 2.9)
-}
-
-# -/- on beaconed and probe trials
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
-
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_all_probe_BandP.png",  width = 3.6, height = 2.9)
-}
-
-
-# -/- on beaconed but not probe trials
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p != "Negative" | Homebound_beaconed_p != "Negative") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
-
-
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_reset_probe_JustB.png",  width = 3.6, height = 2.9)
+  ggsave(file = "plots/Negneg_probe_BandP.png", width = 3.6, height = 2.9)
 }
 
 
@@ -441,8 +431,8 @@ if (save_figures == 1) {
 spatial_firing_high  %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Positive") %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Negative") %>%
+  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Unclassified") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
                    sem_r = std.error(Rates, na.rm = TRUE),
@@ -452,141 +442,48 @@ spatial_firing_high  %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/NegPos_reset_probe_JustP.png", width = 3.6, height = 2.9)
+  ggsave(file = "plots/PosNeg_probe_JustB.png", width = 3.6, height = 2.9)
 }
+
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Negative") %>%
+  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Negative") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PosNeg_probe_outboundchange.png", width = 3.6, height = 2.9)
+}
+
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Negative") %>%
+  filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PosNeg_probe_homeboundchange.png", width = 3.6, height = 2.9)
+}
+
 
 # -/+ on beaconed and probe trials
 spatial_firing_high  %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
-  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Positive") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
-
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Negpos_reset_probe_BandP.png",  width = 3.6, height = 2.9)
-}
-
-
-# -/+ on beaconed but not probe trials
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
-  filter(Outbound_beaconed_p != "Negative" | Homebound_beaconed_p != "Positive") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Negpos_reset_probe_JustB.png",  width = 3.6, height = 2.9)
-}
-```
-
-
-
-
-
-```{r}
-# +/+ on probe trials
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_reset_probe_JustP.png", width = 3.6, height = 2.9) 
-}
-
-#+/+ on beaconed and probe trials
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
-  filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
-  filter(reset_group == "Reset") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
-
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_reset_probe_BandP.png",  width = 3.6, height = 2.9) 
-}
-
-#+/+ on beaconed and probe trials
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
-  filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
-
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_all_probe_BandP.png",  width = 3.6, height = 2.9) 
-}
-```
-
-
-
-```{r}
-# +/- on probe trials
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Negative") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Posneg_reset_probe_JustP.png", width = 3.6, height = 2.9)
-}
-
-# +/- on beaconed and probe trials
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
   filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Negative") %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Negative") %>%
   group_by(Position) %>%
@@ -599,17 +496,55 @@ spatial_firing_high  %>%
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/Posneg_reset_probe_BandP.png",  width = 3.6, height = 2.9)
+  ggsave(file = "plots/PosNeg_probe_BandP.png",  width = 3.6, height = 2.9)
 }
+
 ```
 
 
+
+
+
 ```{r}
-# +/UC on probe trials
+# +/+ on probe trials
 spatial_firing_high  %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
+  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/Pospos_probe_JustB.png", width = 3.6, height = 2.9) 
+}
+
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
+  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/Pospos_probe_outboundchange.png", width = 3.6, height = 2.9) 
+}
+
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
   filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Unclassified") %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
@@ -620,7 +555,142 @@ spatial_firing_high  %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/posnon_reset_probe_JustB.png",  width = 3.6, height = 2.9)
+  ggsave(file = "plots/Pospos_probe_homeboundchange.png", width = 3.6, height = 2.9) 
+}
+
+#+/+ on beaconed and probe trials
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
+  filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/Pospos_probe_BandP.png",  width = 3.6, height = 2.9) 
+}
+
+```
+
+
+
+```{r}
+# +/- on probe trials
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
+  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/NegPos_probe_JustP.png", width = 3.6, height = 2.9)
+}
+
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
+  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/NegPos_probe_outboundchange.png", width = 3.6, height = 2.9)
+}
+
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
+  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/NegPos_probe_homeboundchange.png", width = 3.6, height = 2.9)
+}
+
+
+# +/- on beaconed and probe trials
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
+  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Positive") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/NegPos_probe_BandP.png",  width = 3.6, height = 2.9)
+}
+```
+
+
+```{r}
+# +/UC on probe trials
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Unclassified") %>%
+  filter(Outbound_beaconed_p == "Positive" & Homebound_beaconed_p == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/posnon_probe_BandP.png",  width = 3.6, height = 2.9)
+}
+
+# +/UC on probe trials
+spatial_firing_high  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  extract_cols_for_plot() %>%
+  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Unclassified") %>%
+  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Unclassified") %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                   sem_r = std.error(Rates, na.rm = TRUE),
+                   mean_c = mean(Rates_c, na.rm = TRUE),
+                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
+  mutate(Position = rep(-29:169)) %>%
+  mean_SEM_plots_comp()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/posnon_probe_JustB.png",  width = 3.6, height = 2.9)
 }
 ```
 
@@ -642,9 +712,10 @@ spatial_firing_high  %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
-  ggsave(file = "plots/negnon_reset_probe_JustP.png",  width = 3.6, height = 2.9)
+  ggsave(file = "plots/negnon_probe_JustP.png",  width = 3.6, height = 2.9)
 }
 ```
+
 ```{r}
 # -/- on beaconed but not probe trials
 spatial_firing_high  %>%
@@ -661,10 +732,8 @@ spatial_firing_high  %>%
   mutate(Position = rep(-29:169)) %>%
   mean_SEM_plots_comp()
 
-
-
 if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_reset_probe_negUNonProbe.png",  width = 3.6, height = 2.9)
+  ggsave(file = "plots/Negneg_probe_negUNonProbe.png",  width = 3.6, height = 2.9)
 }
 
 # -/- on beaconed but not probe trials
