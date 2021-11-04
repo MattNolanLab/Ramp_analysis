@@ -79,7 +79,7 @@ level_order <- c("Negative", "Positive", "Unclassified")
 
 ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
   coord_cartesian(xlim = c(-0.45,0.45)) +
-  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, alpha=0.5) +
   ylab("Proportion") +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
   scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
@@ -93,6 +93,45 @@ ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlis
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 if (save_figures == 1) {
   ggsave(file = "plots/Outbound_slope_histogram_update.png", width = 4, height = 2)
+}
+
+level_order <- c("Negative", "Positive", "Unclassified")
+
+ggplot(data=subset(spatial_firing, lm_group_b == "Positive"), aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
+  coord_cartesian(xlim = c(-0.45,0.45)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, alpha=0.5) +
+  ylab("Proportion") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slope_histogram_update_pos.png", width = 4, height = 2)
+}
+
+
+ggplot(data=subset(spatial_firing, lm_group_b == "Negative"), aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
+  coord_cartesian(xlim = c(-0.45,0.45)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, alpha=0.5) +
+  ylab("Proportion") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slope_histogram_update_neg.png", width = 4, height = 2)
 }
 ```
 
