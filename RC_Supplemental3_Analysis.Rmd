@@ -12,22 +12,33 @@ knitr::opts_chunk$set(echo = TRUE)
 spatial_firing_example <- spatial_firing %>%
   filter(Mouse == "M6", Day_numeric == "31", cohort == "3")
 ```
+```{r}
+spatial_firing_example <- spatial_firing %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" & predict_diff < 0 & predict_diff > -2 & asr_b_o_rewarded_fit_r.squared >0.8)
+
+```
 
 Function to plot mean and SEM of firing rate as a function of position.
 ```{r}
 position_o = c(0:60)
 position_h = c(80:140)
-Position = c(-29:169)
-rates = unlist(unlist(spatial_firing_example$normalised_rates[1]))
+position = c(-29:169)
+rates = unlist(unlist(spatial_firing_example$normalised_rates[3]))
+#rates = unlist(unlist(spatial_firing_example$Rates_averaged_rewarded_b[1]))
 rates_o <- rates[30:90]
 rates_h <- rates[110:170]
+predict_measured = unlist(unlist(spatial_firing_example$predict_diff[3]))
+
+rates_seg <- mean(rates[110:115])
 
 ggplot() +
-  geom_point(aes(x=position, y=rates), color = "grey", alpha = 0.5) +
-  geom_point(aes(x=position_o, y=rates_o)) +
-  #geom_smooth(aes(x=position_o, y=rates_o), method = "lm", se = FALSE, color ="red") +
-  geom_point(aes(x=position_h, y=rates_h)) +
-  #geom_smooth(aes(x=position_h, y=rates_h), method = "lm", se = FALSE, color ="red") +
+  geom_line(aes(x=position, y=rates), color = "grey", alpha = 0.5, size = 1) +
+  geom_line(aes(x=position_o, y=rates_o), size = 1) +
+  geom_smooth(aes(x=position_o, y=rates_o), method = "lm", se = FALSE, color ="red", size = 1) +
+  geom_line(aes(x=position_h, y=rates_h), size = 1) +
+  #geom_smooth(aes(x=position_h, y=rates_h), method = "lm", se = FALSE, color ="red", size = 1) +
+  geom_segment(aes(x = 80, y = rates_seg, xend = 92, yend = rates_seg), color = "red", size=1) +
+  geom_segment(aes(x = 80, y = rates_seg-predict_measured, xend = 92, yend = rates_seg-predict_measured), color = "blue", size=1) +
   theme_classic() +
   annotate("rect", xmin=-30, xmax=0, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
@@ -40,7 +51,7 @@ ggplot() +
         legend.title = element_blank(),
         text = element_text(size=18),
         plot.margin = margin(21, 25, 5, 20))
- ggsave(file = "plots/ExampleZ-score_Shuffled.png",  width = 4.5, height = 3.5) 
+ ggsave(file = "plots/ExampleZ-score_Shuffled_eg3.png",  width = 4.5, height = 3.5) 
 
 ```
 
