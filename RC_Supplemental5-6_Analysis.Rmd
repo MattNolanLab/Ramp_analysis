@@ -10,35 +10,34 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
 
+## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
+
 Function to fit mixed effect models
 ```{r}
-mm_fit_home <- function(df, TT = 0) {
-  tryCatch({
-    if (length(df) == 1)
-      return(NA)
-    df <-
-      tibble(
-        Rates = as.numeric(Re(df[[1]])),
-        Position = as.numeric(Re(df[[2]])),
-        Acceleration = as.numeric(Re(df[[4]])),
-        Speed = as.numeric(Re(df[[3]])),
-        Trials = as.factor(df[[5]]),
-        Types = as.factor(df[[6]])
-      )
-    df <- df %>%
-      subset(Position >= 110 & Position <= 170 & Speed >= 3 & Types == TT)
-    
-    if (length(df) == 1 | nrow(df) < 4)
-      return(NA)
+mm_fit <- function(df, TT = 0) {
+  if (length(df) == 1)
+    return(NA)
+  df <-
+    tibble(
+      Rates = as.numeric(Re(df[[1]])),
+      Position = as.numeric(Re(df[[2]])),
+      Acceleration = as.numeric(Re(df[[4]])),
+      Speed = as.numeric(Re(df[[3]])),
+      Trials = as.factor(df[[5]]),
+      Types = as.factor(df[[6]])
+    )
+  df <- df %>%
+    subset(Position >= 30 & Position <= 190 & Speed >= 3 & Types == TT)
   
-    df_int <-
-      lme4::lmer(
-        Rates ~ Position + Speed + Acceleration + (1 + Position | Trials),
-        data = df,
-        na.action = na.exclude
-      )
-      },
-    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+  if (length(df) == 1 | nrow(df) < 3)
+    return(NA)
+
+  df_int <-
+    lme4::lmer(
+      Rates ~ Position + Speed + Acceleration + (1 + Position | Trials),
+      data = df,
+      na.action = na.exclude
+    )
 
 }
 ```
@@ -70,13 +69,19 @@ mm_pvalues <- function(mm, session_id) {
    
 ```
 
-2. Run on all cells 
+
+2. Run on all cells.
+Note here, there may be some overfitting with the mixed effect model. This is likely because some  coefficients likely do not vary with position. However, we can't address this by tailoring the model to each cell as we want to treat each cell the same way. The standardized coefficients should still be interpretable.
+See discussion in ?isSingular and here: https://stats.stackexchange.com/questions/378939/dealing-with-singular-fit-in-mixed-models
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
-  select(-contains('h_mm_p_b_')) %>%
-  mutate(h_mm_b = map2(spikes_in_time, 0, mm_fit_home),
-         h_mm_p_b = map(h_mm_b, session_id, mm_pvalues)) %>%
-  unnest_wider(h_mm_p_b, names_sep = "_", names_repair = "universal")
+  #select(-contains('o_mm_p_b_')) %>%
+  mutate(h_mm_b = map2(spikes_in_time, 0, mm_fit),
+         #o_mm_nb = map2(spikes_in_time, 1, mm_fit),
+         h_mm_p_b = map2(h_mm_b, session_id, mm_pvalues)) %>%
+         #o_mm_p_nb = map(o_mm_nb, mm_pvalues))
+  unnest_wider(h_mm_p_b, names_sep = "_", names_repair = "universal") #%>%
+  #unnest_wider(o_mm_p_nb, names_sep = "_", names_repair = "universal")
 ```
 
 Model p values are stored in:
@@ -129,9 +134,9 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 
 2. Run on all cells in dataframe
 ```{r}
+
 spatial_firing <- spatial_firing  %>%
     mutate(final_model_h_b  = pmap(list(h_mm_p_b_pos, h_mm_p_b_speed, h_mm_p_b_accel), model_comparison))
-
 ```
 
 
@@ -142,8 +147,8 @@ spatial_firing <- spatial_firing  %>%
 2. take only columns we need for the rest of the analysis
 ```{r}
 if(save_figures == 1) {
-  spatial_firing_save <- select(spatial_firing, session_id, cluster_id, lm_group_b, final_model_o_b, lm_group_b_h) %>%
-    unnest(cols = c(session_id, cluster_id, lm_group_b, final_model_o_b, lm_group_b_h)) %>%
+  spatial_firing_save <- select(spatial_firing, session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, ramp_score) %>%
+    unnest(cols = c(session_id, cluster_id, lm_group_b, final_model_o_b,final_model_h_b, lm_group_b_h, ramp_score)) %>%
   as.tibble()
 }
 ```
