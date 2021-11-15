@@ -55,7 +55,7 @@ Rates_averaged_rewarded_b = beaconed trials
 Rates_averaged_rewarded_nb = non-beaconed and probe trials
 Rates_averaged_rewarded_p = probe trials only
 ```{r}
-spatial_firing <- spatial_firing_shuffles %>%
+spatial_firing <- spatial_firing %>%
   mutate(asr_b_rewarded = pmap(list(Rates_averaged_rewarded_b, session_id, cluster_id), add_position),
          asr_nb_rewarded = pmap(list(Rates_averaged_rewarded_nb, session_id, cluster_id), add_position),
          asr_p_rewarded = pmap(list(Rates_averaged_rewarded_p, session_id, cluster_id), add_position)
@@ -771,7 +771,7 @@ Note here, there may be some overfitting with the mixed effect model. This is li
 See discussion in ?isSingular and here: https://stats.stackexchange.com/questions/378939/dealing-with-singular-fit-in-mixed-models
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
-  select(-contains('o_mm_p_b_')) %>%
+  #select(-contains('o_mm_p_b_')) %>%
   mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit),
          #o_mm_nb = map2(spikes_in_time, 1, mm_fit),
          o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues)) %>%
@@ -1084,8 +1084,24 @@ if (save_figures == 1) {
 First, reorder the dataframe with ramps according to slope.
 _For start ramps, steepest slope should be negative - thus will have the highest cluster id_
 ```{r}
-start_ramps<-spatial_firing[order(unlist(spatial_firing$track_category_numeric),spatial_firing$asr_b_o_rewarded_fit_slope),]
-start_ramps<-start_ramps %>% filter(track_category_numeric != 0)
+
+pospos <-spatial_firing %>% filter(track_category_numeric == 1)
+posneg <-spatial_firing %>% filter(track_category_numeric == 2)
+posnon <-spatial_firing %>% filter(track_category_numeric == 3)
+negneg <-spatial_firing %>% filter(track_category_numeric == 4)
+negpos <-spatial_firing %>% filter(track_category_numeric == 5)
+negnon <-spatial_firing %>% filter(track_category_numeric == 6)
+
+pospos<-pospos[order(-rank(pospos$asr_b_o_rewarded_fit_slope)),decreasing = TRUE]
+posneg<-posneg[order(-rank(posneg$asr_b_o_rewarded_fit_slope)),decreasing = TRUE]
+posnon<-posnon[order(-rank(posnon$asr_b_o_rewarded_fit_slope)),decreasing = TRUE]
+negneg<-negneg[order(negneg$asr_b_o_rewarded_fit_slope),decreasing = TRUE]
+negpos<-negpos[order(negpos$asr_b_o_rewarded_fit_slope),decreasing = TRUE]
+negnon<-negnon[order(negnon$asr_b_o_rewarded_fit_slope),decreasing = TRUE]
+
+start_ramps <- rbind(pospos,posneg,posnon,negneg,negpos,negnon)
+#start_ramps<-spatial_firing[order(unlist(spatial_firing$track_category_numeric),spatial_firing$asr_b_o_rewarded_fit_slope),]
+#start_ramps<-start_ramps %>% filter(track_category_numeric != 0)
 start_ramp_number = nrow(start_ramps)
 new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
 start_ramps <- cbind(start_ramps, new_cluster_id)
@@ -1158,8 +1174,8 @@ wide_DF <- subset(wide_DF, select=-c(new_cluster_id))
 rownames(wide_DF) <- paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_")
 
 # data for annotation rows in seperate dataframe
-#mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), region = brain_region, ramp_score=ramp_result, track_catagory=track_result)
-mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), region = brain_region, track_catagory=track_result)
+mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), region = brain_region, ramp_score=ramp_result, track_catagory=track_result)
+#mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), region = brain_region, track_catagory=track_result)
 
 # change the color of annotation to what you want: (eg: "navy", "darkgreen")
 Var1        <- c("violetred2", "black", "chartreuse3")
@@ -1172,11 +1188,10 @@ names(Var2) <- c("PS", "UN", "RH", "MEC", "V1")
 #names(Var3) <- c("Negative", "Unclassified", "Positive")
 
 
-#anno_col <- list(region = Var2, ramp_score = brewer.pal(11,"RdBu"), track_cat = viridis(7))
+anno_col <- list(region = Var2, ramp_score = brewer.pal(15,"RdBu"), track_cat = viridis(7))
 #anno_col <- list(track_cat = viridis(7))
-anno_col <- list(region = Var2, track_cat = viridis(7))
+#anno_col <- list(region = Var2, track_cat = viridis(7))
 
-#, ramp_score = brewer.pal(11,"RdBu")
 myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, annotation_colors = anno_col, show_rownames = F, show_colnames = F )
 
 ```
