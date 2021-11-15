@@ -488,7 +488,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/Spatialscore_vs_cutoff_groups.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/Spatialscore_vs_cutoff_groups.png", width = 4, height = 3.5) 
 }
 ```
 
@@ -525,7 +525,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/speedvr_vs_speedof_groups_speedcellsvr.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/speedvr_vs_speedof_groups_speedcellsvr.png", width = 4, height = 3.5) 
 }
 ```
 
@@ -555,7 +555,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/speedvr_vs_speedof_groups_speedcellsof.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/speedvr_vs_speedof_groups_speedcellsof.png",width = 4, height = 3.5) 
 }
 ```
 
@@ -589,7 +589,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/speedvr_vs_slope_groups_position.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/speedvr_vs_slope_groups_position.png", width = 4, height = 3.5) 
 }
 ```
 
@@ -617,7 +617,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/HDscore_vs_slope_allcells_position.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/HDscore_vs_slope_allcells_position.png", width = 4, height = 3.5) 
 }
 ```
 
@@ -645,7 +645,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/borderscore_vs_slope_allcells_position.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/borderscore_vs_slope_allcells_position.png", width = 4, height = 3.5) 
 }
 ```
 
@@ -674,7 +674,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/gridscore_vs_slope_allcells_position.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/gridscore_vs_slope_allcells_position.png", width = 4, height = 3.5) 
 }
 ```
 
@@ -746,7 +746,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_allpositioncells.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/firing_properties_allpositioncells.png", width = 4, height = 3.5) 
 }
 ```
 
@@ -773,7 +773,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_allcells_facet_groupbyclassifier.png", width = 8, height = 6) 
+ ggsave(file = "plots/firing_properties_allcells_facet_groupbyclassifier.png", width = 7, height = 5) 
 }
 ```
 
@@ -816,7 +816,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_allcells_test.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/firing_properties_allcells_test.png", width = 4, height = 3.5) 
 }
 ```
 
@@ -843,7 +843,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_positioncells_test.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/firing_properties_positioncells_test.png", width = 4, height = 3.5) 
 }
 ```
 
@@ -881,7 +881,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_allrampcells.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/firing_properties_allrampcells.png",width = 4, height = 3.5) 
 }
 ```
 
@@ -910,7 +910,7 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_allrampcells_facet.png", width = 8, height = 6) 
+ ggsave(file = "plots/firing_properties_allrampcells_facet.png", width = 7, height = 5) 
 }
 ```
 
@@ -962,87 +962,10 @@ ggplot() +
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
 
 if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_CV2_allrampcells.png", width = 5, height = 4.5) 
+ ggsave(file = "plots/firing_properties_CV2_allrampcells.png", width = 4, height = 3.5) 
 }
 ```
 
-```{r}
-position_data$track_category <- as.character(position_data$track_category)
-
-ggplot() + 
-    geom_jitter(data=subset(position_data, track_category != "None"),
-               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-                   y = as.numeric(unlist(mean_cv2)),
-                   color=factor(unlist(lm_group_b)))) +
-    ylab("CV2") +
-    xlab("Mean firing rate (Hz)") +
-    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
-    facet_wrap(~ track_category) +
-    theme_classic() +
-    scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
-    theme(axis.text.x = element_text(size=18),
-          axis.text.y = element_text(size=18),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=17), 
-          legend.text=element_text(size=16), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-
-if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_cv2_allrampcells_facet.png", width = 5, height = 4.5) 
-}
-```
-
-
-2. Plot scatter plot
-```{r}
-ggplot() + 
-    geom_jitter(data=position_data,
-               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-                   y = as.numeric(unlist(mean_cv2)), 
-                   color=factor(unlist(cell_type)))) +
-    ylab("CV2") +
-    coord_cartesian(ylim = c(0.4,1.5)) +
-    xlab("Mean firing rate (Hz)") +
-    theme_classic() +
-    scale_color_manual(values=c("brown2", "darkturquoise", "grey4")) +
-    theme(axis.text.x = element_text(size=18),
-          axis.text.y = element_text(size=18),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=17), 
-          legend.text=element_text(size=16), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-
-if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_CV2_allrampcells_groupedbycelltype.png", width = 5, height = 4.5) 
-}
-```
-
-2. Plot scatter plot
-```{r}
-ggplot() + 
-    geom_jitter(data=position_data,
-               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-                   y = as.numeric(unlist(mean_cv2)), 
-                   color=factor(unlist(classifier2)))) +
-    ylab("CV2") +
-    xlab("Mean firing rate (Hz)") +
-    coord_cartesian(ylim = c(0.4,1.5)) +
-    theme_classic() +
-    scale_color_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
-    theme(axis.text.x = element_text(size=18),
-          axis.text.y = element_text(size=18),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=17), 
-          legend.text=element_text(size=16), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-
-if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_CV2_allrampcells_groupedbyclassifier.png", width = 5, height = 4.5) 
-}
-```
 
 
 
@@ -1065,16 +988,16 @@ if (save_figures == 1) {
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
- ggsave(file = "plots/FR_dist_nonrampcells.png", width = 3.5, height = 3) 
+ ggsave(file = "plots/FR_dist_nonrampcells.png", width = 2.5, height = 2) 
 }
 ```
 
 
 2. Plot scatter plot
 ```{r}
-position_data$track_category <- as.character(position_data$track_category)
+spatial_firing$track_category <- as.character(spatial_firing$track_category)
 
-  ggplot(data=subset(position_data,lm_group_b == "Unclassified" & lm_group_b_h == "Unclassified"), aes(x = unlist(mean_firing_rate), fill=as.factor(unlist(classifier2)))) +
+  ggplot(data=subset(spatial_firing,lm_group_b == "Unclassified" & lm_group_b_h == "Unclassified"), aes(x = unlist(mean_firing_rate), fill=as.factor(unlist(classifier2)))) +
   geom_histogram(aes(y=..count..)) +
   coord_cartesian(xlim=c(0,80)) +
   scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
@@ -1092,7 +1015,7 @@ position_data$track_category <- as.character(position_data$track_category)
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
- ggsave(file = "plots/FRvr_dist_nonrampcells_facet.png",  width = 8, height = 6) 
+ ggsave(file = "plots/FRvr_dist_nonrampcells_facet.png",  width = 2.5, height = 2) 
 }
 ```
 
@@ -1120,7 +1043,7 @@ position_data$track_category <- as.character(position_data$track_category)
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
- ggsave(file = "plots/FRvr_dist_allrampcells_facet.png",  width = 8, height = 6) 
+ ggsave(file = "plots/FRvr_dist_allrampcells_facet.png",  width = 7, height = 5) 
 }
 ```
 
@@ -1145,7 +1068,7 @@ ggplot(data=subset(spatial_firing,lm_group_b == "Unclassified"), aes(x = unlist(
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
- ggsave(file = "plots/FRvr_dist_nonrampcells.png", width = 3.5, height = 3) 
+ ggsave(file = "plots/FRvr_dist_nonrampcells.png", width = 2.5, height = 2) 
 }
 ```
 
@@ -1168,7 +1091,7 @@ ggplot(data=position_data, aes(x = unlist(mean_firing_rate_of), fill=as.factor(u
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
- ggsave(file = "plots/FR_dist_allrampcells.png",width = 3.5, height = 3) 
+ ggsave(file = "plots/FR_dist_allrampcells.png",width = 2.5, height = 2) 
 }
 ```
 
@@ -1193,7 +1116,7 @@ ggplot(data=subset(position_data,track_category != "None"), aes(x = unlist(mean_
         legend.text=element_text(size=16), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 if (save_figures == 1) {
- ggsave(file = "plots/FR_dist_allrampcells_facet.png",width = 8, height = 6) 
+ ggsave(file = "plots/FR_dist_allrampcells_facet.png", width = 2.5, height = 2) 
 }
 ```
 
@@ -1216,7 +1139,7 @@ ggplot(data=position_data, aes(x = unlist(mean_firing_rate), fill=as.factor(unli
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
- ggsave(file = "plots/FRvr_dist_allrampcells.png", width = 3.5, height = 3) 
+ ggsave(file = "plots/FRvr_dist_allrampcells.png", width = 2.5, height = 2) 
 }
 
 ```
@@ -1241,7 +1164,7 @@ ggplot(data=subset(spatial_firing,lm_group_b == "Unclassified"), aes(x = (unlist
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
- ggsave(file = "plots/FRdiff_dist_nonrampcells.png",width = 3.5, height = 3) 
+ ggsave(file = "plots/FRdiff_dist_nonrampcells.png", width = 2.5, height = 2) 
 }
 
 ```
@@ -1265,41 +1188,13 @@ ggplot(data=position_data, aes(x = (unlist(mean_firing_rate)-unlist(mean_firing_
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
- ggsave(file = "plots/FRdiff_dist_allrampcells.png", width = 3.5, height = 3) 
+ ggsave(file = "plots/FRdiff_dist_allrampcells.png", width = 2.5, height = 2) 
 }
 
 ```
 
 
 
-
-
-
-
-
-```{r}
-
-ggplot(data=subset(position_data,track_category != "None"), aes(x = (unlist(mean_firing_rate)-unlist(mean_firing_rate_of)), fill=as.factor(unlist(classifier2)))) +
-  geom_histogram(aes(y=..count..)) +
-  coord_cartesian(xlim = c(-50,50)) +
-  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  labs(y="Count", x="") +
-  facet_wrap(~ track_category) +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=16),
-        axis.text.y = element_text(size=16),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=17), 
-        legend.text=element_text(size=16), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-
-if (save_figures == 1) {
- ggsave(file = "plots/FRdiff_dist_allrampcells_facet.png",  width = 8, height = 6) 
-}
-
-```
 
 
 
