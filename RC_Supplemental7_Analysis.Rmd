@@ -142,19 +142,48 @@ same as above but for shuffled datasets
 shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared))
 ```
 
+### How much of the shuffled dataset is past criteria? 
+1. Extract shuffled slopes and rsquared values. 
+```{r}
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), 
+                       r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
+                       pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
+                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, times = 999), 
+                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = 999))
+```
+
+2. Function to classify shuffled cells based on shuffled distribution
+```{r}
+shuff_slopes <- shuff_slopes %>%
+  mutate(
+    shuff_lm_group_b = pmap(
+      list(
+        min_slope,
+        max_slope,
+        slopes,
+        pval
+      ),
+      compare_slopes
+    )
+  )
+```
+
 2. Plot histogram of slopes
 ```{r}
-ggplot(data=shuff_slopes, aes(x = slopes)) +
+level_order <- c("Negative", "Positive", "Unclassified")
+
+ggplot(data=shuff_slopes, aes(x = slopes, fill=factor(unlist(shuff_lm_group_b), level = level_order))) +
     coord_cartesian(xlim = c(-0.45,0.45)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
     labs(x = "Slope (Hz/cm)") +
     ylab("Proportion") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
     scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
     theme_classic() +
     theme(axis.text.x = element_text(size=16),
           axis.text.y = element_text(size=16),
-          legend.position="bottom",
           legend.title = element_blank(),
+          legend.position = "none",
           text = element_text(size=16),
           legend.text=element_text(size=16),
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
@@ -190,11 +219,12 @@ if (save_figures == 1) {
 
 4. Same as above but for shuffled datasets
 ```{r}
-ggplot(data=shuff_slopes, aes(x = r2)) +
+ggplot(data=shuff_slopes, aes(x = r2, fill=factor(unlist(shuff_lm_group_b)))) +
     coord_cartesian(xlim = c(0,1)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
     xlab(expression(R^2)) +
     ylab("Proportion") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
     scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
     theme_classic() +
     theme(axis.text.x = element_text(size=16),
@@ -296,7 +326,7 @@ Function to plot mean and SEM of firing rate as a function of position.
 ```{r}
 
 Frates = unlist(unlist(spatial_firing_example$shuffle_rates_Rates))
-Fposition = rep(c(-29:169), times = as.integer(length(rates)/199))
+Fposition = rep(c(-29:169), times = as.integer(length(Frates)/199))
 Ftrials = rep(c(1:999), each = 199) #198801
 
 frame <- tibble(rates = Frates,
@@ -307,11 +337,14 @@ data_wide <- spread(frame, position, rates)
 
 position = c(-29:169)
 rates = unlist(unlist(spatial_firing_example$Rates_averaged_rewarded_b))
+position_o = position[30:90]
+rates_o = rates[30:90]
 
 ggplot() +
   geom_smooth(data=frame, aes(x=frame$position, y=frame$rates, group=factor(frame$trials)), method = "lm", se = FALSE, color ="grey", alpha=0.5) +
   geom_smooth(aes(x=position, y=rates), method = "lm", se = FALSE, color ="red") +
   theme_classic() +
+  xlim(0, 60) +
   #scale_x_continuous(breaks=seq(0,30,60), expand = c(0, 0)) +
   #scale_y_continuous(breaks=seq(0,40), expand = c(0, 0)) +
   labs(y = "Mean firing rate (Hz)", x = "Location (cm)") +
