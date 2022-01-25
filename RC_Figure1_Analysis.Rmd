@@ -137,7 +137,7 @@ Ramp like cells are identified by whether the coefficients of the linear model l
 ```{r}
 #library(gdata)
 # shuffles defines the number of shuffes. Use a smaller value for testing.
-shuffle_rates <- function(df, startbin, endbin, shuffles = 1000) {
+shuffle_rates <- function(df, startbin, endbin, shuffles = 4) {
   df_modified <- data.frame(neuron=as.numeric(),
                  slope=as.numeric(), 
                  rsquared=as.numeric(), 
@@ -166,7 +166,7 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-shuffles <- 1000
+shuffles <- 4
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
@@ -175,7 +175,7 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
 }
 
 if (save_results == 1) {
-  saveRDS(spatial_firing, "SpatialFiring_with_just1000_shuffles_final_of2.Rda")
+  #saveRDS(spatial_firing, "SpatialFiring_with_just1000_shuffles_final_of2.Rda")
   # And use this to save a truncated version. Useful for testing code.
   # saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
 }
@@ -240,6 +240,7 @@ spatial_firing <- spatial_firing %>%
   select(-contains('shuffle_results_b_o_')) %>%
   select(-contains('shuffle_results_nb_o_')) %>%
   select(-contains('shuffle_results_p_o_')) %>%
+  select(-contains('adjust_pval_')) %>%
   unnest_wider(shuffle_results_b_o, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(shuffle_results_nb_o, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(shuffle_results_p_o, names_sep = "_", names_repair = "universal")
@@ -302,6 +303,7 @@ compare_slopes <-
   }
 
 spatial_firing <- spatial_firing %>%
+  select(-contains('lm_group_')) %>%
   mutate(
     lm_group_b = pmap(
       list(
@@ -619,10 +621,36 @@ normalise_rates <- function(df){
 
 ```
 
+
+1. make function to load rates and normalise
+```{r}
+normalise_rates_probe <- function(df1, df2){
+  df <- c(df1, df2)
+  df <- tibble(Rates = unlist(df), Position = rep(1:398))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  x_p <- x[200:398]
+  return(x_p)
+}
+
+```
+
+1. make function to load rates and normalise
+```{r}
+normalise_rates_beaconed <- function(df1, df2){
+  df <- c(df1, df2)
+  df <- tibble(Rates = unlist(df), Position = rep(1:398))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  x_p <- x[0:199]
+  return(x_p)
+}
+
+```
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
+  mutate(normalised_rates = map2(Rates_averaged_rewarded_b, Rates_averaged_rewarded_nb,normalise_rates_beaconed)) %>%
+  mutate(normalised_rates_nb = map2(Rates_averaged_rewarded_b,Rates_averaged_rewarded_nb, normalise_rates_probe)) %>%
+  mutate(normalised_rates_p = map2(Rates_averaged_rewarded_b,Rates_averaged_rewarded_p, normalise_rates_probe)) 
 
 ```
 
@@ -945,8 +973,9 @@ pi_data <-subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS
 ```{r}
 bin = 199
 df <- tibble(session_id = rep(pi_data$session_id, each=bin),
+             cluster = rep(as.character(pi_data$cluster_id), each=bin),
              Position = rep(1:bin, times=nrow(pi_data)), 
-             Rates = unlist(pi_data$Rates_averaged_rewarded_b), 
+             Rates = unlist(pi_data$normalised_rates), 
              Outbound_beaconed = rep(pi_data$lm_group_b, each=bin), 
              Homebound_beaconed = rep(pi_data$lm_group_b_h, each=bin))
 
@@ -956,6 +985,11 @@ df <- tibble(session_id = rep(pi_data$session_id, each=bin),
 Function to plot mean and SEM of firing rate as a function of position.
 ```{r}
 mean_SEM_plots <- function(df, colour1 = "blue"){
+  cell_no <- ncol(df)
+  df <- df %>%
+    dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+    mutate(Position = rep(-29:169))
+
   ggplot(data=df) +
   annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
@@ -964,8 +998,10 @@ mean_SEM_plots <- function(df, colour1 = "blue"){
   geom_line(aes(y=mean_r, x=Position), color = colour1) +
   theme_classic() +
   scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  #annotate("text", x = 140, y=7, label = paste0("n = ", str(cell_no)), size=8) +
+  #geom_text(aes(x = 140, y= 6, label = paste0("n = ", str(cell_no))), vjust = "inward", hjust = "inward")
   #scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
-  labs(y = "Mean firing rate (Hz)", x = "Position") +
+  labs(y = "Z-scored firing rate", x = "Position") +
   theme(axis.text.x = element_text(size=18),
         axis.text.y = element_text(size=18),
         legend.title = element_blank(),
@@ -981,30 +1017,52 @@ mean_SEM_plots <- function(df, colour1 = "blue"){
 ```{r}
 df_neg_cue <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
-  mutate(Position = rep(-29:169))
+  group_by(Position)
   
 mean_SEM_plots(df_neg_cue, colour1 = "black")
 
 if (save_figures == 1) {
- ggsave(file = "plots/negneg_mean.png",  width = 3.6, height = 2.9) 
+ ggsave(file = "plots/negneg_mean_Hz.png",  width = 3.6, height = 2.9) 
 }
 ```
 
 
+Function to plot mean and SEM of firing rate as a function of position.
+```{r}
+mean_SEM_plots2 <- function(df, colour1 = "blue"){
+
+  ggplot(data=df) +
+  annotate("rect", xmin=0, xmax=30, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=170, xmax=200, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=90, xmax=110, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  #geom_ribbon(aes(x=Position, y=Rates, ymin = Rates - sem_r, ymax = Rates + sem_r), fill = colour1, alpha=0.2) +
+  geom_line(aes(y=Rates, x=Position), color = colour1) +
+  facet_wrap(~session_id + cluster, scales = "free")+
+  theme_classic() +
+  scale_x_continuous(breaks=seq(0,200,100), expand = c(0, 0)) +
+  #annotate("text", x = 140, y=7, label = paste0("n = ", str(cell_no)), size=8) +
+  #geom_text(aes(x = 140, y= 6, label = paste0("n = ", str(cell_no))), vjust = "inward", hjust = "inward")
+  #scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
+  labs(y = "Z-scored firing rate", x = "Position") +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.title = element_blank(),
+        text = element_text(size=18),
+        plot.margin = margin(21, 25, 5, 20))
+}
+
+```
+
 3. Subset data by group then average rates for plotting          **Negative Positive**
 ```{r}
 df_pos_cue <- df %>%
-  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
-  mutate(Position = rep(-29:169))
+  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
+  group_by(Position)
 
-mean_SEM_plots(df_pos_cue, colour1 = "black")
+mean_SEM_plots2(df_pos_cue, colour1 = "black")
 
 if (save_figures == 1) {
- ggsave(file = "plots/negpos_mean.png", width = 3.6, height = 2.9) 
+ ggsave(file = "plots/pospos_mean_Hz_percell2.png", width = 30.6, height = 30.9) 
 }
 ```
 
@@ -1013,15 +1071,14 @@ if (save_figures == 1) {
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
-  mutate(Position = rep(-29:169))
+  group_by(Position) 
+
   
 mean_SEM_plots(df_pos_pi, colour1 = "black")
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/pospos_mean.png", width = 3.6, height = 2.9) 
+  ggsave(file = "plots/pospos_mean_Hz.png", width = 3.6, height = 2.9) 
 }
 ```
 
@@ -1030,9 +1087,7 @@ if (save_figures == 1) {
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
-  mutate(Position = rep(-29:169))
+  group_by(Position)
 
 
 mean_SEM_plots(df_pos_pi, colour1 = "black")
@@ -1047,9 +1102,7 @@ if (save_figures == 1) {
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Unclassified") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
-  mutate(Position = rep(-29:169))
+  group_by(Position)
 
 
 mean_SEM_plots(df_pos_pi, colour1 = "black")
@@ -1063,9 +1116,7 @@ if (save_figures == 1) {
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Unclassified") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
-  mutate(Position = rep(-29:169))
+  group_by(Position) 
 
 mean_SEM_plots(df_pos_pi, colour1 = "black")
 
