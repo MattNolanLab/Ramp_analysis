@@ -10,8 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
 
-## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
-
 Function to fit mixed effect models
 ```{r}
 mm_fit <- function(df, TT = 0) {
