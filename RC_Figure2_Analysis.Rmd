@@ -59,8 +59,8 @@ normalise_rates <- function(df){
 
 2. run on all cells
 ```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_p = map(Rates_averaged_rewarded_p, normalise_rates))
+#spatial_firing <- spatial_firing %>%
+#  mutate(normalised_rates_p = map(Rates_averaged_rewarded_p, normalise_rates))
 ```
 
 Then, predict firing rate in homebound region based on fit from real data in outbound region
@@ -316,8 +316,8 @@ outbound homebound  reset
 bin = 199
 extract_cols_for_plot <- function(df){
  df <- tibble(Position = rep(1:bin, times=nrow(df)), 
-             Rates = unlist(df$Rates_averaged_rewarded_p),
-             Rates_c = unlist(df$Rates_averaged_rewarded_b),
+             Rates = unlist(df$normalised_rates),
+             Rates_c = unlist(df$normalised_rates_p),
              Outbound_beaconed_b = rep(df$lm_group_b, each=bin), 
              Homebound_beaconed_b = rep(df$lm_group_b_h, each=bin), 
              Outbound_beaconed_p = rep(df$lm_group_p, each=bin), 
@@ -336,9 +336,34 @@ Use the pipe to subset data:
 6. Group
 7. Plot
 
+
+Function to plot mean and SEM of firing rate as a function of position.
+```{r}
+mean_SEM_plots <- function(df, colour1 = "blue"){
+  ggplot(data=df) +
+  annotate("rect", xmin=-30, xmax=0, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
+  geom_line(aes(y=mean_r, x=Position), color = colour1) +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  #annotate("text", x = 140, y=7, label = paste0("n = ", str(cell_no)), size=8) +
+  #geom_text(aes(x = 140, y= 6, label = paste0("n = ", str(cell_no))), vjust = "inward", hjust = "inward")
+  #scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
+  labs(y = "Z-scored firing rate", x = "Position") +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.title = element_blank(),
+        text = element_text(size=18),
+        plot.margin = margin(21, 25, 5, 20))
+}
+
+```
+
 Function to add extra trace in Rates_c to a mean_SEM_plot.
 ```{r}
-mean_SEM_plots_comp <- function(df, colour1 = "blue", colour2 = "black"){
+mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "blue"){
   plot <- mean_SEM_plots(df, colour1)
   
   plot +
@@ -1019,7 +1044,7 @@ if (save_figures == 1) {
 
 1. First, select cells that are position encoding (figure 3)
 ```{r}
-pi_data <- subset(spatial_firing_probeonly, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+pi_data <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
 3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
