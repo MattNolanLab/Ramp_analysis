@@ -75,38 +75,18 @@ def generate_acceleration_rewarded_trials(spike_data, recording_folder):
     print('I am calculating acceleration...')
     spike_data["spikes_in_time"] = ""
     for cluster in range(len(spike_data)):
-        session_id = spike_data.at[cluster, "session_id"]
-        cluster_index = spike_data.cluster_id.values[cluster] - 1
-        rates =  np.array(spike_data.iloc[cluster].spikes_in_time_reward[0].real)
-        speed = np.array(spike_data.iloc[cluster].spikes_in_time_reward[1].real)
-        trials =  np.array(spike_data.iloc[cluster].spikes_in_time_reward[3].real)
-        types =  np.array(spike_data.iloc[cluster].spikes_in_time_reward[4].real)
-        position = np.array(spike_data.iloc[cluster].spikes_in_time_reward[2].real)
+        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[1])
+        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[0])
+        position=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[2])
+        trials=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[3], dtype= np.int32)
+        types=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[4], dtype= np.int32)
 
-        # filter data
         try:
-            window = signal.gaussian(2, std=3)
+            window = signal.gaussian(2, std=2)
             speed = signal.convolve(speed, window, mode='same')/sum(window)
             rates = signal.convolve(rates, window, mode='same')/sum(window)
         except (ValueError, TypeError):
                 continue
-
-
-        """
-        # remove outliers
-        rates_o =  pd.Series(rates)
-        speed_o =  pd.Series(speed)
-        position_o =  pd.Series(position)
-        trials_o =  pd.Series(trials)
-        types_o =  pd.Series(types)
-
-        rates = rates_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
-        speed = speed_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
-        position = position_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
-        trials = trials_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
-        types = types_o[speed_o.between(speed_o.quantile(.05), speed_o.quantile(.95))] # without outliers
-        """
-
 
 
         if speed.size > 1:
@@ -130,7 +110,7 @@ def generate_acceleration_rewarded_trials(spike_data, recording_folder):
         else:
             acceleration = np.zeros((speed.size))
         spike_data = store_acceleration_for_rewaded(spike_data, cluster, np.asarray(rates), np.asarray(position), np.asarray(speed), np.asarray(acceleration), np.asarray(trials), np.asarray(types))
-        plot_instant_acceleration_by_segment(recording_folder, spike_data, cluster, cluster_index, rates, position, speed, acceleration)
+        #plot_instant_acceleration_by_segment(recording_folder, spike_data, cluster, cluster_index, rates, position, speed, acceleration)
     return spike_data
 
 
