@@ -10,9 +10,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
 
-Function to fit mixed effect models in homebound region
+## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
+
+Function to fit mixed effect models
 ```{r}
-mm_fit_home <- function(df, TT = 0) {
+mm_fit <- function(df, TT = 0) {
   if (length(df) == 1)
     return(NA)
   df <-
@@ -25,7 +27,7 @@ mm_fit_home <- function(df, TT = 0) {
       Types = as.factor(df[[6]])
     )
   df <- df %>%
-    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == TT)
+    subset(Position >= 30 & Position <= 190 & Speed >= 3 & Types == TT)
   
   if (length(df) == 1 | nrow(df) < 3)
     return(NA)
@@ -43,26 +45,43 @@ mm_fit_home <- function(df, TT = 0) {
 
 Function to extract P values for each coefficient from the model
 ```{r}
-mm_pvalues <- function(mm) {
+mm_function <- function(mm, session_id) {
   if (is.na(mm)) {
     return(tibble(pos = NA, speed = NA, accel = NA))
   }
+    print(session_id)
     modelAnova <- car::Anova(mm)
     return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
                   speed = modelAnova$"Pr(>Chisq)"[[2]],
                   accel = modelAnova$"Pr(>Chisq)"[[3]])
 }
+```
 
+Function to extract P values for each coefficient from the model
+```{r}
+
+mm_pvalues <- function(mm, session_id) {
+  tryCatch({
+      mm_function(mm,session_id)
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+   
 ```
 
 
-2. Run on all cells 
+2. Run on all cells.
+Note here, there may be some overfitting with the mixed effect model. This is likely because some  coefficients likely do not vary with position. However, we can't address this by tailoring the model to each cell as we want to treat each cell the same way. The standardized coefficients should still be interpretable.
+See discussion in ?isSingular and here: https://stats.stackexchange.com/questions/378939/dealing-with-singular-fit-in-mixed-models
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
-  select(-contains('h_mm_p_b_')) %>%
-  mutate(h_mm_b = map2(spikes_in_time, 0, mm_fit_home),
-         h_mm_p_b = map(h_mm_b, mm_pvalues)) %>%
-  unnest_wider(h_mm_p_b, names_sep = "_", names_repair = "universal")
+  #select(-contains('o_mm_p_b_')) %>%
+  mutate(h_mm_b = map2(spikes_in_time, 0, mm_fit),
+         #o_mm_nb = map2(spikes_in_time, 1, mm_fit),
+         h_mm_p_b = map2(h_mm_b, session_id, mm_pvalues)) %>%
+         #o_mm_p_nb = map(o_mm_nb, mm_pvalues))
+  unnest_wider(h_mm_p_b, names_sep = "_", names_repair = "universal") #%>%
+  #unnest_wider(o_mm_p_nb, names_sep = "_", names_repair = "universal")
 ```
 
 Model p values are stored in:
@@ -115,11 +134,9 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 
 2. Run on all cells in dataframe
 ```{r}
+
 spatial_firing <- spatial_firing  %>%
     mutate(final_model_h_b  = pmap(list(h_mm_p_b_pos, h_mm_p_b_speed, h_mm_p_b_accel), model_comparison))
-           #final_model_h_nb  = pmap(list(h_mm_p_nb_pos, h_mm_p_nb_speed, h_mm_p_nb_accel), model_comparison)) #%>%
-    #mutate(final_model_h_p  = pmap(list(h_mm_p_p_pos, h_mm_p_p_speed, h_mm_p_p_accel), model_comparison))
-
 ```
 
 
@@ -130,8 +147,31 @@ spatial_firing <- spatial_firing  %>%
 2. take only columns we need for the rest of the analysis
 ```{r}
 if(save_figures == 1) {
-  spatial_firing_save <- select(spatial_firing, session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, cue_group_o) %>%
-    unnest(cols = c(session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, cue_group_o)) %>%
+  spatial_firing_save <- select(spatial_firing, session_id, cluster_id, lm_group_b, final_model_o_b, final_model_h_b, lm_group_b_h, ramp_score) %>%
+    unnest(cols = c(session_id, cluster_id, lm_group_b, final_model_o_b,final_model_h_b, lm_group_b_h, ramp_score)) %>%
+  as.tibble()
+}
+```
+
+3. save to csv file _this is for matching to plots from python_
+```{r}
+write_csv2(spatial_firing_save, "all_results_linearmodel.csv")
+```
+
+
+```{r}
+saveRDS(spatial_firing_save, "SpatialFiring_dataset.Rda")
+
+```
+
+
+## save dataset for harry
+
+2. take only columns we need for the rest of the analysis
+```{r}
+if(save_figures == 1) {
+  spatial_firing_save <- select(spatial_firing, session_id, cluster_id, track_category) %>%
+    unnest(cols = c(session_id, cluster_id, track_category)) %>%
   as.tibble()
 }
 ```

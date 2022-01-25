@@ -25,7 +25,7 @@ save_shuffle_rates <- function(df, startbin, endbin, shuffles = 10) {
   names(df_modified) <- c("neuron", "rate", "position")
   x <- 1
   repeat {
-  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
+  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:199))
   data <- data.frame(as.numeric(x), shuff_df$Rates, shuff_df$Position)
   names(data) <- c("neuron", "rate", "position")
   df_modified <- rbind(df_modified,data)
@@ -46,14 +46,32 @@ return(df_modified)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
 shuffles <- 4
-spatial_firing <- spatial_firing %>%
+spatial_firing_teris <- spatial_firing %>%
   mutate(avg_shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), save_shuffle_rates))
 
-if (save_results == 1) {
-  spatial_firing_shuffles <- spatial_firing %>%
-    select(session_id, cluster_id, avg_shuffle_results_b_o)
-  saveRDS(spatial_firing_shuffles, "10_shuffles.Rda")
+#spatial_firing_shuffles <- spatial_firing_teris %>%
+#  select(session_id, cluster_id, avg_shuffle_results_b_o)
+#saveRDS(spatial_firing_shuffles, "4_shuffles.Rda")
   # And use this to save a truncated version. Useful for testing code.
-}
+
+```
+
+
+```{r}
+spatial_firing_shuff <- select(spatial_firing_teris,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'avg_shuffle_results_b_o','lm_group_b', 'lm_group_nb', 'lm_group_p', 'final_model_o_b', 'lm_group_b_h', 'lm_group_nb_h', 'lm_group_p_h', 'asr_b_o_rewarded_fit_slope', 'asr_b_o_rewarded_fit_r.squared', 'asr_b_h_rewarded_fit_slope', 'asr_b_h_rewarded_fit_r.squared', 'asr_p_o_rewarded_fit_slope', 'asr_p_o_rewarded_fit_r.squared', 'asr_p_h_rewarded_fit_slope', 'asr_p_h_rewarded_fit_r.squared'))
+```
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save <- spatial_firing_shuff %>%
+  select(session_id, cluster_id,avg_shuffle_results_b_o) %>%
+  unnest(cols = c(session_id, cluster_id, avg_shuffle_results_b_o)) %>%
+as.tibble()
+
+```
+
+3. save to csv file _this is for matching to plots from python_
+```{r}
+write_csv2(spatial_firing_save, "all_results_linearmodel_shuffled.csv")
 ```
 

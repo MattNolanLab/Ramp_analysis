@@ -267,7 +267,7 @@ spatial_firing_enoughtrials <- spatial_firing %>%
 1. subset by outbound ramps (Figure 2) and cells that are modulated by position alone (Figure 3)
 
 ```{r}
-ramps <- subset(spatial_firing_enoughtrials, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
+ramps <- subset(spatial_firing_enoughtrials, lm_group_b == "Positive" | lm_group_b == "Negative")
 ```
 
 ```{r}
@@ -1150,7 +1150,7 @@ data <- tibble(session_id = rep(unlist(spatial_firing$unique_id), times=3),
 ```{r}
 df <- data %>%
   filter(final_model_o_b == "P") %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(track_category == "pospos" | track_category == "negneg") 
   
 ```
@@ -1243,7 +1243,7 @@ _plots for all position encoding encoding neurons (P, PS, PA, PSA)_
 ```{r}
 df <- data %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
-  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
   filter(track_category == "pospos" | track_category == "negneg") 
   
 ```

@@ -1,0 +1,456 @@
+---
+title: "RampCodes_Supplemental6"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+### ------------------------------------------------------------------------------------------------- ### 
+
+## Script aims plot properties and proportions of cells that classify as positive or negative in the linear model and plot schematic elements for explaining the shuffled data. 
+
+### ------------------------------------------------------------------------------------------------- ### 
+
+How many neurons are ramp cells? 
+
+2. get total numbers numbers
+```{r}
+ramp_num <- nrow(subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive"))
+```
+
+### ------------------------------------------------------------------------------------------------- ### 
+
+Now we want to visualise the coefficients of all neurons and all shuffled datasets
+
+Now lets find and plot the proportion of cells according to the classification
+
+1. extract proportion of cells that meet each criteria
+```{r}
+start <- nrow(subset(spatial_firing, lm_group_b == "Negative"))/nrow(spatial_firing)*100
+reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))/nrow(spatial_firing)*100
+nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spatial_firing)*100
+```
+
+2. get total numbers numbers
+```{r}
+start_num <- nrow(subset(spatial_firing, lm_group_b == "Negative"))
+reward_num <- nrow(subset(spatial_firing, lm_group_b == "Positive"))
+nonslope_num <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))
+
+```
+
+3. Put into a tibble 
+```{r}
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), num=c(start_num, reward_num, nonslope_num), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+```
+
+
+3. Plot bar graph of proportions
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent", x="") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  geom_text(aes(label = num), hjust = 1.5, vjust = 0.5, srt=90, size = 6, position = position_dodge(-0.5)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_ramp_proportions_update.png", width = 3, height = 5.5)
+}
+```
+
+
+We might also want to visualise the coefficients for the real and shuffled dataset as a histogram.
+
+1. First, make stacked histogram of slope values for real dataset 
+```{r}
+level_order <- c("Negative", "Positive", "Unclassified")
+
+ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
+  coord_cartesian(xlim = c(-0.45,0.45)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, alpha=0.5) +
+  ylab("Proportion") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slope_histogram_update.png", width = 4, height = 2)
+}
+
+level_order <- c("Negative", "Positive", "Unclassified")
+
+ggplot(data=subset(spatial_firing, lm_group_b == "Positive"), aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
+  coord_cartesian(xlim = c(-0.45,0.45)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, alpha=0.5) +
+  ylab("Proportion") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slope_histogram_update_pos.png", width = 4, height = 2)
+}
+
+
+ggplot(data=subset(spatial_firing, lm_group_b == "Negative"), aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
+  coord_cartesian(xlim = c(-0.45,0.45)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, alpha=0.5) +
+  ylab("Proportion") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slope_histogram_update_neg.png", width = 4, height = 2)
+}
+```
+
+same as above but for shuffled datasets
+
+1. extract shuffled values into tibble _each 1000 shuffled datasets are nested for each neuron_
+```{r}
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared))
+```
+
+### How much of the shuffled dataset is past criteria? 
+1. Extract shuffled slopes and rsquared values. 
+```{r}
+shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), 
+                       r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
+                       pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
+                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, times = 999), 
+                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = 999))
+```
+
+2. Function to classify shuffled cells based on shuffled distribution
+```{r}
+shuff_slopes <- shuff_slopes %>%
+  mutate(
+    shuff_lm_group_b = pmap(
+      list(
+        min_slope,
+        max_slope,
+        slopes,
+        pval
+      ),
+      compare_slopes
+    )
+  )
+```
+
+2. Plot histogram of slopes
+```{r}
+level_order <- c("Negative", "Positive", "Unclassified")
+
+ggplot(data=shuff_slopes, aes(x = slopes, fill=factor(unlist(shuff_lm_group_b), level = level_order))) +
+    coord_cartesian(xlim = c(-0.45,0.45)) +
+    geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+    labs(x = "Slope (Hz/cm)") +
+    ylab("Proportion") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.title = element_blank(),
+          legend.position = "none",
+          text = element_text(size=16),
+          legend.text=element_text(size=16),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slope_histogram_shuffled.png", width = 4, height = 2)
+}
+```
+
+
+3. Make stacked histogram of rsquared values for real dataset
+```{r}
+level_order <- c("Negative", "Positive", "Unclassified")
+
+ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + 
+  coord_cartesian(xlim = c(0,1), ylim = c(0,0.06)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+  ylab("Proportion") +
+  xlab(" ") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_rsquared_histogram_update.png", width = 4, height = 2)
+}
+```
+
+4. Same as above but for shuffled datasets
+```{r}
+ggplot(data=shuff_slopes, aes(x = r2, fill=factor(unlist(shuff_lm_group_b)))) +
+    coord_cartesian(xlim = c(0,1)) +
+    geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
+    xlab(expression(R^2)) +
+    ylab("Proportion") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="none",
+          legend.title = element_blank(),
+          text = element_text(size=16),
+          legend.text=element_text(size=16),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_rsquared_histogram_shuffled.png", width = 4, height = 2)
+}
+```
+
+
+
+
+
+
+### ------------------------------------------------------------------------------------------------- ### 
+
+## Plot shuffled example for Supplemental Figure 7A
+
+### ------------------------------------------------------------------------------------------------- ### 
+
+
+1. Function to generate shuffles
+- shuffles spikes using sample() function
+- runs lm
+- extracts coefficients
+- stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
+```{r}
+# shuffles defines the number of shuffes. Use a smaller value for testing.
+shuffle_rates_example <- function(df, shuffles = 10) {
+  df_modified <- data.frame(neuron = as.numeric(),
+                 Rates=as.double())
+  names(df_modified) <- c("neuron", "Rates")
+  x <- 1
+  repeat {
+  fr_shuffled <- sample(as.vector(unlist(df)),replace = TRUE, prob = NULL)
+  data <- data.frame(as.numeric(x),list(fr_shuffled))
+  names(data) <- c("neuron","Rates")
+  df_modified <- rbind(df_modified,data)
+
+  x = x+1
+  if (x == shuffles){ 
+  break
+  }
+  }
+return(df_modified)
+}
+```
+
+2. Run if shuffles haven't already been generated.
+```{r}
+
+# Check to see if the column shuffle_results exists. If it does then don't run again.
+shuffles <- 1000
+spatial_firing_example <- spatial_firing[14,] %>%
+  #select(-contains('shuffle_rates')) %>%
+  select(cluster_id, session_id, Rates_averaged_rewarded_b, asr_b_o_rewarded_fit_r.squared, asr_b_o_rewarded_fit_slope) %>%
+  mutate(shuffle_rates = map2(Rates_averaged_rewarded_b, shuffles, shuffle_rates_example))
+
+```
+
+```{r}
+spatial_firing_example <- spatial_firing_example %>%
+  unnest_wider(shuffle_rates, names_sep = "_", names_repair = "universal")
+
+```
+
+
+Function to plot mean and SEM of firing rate as a function of position.
+```{r}
+position = c(-29:169)
+rates = unlist(unlist(spatial_firing_example$Rates_averaged_rewarded_b))
+
+ggplot() +
+  geom_point(aes(x=position, y=rates)) +
+  theme_classic() +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
+  labs(y = "Mean firing rate (Hz)", x = "Position") +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.title = element_blank(),
+        text = element_text(size=18),
+        plot.margin = margin(21, 25, 5, 20))
+ ggsave(file = "plots/ExampleShuffled_Real.png",  width = 3.6, height = 2.9) 
+
+```
+
+
+
+Function to plot mean and SEM of firing rate as a function of position.
+```{r}
+
+Frates = unlist(unlist(spatial_firing_example$shuffle_rates_Rates))
+Fposition = rep(c(-29:169), times = as.integer(length(Frates)/199))
+Ftrials = rep(c(1:999), each = 199) #198801
+
+frame <- tibble(rates = Frates,
+                position = Fposition, 
+                trials = Ftrials)
+                   
+data_wide <- spread(frame, position, rates)
+
+position = c(-29:169)
+rates = unlist(unlist(spatial_firing_example$Rates_averaged_rewarded_b))
+position_o = position[30:90]
+rates_o = rates[30:90]
+
+ggplot() +
+  geom_smooth(data=frame, aes(x=frame$position, y=frame$rates, group=factor(frame$trials)), method = "lm", se = FALSE, color ="grey", alpha=0.5) +
+  geom_smooth(aes(x=position, y=rates), method = "lm", se = FALSE, color ="red") +
+  theme_classic() +
+  xlim(0, 60) +
+  #scale_x_continuous(breaks=seq(0,30,60), expand = c(0, 0)) +
+  #scale_y_continuous(breaks=seq(0,40), expand = c(0, 0)) +
+  labs(y = "Mean firing rate (Hz)", x = "Location (cm)") +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.title = element_blank(),
+        text = element_text(size=18),
+        plot.margin = margin(21, 25, 5, 20))
+ ggsave(file = "plots/ExampleShuffled_ShuffledLM.png",  width = 4, height = 2.9) 
+
+```
+
+
+2. Run if shuffles haven't already been generated.
+```{r}
+
+# Check to see if the column shuffle_results exists. If it does then don't run again.
+shuffles <- 1000
+spatial_firing_example <- spatial_firing[14,] %>%
+  select(cluster_id, session_id, Rates_averaged_rewarded_b, asr_b_o_rewarded_fit_r.squared, asr_b_o_rewarded_fit_slope) %>%
+  mutate(shuffle_results = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates))
+
+```
+
+2. Run on all neurons
+```{r}
+spatial_firing_example <- spatial_firing_example %>%
+  mutate(shuffle_min_slope = map_dbl(shuffle_results, extract_min_shuffle_slopes),
+         shuffle_max_slope = map_dbl(shuffle_results, extract_max_shuffle_slopes))
+
+```
+
+
+We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
+
+1. Extract shuffle results (slopes and r2 for each shuffle)
+2. run on all neurons
+```{r}
+spatial_firing_example <- spatial_firing_example %>%
+  unnest_wider(shuffle_results, names_sep = "_", names_repair = "universal") 
+```
+
+1. extract shuffled values into tibble _each 1000 shuffled datasets are nested for each neuron_
+```{r}
+shuff_slopes <- tibble(slopes = unlist(spatial_firing_example$shuffle_results_slope), r2 = unlist(spatial_firing_example$shuffle_results_r.squared))
+```
+
+
+
+Plot distribution of the shuffled data
+
+1. Extract shuffled slopes and rsquared values. This is already done above.
+
+2. Plot in scatter
+```{r}
+ggplot(data=spatial_firing_example) +
+    geom_point(data=shuff_slopes, aes(x = slopes, y = r2)) +
+    geom_point(data=spatial_firing_example, aes(x = asr_b_o_rewarded_fit_slope, y = asr_b_o_rewarded_fit_r.squared), color="Red") +
+    geom_vline(xintercept = spatial_firing_example$shuffle_min_slope, linetype="dotted", 
+                color = "blue", size=1) +
+    geom_vline(xintercept = spatial_firing_example$shuffle_max_slope, linetype="dotted", 
+                color = "blue", size=1) +  
+    xlab("Slope (Hz/cm)") +
+    ylab(expression(R^2)) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=12),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom",
+          legend.title = element_blank(),
+          text = element_text(size=12),
+          legend.text=element_text(size=12),
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_coefficient_scatter_shuffledeg.png", width = 3.5, height = 2.5)
+}
+```
+
+
+
+
+Function to plot mean and SEM of firing rate as a function of position.
+```{r}
+position = c(-29:169)
+rates_measured = unlist(unlist(spatial_firing_example$Rates_averaged_rewarded_b))
+position_o = c(0:60)
+position_h = c(80:140)
+rates_o <- rates[30:90]
+rates_h <- rates[110:170]
+
+ggplot() +
+  #geom_point(aes(x=position, y=rates)) +
+  geom_smooth(aes(x=position_o, y=rates_o), method = "lm", se = FALSE, color ="red") +
+  theme_classic() +
+  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
+  labs(y = "Mean firing rate (Hz)", x = "Position") +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.title = element_blank(),
+        text = element_text(size=18),
+        plot.margin = margin(21, 25, 5, 20))
+ ggsave(file = "plots/ExampleShuffled_Real.png",  width = 3.6, height = 2.9) 
+
+```
+
+
