@@ -211,6 +211,19 @@ spatial_firing <- spatial_firing %>%
 ### Find proportion of spatial cells
 
 ### ----------------------------------------------------------------------------------------- ###
+```{r}
+position_firing <- spatial_firing  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(cohort == 7) %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")
+```
+
+```{r}
+ns <- subset(position_firing, classifier == "NS")
+spatial <- subset(position_firing, classifier == "NG")
+spatial <- subset(position_firing, classifier == "NG")
+
+```
 
 
 First, we want to know out of our dataset, how many cells classified as grid, border, pure head direction etc. 
@@ -218,10 +231,11 @@ First, we want to know out of our dataset, how many cells classified as grid, bo
 1. Extract position encoding cells and remove cells that were not identified in both open field an VR
 ```{r}
 slope_df <- spatial_firing  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(final_model_o_b == "P") %>% 
   filter(cohort == 5) %>% 
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative")
+  filter(track_category_numeric !=0)
 ```
+
 
 2. Find number of cells in each spatial catagory (grid, border, HD etc)
 ```{r}
@@ -242,7 +256,7 @@ Now we might want to see a plot of this, with proportions split according to typ
 
 ```{r}
 all_cells_percent <- spatial_firing  %>%
-  filter(cohort == 5) %>% 
+  filter(cohort == 7) %>% 
   select(joined_id, classifier2) %>%
   group_by(joined_id, classifier2) %>%
   dplyr::summarise(n = n()) %>%
@@ -259,9 +273,9 @@ all_cells_percent$classifier2 <- as.character(all_cells_percent$classifier2)
 2. extract neurons that are ++ or -- on beaconed trials, position encoding and ramp like
 ```{r}
 position_data <- spatial_firing %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>% 
-  filter(cohort == 5) %>% 
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+  filter(track_category_numeric != 0) %>% 
+  filter(cohort == 7) %>% 
+  filter(final_model_o_b == "P" )
   
 ```
 
@@ -283,9 +297,9 @@ ramp_cells_percent$classifier2 <- as.character(ramp_cells_percent$classifier2)
 4. extract neurons that speed encoding and ramp cells
 ```{r}
 speed_data <- spatial_firing %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>% 
-  filter(cohort == 5) %>% 
-  filter(final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A")
+  filter(track_category_numeric !=0) %>% 
+  filter(cohort == 7) %>% 
+  filter(final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
   
 ```
 
@@ -309,10 +323,10 @@ speed_ramp_cells_percent$classifier2 <- as.character(speed_ramp_cells_percent$cl
 group_identifier <- rep(c("All"), times =nrow(all_cells_percent))
 all_cells_percent <- cbind(all_cells_percent, group_identifier)
 
-group_identifier <- rep(c("Ramps(P,PS,PA,PSA)"), times =nrow(ramp_cells_percent))
+group_identifier <- rep(c("Position dependant ramps"), times =nrow(ramp_cells_percent))
 all_ramp_cells_percent <- cbind(ramp_cells_percent, group_identifier)
 
-group_identifier <- rep(c("Ramps(S,A,SA)"), times =nrow(speed_ramp_cells_percent))
+group_identifier <- rep(c("Conjunctive position ramps"), times =nrow(speed_ramp_cells_percent))
 all_speed_ramp_cells_percent <- cbind(speed_ramp_cells_percent, group_identifier)
 
   
@@ -347,6 +361,81 @@ ggsave(file = "plots/OFAnalysis_proportionsBOX.png", width = 4.5, height = 5.5)
 
 ### ----------------------------------------------------------------------------------- ###
 
+### ----------------------------------------------------------------------------------- ###
+
+
+
+
+```{r}
+classify <- function(classifier, final_model_o_b){
+  if( classifier != 0 ) {
+    if( classifier != 0 & final_model_o_b == "P" | final_model_o_b == "PSA" | final_model_o_b == "PA" | final_model_o_b == "PS") {
+    return( "Ramp_position" ) 
+  } else if( final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A") {
+    return( "Ramp_speed" ) 
+  }
+  } else if( classifier == 0 | classifier == "None" | classifier == "NULL") {
+    return("None")
+  } else {
+    return("None")
+  }
+}
+
+```
+
+
+1. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(ramp_type = map2(track_category_numeric, final_model_o_b, classify))
+
+```
+
+Now we might want to see a plot of this, with proportions split according to type of ramp cell in VR i.e. position ramp, speed ramps, all cells.
+
+1. First find proportions for all cells
+
+```{r}
+all_cells_percent <- spatial_firing  %>%
+  filter(cohort == 7) %>% 
+  select(joined_id, classifier2, ramp_type) %>%
+  group_by(joined_id,classifier2, ramp_type) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = n / sum(n)) %>%
+  dplyr::mutate(percent = proportion*100) %>%
+  group_by(classifier2) %>%
+  dplyr::mutate(avg = mean(proportion), sd = std.error(proportion), min=min(proportion), max=max(proportion))
+
+all_cells_percent$classifier2 <- as.character(all_cells_percent$classifier2)
+all_cells_percent$ramp_type <- as.character(all_cells_percent$ramp_type)
+
+```
+
+
+
+7. Make box plot and plot all at the same time
+
+```{r}
+ggplot(data=subset(all_cells_percent, ramp_type != "NULL"), aes(x=classifier2, y=percent,fill = factor(ramp_type))) + 
+  #coord_cartesian(ylim=c(0,100)) +
+  #stat_summary(fun.data=mean_sdl, mult=1, geom="pointrange", color="red") +
+  geom_boxplot(aes(fill = ramp_type), alpha=0.9, outlier.colour="black", outlier.shape=16,
+             outlier.size=2, notch=FALSE) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3")) +
+  theme_classic() +
+  labs(y = "Percent", x ="") +
+  theme(axis.text.x = element_text(angle = 70)) +
+  theme(axis.text.x=element_text(hjust=1)) +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/OFAnalysis_proportionsBOX_22.png", width = 4.5, height = 5.5)
+
+```
 ### ----------------------------------------------------------------------------------------- ###
 
 Then, we want to see the proportion of spatial cells (grid, border etc) throughout types of ramp cells (++, -- etc)
@@ -355,7 +444,7 @@ Then, we want to see the proportion of spatial cells (grid, border etc) througho
 ```{r}
 position_data <- spatial_firing %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
-  filter(cohort == 5) %>% 
+  filter(cohort == 7) %>% 
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
   
 ```
@@ -456,6 +545,25 @@ if (save_figures == 1) {
 
 
 ### ----------------------------------------------------------------------------------------- ###
+
+```{r}
+border_cells <- nrow(subset(spatial_firing, classifier == "B"))
+border <- subset(spatial_firing, classifier == "B")
+border_ramps <- subset(border, track_category_numeric != 0 & lm_group_b == "Positive" | lm_group_b == "Negative")
+border_p_ramps <- nrow(subset(border_ramps, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA"))
+
+grid_cells <- nrow(subset(spatial_firing, classifier == "G"))
+grid <- subset(spatial_firing, classifier == "G")
+grid_ramps <- subset(grid, track_category_numeric != 0 & lm_group_b == "Positive" | lm_group_b == "Negative")
+grid_p_ramps <- nrow(subset(grid_ramps, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA"))
+
+
+hd_cells <- nrow(subset(spatial_firing, classifier == "HD"))
+hd <- subset(spatial_firing, classifier == "HD")
+hd_ramps <- subset(hd, track_category_numeric != 0 & lm_group_b == "Positive" | lm_group_b == "Negative")
+hd_p_ramps <- nrow(subset(hd_ramps, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA"))
+
+```
 
 ### ----------------------------------------------------------------------------------------- ###
 
@@ -846,6 +954,19 @@ if (save_figures == 1) {
  ggsave(file = "plots/firing_properties_positioncells_test.png", width = 4, height = 3.5) 
 }
 ```
+
+```{r}
+#proportion
+df <- position_data %>%
+  dplyr::select(lm_group_b, cell_type, Mouse, Day) %>%
+  filter(cell_type != "NaN", lm_group_b == "Positive") %>%
+  dplyr::group_by(cell_type, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = round(n / sum(n), 2))
+  
+
+```
+
 
 2. Plot scatter plot
 ```{r}
