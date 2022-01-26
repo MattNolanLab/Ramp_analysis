@@ -1,0 +1,1391 @@
+---
+title: "OpenFieldMetrics"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### --------------------------------------------------------------------------------- ###
+
+
+## Runs analysis that compares ramp scores to open field spatial scores. 
+
+_note : Dataframe contains the open field metrics, the shuffled analysis cutoffs and the classsification of the cell based on those cut offs. Harry has used the same methods for labelling a cell a grid, hd, border, spatial cells the same as in this paper (https://www.sciencedirect.com/science/article/pii/S0896627317301873). The only difference is this dataset doesn't have the half session rate map comparison scores in the shuffled analysis so a spatial cell is only defined based on the spatial information score. _
+
+
+### --------------------------------------------------------------------------------- ###
+
+
+First, we are interested to see what proportion of neurons have the following patterns of activity in the open field:
+
+1. Grid cells
+2. Head direction
+3. Border
+
+To classify cells into these categories above, we will use the classification established in (https://www.sciencedirect.com/science/article/pii/S0896627317301873). 
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+```{r}
+join_mouse_cohort <- function(mouse, cohort_n){
+  if (is.na(cohort_n)) {
+    return('NaN')
+  }  
+  df <- paste0(mouse, "_", cohort_n)
+  df
+}
+
+```
+
+1. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(joined_id = map2(Mouse, cohort, join_mouse_cohort))
+
+```
+
+```{r}
+spatial_firing <- subset(spatial_firing, joined_id != "M6_1" )
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+Classify cells 
+
+```{r}
+is_grid_cell <- function(grid_score, grid_threshold){
+  if (is.na(grid_score) | is.na(grid_threshold) ) {
+    return( "NaN" )  
+  } else if( as.numeric(grid_score) > as.numeric(grid_threshold)) {
+    return( "1" ) 
+  } else {
+    return("0")
+  }
+}
+
+```
+
+```{r}
+is_border_cell <- function(border_score, border_threshold){
+  if (is.na(border_score) | is.na(border_threshold)) {
+    return( "NaN" )  
+  } else if( as.numeric(border_score) > as.numeric(border_threshold)) {
+    return( "1" ) 
+  } else {
+    return("0")
+  }
+}
+
+```
+
+```{r}
+is_HD_cell <- function(hd_score, hd_threshold){
+  if (is.na(hd_score) | is.na(hd_threshold)) {
+    return( "NaN" )  
+  } else if( as.numeric(hd_score) > as.numeric(hd_threshold)) {
+    return( "1" ) 
+  } else {
+    return("0")
+  }
+}
+
+```
+
+```{r}
+is_speed_cell <- function(speed_score, speed_threshold){
+  if (is.na(speed_score) | is.na(speed_threshold)) {
+    return( "NaN" )  
+  } else if( as.numeric(speed_score) > as.numeric(speed_threshold)) {
+    return( "1" ) 
+  } else {
+    return("0")
+  }
+}
+
+```
+
+```{r}
+is_spatial_cell <- function(spatial_score, spatial_threshold){
+  if (is.na(spatial_score) | is.na(spatial_threshold)) {
+    return( "NaN" )  
+  } else if( as.numeric(spatial_score) > as.numeric(spatial_threshold)) {
+    return( "1" ) 
+  } else {
+    return("0")
+  }
+}
+
+```
+
+1. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(grid_cell = map2(grid_score, grid_threshold, is_grid_cell)) %>%
+  mutate(border_cell = map2(border_score, border_threshold, is_border_cell)) %>%
+  mutate(HD_cell = map2(hd_score, hd_threshold, is_HD_cell)) %>%
+  mutate(speed_cell = map2(speed_score, spatial_threshold, is_speed_cell)) %>%
+  mutate(nongrid_cell = map2(spatial_information_score, spatial_threshold, is_spatial_cell))
+
+```
+
+
+
+```{r}
+classify_cells <- function(grid_cell, border_cell, HD_cell, nongrid_cell){
+  if (is.na(grid_cell) & is.na(border_cell) & is.na(HD_cell) & is.na(nongrid_cell)) {
+    return( "NS" )  
+  } else if( grid_cell == 1) {
+    return( "G" ) 
+  } else if( border_cell == 1) {
+    return( "B" ) 
+  } else if( HD_cell == 1) {
+    return( "HD" ) 
+  } else if( nongrid_cell == 1) {
+    return( "NG" ) 
+  } else if( (grid_cell == 0 & border_cell == 0 & HD_cell == 0 & nongrid_cell == 0)) {
+    return( "NS" ) 
+  } else {
+    return("NS")
+  }
+}
+
+```
+
+
+1. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(classifier = pmap(list(grid_cell, border_cell, HD_cell, nongrid_cell), classify_cells))
+
+```
+
+
+
+
+```{r}
+classify_cells <- function(grid_cell, border_cell, HD_cell, nongrid_cell){
+  if (is.na(grid_cell) & is.na(border_cell) & is.na(HD_cell) & is.na(nongrid_cell)) {
+    return( "NS" )  
+  } else if( grid_cell == 1) {
+    return( "G" ) 
+  } else if( border_cell == 1) {
+    return( "B" ) 
+  } else if( nongrid_cell == 1) {
+    return( "NG" ) 
+  } else if( HD_cell == 1) {
+    return( "HD" ) 
+  } else if( (grid_cell == 0 & border_cell == 0 & HD_cell == 0 & nongrid_cell == 0)) {
+    return( "NS" ) 
+  } else {
+    return("NS")
+  }
+}
+
+```
+
+
+1. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(classifier = pmap(list(grid_cell, border_cell, HD_cell, nongrid_cell), classify_cells))
+
+```
+
+
+
+```{r}
+classify_cells2 <- function(classifier){
+  if( classifier == "G") {
+    return( "Grid" ) 
+  } else if( classifier == "B") {
+    return( "Border" ) 
+  } else if( classifier == "HD") {
+    return( "HD" ) 
+  } else if( classifier == "NG") {
+    return( "Spatial" ) 
+  } else if( classifier == "NS") {
+    return( "Non-Spatial" ) 
+  } else {
+    return("Non-Spatial")
+  }
+}
+
+```
+
+
+1. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(classifier2 = map(classifier, classify_cells2))
+
+```
+### ----------------------------------------------------------------------------------------- ###
+
+
+```{r}
+slope_df <- spatial_firing  %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")
+```
+
+```{r}
+spatial_cells <- nrow(subset(slope_df, classifier == "NG"))
+non_spatial_cells <- nrow(subset(slope_df, classifier == "NS"))
+grid_cells <- nrow(subset(slope_df, classifier == "G"))
+hd_cells <- nrow(subset(slope_df, classifier == "HD"))
+border_cells <- nrow(subset(slope_df, classifier == "B"))
+
+```
+
+### ----------------------------------------------------------------------------------- ###
+
+## of ramp cells, what are proportions of grid, border etc
+
+
+```{r}
+all_cells_percent <- spatial_firing  %>%
+  select(Mouse, cohort, classifier2) %>%
+  group_by(Mouse, cohort, classifier2) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = n / sum(n)) %>%
+  dplyr::mutate(percent = proportion*100) %>%
+  group_by(classifier2) %>%
+  dplyr::mutate(avg = mean(proportion), sd = std.error(proportion), min=min(proportion), max=max(proportion))
+
+all_cells_percent$classifier2 <- as.character(all_cells_percent$classifier2)
+
+```
+
+Make violin plot
+
+```{r}
+ggplot(all_cells_percent, aes(x=classifier2, y=percent)) + 
+  coord_cartesian(ylim=c(0,100)) +
+  geom_boxplot(aes(fill = classifier2), alpha=0.9, outlier.colour="black", outlier.shape=16,
+             outlier.size=2, notch=FALSE) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3")) +
+  theme_classic() +
+  labs(y = "Percent", x ="") +
+  theme(axis.text.x = element_text(angle = 70)) +
+  theme(axis.text.x=element_text(hjust=1)) +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="right", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/OFAnalysis_proportionsBOX_allcells.png", width = 5, height = 4)
+
+```
+
+
+1. extract neurons that are ++ or -- on beaconed trials, position encoding (Figure 3) and driven by path integration (Figure 4)
+```{r}
+position_data <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+  
+```
+
+
+```{r}
+ramp_cells_percent <- position_data  %>%
+  select(Mouse, cohort, classifier2) %>%
+  group_by(Mouse, cohort, classifier2) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = n / sum(n)) %>%
+  dplyr::mutate(percent = proportion*100) %>%
+  group_by(classifier2) %>%
+  dplyr::mutate(avg = mean(proportion), sd = std.error(proportion), min=min(proportion), max=max(proportion))
+
+ramp_cells_percent$classifier2 <- as.character(ramp_cells_percent$classifier2)
+```
+
+Make box plot
+
+```{r}
+ggplot(ramp_cells_percent, aes(x=classifier2, y=percent)) + 
+  coord_cartesian(ylim=c(0,100)) +
+  #geom_violin(aes(fill = classifier), trim=FALSE, alpha=0.3) +
+  #stat_summary(fun.data=mean_sdl, mult=1, geom="pointrange", color="red") +
+  geom_boxplot(aes(fill = classifier2), alpha=0.9, outlier.colour="black", outlier.shape=16,
+             outlier.size=2, notch=FALSE) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3")) +
+  theme_classic() +
+  labs(y = "Percent", x ="") +
+  theme(axis.text.x = element_text(angle = 70)) +
+  theme(axis.text.x=element_text(hjust=1)) +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="right", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/OFAnalysis_proportionsBOX_Positionrampcells.png", width = 5, height = 4)
+
+```
+
+
+1. extract neurons that are ++ or -- on beaconed trials, position encoding (Figure 3) and driven by path integration (Figure 4)
+```{r}
+speed_data <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>% 
+  filter(final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A")
+  
+```
+
+
+```{r}
+speed_ramp_cells_percent <- speed_data  %>%
+  select(Mouse, cohort, classifier2) %>%
+  group_by(Mouse, cohort, classifier2) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = n / sum(n)) %>%
+  dplyr::mutate(percent = proportion*100) %>%
+  group_by(classifier2) %>%
+  dplyr::mutate(avg = mean(proportion), sd = std.error(proportion), min=min(proportion), max=max(proportion))
+
+speed_ramp_cells_percent$classifier2 <- as.character(speed_ramp_cells_percent$classifier2)
+```
+
+Make box plot
+
+```{r}
+ggplot(speed_ramp_cells_percent, aes(x=classifier2, y=percent)) + 
+  coord_cartesian(ylim=c(0,100)) +
+  #geom_violin(aes(fill = classifier), trim=FALSE, alpha=0.3) +
+  #stat_summary(fun.data=mean_sdl, mult=1, geom="pointrange", color="red") +
+  geom_boxplot(aes(fill = classifier2), alpha=0.9, outlier.colour="black", outlier.shape=16,
+             outlier.size=2, notch=FALSE) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3")) +
+  theme_classic() +
+  labs(y = "Percent", x ="") +
+  theme(axis.text.x = element_text(angle = 70)) +
+  theme(axis.text.x=element_text(hjust=1)) +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="right", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/OFAnalysis_proportionsBOX_speedrampcells.png", width = 5, height = 4)
+
+```
+
+```{r}
+group_identifier <- rep(c("All"), times =nrow(all_cells_percent))
+all_cells_percent <- cbind(all_cells_percent, group_identifier)
+
+group_identifier <- rep(c("Ramps(P,PS,PA,PSA)"), times =nrow(ramp_cells_percent))
+all_ramp_cells_percent <- cbind(ramp_cells_percent, group_identifier)
+
+group_identifier <- rep(c("Ramps(S,A,SA)"), times =nrow(speed_ramp_cells_percent))
+all_speed_ramp_cells_percent <- cbind(speed_ramp_cells_percent, group_identifier)
+
+  
+df_all <- rbind(all_cells_percent, all_ramp_cells_percent, all_speed_ramp_cells_percent)
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+```{r}
+ggplot(df_all, aes(x=classifier2, y=percent)) + 
+  coord_cartesian(ylim=c(0,100)) +
+  #stat_summary(fun.data=mean_sdl, mult=1, geom="pointrange", color="red") +
+  geom_boxplot(aes(fill = ...11), alpha=0.9, outlier.colour="black", outlier.shape=16,
+             outlier.size=2, notch=FALSE) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3")) +
+  theme_classic() +
+  labs(y = "Percent", x ="") +
+  theme(axis.text.x = element_text(angle = 70)) +
+  theme(axis.text.x=element_text(hjust=1)) +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="right", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/OFAnalysis_proportionsBOX.png", width = 8, height = 4.5)
+
+```
+### ----------------------------------------------------------------------------------- ###
+
+## of ramp cells, what are proportions of grid, border etc
+
+
+1. extract neurons that are ++ or -- on beaconed trials, position encoding (Figure 3) and driven by path integration (Figure 4)
+```{r}
+position_data <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+  
+```
+
+2. plot proportion of positive and negative ramps that are grid/non-grid
+
+1. extract proportion of cells that meet each criteria
+```{r}
+pospos <- subset(position_data, track_category == "pospos")
+negneg <- subset(position_data, track_category == "negneg")
+posneg <- subset(position_data, track_category == "posneg")
+negpos <- subset(position_data, track_category == "negpos")
+posnon <- subset(position_data, track_category == "posnon")
+negnon <- subset(position_data, track_category == "negnon")
+
+```
+
+
+```{r}
+pospos_grid <- nrow(subset(pospos, classifier == "G"))/nrow(pospos)*100
+negneg_grid <- nrow(subset(negneg, classifier == "G"))/nrow(negneg)*100
+posneg_grid <- nrow(subset(posneg, classifier == "G"))/nrow(posneg)*100
+negpos_grid <- nrow(subset(negpos, classifier == "G"))/nrow(negpos)*100
+negnon_grid <- nrow(subset(negnon, classifier == "G"))/nrow(negnon)*100
+posnon_grid <- nrow(subset(posnon, classifier == "G"))/nrow(posnon)*100
+
+pospos_border <- nrow(subset(pospos, classifier == "B"))/nrow(pospos)*100
+negneg_border <- nrow(subset(negneg, classifier == "B"))/nrow(negneg)*100
+posneg_border <- nrow(subset(posneg, classifier == "B"))/nrow(posneg)*100
+negpos_border <- nrow(subset(negpos, classifier == "B"))/nrow(negpos)*100
+negnon_border <- nrow(subset(negnon, classifier == "B"))/nrow(negnon)*100
+posnon_border <- nrow(subset(posnon, classifier == "B"))/nrow(posnon)*100
+
+pospos_speed <- nrow(subset(pospos, classifier == "S"))/nrow(pospos)*100
+negneg_speed <- nrow(subset(negneg, classifier == "S"))/nrow(negneg)*100
+posneg_speed <- nrow(subset(posneg, classifier == "S"))/nrow(posneg)*100
+negpos_speed <- nrow(subset(negpos, classifier == "S"))/nrow(negpos)*100
+negnon_speed <- nrow(subset(negnon, classifier == "S"))/nrow(negnon)*100
+posnon_speed <- nrow(subset(posnon, classifier == "S"))/nrow(posnon)*100
+
+pospos_hd <- nrow(subset(pospos, classifier == "HD"))/nrow(pospos)*100
+negneg_hd <- nrow(subset(negneg, classifier == "HD"))/nrow(negneg)*100
+posneg_hd <- nrow(subset(posneg, classifier == "HD"))/nrow(posneg)*100
+negpos_hd <- nrow(subset(negpos, classifier == "HD"))/nrow(negpos)*100
+negnon_hd <- nrow(subset(negnon, classifier == "HD"))/nrow(negnon)*100
+posnon_hd <- nrow(subset(posnon, classifier == "HD"))/nrow(posnon)*100
+
+pospos_spatial <- nrow(subset(pospos, classifier == "NG"))/nrow(pospos)*100
+negneg_spatial <- nrow(subset(negneg, classifier == "NG"))/nrow(negneg)*100
+posneg_spatial <- nrow(subset(posneg, classifier == "NG"))/nrow(posneg)*100
+negpos_spatial <- nrow(subset(negpos, classifier == "NG"))/nrow(negpos)*100
+negnon_spatial <- nrow(subset(negnon, classifier == "NG"))/nrow(negnon)*100
+posnon_spatial <- nrow(subset(posnon, classifier == "NG"))/nrow(posnon)*100
+
+pospos_non <- nrow(subset(pospos, classifier == "NS" | classifier == "NaN"))/nrow(pospos)*100
+negneg_non <- nrow(subset(negneg, classifier == "NS" | classifier == "NaN"))/nrow(negneg)*100
+posneg_non <- nrow(subset(posneg, classifier == "NS" | classifier == "NaN"))/nrow(posneg)*100
+negpos_non <- nrow(subset(negpos, classifier == "NS" | classifier == "NaN"))/nrow(negpos)*100
+negnon_non <- nrow(subset(negnon, classifier == "NS" | classifier == "NaN"))/nrow(negnon)*100
+posnon_non <- nrow(subset(posnon, classifier == "NS" | classifier == "NaN"))/nrow(posnon)*100
+
+```
+
+3. Put into a tibble 
+```{r}
+proportions_mixed_ramps <- tibble(
+  perc=c(pospos_grid, negneg_grid, posneg_grid, negpos_grid, negnon_grid, posnon_grid, 
+         pospos_border, negneg_border, posneg_border, negpos_border, negnon_border, posnon_border,
+         pospos_speed, negneg_speed, posneg_speed, negpos_speed, negnon_speed, posnon_speed,
+         pospos_hd, negneg_hd, posneg_hd, negpos_hd, negnon_hd, posnon_hd,
+         pospos_spatial, negneg_spatial, posneg_spatial, negpos_spatial, negnon_spatial, posnon_spatial,
+         pospos_non, negneg_non, posneg_non, negpos_non, negnon_non, posnon_non), 
+  ramp_id= c("pospos",  "negneg", "posneg", "negpos", "negnon", "posnon","pospos", "negneg", "posneg", "negpos", "negnon", "posnon","pospos", "negneg", "posneg", "negpos", "negnon", "posnon","pospos", "negneg", "posneg", "negpos", "negnon", "posnon","pospos", "negneg", "posneg", "negpos", "negnon", "posnon","pospos", "negneg", "posneg", "negpos", "negnon", "posnon"),
+  ramp_type = c("Grid", "Grid", "Grid", "Grid", "Grid", "Grid", "Border", "Border", "Border", "Border", "Border", "Border", "Speed", "Speed", "Speed", "Speed", "Speed", "Speed", "HD", "HD", "HD", "HD", "HD", "HD", "Spatial", "Spatial", "Spatial", "Spatial", "Spatial", "Spatial", "Non-spatial", "Non-spatial", "Non-spatial", "Non-spatial", "Non-spatial", "Non-spatial"))
+```
+
+3. Plot bar graph of proportions
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_id, y = perc, fill=factor(ramp_type))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .9) +
+  labs(y = "Percent", x="") +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  #geom_text(aes(label = num), hjust = 1.5, vjust = 0.5, srt=90, size = 6, position = position_dodge(-0.5)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 70)) +
+  theme(axis.text.x=element_text(hjust=1)) +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="right", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/OF_Analysis_proportions_groups_allpositioncells.png", width = 7, height = 4)
+}
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_point(data=spatial_firing,
+               aes(x = as.numeric(unlist(spatial_threshold)), 
+                   y = as.numeric(unlist(spatial_information_score)), 
+                   color=factor(unlist(classifier2)))) +
+
+    coord_cartesian(ylim = c(0,1), xlim = c(0,0.25)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Shuffled data cutoff (bits/spikes)") +
+    ylab("Spatial Information (bits/spikes)") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/Spatialscore_vs_cutoff_groups.png", width = 5, height = 4.5) 
+}
+```
+
+
+
+
+
+2. Plot scatter plot
+```{r}
+
+speed_data <- spatial_firing %>%
+  filter(final_model_o_b == "S" )
+
+ggplot() + 
+    geom_point(data=speed_data,
+               aes(x = as.numeric(unlist(speed_score)), 
+                   y = as.numeric(unlist(o_b_mod_coefs_speed)), 
+                   color=factor(unlist(classifier2)))) +
+
+    coord_cartesian(ylim = c(-0.9,0.9)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Speed score (of)") +
+    ylab("std coef (speed) (vr)") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/speedvr_vs_speedof_groups_speedcellsvr.png", width = 5, height = 4.5) 
+}
+```
+
+
+```{r}
+speed_data <- spatial_firing %>%
+  filter(speed_cell == 1 )
+
+ggplot() + 
+    geom_point(data=speed_data,
+               aes(x = as.numeric(unlist(speed_score)), 
+                   y = as.numeric(unlist(o_b_mod_coefs_speed)), 
+                   color=factor(unlist(classifier2)))) +
+
+    coord_cartesian(ylim = c(-0.9,0.9)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Speed score (of)") +
+    ylab("std coef (speed) (vr)") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/speedvr_vs_speedof_groups_speedcellsof.png", width = 5, height = 4.5) 
+}
+```
+
+
+
+```{r}
+position_data <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+  
+```
+
+```{r}
+ggplot() + 
+    geom_point(data=position_data,
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(speed_score)), 
+                   color=factor(unlist(classifier2)))) +
+    coord_cartesian(ylim = c(-0.5,0.7), xlim = c(-0.5,0.5)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    ylab("Speed score (of)") +
+    xlab("Outbound slope (Hz/cm)") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/speedvr_vs_slope_groups_position.png", width = 5, height = 4.5) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_point(data=position_data,
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(hd_score)), 
+                   color=factor(unlist(classifier2)))) +
+    coord_cartesian(ylim = c(0,1), xlim = c(-0.4,0.4)) +
+    #geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Outbound slope (Hz/cm)") +
+    ylab("HD score") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/HDscore_vs_slope_allcells_position.png", width = 5, height = 4.5) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_point(data=position_data,
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(border_score)), 
+                   color=factor(unlist(classifier2)))) +
+    coord_cartesian(ylim = c(-1,0.8), xlim = c(-0.4,0.4)) +
+    #geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Outbound slope (Hz/cm)") +
+    ylab("border score") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/borderscore_vs_slope_allcells_position.png", width = 5, height = 4.5) 
+}
+```
+
+
+
+
+2. Plot scatter plot
+```{r}
+ggplot() + 
+    geom_point(data=position_data,
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(grid_score)), 
+                   color=factor(unlist(classifier2)))) +
+    coord_cartesian(ylim = c(-0.8,0.8), xlim = c(-0.4,0.4)) +
+    #geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Outbound slope (Hz/cm)") +
+    ylab("Grid score") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/gridscore_vs_slope_allcells_position.png", width = 5, height = 4.5) 
+}
+```
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## firing rate properties
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+# Label neurons as either excitatory or inhibitory
+
+1.
+```{r}
+label_cell_type <- function(mean_firing_rate_of){
+  if (is.na(mean_firing_rate_of)) {
+    return( "NaN" )  
+  } else if( as.numeric(mean_firing_rate_of) > 10) {
+    return( "Inhibitory" ) 
+  } else if( as.numeric(mean_firing_rate_of) < 10) {
+    return( "Excitatory" ) 
+  } else {
+    return("NaN")
+  }
+}
+
+```
+
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(cell_type = map(mean_firing_rate_of, label_cell_type))
+
+```
+
+
+
+```{r}
+position_data <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+  
+```
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_jitter(data=position_data,
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(classifier2)))) +
+    #coord_cartesian(ylim = c(-1,0.8), xlim = c(-0.9,0.9)) +
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allpositioncells.png", width = 5, height = 4.5) 
+}
+```
+
+```{r}
+position_data$classifier2 <- as.character(position_data$classifier2)
+
+ggplot() + 
+    geom_jitter(data=subset(position_data, track_category != "None"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)),
+                   color=factor(unlist(classifier2)))) +
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    facet_wrap(~ classifier2) +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allcells_facet_groupbyclassifier.png", width = 8, height = 6) 
+}
+```
+
+
+```{r}
+data <- spatial_firing %>%
+  dplyr::select(track_category, classifier, cell_type, Mouse, Day) %>%
+  filter(cell_type != "NaN") %>%
+  dplyr::group_by(Mouse,  classifier, cell_type, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = round(n / sum(n), 2)) %>%
+  group_by(classifier,cell_type) %>%
+  summarise(avg = mean(proportion), sd = std.error(proportion))
+
+#data$lm_group_b <- as.character(data$lm_group_b)
+```
+
+
+`
+
+2. Plot scatter plot
+```{r}
+ggplot() + 
+    geom_jitter(data=spatial_firing,
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(cell_type)))) +
+    #coord_cartesian(ylim = c(-1,0.8), xlim = c(-0.9,0.9)) +
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allcells_test.png", width = 5, height = 4.5) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+ggplot() + 
+    geom_jitter(data=position_data,
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(cell_type)))) +
+    #coord_cartesian(ylim = c(-1,0.8), xlim = c(-0.9,0.9)) +
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_positioncells_test.png", width = 5, height = 4.5) 
+}
+```
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_jitter(data=position_data,
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(lm_group_b)))) +
+    geom_jitter(data=subset(position_data, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_jitter(data=subset(position_data, track_category == "posneg" | track_category == "negpos"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_jitter(data=subset(position_data, track_category == "posnon" | track_category == "negnon"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allrampcells.png", width = 5, height = 4.5) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+position_data$track_category <- as.character(position_data$track_category)
+
+ggplot() + 
+    geom_jitter(data=subset(position_data, track_category != "None"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)),
+                   color=factor(unlist(lm_group_b)))) +
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    facet_wrap(~ track_category) +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allrampcells_facet.png", width = 8, height = 6) 
+}
+```
+
+```{r}
+data <- position_data %>%
+  dplyr::select(track_category, cell_type, Mouse) %>%
+  filter(cell_type != "NaN", track_category != "None") %>%
+  dplyr::group_by( Mouse, track_category, cell_type, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = round(n / sum(n), 2)) %>%
+  group_by(track_category,cell_type) %>%
+  summarise(avg = mean(proportion), sd = std.error(proportion))
+
+#data$lm_group_b <- as.character(data$lm_group_b)
+```
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_jitter(data=position_data,
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(mean_cv2)), 
+                   color=factor(unlist(lm_group_b)))) +
+    geom_jitter(data=subset(position_data, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(mean_cv2)), 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_jitter(data=subset(position_data, track_category == "posneg" | track_category == "negpos"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(mean_cv2)), 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_jitter(data=subset(position_data, track_category == "posnon" | track_category == "negnon"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(mean_cv2)), 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
+    ylab("CV2") +
+    coord_cartesian(ylim = c(0.4,1.5)) +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_CV2_allrampcells.png", width = 5, height = 4.5) 
+}
+```
+
+```{r}
+position_data$track_category <- as.character(position_data$track_category)
+
+ggplot() + 
+    geom_jitter(data=subset(position_data, track_category != "None"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(mean_cv2)),
+                   color=factor(unlist(lm_group_b)))) +
+    ylab("CV2") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    facet_wrap(~ track_category) +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_cv2_allrampcells_facet.png", width = 5, height = 4.5) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+ggplot() + 
+    geom_jitter(data=position_data,
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(mean_cv2)), 
+                   color=factor(unlist(cell_type)))) +
+    ylab("CV2") +
+    coord_cartesian(ylim = c(0.4,1.5)) +
+    xlab("Mean firing rate (Hz)") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "grey4")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_CV2_allrampcells_groupedbycelltype.png", width = 5, height = 4.5) 
+}
+```
+
+2. Plot scatter plot
+```{r}
+ggplot() + 
+    geom_jitter(data=position_data,
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(mean_cv2)), 
+                   color=factor(unlist(classifier2)))) +
+    ylab("CV2") +
+    xlab("Mean firing rate (Hz)") +
+    coord_cartesian(ylim = c(0.4,1.5)) +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_CV2_allrampcells_groupedbyclassifier.png", width = 5, height = 4.5) 
+}
+```
+
+
+
+
+2. Plot scatter plot
+```{r}
+  ggplot(data=subset(spatial_firing,lm_group_b == "Unclassified"), aes(x = unlist(mean_firing_rate_of), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FR_dist_nonrampcells.png", width = 3.5, height = 3) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+position_data$track_category <- as.character(position_data$track_category)
+
+  ggplot(data=subset(position_data,track_category == "None"), aes(x = unlist(mean_firing_rate), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  xlab("Mean firing rate (Hz)") +
+  facet_wrap(~ track_category) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=17), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRvr_dist_nonrampcells_facet.png",  width = 8, height = 6) 
+}
+```
+
+
+
+2. Plot scatter plot
+```{r}
+position_data$track_category <- as.character(position_data$track_category)
+
+  ggplot(data=subset(position_data,track_category != "None"), aes(x = unlist(mean_firing_rate), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  xlab("Mean firing rate (Hz)") +
+  facet_wrap(~ track_category) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=17), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRvr_dist_allrampcells_facet.png",  width = 8, height = 6) 
+}
+```
+
+
+
+2. Plot scatter plot
+```{r}
+
+ggplot(data=subset(spatial_firing,lm_group_b == "Unclassified"), aes(x = unlist(mean_firing_rate), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRvr_dist_nonrampcells.png", width = 3.5, height = 3) 
+}
+```
+
+
+```{r}
+
+ggplot(data=position_data, aes(x = unlist(mean_firing_rate_of), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80), ylim=c(0,100)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FR_dist_allrampcells.png",width = 3.5, height = 3) 
+}
+```
+
+
+
+```{r}
+
+ggplot(data=subset(position_data,track_category != "None"), aes(x = unlist(mean_firing_rate_of), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  xlab("Mean firing rate (Hz) (open field)") +
+  facet_wrap(~ track_category) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=17), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+ ggsave(file = "plots/FR_dist_allrampcells_facet.png",width = 8, height = 6) 
+}
+```
+
+
+```{r}
+
+ggplot(data=position_data, aes(x = unlist(mean_firing_rate), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRvr_dist_allrampcells.png", width = 3.5, height = 3) 
+}
+
+```
+
+
+
+```{r}
+
+ggplot(data=subset(spatial_firing,lm_group_b == "Unclassified"), aes(x = (unlist(mean_firing_rate)-unlist(mean_firing_rate_of)), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim = c(-50,50)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRdiff_dist_nonrampcells.png",width = 3.5, height = 3) 
+}
+
+```
+
+
+```{r}
+
+ggplot(data=position_data, aes(x = (unlist(mean_firing_rate)-unlist(mean_firing_rate_of)), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim = c(-50,50)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRdiff_dist_allrampcells.png", width = 3.5, height = 3) 
+}
+
+```
+
+
+
+
+
+
+
+
+```{r}
+
+ggplot(data=subset(position_data,track_category != "None"), aes(x = (unlist(mean_firing_rate)-unlist(mean_firing_rate_of)), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim = c(-50,50)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  facet_wrap(~ track_category) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=17), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRdiff_dist_allrampcells_facet.png",  width = 8, height = 6) 
+}
+
+```
+
+
+
+
+## Save output to manually find examples
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, classifier2, hd_score,border_score,grid_score, speed_score,spatial_information_score, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, classifier2, hd_score,border_score,grid_score, speed_score, spatial_information_score, o_b_mod_coefs_accel, final_model_o_b, lm_group_b)) %>%
+  as.tibble()
+
+```
+
+3. save to csv file _this is for matching to plots from python_
+```{r}
+write_csv2(spatial_firing_save, "all_results_openfield_matching2.csv")
+```
+
