@@ -1,5 +1,5 @@
 ---
-title: "Figure2_Analysis"
+title: "RC_Supplemental8"
 output: html_document
 ---
 
@@ -7,646 +7,437 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
----
-title: "Figure2_Analysis"
-author: "Sarah Tennant"
-date: "18/11/2020"
-output: html_document
----
-
-## Analysis of neurons recorded from the medial entorhinal cortex during virtual navigation
-
-The aim of this analysis is to identify all ramp cells within a specified dataset (all mice or all days for one mouse) and perform analysis to investigate their firing properties. 
-1. Identify cells that represent location by ramping their firing rate using LM modeling 
-2. Subset data by model fit (r2 value)
-3. Compare firing rates of cells in this group
-
-
-To set up, including loading packages and data, first run SetUp.Rmd.
 
 ### ----------------------------------------------------------------------------------------- ###
 
-Remove neurons in visual cortex
 
+### Plot model selection results
+
+First for all cells. 
+
+1. Split data by linear model result
 ```{r}
-spatial_firing <- subset(spatial_firing, brain_region != "V1" )
-```
-
-
-### ----------------------------------------------------------------------------------------- ###
-
-## Average firing rate (for LM modelling)
-
-The linear model uses firing rate data binned in space. For this we want to load average firing rate over trials from the data frame for each cluster. 
-- Map over "Rates_averaged" column and extract averaged rates
-- Add position for each point (data is binned into 200, 1 cm bins )
-- Insert result back into dataframe
-- Do this for beaconed, nonbeaconed and probe trials
-- Do this for shuffled spike rate (beaconed)
-
-1. Write function to add position
-```{r}
-add_position <- function(df, session_id, cluster_id) {
-  df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
-  if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
-  df
-}
-```
-
-2. Run on dataframe : Average trials with reward
-
-input columns: 
-Rates_averaged_rewarded_b = beaconed trials
-Rates_averaged_rewarded_nb = non-beaconed and probe trials
-Rates_averaged_rewarded_p = probe trials only
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(asr_b_rewarded = pmap(list(Rates_averaged_rewarded_b, session_id, cluster_id), add_position),
-         asr_nb_rewarded = pmap(list(Rates_averaged_rewarded_nb, session_id, cluster_id), add_position),
-         asr_p_rewarded = pmap(list(Rates_averaged_rewarded_p, session_id, cluster_id), add_position)
-         )
-```
-
-
-### ----------------------------------------------------------------------------------------- ###
-
-# Run simple linear model to examine relationship between firing rate and position
-_note:for now we are only interested in the outbound region of the track (30 - 90 cm)_
-
-1. Make function to run linear model
-```{r}
-lm_helper <- function(df,
-                      startbin,
-                      endbin) {
- # Check for NAs
-  if (all(is.na(df$Rates))) {
-    df <-
-      tibble(
-        r.squared = c(NA),
-        p.value = c(NA),
-        intercept = c(NA),
-        slope = c(NA)
-      )
-    return(df)
-  }
-
-  df <- df %>%
-    subset(Position >= startbin & Position <= endbin)
-  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
-
-  # get the model parameters
-  params <- select(glance(df_fit), r.squared, p.value)
-  # get the coefficients
-  coeffs <- tidy(df_fit)
-  # combine the parameters and coefficients
-  params$intercept <- coeffs$estimate[[1]]
-  params$slope <- coeffs$estimate[[2]]
-  return(params)
-}
-```
-
-2. run lm on all cells.
-Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
-```{r}
-spatial_firing <- spatial_firing %>%
-  select(-contains('asr_b_o_rewarded_fit_')) %>%
-  select(-contains('asr_nb_o_rewarded_fit_')) %>%
-  select(-contains('asr_p_o_rewarded_fit_')) %>%
-  mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_helper),
-         asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_helper),
-         asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_helper)) %>%
-  unnest_wider(asr_b_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_nb_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_p_o_rewarded_fit, names_sep = "_", names_repair = "universal")
-```
-
-Linear model results are stored in:
-spatial_firing$asr_b_o_rewarded_fit_slope
-spatial_firing$asr_b_o_rewarded_fit_intercept
-spatial_firing$asr_b_o_rewarded_fit_p.value
-spatial_firing$asr_b_o_rewarded_fit_r.squared
-
-
-3. Plot coefficients of model (slope and r2 value) for each neuron (just for visualizing)
-```{r}
-ggplot(data=spatial_firing, aes(x = asr_b_o_rewarded_fit_slope,
-                                y = asr_b_o_rewarded_fit_r.squared)) +
-    coord_cartesian(xlim = c(-0.7,0.7), ylim = c(0,1)) +
-    geom_point() +
-    xlab("\nslope") +
-    ylab("r.squared") +
-    theme_classic() +
-    scale_color_manual(values=c("grey82", "grey32", "violetred2", "chartreuse3")) +
-    theme(axis.text.x = element_text(size=12),
-          axis.text.y = element_text(size=12),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=12), 
-          legend.text=element_text(size=12), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-if (save_figures == 1) {
-  ggsave(file = "plots/lm_allcells.png", width = 4, height = 5)
-}
-
-```
-,
-
-
-### ----------------------------------------------------------------------------------------- ###
-
-## Identification of ramp cells in dataset 
-
-Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled data sets.
-
-
-1. Function to generate shuffles
-- shuffles spikes using sample() function
-- runs lm
-- extracts coefficients
-- stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
-```{r}
-#library(gdata)
-# shuffles defines the number of shuffes. Use a smaller value for testing.
-shuffle_rates <- function(df, startbin, endbin, shuffles = 1000) {
-  df_modified <- data.frame(neuron=as.numeric(),
-                 slope=as.numeric(), 
-                 rsquared=as.numeric(), 
-                 pval=vector())
-  names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
-  x <- 1
-  repeat {
-  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
-  df_mod <- lm_helper(shuff_df, startbin, endbin)
-  data <- data.frame(as.numeric(x), df_mod$slope, df_mod$r.squared, df_mod$p.value)
-  names(data) <- c("neuron", "slope", "r.squared", "p.value")
-  df_modified <- rbind(df_modified,data)
-
-  x = x+1
-  if (x == shuffles){ 
-  break
-  }
-  }
-return(df_modified)
-}
-```
-
-2. Run if shuffles haven't already been generated.
-```{r}
-# Uncomment the line below to load pre-saved shuffled data
-# spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
-
-# Check to see if the column shuffle_results exists. If it does then don't run again.
-shuffles <- 1000
-if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
-  spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
-    mutate(shuffle_results_nb_o = pmap(list(Rates_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
-    mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
-}
-
-if (save_results == 1) {
-  saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
-  # And use this to save a truncated version. Useful for testing code.
-  # saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
-}
-#To reload use:
-# spatial_firing <- readRDS("SpatialFiring_with_100_shuffles.Rda")
-# spatial_firing <- readRDS("SpatialFiring_with_1000_shuffles.Rda")
-```
-
-
-### ---------------------------------------------------------------------------- ### 
-
-### classify neurons based on shuffle activity
-
-If outside the 95% of the shuffled data set, a neuron is considered to have ramp like activity along the track. 
-
-First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron 
-
-1. write function to find min and max slope for shuffled datasets 
-```{r}
-
-extract_min_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
-  if (all(is.na(df$slopes))) {
-    return(NA)
-  }
-  min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
-  return(min_slope_o)
-}
-
-extract_max_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
-    if (all(is.na(df$slopes))) {
-    return(NA)
-  }
-  max_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[2]][1]
-  return(max_slope_o)
-}
+# extracting diff models 
+pos <-subset(spatial_firing, lm_group_b == "Positive")
+neg <-subset(spatial_firing, lm_group_b == "Negative")
+none <-subset(spatial_firing, lm_group_b == "Unclassified")
 
 ```
 
-2. Run on all neurons
+2. Split data by mixed effect model result
 ```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(shuffle_min_slope_b_o = map_dbl(shuffle_results_b_o, extract_min_shuffle_slopes),
-         shuffle_max_slope_b_o = map_dbl(shuffle_results_b_o, extract_max_shuffle_slopes),
-         shuffle_min_slope_nb_o = map_dbl(shuffle_results_nb_o, extract_min_shuffle_slopes),
-         shuffle_max_slope_nb_o = map_dbl(shuffle_results_nb_o, extract_max_shuffle_slopes),
-         shuffle_min_slope_p_o = map_dbl(shuffle_results_p_o, extract_min_shuffle_slopes),
-         shuffle_max_slope_p_o = map_dbl(shuffle_results_p_o, extract_max_shuffle_slopes))
+
+P_positive <- nrow(subset(pos, final_model_o_b == "P"))/nrow(pos)*100
+P_negative <- nrow(subset(neg, final_model_o_b == "P"))/nrow(neg)*100
+P_none <- nrow(subset(none,final_model_o_b == "P"))/nrow(none)*100
+
+S_positive <- nrow(subset(pos,final_model_o_b == "S"))/nrow(pos)*100
+S_negative <- nrow(subset(neg,final_model_o_b == "S"))/nrow(neg)*100
+S_none <- nrow(subset(none,final_model_o_b == "S"))/nrow(none)*100
+
+A_positive <- nrow(subset(pos,final_model_o_b == "A"))/nrow(pos)*100
+A_negative <- nrow(subset(neg,final_model_o_b == "A"))/nrow(neg)*100
+A_none <- nrow(subset(none,final_model_o_b == "A"))/nrow(none)*100
+
+P_S_positive <- nrow(subset(pos,final_model_o_b == "PS"))/nrow(pos)*100
+P_S_negative <- nrow(subset(neg,final_model_o_b == "PS"))/nrow(neg)*100
+P_S_none <- nrow(subset(none,final_model_o_b == "PS"))/nrow(none)*100
+
+P_A_positive <- nrow(subset(pos ,final_model_o_b == "PA"))/nrow(pos)*100
+P_A_negative <- nrow(subset(neg ,final_model_o_b == "PA"))/nrow(neg)*100
+P_A_none <- nrow(subset(none,final_model_o_b == "PA"))/nrow(none)*100
+
+S_A_positive <- nrow(subset(pos ,final_model_o_b == "SA"))/nrow(pos)*100
+S_A_negative <- nrow(subset(neg ,final_model_o_b == "SA"))/nrow(neg)*100
+S_A_none <- nrow(subset(none,final_model_o_b == "SA"))/nrow(none)*100
+
+P_S_A_positive <- nrow(subset(pos ,final_model_o_b == "PSA"))/nrow(pos)*100
+P_S_A_negative <- nrow(subset(neg ,final_model_o_b == "PSA"))/nrow(neg)*100
+P_S_A_none <- nrow(subset(none ,final_model_o_b == "PSA"))/nrow(none)*100
+
+NONE_positive <- nrow(subset(pos ,final_model_o_b == "None"))/nrow(pos)*100
+NONE_negative <- nrow(subset(neg ,final_model_o_b == "None"))/nrow(neg)*100
+NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
+
 
 ```
 
-
-We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
-
-1. Extract shuffle results (slopes and r2 for each shuffle)
-
-2. run on all neurons
+2. number of cells in each group - positive sloping neurons
 ```{r}
-spatial_firing <- spatial_firing %>%
-  #select(-contains('shuffle_results_b_o_')) %>%
-  #select(-contains('shuffle_results_nb_o_')) %>%
-  #select(-contains('shuffle_results_p_o_')) %>%
-  unnest_wider(shuffle_results_b_o, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(shuffle_results_nb_o, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(shuffle_results_p_o, names_sep = "_", names_repair = "universal")
-```
-
-
-Then we want to correct the pvals of the lm, to account for multiple comparisons
-
-1. put all pvalues into tibble then adjust using p.adjust from - package
-```{r}
-p_vals_b <- tibble(pvals = spatial_firing$asr_b_o_rewarded_fit_p.value)
-adu_p_b <- tibble(adjust_pval_b_o = p.adjust(p_vals_b$pvals, "BH"))
+P_positive_num <- nrow(subset(pos, final_model_o_b == "P"))
+P_A_positive_num <- nrow(subset(pos, final_model_o_b == "PA"))
+P_S_positive_num <- nrow(subset(pos, final_model_o_b == "PS"))
+P_S_A_positive_num <- nrow(subset(pos, final_model_o_b == "PSA"))
+S_A_positive_num <- nrow(subset(pos, final_model_o_b == "SA"))
+S_positive_num <- nrow(subset(pos, final_model_o_b == "S"))
+A_positive_num <- nrow(subset(pos, final_model_o_b == "A"))
+NONE_positive_num <- nrow(subset(pos, final_model_o_b == "None"))
 
 ```
 
-2. bind new adjusted pvalues to dataframe
+3. number of cells in each group - negative sloping neurons
 ```{r}
-spatial_firing <- cbind(spatial_firing, adu_p_b)
-```
-
-3. do the same for non-beaconed trials
-```{r}
-p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_o_rewarded_fit_p.value)
-adu_p_nb <- tibble(adjust_pval_nb_o = p.adjust(p_vals_nb$pvals, "BH"))
-spatial_firing <- cbind(spatial_firing, adu_p_nb)
-```
-
-4. do the same for probe trials 
-```{r}
-p_vals_p <- tibble(pvals = spatial_firing$asr_p_o_rewarded_fit_p.value)
-adu_p_p <- tibble(adjust_pval_p_o = p.adjust(p_vals_p$pvals, "BH"))
-spatial_firing <- cbind(spatial_firing, adu_p_p)
-```
-
-
-### ----------------------------------------------------------------------------------------- ### 
-
-Now we want to classify neurons, taking the adjusted significance into account
-
-```{r}
-compare_slopes <-
-  function(min_slope = 1,
-           max_slope = 1,
-           slope = 1,
-           pval = 1) {
-    if (any(is.na(list(min_slope, max_slope, slope, pval)))) {
-      return("NAs")
-    }
-    if (pval > 0.01) {
-      return("Unclassified")
-    } else if (slope < min_slope & pval < 0.01) {
-      return("Negative")
-    } else if (slope > max_slope & pval < 0.01) {
-      return("Positive")
-    } else if (slope > min_slope & slope < max_slope) {
-      return("Unclassified")
-    } else {
-      return("Unclassified")
-    }
-  }
-
-spatial_firing <- spatial_firing %>%
-  mutate(
-    lm_group_b = pmap(
-      list(
-        shuffle_min_slope_b_o,
-        shuffle_max_slope_b_o,
-        asr_b_o_rewarded_fit_slope,
-        adjust_pval_b_o
-      ),
-      compare_slopes
-    ),
-    lm_group_nb = pmap(
-      list(
-        shuffle_min_slope_nb_o,
-        shuffle_max_slope_nb_o,
-        asr_nb_o_rewarded_fit_slope,
-        adjust_pval_nb_o
-      ),
-      compare_slopes
-    ),
-    lm_group_p = pmap(
-      list(
-        shuffle_min_slope_p_o,
-        shuffle_max_slope_p_o,
-        asr_p_o_rewarded_fit_slope,
-        adjust_pval_p_o
-      ),
-      compare_slopes
-    )
-  )
+P_negative_num <- nrow(subset(neg, final_model_o_b == "P"))
+P_A_negative_num <- nrow(subset(neg, final_model_o_b == "PA"))
+P_S_negative_num <- nrow(subset(neg, final_model_o_b == "PS"))
+P_S_A_negative_num <- nrow(subset(neg, final_model_o_b == "PSA"))
+S_A_negative_num <- nrow(subset(neg, final_model_o_b == "SA"))
+S_negative_num <- nrow(subset(neg, final_model_o_b == "S"))
+A_negative_num <- nrow(subset(neg, final_model_o_b == "A"))
+NONE_negative_num <- nrow(subset(neg, final_model_o_b == "None"))
 
 ```
 
-
-Linear model classification is stored in:
-spatial_firing$lm_group_b
-spatial_firing$lm_group_nb
-spatial_firing$lm_group_p
-
-
-### -------------------------------------------------------------------------------------------------------------------- ### 
-
-
-Now we want to visualise the coefficients of all neurons and all shuffled datasets
-
-Now lets find and plot the proportion of cells according to the classification
-
-1. extract proportion of cells that meet each criteria
+3. number of cells in each group - unclassified  neurons
 ```{r}
-start <- nrow(subset(spatial_firing, lm_group_b == "Negative"))/nrow(spatial_firing)*100
-reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))/nrow(spatial_firing)*100
-nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spatial_firing)*100
-```
-
-2. get total numbers numbers
-```{r}
-start_num <- nrow(subset(spatial_firing, lm_group_b == "Negative"))
-reward_num <- nrow(subset(spatial_firing, lm_group_b == "Positive"))
-nonslope_num <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))
+P_none_num <- nrow(subset(none, final_model_o_b == "P"))
+P_A_none_num <- nrow(subset(none, final_model_o_b == "PA"))
+P_S_none_num <- nrow(subset(none, final_model_o_b == "PS"))
+P_S_A_none_num <- nrow(subset(none, final_model_o_b == "PSA"))
+S_A_none_num <- nrow(subset(none, final_model_o_b == "SA"))
+S_none_num <- nrow(subset(none, final_model_o_b == "S"))
+A_none_num <- nrow(subset(none, final_model_o_b == "A"))
+NONE_none_num <- nrow(subset(none, final_model_o_b == "None"))
 
 ```
 
-3. Put into a tibble 
+3. Put data into tibble
 ```{r}
-proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), num=c(start_num, reward_num, nonslope_num), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+
+
+mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative, S_none, A_positive,A_negative,A_none,  P_S_positive, P_S_negative,P_S_none, P_A_positive, P_A_negative, P_A_none, S_A_positive, S_A_negative, S_A_none,P_S_A_positive, P_S_A_negative, P_S_A_none, NONE_positive,NONE_negative, NONE_none), 
+                      num=c(P_positive_num,P_negative_num,P_none_num,S_positive_num, S_negative_num, S_none_num, A_positive_num,A_negative_num,A_none_num,  P_S_positive_num, P_S_negative_num,P_S_none_num, P_A_positive_num, P_A_negative_num, P_A_none_num, S_A_positive_num, S_A_negative_num, S_A_none_num,P_S_A_positive_num, P_S_A_negative_num, P_S_A_none_num, NONE_positive_num,NONE_negative_num, NONE_none_num),
+                      
+                      ramp_id= c("P","P","P", 
+                                 "S", "S", "S", 
+                                 "A", "A", "A",
+                                 "PS", "PS", "PS", 
+                                 "PA", "PA", "PA", 
+                                 "SA", "SA", "SA", 
+                                 "PAS", "PAS","PAS",
+                                 "None","None", "None"), 
+                      ramp_type= c("Positive", "Negative", "Unclassified","Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified","Positive", "Negative" ,"Unclassified","Positive", "Negative","Unclassified","Positive", "Negative","Unclassified", "Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified" ))
+
 ```
 
-
-3. Plot bar graph of proportions
+4. Plot model results
 ```{r}
-ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
-  geom_bar(stat="identity",width = 0.9, alpha = .4) +
-  labs(y = "Percent", x="") +
-  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
-  geom_text(aes(label = num), hjust = 1.5, vjust = 0.5, srt=90, size = 6, position = position_dodge(-0.5)) +
+# plot data
+level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "None")
+ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .7) +
+  labs(y = "Percent of neurons", x="") +
+  scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
+  geom_text(aes(label = num), hjust = 0.7, vjust = 0.2, size = 5, position = position_stack(vjust= 0.5)) +
+  #scale_fill_brewer(palette= "RdYlBu") +
   theme_classic() +
-  theme(axis.text.x = element_text(size=19),
-        axis.text.y = element_text(size=20),
+  theme(axis.text.x = element_text(angle = 50, vjust=0.65)) +
+  theme(axis.text.x = element_text(size=17),
+        axis.text.y = element_text(size=16),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=19), 
-        legend.text=element_text(size=19), 
+        text = element_text(size=16), 
+        legend.text=element_text(size=16), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 if (save_figures == 1) {
-  ggsave(file = "plots/Outbound_ramp_proportions.png", width = 3, height = 5.5)
+  ggsave(file = "plots/LMERProportions_beaconed_update.png", width = 4, height = 5.5)
 }
 ```
 
 
-We might also want to visualise the coefficients for the real and shuffled dataset as a histogram.
 
-1. First, make stacked histogram of slope values for real dataset 
+
+### plot distribution of coefficients for all cells
+_split by positive and negative sloping neurons_
+
+1. make unique id for each neuron (session_id + cluster_id)
 ```{r}
-level_order <- c("Negative", "Positive", "Unclassified")
+# First make a function to concatenate session id and cluster id
+make_unique_id <- function(session,cluster) {
+  x <- paste(session, cluster, sep="_")
+  return(as.character(x))
+}
 
-ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
-  coord_cartesian(xlim = c(-0.45,0.45)) +
-  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
-  ylab("Proportion") +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
-  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+# run on all cells
+spatial_firing <- spatial_firing  %>%
+  mutate(unique_id = map2(session_id, cluster_id, make_unique_id))
+
+```
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble()
+
+```
+
+3. save to csv file _this is for matching to plots from python_
+```{r}
+write_csv2(spatial_firing_save, "all_results_coefficients.csv")
+```
+
+4. put data into a tibble for plotting
+```{r}
+data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
+                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
+                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
+                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
+                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
+                    group = c(as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b),
+                              as.character(spatial_firing_save$final_model_o_b)), 
+                    # cue_group = c(as.character(spatial_firing_save$cue_group_o),
+                    #            as.character(spatial_firing_save$cue_group_o),
+                    #            as.character(spatial_firing_save$cue_group_o)),
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save)),
+                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
+```
+
+_Plot coefficients for all cells_
+
+
+Make function for plotting standardised coefficients
+```{r}
+standard_plot <- function(df) {
+  level_order <- c("P", "S", "A")
+  ggplot(data=df, aes(x = factor(coef_type), y = as.numeric(coef))) +
+  #coord_cartesian(ylim=c(0,1)) +
+  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_jitter(alpha=0.05) +
+  scale_fill_manual(values=c("firebrick1","gold","dodgerblue2")) +
+  labs(y = "std coef", x="\n model parameter") +
   theme_classic() +
-  theme(axis.text.x = element_text(size=16),
-        axis.text.y = element_text(size=16),
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=12),
+        legend.position="bottom", 
         legend.title = element_blank(),
-        legend.position = "none",
-        text = element_text(size=16),
-        legend.text=element_text(size=16),
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+        text = element_text(size=12), 
+        legend.text=element_text(size=12), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+}
+```
+
+5. Select cells classified in Figure 2 as having positive or negative slopes
+```{r}
+data_coef_pos_neg <- data_coef %>%
+  subset(lm_result == "Positive" || lm_result == "Negative")
+
+(pos_neg_coef_plot <- standard_plot(data_coef_pos_neg))
 if (save_figures == 1) {
-  ggsave(file = "plots/Outbound_slope_histogram.png", width = 4, height = 2)
-}
+  ggsave(file = "plots/CoefficientValues_positive_negative_cells.png", width = 3, height = 2.5)
+}  
+    
 ```
 
-same as above but for shuffled datasets
 
-1. extract shuffled values into tibble _each 1000 shuffled datasets are nested for each neuron_
-```{r}
-shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared))
-```
 
-2. Plot histogram of slopes
+5. Split by positive slope _all cells_
 ```{r}
-ggplot(data=shuff_slopes, aes(x = slopes)) +
-    coord_cartesian(xlim = c(-0.45,0.45)) +
-    geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
-    labs(x = "Slope (Hz/cm)") +
-    ylab("Proportion") +
-    scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=16),
-          axis.text.y = element_text(size=16),
-          legend.position="bottom",
-          legend.title = element_blank(),
-          text = element_text(size=16),
-          legend.text=element_text(size=16),
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+data_coef_pos <- data_coef %>%
+  subset(lm_result == "Positive" )
+
+(pos_coef_plot <- standard_plot(data_coef_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/Outbound_slope_histogram_shuffled.png", width = 4, height = 2)
+   ggsave(file = "plots/CoefficientValues_positivecells.png", width = 3, height = 2.5)
 }
 ```
 
-
-3. Make stacked histogram of rsquared values for real dataset
+5. Split by negative slope _all cells_
 ```{r}
-level_order <- c("Negative", "Positive", "Unclassified")
+data_coef_neg <- data_coef %>%
+  subset(lm_result == "Negative" )
 
-ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + 
-  coord_cartesian(xlim = c(0,1), ylim = c(0,0.06)) +
-  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
-  ylab("Proportion") +
-  xlab(" ") +
-  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=16),
-        axis.text.y = element_text(size=16),
-        legend.title = element_blank(),
-        legend.position = "none",
-        text = element_text(size=16),
-        legend.text=element_text(size=16),
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+(neg_coef_plot <- standard_plot(data_coef_neg))
 if (save_figures == 1) {
-  ggsave(file = "plots/Outbound_rsquared_histogram.png", width = 4, height = 2)
+  ggsave(file = "plots/CoefficientValues_negativecells.png", width = 3, height = 2.5)
 }
 ```
 
-4. Same as above but for shuffled datasets
+_Plot coefficients for all cells_
+
+5. Split by positive slope _PS cells_
 ```{r}
-ggplot(data=shuff_slopes, aes(x = r2)) +
-    coord_cartesian(xlim = c(0,1)) +
-    geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
-    xlab(expression(R^2)) +
-    ylab("Proportion") +
-    scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=16),
-          axis.text.y = element_text(size=16),
-          legend.position="none",
-          legend.title = element_blank(),
-          text = element_text(size=16),
-          legend.text=element_text(size=16),
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+data_coef_pos_PS <- data_coef %>%
+  subset(group == "PS") %>%
+  subset(lm_result == "Positive" )
+
+(pos_PS_coef_plot <- standard_plot(data_coef_pos_PS))
 if (save_figures == 1) {
-  ggsave(file = "plots/Outbound_rsquared_histogram_shuffled.png", width = 4, height = 2)
+  ggsave(file = "plots/CoefficientValues_PositivePScells.png", width = 3, height = 2.5)
 }
 ```
 
-
-Plot distribution of the shuffled data
-_note this is not used in a figure_
-
-1. Extract shuffled slopes and rsquared values. This is already done above.
-
-2. Plot in scatter
+6. Split by negative slope
 ```{r}
-ggplot(data=shuff_slopes, aes(x = slopes, y = r2)) +
-    geom_point() +
-    xlab("\nslope") +
-    ylab("R2") +
-    theme_classic() +
-    theme(axis.text.x = element_text(size=12),
-          axis.text.y = element_text(size=12),
-          legend.position="bottom",
-          legend.title = element_blank(),
-          text = element_text(size=12),
-          legend.text=element_text(size=12),
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+data_coef_neg_PS <- data_coef %>%
+  subset(group == "PS") %>%
+  subset(lm_result == "Negative" )
+
+(neg_PS_coef_plot <- standard_plot(data_coef_neg_PS))
 if (save_figures == 1) {
-  ggsave(file = "plots/Outbound_coefficient_scatter_shuffled.png", width = 3, height = 3)
+  ggsave(file = "plots/CoefficientValues_NegativePScells.png", width = 3, height = 2.5)
 }
 ```
 
-### ----------------------------------------------------------------------------------------- ###
+
+_Plot coefficients for just position cells_
 
 
-# Plot heat map of firing rate across location for all neurons
+6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position only.
 
-First, reorder the dataframe with ramps according to slope.
-_For start ramps, steepest slope should be negative - thus will have the highest cluster id_
 ```{r}
-start_ramps<-spatial_firing[order(spatial_firing$asr_b_o_rewarded_fit_slope),]
-start_ramp_number = nrow(start_ramps)
-new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
-start_ramps <- cbind(start_ramps, new_cluster_id)
-```
+data_coef_pos_P <- data_coef %>%
+  subset(group == "P") %>%
+  subset(lm_result == "Positive")
 
-Then, scale firing rate for all neurons
-
-1. make function to load rates and normalise
-2. Run on dataframe 
-```{r}
-normalise_rates_outbound <- function(df){
-  df <- tibble(Rates = unlist(df), Position = rep(1:200))
-  df <- df %>%
-    filter(Position >=30, Position <= 90)
-  x <- normalit(df$Rates)
-  return(x)
-}
-
-start_ramps <- start_ramps %>%
-  mutate(normalised_rates_o = map(Rates_averaged_rewarded_b, normalise_rates_outbound))
-```
-
-Add position to normalised rates for plotting
-```{r}
-add_position <- function(df) {
-  df <- tibble(Rates = unlist(df), Position = rep(30:90))
-}
-
-start_ramps <- start_ramps %>%
-  mutate(normalised_rates_o = map(normalised_rates_o, add_position))
-
-```
-
-Extract columns (normalised rates) for plotting into a tibble
-```{r}
-concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o))
-```
-
-Now the firing rates have been normalised and the data in the right format we want to make annotations for the heatmap
-
-First, extract ramp score from the dataframe for annotating heatmap
-_since its a list of three (outbound/homebound/all) we extract the first one_
-```{r}
-start_ramps <- start_ramps %>%
-  mutate(start_ramp_score = map(ramp_score, ~.x[1]))
-
-```
-
-Put ramp scores alongisde lm results and brain region classifier in tibble for annotating heatmap
-```{r}
-ramp_result <- tibble(ramp_score = as.numeric(start_ramps$start_ramp_score))
-brain_region <- tibble(region = as.character(start_ramps$brain_region))
-lm_result <- tibble(result = as.character(start_ramps$lm_group_b))
-cluster_result <- tibble(result = as.character(start_ramps$new_cluster_id))
-```
-
-Now we can plot the heatmap with annotations using pheatmap
-```{r}
-#convert data to wide format
-wide_DF <- concat_firing_start %>% spread(Position, Rates)
-
-#remove unused column
-wide_DF <- subset(wide_DF, select=-c(new_cluster_id))
-
-# Generte data (modified the mydf slightly)
-rownames(wide_DF) <- paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_")
-
-# data for annotation rows in seperate dataframe
-mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id), sep="_"), region = brain_region, catagory = lm_result, ramp_score=ramp_result)
-
-# change the color of annotation to what you want: (eg: "navy", "darkgreen")
-Var1        <- c("violetred2", "black", "chartreuse3")
-names(Var1) <- c("Negative", "Unclassified", "Positive")
-
-Var2        <- c("coral2", "deepskyblue2", "deepskyblue2", "blueviolet" )
-names(Var2) <- c("PS", "UN", "RH", "MEC")
-
-anno_col <- list(region = Var2, result = Var1, ramp_score = brewer.pal(11,"RdBu"))
-
-#, ramp_score = brewer.pal(11,"RdBu")
-myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row = mydf, annotation_colors = anno_col, show_rownames = F, show_colnames = F )
-
-```
-
-Save the heatmap (bit of a nightmare here...)
-```{r}
-save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
-  png(filename, width = width, height = height, res = res)
-  grid::grid.newpage()
-  grid::grid.draw(x$gtable)
-  dev.off()
-}
-
+(pos_P_coef_plot <- standard_plot(data_coef_pos_P))
 if (save_figures == 1) {
-  save_pheatmap_png(myheatmap, "plots/my_heatmap_all.png")
+  ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 3, height = 2.5)
 }
+```
+
+
+
+6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position only.
+
+```{r}
+data_coef_neg_P <- data_coef %>%
+  subset(group == "P") %>%
+  subset(lm_result == "Negative")
+
+(neg_P_coef_plot <- standard_plot(data_coef_neg_P))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 3, height = 2.5)
+}
+```
+
+
+_Plot coefficients for just position cells_
+
+
+6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position only.
+
+```{r}
+data_coef_pos_SA <- data_coef %>%
+  subset(group == "SA") %>%
+  subset(lm_result == "Positive")
+
+(pos_SA_coef_plot <- standard_plot(data_coef_pos_SA))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_PositiveSAcells.png", width = 3, height = 2.5)
+}
+```
+
+
+
+6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position only.
+
+```{r}
+data_coef_neg_SA <- data_coef %>%
+  subset(group == "SA") %>%
+  subset(lm_result == "Negative")
+
+(neg_SA_coef_plot <- standard_plot(data_coef_neg_SA))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_NegativeSAcells.png", width = 3, height = 2.5)
+}
+```
+
+6c. Plot coefficients for cells classified in Figure 2 as being unclassified but that have 'significant' positional coefficients in the mixed effect model.
+
+```{r}
+data_coef_UC_PSA <- data_coef %>%
+  subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
+  subset(lm_result == "Unclassified")
+
+(UC_PSA_coef_plot <- standard_plot(data_coef_UC_PSA))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_UCPSAcells.png", width = 3, height = 2.5)
+}
+```
+
+
+
+
+###----------------------------------------------------------------------------###
+
+Analyses
+
+Compare coefficients for position, speed and acceleration.
+
+```{r}
+position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+```{r}
+pos_position_cells <- subset(spatial_firing, lm_group_b == "Positive")
+neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
+
+```
+
+2. take only columns we need for the rest of the analysis
+```{r}
+spatial_firing_save_p <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble()
+
+spatial_firing_save_n <- select(neg_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble()
+```
+
+1. put data into a tibble for plotting
+```{r}
+
+data_coef_p <- tibble(session_id = rep(unlist(spatial_firing_save_p$unique_id), times=3),
+                    cluster_id = rep(spatial_firing_save_p$cluster_id, times=3),
+
+                    coef = c(as.character(spatial_firing_save_p$o_b_mod_coefs_pos),
+                             as.character(spatial_firing_save_p$o_b_mod_coefs_speed),
+                             as.character(spatial_firing_save_p$o_b_mod_coefs_accel)),
+                    group = c(as.character(spatial_firing_save_p$final_model_o_b),
+                              as.character(spatial_firing_save_p$final_model_o_b),
+                              as.character(spatial_firing_save_p$final_model_o_b)),
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save_p)),
+                    lm_result = rep(as.character(spatial_firing_save_p$lm_group_b), times=3))
+
+data_coef_n <- tibble(session_id = rep(unlist(spatial_firing_save_n$unique_id), times=3),
+                    cluster_id = rep(spatial_firing_save_n$cluster_id, times=3),
+                    coef = c(as.character(spatial_firing_save_n$o_b_mod_coefs_pos),
+                             as.character(spatial_firing_save_n$o_b_mod_coefs_speed),
+                             as.character(spatial_firing_save_n$o_b_mod_coefs_accel)),
+                    group = c(as.character(spatial_firing_save_n$final_model_o_b),
+                              as.character(spatial_firing_save_n$final_model_o_b),
+                              as.character(spatial_firing_save_n$final_model_o_b)),
+                    coef_type = rep(c("P", "S", "A"),
+                                    each = nrow(spatial_firing_save_n)),
+                    lm_result = rep(as.character(spatial_firing_save_n$lm_group_b), times=3))
+```
+
+2. run anova
+```{r}
+one.way_p <- aov(coef ~ coef_type, data = data_coef_p)
+
+summary(one.way_p)
+
+one.way_n <- aov(coef ~ coef_type, data = data_coef_n)
+
+summary(one.way_n)
+```
+
+3. Post hoc Tukey's test
+```{r}
+tukey.test_p <- TukeyHSD(one.way_p)
+tukey.test_p$coef_type
+
+tukey.test_n <- TukeyHSD(one.way_n)
+tukey.test_n$coef_type
 ```
 

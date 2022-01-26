@@ -1,5 +1,5 @@
 ---
-title: "Figure3_Analysis"
+title: "Figure7"
 output: html_document
 ---
 
@@ -7,754 +7,1079 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
----
-title: "Figure3_Analysis"
-author: "Sarah Tennant"
-date: "18/11/2020"
-output: html_document
----
 
 
-## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
+### --------------------------------------------------------------------------------------- ###
 
-Function to fit mixed effect models
+## Differences in the positional dependance of firing between rewarded trials, run through trials and trials where the animal "tries" 
+
+
+trial types :
+1. rewarded = animal recieves a reward
+2. try = speed in the reward zone is within the 95% confidence interval of speed in the reward zone in
+rewarded trials
+3. run through = speed in the reward zone is outside the 95% confidence interval of speed in the reward zone in rewarded trials
+
+
+### --------------------------------------------------------------------------------------- ###
+
+
+## To address low trial numbers in run through and try catagories, first lets create a new dataset with only high trial numbers. 
+
+First extract number of trials for each type
 ```{r}
-mm_fit <- function(df, TT = 0) {
-  if (length(df) == 1)
-    return(NA)
+trial_adder <- function(df) {
   df <-
-    tibble(
-      Rates = as.numeric(Re(df[[1]])),
-      Position = as.numeric(Re(df[[2]])),
-      Acceleration = as.numeric(Re(df[[4]])),
-      Speed = as.numeric(Re(df[[3]])),
-      Trials = as.factor(df[[5]]),
-      Types = as.factor(df[[6]])
-    )
-  df <- df %>%
-    subset(Position >= 30 & Position <= 90 & Speed > 3 & Types == TT)
+  tibble(
+    Rates = as.numeric(df[[1]]),
+    Position = as.numeric(df[[3]]),
+    Trials = as.numeric(df[[4]])
+  )
   
-  if (length(df) == 1 | nrow(df) < 3)
+  trials <- length(unique(df$Trials))
+  return(trials)
+}
+
+
+spatial_firing <- spatial_firing %>%
+  mutate(try_trials_number = map(spikes_in_time_try,trial_adder),
+         run_trials_number = map(spikes_in_time_run,trial_adder),
+         hit_trials_number = map(spikes_in_time_reward,trial_adder))
+
+```
+
+
+### --------------------------------------------------------------------------------------- ###
+
+Then combine hit and miss trials together with an indicator of trial type (hit, try, run)
+
+First, function that extracts data into a tibble, saves space in the function below
+
+```{r}
+extract_to_tibble <- function(df) {
+  df <-
+  tibble(
+    Rates = as.numeric(Re(df[[1]])),
+    Position = as.numeric(Re(df[[3]])),
+    Trials = as.numeric(Re(df[[4]]))
+  )
+  return (df)
+}
+
+```
+
+Function to join firing rates from different trial types and add indicator of the type of trial
+```{r}
+
+join_rates <- function(hit, run, try, session_id, cluster_id) {
+  if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
     return(NA)
+  }
+  
+  hit_df <- extract_to_tibble(hit)
+  run_df <- extract_to_tibble(run)
+  try_df <- extract_to_tibble(try)
+ 
+  df <- tibble(Rates = c(hit_df$Rates, 
+                         run_df$Rates,
+                         try_df$Rates), 
+               Reward_indicator = c(rep("Rewarded", times=nrow(hit_df)), 
+                                    rep("Run", times=nrow(run_df)), 
+                                    rep("Try", times=nrow(try_df))), 
+               Position = c(hit_df$Position, 
+                            run_df$Position, 
+                            try_df$Position), 
+               Trials = c(hit_df$Trials,
+                          run_df$Trials,
+                          try_df$Trials))
 
-  df_int <-
-    lme4::lmer(
-      Rates ~ Position + Speed + Acceleration + (1 + Position | Trials),
-      data = df,
-      na.action = na.exclude
+  return (df)
+}
+
+```
+
+1. Generate firing rate tibble for each cell
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward, spikes_in_time_run, spikes_in_time_try, session_id, cluster_id), join_rates))
+
+```
+
+
+Function to run linear model that takes trial type (hit, try, run) into account and use the car package to extract slope significance
+```{r}
+compare_models_slope_lm <- function(df, run,try){
+  tryCatch({
+    if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
+      return(NA)
+    }
+    if (length(df) == 1 | nrow(df) < 6)
+      return(NA)
+    
+    df <- df %>%
+    filter(Position >= 30, Position <= 90)
+    fit <- lme4::lmer(Rates ~ scale(Position) * Reward_indicator + (1+scale(Position) | Trials), data = df, na.action=na.omit)
+    modelAnova <- car::Anova(fit)
+    to_return <- modelAnova$"Pr(>Chisq)"[[3]]
+    },
+   error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+```
+
+2. Run linear model on all cells and extract pval
+To test just use the first two rows
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_lm))
+```
+
+Now we can classify cells based on their significance in the above model
+
+First make function to classify neurons
+```{r}
+mark_neurons_sig <- function(pval){
+  tryCatch({
+    if (is.na(pval)) {
+      return(NA)
+    }
+    if (pval == "NULL") {
+      return(NA)
+    }
+    if( pval < 0.01) {
+      return( "Significant" )
+    } else if( pval >= 0.01) {
+      return( "Not-Significant" )
+    } else {
+      return("None")
+    }
+    },
+   error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+
+}
+```
+
+3. Make new column to identify whether cells are significant
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(reward_interaction_id = map(pval_slope, mark_neurons_sig))
+```
+
+
+### ----------------------------------------------------------------------------- ###
+
+We also want to run a simple linear model for each trial type separately so we can extract the coefficients for each variable. 
+
+First, add position to each of the firing rates individually (before we put them all in one tibble, here we make a seperate one for each and add it back into the dataframe)
+
+
+Function to add position for individual trial type, returns NAs if those trials are not present 
+```{r}
+add_position <- function(df, session_id, cluster_id) {
+  if(all(is.na(df))){
+    print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))
+    df <- tibble(Rates = rep(NA, times=200), 
+                 Position = rep(NA, times=200))
+    return(df)
+    }
+  df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
+  return(df)
+}
+```
+
+1. Run this on all animals for try and run through trials (we already have coefficients for rewarded data from Figure 2)
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(asr_b_try = pmap(list(Avg_FiringRate_TryTrials, session_id, cluster_id), add_position),
+         asr_b_run = pmap(list(Avg_FiringRate_RunTrials, session_id, cluster_id), add_position)
+         )
+```
+
+2. run lm on all cells.
+Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('asr_b_try_fit_')) %>%
+  select(-contains('asr_b_run_fit_')) %>%
+  mutate(asr_b_try_fit = pmap(list(asr_b_try, 30, 90), lm_helper)) %>%
+  mutate(asr_b_run_fit = pmap(list(asr_b_run, 30, 90), lm_helper)) %>%
+  unnest_wider(asr_b_try_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_b_run_fit, names_sep = "_", names_repair = "universal")
+
+```
+
+Linear model results are stored in:
+spatial_firing$asr_b_try_fit_pval
+spatial_firing$asr_b_try_fit_slope
+spatial_firing$asr_b_try_fit_r.squared
+
+
+
+
+### ----------------------------------------------------------------------------- ###
+
+## Calculate offset for run and try trials
+
+We want to find out if within the position and speed groups - is their firing rate reset or continue across the reward region?
+
+To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
+
+First, normalise firing rates. 
+
+1. make function to load rates and normalise
+```{r}
+normalise_rates <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  return(x)
+}
+
+```
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates_try = map(Avg_FiringRate_TryTrials, normalise_rates), 
+         normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates))
+```
+
+Then, predict firing rate in homebound region based on fit from real data in outbound region
+
+Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
+
+```{r}
+predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 110, predict_end = 115){
+  # check for NAs
+  if(all(is.na(df))) 
+    return(NA)
+  # Make track column
+  df <- tibble(Rates = unlist(df), Position=rep(1:200))
+  # fit
+  model <- lm(Rates ~ Position, data = filter(df, Position >= fit_start, Position <= fit_end))
+  # predict
+  homebound_prediction_pos <- tibble(Position = rep(1:200))
+  homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "prediction", level = 0.99) 
+  as.tibble(homebound_prediction)
+}
+
+
+```
+2. Run on all neurons
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('predict_params_try_')) %>%
+  select(-contains('predict_params_run_')) %>%
+  mutate(predict_params_try = map(normalised_rates_try, predict_homebound),
+         predict_params_run = map(normalised_rates_run, predict_homebound)) %>%
+  unnest_wider(predict_params_try, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(predict_params_run, names_sep = "_", names_repair = "universal") 
+
+spatial_firing <- spatial_firing %>%
+  mutate(
+         predict_diff_try = map2_dbl(normalised_rates_try, predict_params_try_fit, calc_predict_diff),
+         predict_diff_run = map2_dbl(normalised_rates_run, predict_params_run_fit, calc_predict_diff))
+
+```
+
+
+### ----------------------------------------------------------------------------- ###
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+Now we want to examine if there are differences in the reset activity between trial types (hit, try, run). To do this, we can plot population rate for rewarded and failed trials across whole track. 
+
+Function to join firing rates from different trial types and add indicator of the type of trial
+
+First combine hit and miss trials together with an indicator of trial type (hit, try, run)
+
+Function to join firing rates from different trial types and add indicator of the type of trial
+```{r}
+join_average_rates <- function(hit, run, try, session_id, cluster_id) {
+  if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
+    return(
+      df <- tibble(Rates = rep(NA, times=600), 
+               Position = rep(NA, times=600),
+               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)))
     )
-
-}
-```
-
-
-Function to extract P values for each coefficient from the model
-```{r}
-mm_function <- function(mm, session_id) {
-  if (is.na(mm)) {
-    return(tibble(pos = NA, speed = NA, accel = NA))
   }
-    print(session_id)
-    modelAnova <- car::Anova(mm)
-    return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
-                  speed = modelAnova$"Pr(>Chisq)"[[2]],
-                  accel = modelAnova$"Pr(>Chisq)"[[3]])
+  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try)), Reward_indicator = c(rep("Rewarded", times=199), rep("Run Through", times=200), rep("Try", times=200)), Position = c(rep(-29:169), rep(-30:169), rep(-30:169)))
+  return (df)
 }
 ```
 
-Function to extract P values for each coefficient from the model
+1. Generate firing rate tibble for each cell
 ```{r}
-
-mm_pvalues <- function(mm, session_id) {
-  tryCatch({
-      mm_function(mm,session_id)
-      },
-    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-}
-   
-```
-
-
-2. Run on all cells.
-Note here, there may be some overfitting with the mixed effect model. This is likely because some  coefficients likely do not vary with position. However, we can't address this by tailoring the model to each cell as we want to treat each cell the same way. The standardized coefficients should still be interpretable.
-See discussion in ?isSingular and here: https://stats.stackexchange.com/questions/378939/dealing-with-singular-fit-in-mixed-models
-```{r, warning=FALSE}
-spatial_firing <- spatial_firing  %>%
-  select(-contains('o_mm_p_b_')) %>%
-  mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit),
-         #o_mm_nb = map2(spikes_in_time, 1, mm_fit),
-         o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues)) %>%
-         #o_mm_p_nb = map(o_mm_nb, mm_pvalues))
-  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal") #%>%
-  #unnest_wider(o_mm_p_nb, names_sep = "_", names_repair = "universal")
-```
-
-Model p values are stored in:
-spatial_firing$o_mm_p_b_pos
-spatial_firing$o_mm_p_b_accel
-spatial_firing$o_mm_p_b_speed
-
-
-### ----------------------------------------------------------------------------------------- ###
-
-
-## Select best model 
-
-1. Write function to categorise neurons based on significant model coefficients
-```{r}
-
-model_comparison <- function(null_pos, null_speed, null_accel){
-  pval <- 0.01
-  if( is.na(null_pos) & is.na(null_accel)) {
-    return( "None" )
-  
-  } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
-    return( "P" )
-    
-  } else if( null_pos > pval & null_accel > pval & null_speed < pval) {
-    return( "S" ) 
-    
-  } else if( null_pos > pval & null_accel < pval & null_speed > pval) {
-    return( "A" )
-    
-  } else if( null_pos < pval & null_accel > pval & null_speed < pval) {
-    return("PS")
-    
-  } else if( null_pos < pval & null_accel < pval & null_speed > pval) {
-    return( "PA" )
-        
-  } else if( null_pos > pval & null_accel < pval & null_speed < pval) {
-    return("SA")
-
-  } else if( null_pos < pval & null_accel < pval & null_speed < pval) {
-    return("PSA")
-    
-  } else {
-    return("None")
-  }
-}
+spatial_firing <- spatial_firing %>%
+  mutate(avg_both_asr_b = pmap(list(normalised_rates, normalised_rates_run, normalised_rates_try, session_id, cluster_id), join_average_rates))
+  #mutate(avg_both_asr_b = pmap(list(Avg_FiringRate_HitTrials, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials, session_id, cluster_id), join_average_rates))
 
 ```
 
 
-2. Run on all cells in dataframe
+Generic function to plot firing rate ± SEM as a function of position and colour coded according to trial outcome. The function expects to receive the unnested mean firing rates for all neurons that are to be plotted. Conditions for selection should be given before calling the function. Column names of the input data frame should be 'Rates', 'Position' and 'Reward_indicator'.
 ```{r}
-spatial_firing <- spatial_firing  %>%
-    select(-contains('final_model_o_b')) %>%
-    mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel), model_comparison))
-           #final_model_o_nb  = pmap(list(o_mm_p_nb_pos, o_mm_p_nb_speed, o_mm_p_nb_accel), model_comparison))#%>%
-    #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
+mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
+  df$Rates <- as.double(df$Rates)
 
-```
-
-
-### ----------------------------------------------------------------------------------------- ###
-
-
-### Plot model selection results
-
-First for all cells. 
-
-1. Split data by linear model result
-```{r}
-# extracting diff models 
-pos <-subset(spatial_firing, lm_group_b == "Positive")
-neg <-subset(spatial_firing, lm_group_b == "Negative")
-none <-subset(spatial_firing, lm_group_b == "Unclassified")
-
-```
-
-2. Split data by mixed effect model result
-```{r}
-
-P_positive <- nrow(subset(pos, final_model_o_b == "P"))/nrow(pos)*100
-P_negative <- nrow(subset(neg, final_model_o_b == "P"))/nrow(neg)*100
-P_none <- nrow(subset(none,final_model_o_b == "P"))/nrow(none)*100
-
-S_positive <- nrow(subset(pos,final_model_o_b == "S"))/nrow(pos)*100
-S_negative <- nrow(subset(neg,final_model_o_b == "S"))/nrow(neg)*100
-S_none <- nrow(subset(none,final_model_o_b == "S"))/nrow(none)*100
-
-A_positive <- nrow(subset(pos,final_model_o_b == "A"))/nrow(pos)*100
-A_negative <- nrow(subset(neg,final_model_o_b == "A"))/nrow(neg)*100
-A_none <- nrow(subset(none,final_model_o_b == "A"))/nrow(none)*100
-
-P_S_positive <- nrow(subset(pos,final_model_o_b == "PS"))/nrow(pos)*100
-P_S_negative <- nrow(subset(neg,final_model_o_b == "PS"))/nrow(neg)*100
-P_S_none <- nrow(subset(none,final_model_o_b == "PS"))/nrow(none)*100
-
-P_A_positive <- nrow(subset(pos ,final_model_o_b == "PA"))/nrow(pos)*100
-P_A_negative <- nrow(subset(neg ,final_model_o_b == "PA"))/nrow(neg)*100
-P_A_none <- nrow(subset(none,final_model_o_b == "PA"))/nrow(none)*100
-
-S_A_positive <- nrow(subset(pos ,final_model_o_b == "SA"))/nrow(pos)*100
-S_A_negative <- nrow(subset(neg ,final_model_o_b == "SA"))/nrow(neg)*100
-S_A_none <- nrow(subset(none,final_model_o_b == "SA"))/nrow(none)*100
-
-P_S_A_positive <- nrow(subset(pos ,final_model_o_b == "PSA"))/nrow(pos)*100
-P_S_A_negative <- nrow(subset(neg ,final_model_o_b == "PSA"))/nrow(neg)*100
-P_S_A_none <- nrow(subset(none ,final_model_o_b == "PSA"))/nrow(none)*100
-
-NONE_positive <- nrow(subset(pos ,final_model_o_b == "None"))/nrow(pos)*100
-NONE_negative <- nrow(subset(neg ,final_model_o_b == "None"))/nrow(neg)*100
-NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
-
-
-```
-
-2. number of cells in each group - positive sloping neurons
-```{r}
-P_positive_num <- nrow(subset(pos, final_model_o_b == "P"))
-P_A_positive_num <- nrow(subset(pos, final_model_o_b == "PA"))
-P_S_positive_num <- nrow(subset(pos, final_model_o_b == "PS"))
-P_S_A_positive_num <- nrow(subset(pos, final_model_o_b == "PSA"))
-S_A_positive_num <- nrow(subset(pos, final_model_o_b == "SA"))
-S_positive_num <- nrow(subset(pos, final_model_o_b == "S"))
-A_positive_num <- nrow(subset(pos, final_model_o_b == "A"))
-NONE_positive_num <- nrow(subset(pos, final_model_o_b == "None"))
-
-```
-
-3. number of cells in each group - negative sloping neurons
-```{r}
-P_negative_num <- nrow(subset(neg, final_model_o_b == "P"))
-P_A_negative_num <- nrow(subset(neg, final_model_o_b == "PA"))
-P_S_negative_num <- nrow(subset(neg, final_model_o_b == "PS"))
-P_S_A_negative_num <- nrow(subset(neg, final_model_o_b == "PSA"))
-S_A_negative_num <- nrow(subset(neg, final_model_o_b == "SA"))
-S_negative_num <- nrow(subset(neg, final_model_o_b == "S"))
-A_negative_num <- nrow(subset(neg, final_model_o_b == "A"))
-NONE_negative_num <- nrow(subset(neg, final_model_o_b == "None"))
-
-```
-
-3. number of cells in each group - unclassified  neurons
-```{r}
-P_none_num <- nrow(subset(none, final_model_o_b == "P"))
-P_A_none_num <- nrow(subset(none, final_model_o_b == "PA"))
-P_S_none_num <- nrow(subset(none, final_model_o_b == "PS"))
-P_S_A_none_num <- nrow(subset(none, final_model_o_b == "PSA"))
-S_A_none_num <- nrow(subset(none, final_model_o_b == "SA"))
-S_none_num <- nrow(subset(none, final_model_o_b == "S"))
-A_none_num <- nrow(subset(none, final_model_o_b == "A"))
-NONE_none_num <- nrow(subset(none, final_model_o_b == "None"))
-
-```
-
-3. Put data into tibble
-```{r}
-
-
-mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative, S_none, A_positive,A_negative,A_none,  P_S_positive, P_S_negative,P_S_none, P_A_positive, P_A_negative, P_A_none, S_A_positive, S_A_negative, S_A_none,P_S_A_positive, P_S_A_negative, P_S_A_none, NONE_positive,NONE_negative, NONE_none), 
-                      num=c(P_positive_num,P_negative_num,P_none_num,S_positive_num, S_negative_num, S_none_num, A_positive_num,A_negative_num,A_none_num,  P_S_positive_num, P_S_negative_num,P_S_none_num, P_A_positive_num, P_A_negative_num, P_A_none_num, S_A_positive_num, S_A_negative_num, S_A_none_num,P_S_A_positive_num, P_S_A_negative_num, P_S_A_none_num, NONE_positive_num,NONE_negative_num, NONE_none_num),
-                      
-                      ramp_id= c("P","P","P", 
-                                 "S", "S", "S", 
-                                 "A", "A", "A",
-                                 "PS", "PS", "PS", 
-                                 "PA", "PA", "PA", 
-                                 "SA", "SA", "SA", 
-                                 "PAS", "PAS","PAS",
-                                 "None","None", "None"), 
-                      ramp_type= c("Positive", "Negative", "Unclassified","Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified","Positive", "Negative" ,"Unclassified","Positive", "Negative","Unclassified","Positive", "Negative","Unclassified", "Positive", "Negative", "Unclassified", "Positive", "Negative", "Unclassified" ))
-
-```
-
-4. Plot model results
-```{r}
-# plot data
-level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "None")
-ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
-  geom_bar(stat="identity",width = 0.9, alpha = .7) +
-  labs(y = "Percent of neurons", x="") +
-  scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
-  geom_text(aes(label = num), hjust = 0.7, vjust = 0.2, size = 5, position = position_stack(vjust= 0.5)) +
-  #scale_fill_brewer(palette= "RdYlBu") +
+ df <- df %>%
+   group_by(Position, Reward_indicator) %>%
+   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
+             se_b = std.error(Rates, na.rm = TRUE))
+ 
+ ggplot(data=df) +
+  annotate("rect", xmin=-30, xmax=0, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
+                  fill=factor(Reward_indicator)), alpha=0.1) +
+  geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
+  scale_fill_manual(values=c("black", "red", "blue")) +
+  scale_color_manual(values=c("black", "red", "blue")) +
+  #labs(y = "Mean firing rate (Hz)", x = "Location (cm)") +
+  labs(y = "Z-scored firing rate", x = "Location (cm)") +
+  #xlim(-30, 170) +
   theme_classic() +
-  theme(axis.text.x = element_text(angle = 50, vjust=0.65)) +
-  theme(axis.text.x = element_text(size=17),
-        axis.text.y = element_text(size=16),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=16), 
-        legend.text=element_text(size=16), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-if (save_figures == 1) {
-  ggsave(file = "plots/LMERProportions_beaconed_update.png", width = 4, height = 5.5)
-}
-```
-
-
-### ----------------------------------------------------------------------------------------- ###
-
-## Calculate standardized coefficients for position, speed and acceleration in LMER model
-
-
-1. Load functions to calculate and extract standardised coefficients for each variable in the lmer
-```{r}
-source("Functions_StdCoef_lmer.R")
-```
-
-1. calculate and extract standardized coefficients for position, speed and acceleration
-
-Function to calculate standardized coefficients from the model fits
-```{r}
-std_coef <- function(mm) {
-  tryCatch({
-  mod <- stdCoef.merMod(mm) 
-  mod_coefs <- tibble(pos = mod[2,1],
-                      speed = mod[3,1],
-                      accel = mod[4,1])
-      },
-    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-}
-  
-```
-
-
-3. Run on all cells
-```{r, warning=FALSE}
-
-spatial_firing <- spatial_firing  %>%
-  select(-contains('o_b_mod_coefs_')) %>%
-  mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
-  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal")
-```
-
-Standardized coefficients are in:
-spatial_firing$o_b_mod_coefs_pos
-spatial_firing$o_b_mod_coefs_speed
-spatial_firing$o_b_mod_coefs_accel
-
-### plot distribution of coefficients for all cells
-_split by positive and negative sloping neurons_
-
-1. make unique id for each neuron (session_id + cluster_id)
-```{r}
-# First make a function to concatenate session id and cluster id
-make_unique_id <- function(session,cluster) {
-  x <- paste(session, cluster, sep="_")
-  return(as.character(x))
-}
-
-# run on all cells
-spatial_firing <- spatial_firing  %>%
-  mutate(unique_id = map2(session_id, cluster_id, make_unique_id))
-
-```
-
-2. take only columns we need for the rest of the analysis
-```{r}
-spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
-  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b)) %>%
-  as.tibble()
-
-```
-
-3. save to csv file _this is for matching to plots from python_
-```{r}
-write_csv2(spatial_firing_save, "all_results_coefficients.csv")
-```
-
-4. put data into a tibble for plotting
-```{r}
-data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
-                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
-                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save$final_model_o_b),
-                              as.character(spatial_firing_save$final_model_o_b),
-                              as.character(spatial_firing_save$final_model_o_b)), 
-                    # cue_group = c(as.character(spatial_firing_save$cue_group_o),
-                    #            as.character(spatial_firing_save$cue_group_o),
-                    #            as.character(spatial_firing_save$cue_group_o)),
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save)),
-                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
-```
-
-_Plot coefficients for all cells_
-
-
-Make function for plotting standardised coefficients
-```{r}
-standard_plot <- function(df) {
-  level_order <- c("P", "S", "A")
-  ggplot(data=df, aes(x = factor(coef_type), y = as.numeric(coef))) +
-  #coord_cartesian(ylim=c(0,1)) +
-  geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
-  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  geom_jitter(alpha=0.05) +
-  scale_fill_manual(values=c("firebrick1","gold","dodgerblue2")) +
-  labs(y = "std coef", x="\n model parameter") +
-  theme_classic() +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
   theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=12),
+        axis.text.y = element_text(size=14),
+        legend.title = element_blank(),
+        legend.position="none", 
+        text = element_text(size=14),
+        plot.margin = margin(21, 25, 5, 20))
+}
+```
+
+
+_plots for all position encoding neurons (P, PA, PS, PSA)_
+
+1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
+```{r}
+#position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+```
+
+```{r}
+position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+
+3. Subset data by group then average rates for plotting          **Negative Negative Reset**
+```{r}
+(NegNegR_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-29,171))
+
+if (save_figures==1) {
+ ggsave(file = "plots/TrialOutcome_NegNeg_allpositionBUTP.png", width = 3.6, height = 2.9) 
+}
+
+```
+
+
+5. Subset data by group then average rates for plotting          **Positive Positive Reset**
+```{r}
+(PosPosR_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Positive") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_PosPos_allpositionBUTP.png", width = 3.6, height = 2.9)
+}
+
+```
+
+6. Subset data by group then average rates for plotting          **Positive Unclassified**
+```{r}
+(PosUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_PosNeg_allpositionBUTP.png", width = 3.6, height = 2.9)
+}
+
+```
+
+7. Subset data by group then average rates for plotting          **Positive Unclassified**
+```{r}
+(NegUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Positive") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_NegPos_allpositionBUTP.png", width = 3.6, height = 2.9)
+}
+
+```
+
+
+
+_plots for pure position encoding neurons (P)_
+
+Repeat above for just position neurons
+
+1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
+```{r}
+position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P")
+```
+
+
+3. Subset data by group then average rates for plotting          **Negative Negative**
+```{r}
+(NegNegR_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+if (save_figures==1) {
+ ggsave(file = "plots/TrialOutcome_NegNeg_justposition.png", width = 3.6, height = 2.9) 
+}
+
+```
+
+4. Subset data by group then average rates for plotting          **Positive Positive**
+```{r}
+(PosPosC_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Positive") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_PosPos_justposition.png", width = 3.6, height = 2.9)
+}
+
+```
+
+
+6. Subset data by group then average rates for plotting          **Positive Negative**
+```{r}
+(PosUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_PosNeg_justposition.png", width = 3.6, height = 2.9)
+}
+
+```
+
+7. Subset data by group then average rates for plotting          **Negative Positive**
+```{r}
+(NegUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Positive") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_NegPos_justposition.png", width = 3.6, height = 2.9)
+}
+
+```
+
+
+
+
+_plots for pure speed encoding neurons (S) with POSITIVE or NEGATIVE slopes_
+
+
+Repeat above plots but for speed encoding neurons
+
+1. Split data based on positive/negative slope (Figure2) and speed encoding group (Figure 3) as we are only interested in these neurons here
+```{r}
+speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA")
+```
+
+2.seperate based on whether they have a positive or negative relationship with speed
+```{r}
+speed_neurons_pospos <- filter(speed_neurons, lm_group_b == "Positive" & lm_group_b_h == "Positive")
+speed_neurons_negneg <- filter(speed_neurons, lm_group_b == "Negative" & lm_group_b_h == "Negative")
+speed_neurons_posneg <- filter(speed_neurons, lm_group_b == "Positive" & lm_group_b_h == "Negative")
+speed_neurons_negpos <- filter(speed_neurons, lm_group_b == "Negative" & lm_group_b_h == "Positive")
+
+```
+
+
+3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
+```{r}
+(Speed_Neg_plot <- speed_neurons_negneg %>%
+  #filter(o_b_mod_coefs_speed < 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_NegNeg_SandSA.png", width = 3.6, height = 2.9)
+}
+
+```
+
+
+3. Subset data by group then average rates for plotting          **Positive coefficient with speed**
+```{r}
+(Speed_Pos_plot <- speed_neurons_negpos %>%
+  #filter(o_b_mod_coefs_speed > 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_NegPos_SandSA.png", width = 3.6, height = 2.9)
+}
+```
+
+
+3. Subset data by group then average rates for plotting          **Positive coefficient with speed**
+```{r}
+(Speed_Pos_plot <- speed_neurons_pospos %>%
+  filter(o_b_mod_coefs_speed < 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_PosPos_SandSA.png", width = 3.6, height = 2.9)
+}
+```
+
+
+
+3. Subset data by group then average rates for plotting          **Positive coefficient with speed**
+```{r}
+(Speed_Pos_plot <- speed_neurons_posneg %>%
+  #filter(o_b_mod_coefs_speed < 0) %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_PosNeg_SandSA.png", width = 3.6, height = 2.9)
+}
+```
+
+_plots for all speed encoding encoding neurons (S, A, SA)_
+
+
+Repeat above plots but for speed encoding neurons, regardless of classification in Figure 2.
+
+1. Split data based on speed encoding group (Figure 3) as we are only interested in these neurons here
+```{r}
+all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA")
+```
+
+2.seperate based on whether they have a positive or negative relationship with speed
+```{r}
+all_speed_neurons_pos <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
+all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
+```
+
+
+3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
+```{r}
+(All_Speed_Neg_plot <- all_speed_neurons %>%
+  filter(o_b_mod_coefs_speed < 0) %>%
+  #filter(lm_group_b == "Positive") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+if (save_figures==1) {
+  ggsave(file = "plots/negative_relationship_AllSpeed.png", width = 3.6, height = 2.9)
+}
+```
+
+
+3. Subset data by group then average rates for plotting          **positive coefficient with speed**
+```{r}
+(All_Speed_Pos_plot <- all_speed_neurons %>%
+  filter(o_b_mod_coefs_speed > 0) %>%
+  #filter(lm_group_b == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+if (save_figures==1) {
+  ggsave(file = "plots/positive_relationship_AllSpeed.png", width = 3.6, height = 2.9)
+}
+```
+
+
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## plot violin plots of mean apsolute difference between predicted and real in the first 5 cm of the homebound region for hit, run and try trials. 
+
+- do only for neurons that have slopes in outbound zone
+- do this for both negative and positive slopes in the outbound zone
+
+
+1. First extract data into a tibble
+```{r}
+data <- tibble(session_id = rep(unlist(spatial_firing$unique_id), times=3), 
+                    cluster_id = rep(spatial_firing$cluster_id, times=3), 
+                    predict = c(as.numeric(spatial_firing$predict_diff),
+                             as.numeric(spatial_firing$predict_diff_run),
+                             as.numeric(spatial_firing$predict_diff_try)),
+                    coef = c(as.numeric(spatial_firing$o_b_mod_coefs_speed),
+                             as.numeric(spatial_firing$o_b_mod_coefs_speed),
+                             as.numeric(spatial_firing$o_b_mod_coefs_speed)),
+                    type = rep(c("Hit", "Run", "Try"),
+                                    each = nrow(spatial_firing)),
+                    track_category = rep(as.character(spatial_firing$track_category), times=3),
+                    final_model_o_b = rep(as.character(spatial_firing$final_model_o_b), times=3),
+                    lm_group_b = rep(as.character(spatial_firing$lm_group_b), times=3),
+                    lm_group_b_h = rep(as.character(spatial_firing$lm_group_b_h), times=3))
+
+```
+
+2. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 2) and subset based on position encoding (Figure 3) and are ++ or -- in beaconed trials
+```{r}
+df <- data %>%
+  filter(final_model_o_b == "P") %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative" ) 
+  
+```
+
+3. Write function to make violin plot, do this seperatly for positive and negative slope neurons as the axis limits are different for these groups.
+```{r}
+standard_neg_violin_plot <- function(df) {
+  ggplot(data=df, aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+  coord_cartesian(ylim=c(-3.5,5.5)) +
+  geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_point(alpha=0.3) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  scale_fill_manual(values=c("grey","red", "blue")) +
+  labs(y="Offset", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=15),
+        axis.text.y = element_text(size=15),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=12), 
-        legend.text=element_text(size=12), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+        text = element_text(size=15), 
+        legend.text=element_text(size=15), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 }
-```
-
-5. Select cells classified in Figure 2 as having positive or negative slopes
-```{r}
-data_coef_pos_neg <- data_coef %>%
-  subset(lm_result == "Positive" || lm_result == "Negative")
-
-(pos_neg_coef_plot <- standard_plot(data_coef_pos_neg))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_positive_negative_cells.png", width = 3, height = 2.5)
-}  
-    
-```
 
 
-
-5. Split by positive slope _all cells_
-```{r}
-data_coef_pos <- data_coef %>%
-  subset(lm_result == "Positive" )
-
-(pos_coef_plot <- standard_plot(data_coef_pos))
-if (save_figures == 1) {
-   ggsave(file = "plots/CoefficientValues_positivecells.png", width = 3, height = 2.5)
+standard_pos_violin_plot <- function(df) {
+  ggplot(data=df, aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+  coord_cartesian(ylim=c(-5,3)) +
+  geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
+  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  geom_point(alpha=0.3) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  scale_fill_manual(values=c("grey","red", "blue")) +
+  labs(y="Offset", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=15),
+        axis.text.y = element_text(size=15),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=15), 
+        legend.text=element_text(size=15), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 }
+
 ```
 
-5. Split by negative slope _all cells_
-```{r}
-data_coef_neg <- data_coef %>%
-  subset(lm_result == "Negative" )
+_plots for just position encoding encoding neurons (P)_
 
-(neg_coef_plot <- standard_plot(data_coef_neg))
+4. Select cells classified in Figure 2 as having positive or negative slopes and plot
+```{r}
+data_pos <- df %>%
+  subset(lm_group_b == "Positive" & lm_group_b_h == "Positive")
+
+(pos_neg_coef_plot <- standard_pos_violin_plot(data_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_negativecells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/Violin_Predict_Positive_JustPosition.png",width = 3.2, height = 2.5)
 }
-```
 
-_Plot coefficients for all cells_
+data_pos <- df %>%
+  subset(lm_group_b == "Negative" & lm_group_b_h == "Negative")
 
-5. Split by positive slope _PS cells_
-```{r}
-data_coef_pos_PS <- data_coef %>%
-  subset(group == "PS") %>%
-  subset(lm_result == "Positive" )
-
-(pos_PS_coef_plot <- standard_plot(data_coef_pos_PS))
+(pos_neg_coef_plot <- standard_neg_violin_plot(data_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositivePScells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/Violin_Predict_Negative_JustPosition.png",width = 3.2, height = 2.5)
 }
+  
 ```
 
-6. Split by negative slope
-```{r}
-data_coef_neg_PS <- data_coef %>%
-  subset(group == "PS") %>%
-  subset(lm_result == "Negative" )
+_run statistical tests_
 
-(neg_PS_coef_plot <- standard_plot(data_coef_neg_PS))
+1. run anova to compare effect of trial type (hit, try, run) on offset values for ++ and -- neurons 
+```{r}
+data_pos <- df %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") 
+
+one.way <- aov(predict ~ type, data = data_pos)
+summary(one.way)
+
+data_neg <- df %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") 
+
+one.way <- aov(predict ~ type, data = data_neg)
+summary(one.way)
+```
+
+
+2. One-sample ttest to see whether offsets are above 0 _positive neurons_
+
+1. For run trials (not significant)
+```{r}
+data_pos_run <- data_pos %>%
+  filter(type == "Run") 
+
+res <- t.test(data_pos_run$predict, mu = 0)
+res 
+```
+
+1. For hit trials (significant)
+```{r}
+data_pos_hit <- data_pos %>%
+  filter(type == "Hit") 
+
+res <- t.test(data_pos_hit$predict, mu = 0)
+res 
+```
+
+1. For miss trials (not significant)
+```{r}
+data_pos_miss <- data_pos %>%
+  filter(type == "Try") 
+
+res <- t.test(data_pos_miss$predict, mu = 0)
+res 
+```
+
+
+
+One-sample ttest _negative_
+
+1. For run trials
+```{r}
+data_neg_run <- data_neg %>%
+  filter(type == "Run") 
+
+res <- t.test(data_neg_run$predict, mu = 0)
+res 
+```
+
+1. For hit trials
+```{r}
+data_neg_hit <- data_neg %>%
+  filter(type == "Hit") 
+
+res <- t.test(data_neg_hit$predict, mu = 0)
+res 
+```
+
+1. For miss trials
+```{r}
+data_neg_miss <- data_neg %>%
+  filter(type == "Try") 
+
+res <- t.test(data_neg_miss$predict, mu = 0)
+res 
+```
+
+
+
+
+_plots for all position encoding encoding neurons (P, PS, PA, PSA)_
+
+1. repeat plots above but for all position neurons (Figure 3) (P, PS, PA, PSA)
+```{r}
+df <- data %>%
+  filter(final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative" ) 
+  
+```
+
+2. Select cells classified in Figure 2 as having positive or negative slopes and plot
+```{r}
+data_pos <- df %>%
+  subset(lm_group_b == "Positive" & lm_group_b_h == "Positive")
+
+(pos_neg_coef_plot <- standard_pos_violin_plot(data_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativePScells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/PredictProbe_fig7_pos_AllPosition.png",width = 3.2, height = 2.5)
 }
-```
 
+data_pos <- df %>%
+  subset(lm_group_b == "Negative" & lm_group_b_h == "Negative")
 
-_Plot coefficients for just position cells_
-
-
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position only.
-
-```{r}
-data_coef_pos_P <- data_coef %>%
-  subset(group == "P") %>%
-  subset(lm_result == "Positive")
-
-(pos_P_coef_plot <- standard_plot(data_coef_pos_P))
+(pos_neg_coef_plot <- standard_neg_violin_plot(data_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/PredictProbe_fig7_neg_AllPosition.png",width = 3.2, height = 2.5)
 }
+  
+```
+
+2. run anova on data above
+```{r}
+data_pos <- df %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") 
+
+one.way <- aov(predict ~ type, data = data_pos)
+summary(one.way)
+
+data_neg <- df %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") 
+
+one.way <- aov(predict ~ type, data = data_neg)
+summary(one.way)
 ```
 
 
 
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position only.
 
+
+2. One-sample ttest to see whether offsets are above 0 _positive neurons_
+
+1. For run trials (not significant)
 ```{r}
-data_coef_neg_P <- data_coef %>%
-  subset(group == "P") %>%
-  subset(lm_result == "Negative")
+data_pos_run <- data_pos %>%
+  filter(type == "Run") 
 
-(neg_P_coef_plot <- standard_plot(data_coef_neg_P))
+res <- t.test(data_pos_run$predict, mu = 0)
+res 
+```
+
+1. For hit trials (significant)
+```{r}
+data_pos_hit <- data_pos %>%
+  filter(type == "Hit") 
+
+res <- t.test(data_pos_hit$predict, mu = 0)
+res 
+```
+
+1. For miss trials (not significant)
+```{r}
+data_pos_miss <- data_pos %>%
+  filter(type == "Try") 
+
+res <- t.test(data_pos_miss$predict, mu = 0)
+res 
+```
+
+
+
+One-sample ttest _negative_
+
+1. For run trials
+```{r}
+data_neg_run <- data_neg %>%
+  filter(type == "Run") 
+
+res <- t.test(data_neg_run$predict, mu = 0)
+res 
+```
+
+1. For hit trials
+```{r}
+data_neg_hit <- data_neg %>%
+  filter(type == "Hit") 
+
+res <- t.test(data_neg_hit$predict, mu = 0)
+res 
+```
+
+1. For miss trials
+```{r}
+data_neg_miss <- data_neg %>%
+  filter(type == "Try") 
+
+res <- t.test(data_neg_miss$predict, mu = 0)
+res 
+```
+
+
+
+
+
+1. For run trials
+```{r}
+data_pos_run <- df %>%
+  filter(type == "Run") 
+
+res <- t.test(data_pos_run$predict, mu = 0)
+res 
+```
+
+
+
+
+
+_plots for all speed encoding encoding neurons (S, A, SA)_
+
+1. extract only neurons that are subset based on speed encoding (S, SA, A) (Figure 3) and are ++ or -- in beaconed trials
+```{r}
+df <- data %>%
+  filter(final_model_o_b == "S" | final_model_o_b == "SA" ) %>%
+  filter(track_category == "pospos" | track_category == "negneg") 
+
+```
+
+
+5. Select cells classified in Figure 2 as having positive or negative slopes and plot
+```{r}
+data_pos <- df %>%
+  subset(lm_group_b == "Positive") 
+
+(pos_neg_coef_plot <- standard_pos_violin_plot(data_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/PredictProbe_fig7_pos_AllSpeed.png",width = 4, height = 2.5)
 }
-```
 
+data_pos <- df %>%
+  subset(lm_group_b == "Negative")
 
-_Plot coefficients for just position cells_
-
-
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position only.
-
-```{r}
-data_coef_pos_SA <- data_coef %>%
-  subset(group == "SA") %>%
-  subset(lm_result == "Positive")
-
-(pos_SA_coef_plot <- standard_plot(data_coef_pos_SA))
+(pos_neg_coef_plot <- standard_neg_violin_plot(data_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositiveSAcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/PredictProbe_fig7_neg_AllSpeed.png",width = 4, height = 2.5)
 }
+  
+```
+
+2. run anova on above data
+```{r}
+data_pos <- df %>%
+  filter(lm_group_b == "Positive") 
+
+
+one.way <- lm(predict ~ type, data = data_pos)
+car::Anova(one.way)
+summary(one.way)
+
+data_neg <- df %>%
+  filter(lm_group_b == "Negative") 
+
+
+#one.way <- lm(predict ~ type, data = data_neg)
+#car::Anova(one.way)
+#summary(one.way)
+
+#one.way <- ano(predict ~ type, data = data_neg)
+#summary(one.way)
 ```
 
 
 
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position only.
+2. One-sample ttest to see whether offsets are above 0 _positive neurons_
 
+1. For run trials (not significant)
 ```{r}
-data_coef_neg_SA <- data_coef %>%
-  subset(group == "SA") %>%
-  subset(lm_result == "Negative")
+data_pos_run <- data_pos %>%
+  filter(type == "Run") 
 
-(neg_SA_coef_plot <- standard_plot(data_coef_neg_SA))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativeSAcells.png", width = 3, height = 2.5)
-}
+res <- t.test(data_pos_run$predict, mu = 0)
+res 
 ```
 
-6c. Plot coefficients for cells classified in Figure 2 as being unclassified but that have 'significant' positional coefficients in the mixed effect model.
-
+1. For hit trials (significant)
 ```{r}
-data_coef_UC_PSA <- data_coef %>%
-  subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
-  subset(lm_result == "Unclassified")
+data_pos_hit <- data_pos %>%
+  filter(type == "Hit") 
 
-(UC_PSA_coef_plot <- standard_plot(data_coef_UC_PSA))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_UCPSAcells.png", width = 3, height = 2.5)
-}
+res <- t.test(data_pos_hit$predict, mu = 0)
+res 
 ```
 
-
-## For supplemental 6, plot coefficents for remaining groups
-
-
-_Plot coefficients for just speed cells_
-
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for speed only.
-
+1. For miss trials (not significant)
 ```{r}
-data_coef_pos_S <- data_coef %>%
-  subset(group == "S") %>%
-  subset(lm_result == "Positive")
+data_pos_miss <- data_pos %>%
+  filter(type == "Try") 
 
-(pos_S_coef_plot <- standard_plot(data_coef_pos_S))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositiveScells.png", width = 3, height = 2.5)
-}
-```
-
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for speed only.
-
-```{r}
-data_coef_neg_S <- data_coef %>%
-  subset(group == "S") %>%
-  subset(lm_result == "Negative")
-
-(neg_S_coef_plot <- standard_plot(data_coef_neg_S))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativeScells.png", width = 3, height = 2.5)
-}
-```
-
-
-_Plot coefficients for just acceleration cells_
-
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for acceleration only.
-
-```{r}
-data_coef_pos_A <- data_coef %>%
-  subset(group == "A") %>%
-  subset(lm_result == "Positive")
-
-(pos_A_coef_plot <- standard_plot(data_coef_pos_A))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositiveAcells.png", width = 3, height = 2.5)
-}
-```
-
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for acceleration only.
-
-```{r}
-data_coef_neg_A <- data_coef %>%
-  subset(group == "A") %>%
-  subset(lm_result == "Negative")
-
-(neg_A_coef_plot <- standard_plot(data_coef_neg_A))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativeAcells.png", width = 3, height = 2.5)
-}
-```
-
-
-_Plot coefficients for just position and acceleration cells_
-
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position and acceleration. 
-
-```{r}
-data_coef_pos_PA <- data_coef %>%
-  subset(group == "PA") %>%
-  subset(lm_result == "Positive")
-
-(pos_PA_coef_plot <- standard_plot(data_coef_pos_PA))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositivePAcells.png", width = 3, height = 2.5)
-}
-```
-
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position and acceleration
-
-```{r}
-data_coef_neg_PA <- data_coef %>%
-  subset(group == "PA") %>%
-  subset(lm_result == "Negative")
-
-(neg_PA_coef_plot <- standard_plot(data_coef_neg_PA))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativePAcells.png", width = 3, height = 2.5)
-}
-```
-
-
-_Plot coefficients for just position and acceleration cells_
-
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position and acceleration. 
-
-```{r}
-data_coef_pos_PSA <- data_coef %>%
-  subset(group == "PSA") %>%
-  subset(lm_result == "Positive")
-
-(pos_PSA_coef_plot <- standard_plot(data_coef_pos_PSA))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositivePSAcells.png", width = 3, height = 2.5)
-}
-```
-
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for speed only.
-
-```{r}
-data_coef_neg_PSA <- data_coef %>%
-  subset(group == "PSA") %>%
-  subset(lm_result == "Negative")
-
-(neg_PSA_coef_plot <- standard_plot(data_coef_neg_PSA))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativePSAcells.png", width = 3, height = 2.5)
-}
+res <- t.test(data_pos_miss$predict, mu = 0)
+res 
 ```
 
 
 
+One-sample ttest _negative_
 
-## Save to csv file _this is for matching to plots from python_
+1. For run trials
 ```{r}
-spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
-                              cluster_id = spatial_firing_save$cluster_id,
-                              pos_stdcoef =  as.character(spatial_firing_save$o_b_mod_coefs_pos),
-                              speed_stdcoef =  as.character(spatial_firing_save$o_b_mod_coefs_speed),
-                              accel_stdcoef =  as.character(spatial_firing_save$o_b_mod_coefs_accel),
-                              final_model_o_b =  as.character(spatial_firing_save$final_model_o_b),
-                              lm_result_o_rewarded_b =  as.character(spatial_firing_save$lm_group_b))
+data_neg_run <- data_neg %>%
+  filter(type == "Run") 
 
-write.table(spatial_firing_save, "all_results_coefficients.txt", quote=FALSE, sep="\t")
+res <- t.test(data_neg_run$predict, mu = 0)
+res 
+```
+
+1. For hit trials
+```{r}
+data_neg_hit <- data_neg %>%
+  filter(type == "Hit") 
+
+res <- t.test(data_neg_hit$predict, mu = 0)
+res 
+```
+
+1. For miss trials
+```{r}
+data_neg_miss <- data_neg %>%
+  filter(type == "Try") 
+
+res <- t.test(data_neg_miss$predict, mu = 0)
+res 
 ```
 
 
 
 
 
-###----------------------------------------------------------------------------###
+### ----------------------------------------------------------------------------- ###
 
-Analyses
 
-Compare coefficients for position, speed and acceleration.
+## Figure 7 stats
+
+Find proportion & numbers of neurons that are significant/non-significiant
 
 ```{r}
-position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & reward_interaction_id != "NA")
 ```
 
 ```{r}
-pos_position_cells <- subset(spatial_firing, lm_group_b == "Positive")
-neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
-
+sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ramps_with_enough_trials)*100
+nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps_with_enough_trials)*100
 ```
-
-2. take only columns we need for the rest of the analysis
 ```{r}
-spatial_firing_save_p <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
-  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b)) %>%
-  as.tibble()
-
-spatial_firing_save_n <- select(neg_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
-  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b)) %>%
-  as.tibble()
+sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
+nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))
 ```
-
-1. put data into a tibble for plotting
-```{r}
-
-data_coef_p <- tibble(session_id = rep(unlist(spatial_firing_save_p$unique_id), times=3),
-                    cluster_id = rep(spatial_firing_save_p$cluster_id, times=3),
-
-                    coef = c(as.character(spatial_firing_save_p$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save_p$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save_p$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save_p$final_model_o_b),
-                              as.character(spatial_firing_save_p$final_model_o_b),
-                              as.character(spatial_firing_save_p$final_model_o_b)),
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save_p)),
-                    lm_result = rep(as.character(spatial_firing_save_p$lm_group_b), times=3))
-
-data_coef_n <- tibble(session_id = rep(unlist(spatial_firing_save_n$unique_id), times=3),
-                    cluster_id = rep(spatial_firing_save_n$cluster_id, times=3),
-                    coef = c(as.character(spatial_firing_save_n$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save_n$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save_n$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save_n$final_model_o_b),
-                              as.character(spatial_firing_save_n$final_model_o_b),
-                              as.character(spatial_firing_save_n$final_model_o_b)),
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save_n)),
-                    lm_result = rep(as.character(spatial_firing_save_n$lm_group_b), times=3))
-```
-
-2. run anova
-```{r}
-one.way_p <- aov(coef ~ coef_type, data = data_coef_p)
-
-summary(one.way_p)
-
-one.way_n <- aov(coef ~ coef_type, data = data_coef_n)
-
-summary(one.way_n)
-```
-
-3. Post hoc Tukey's test
-```{r}
-tukey.test_p <- TukeyHSD(one.way_p)
-tukey.test_p$coef_type
-
-tukey.test_n <- TukeyHSD(one.way_n)
-tukey.test_n$coef_type
-```
-
-
 
