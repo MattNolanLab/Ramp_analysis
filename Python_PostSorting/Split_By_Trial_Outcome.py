@@ -7,12 +7,12 @@ from scipy import stats
 def extract_data_from_frame(spike_data, cluster):
     rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
     rewarded_trials = rewarded_trials[~np.isnan(rewarded_trials)]
-    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10 # convert from 100 ms sampling rate to Hz
-    speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real, dtype=np.float32)
-    position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real, dtype=np.float32)
+
+    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)
+    speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
+    position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
     types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
     trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
-
     speed = convolve_speed_data(speed)
 
     data = np.vstack((rates, speed, position, trials, types))
@@ -155,18 +155,18 @@ def split_and_save_data_with_all_speeds(spike_data):
         types = data[:,4]
 
         # remove outliers
-        mean_speed = np.nanmean(speed)
-        sd_speed = np.nanstd(speed)
-        upper_speed_sd = mean_speed+(sd_speed*3)
+        #mean_speed = np.nanmean(speed)
+        #sd_speed = np.nanstd(speed)
+        #upper_speed_sd = mean_speed+(sd_speed*3)
 
-        data = np.vstack((rates, speed, position, trials, types))
-        data=data.transpose()
-        data = data[data[:,1] < upper_speed_sd,:]
-        rates = data[:,0]
-        speed = data[:,1]
-        position = data[:,2]
-        trials = data[:,3]
-        types = data[:,4]
+        #data = np.vstack((rates, speed, position, trials, types))
+        #data=data.transpose()
+        #data = data[data[:,1] < upper_speed_sd,:]
+        #rates = data[:,0]
+        #speed = data[:,1]
+        #position = data[:,2]
+        #trials = data[:,3]
+        #types = data[:,4]
 
         rewarded_rates = rates[np.isin(trials,rewarded_trials)]
         rewarded_speed = speed[np.isin(trials,rewarded_trials)]
@@ -329,6 +329,7 @@ def extract_time_binned_firing_rate_try_allspeeds(spike_data):
 def extract_time_binned_firing_rate_rewarded_allspeeds(spike_data):
     spike_data["Avg_FiringRate_HitTrials"] = ""
     spike_data["SD_FiringRate_HitTrials"] = ""
+    spike_data["FiringRate_HitTrials_trials"] = ""
 
     for cluster in range(len(spike_data)):
         speed=np.array(spike_data.iloc[cluster].spikes_in_time_reward[1])
@@ -370,9 +371,11 @@ def extract_time_binned_firing_rate_rewarded_allspeeds(spike_data):
             x_sd = np.nanstd(data_b, axis=1)
             spike_data.at[cluster, 'Avg_FiringRate_HitTrials'] = list(x)# add data to dataframe
             spike_data.at[cluster, 'SD_FiringRate_HitTrials'] = list(x_sd)
+            spike_data.at[cluster, 'FiringRate_HitTrials_trials'] = list(data_b)
         else:
             spike_data.at[cluster, 'Avg_FiringRate_HitTrials'] = np.nan
             spike_data.at[cluster, 'SD_FiringRate_HitTrials'] = np.nan
+            spike_data.at[cluster, 'FiringRate_HitTrials_trials'] = np.nan
     return spike_data
 
 
