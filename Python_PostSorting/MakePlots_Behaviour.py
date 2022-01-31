@@ -8,9 +8,9 @@ import math
 
 
 def load_stop_data(spatial_data):
-    locations = np.array(spatial_data.at[1,'stop_location_cm'])
-    trials = np.array(spatial_data.at[1,'stop_trial_number'])
-    trial_type = np.array(spatial_data.at[1,'stop_trial_type'])
+    locations = np.array(spatial_data.at[1,'stop_locations'])
+    trials = np.array(spatial_data.at[1,'stop_trials'])
+    trial_type = np.array(spatial_data.at[1,'stop_trial_types'])
     return locations,trials,trial_type
 
 

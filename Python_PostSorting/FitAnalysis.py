@@ -9,7 +9,7 @@ def load_Teris_ramp_score_data_into_frame(spike_data):
     spike_data["ramp_score"] = ""
     spike_data["ramp_score_shuff"] = ""
 
-    fit_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data/ramp_score_coeff_export.csv", header=int())
+    fit_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data/ramp_peak_analysis.csv", header=int())
 
 
     for cluster in range(len(spike_data)):
@@ -17,23 +17,30 @@ def load_Teris_ramp_score_data_into_frame(spike_data):
         cluster_id=spike_data.at[cluster, "cluster_id"]
 
         #find data for that neuron
+        #outbound_data = fit_data['region'] == 'outbound'
+        #outbound_data = fit_data[outbound_data]
+
         session_fits = fit_data['session_id'] == session_id
         session_fits = fit_data[session_fits]
 
-        # get only beaconed trials
-        b_fits = session_fits['trial_type'] == 'beaconed'
-        b_fits = session_fits[b_fits]
-
         # find that neuron
-        neuron_fits = b_fits['cluster_id'] == cluster_id
-        neuron_fits = b_fits[neuron_fits]
+        neuron_fits = session_fits['cluster_id'] == cluster_id
+        neuron_fits = session_fits[neuron_fits]
 
-        # find shuffled/not shuffled ramp score
-        real_neuron_fits = neuron_fits['is_shuffled'] == False
+        # get only beaconed trials
+        real_neuron_fits = neuron_fits['trial_type'] == 'beaconed'
         real_neuron_fits = neuron_fits[real_neuron_fits]
 
-        shuff_neuron_fits = neuron_fits['is_shuffled'] == True
+        # get only shuffled trials
+        shuff_neuron_fits = neuron_fits['trial_type'] == 'shuffle'
         shuff_neuron_fits = neuron_fits[shuff_neuron_fits]
+
+        # find shuffled/not shuffled ramp score
+        #real_neuron_fits = neuron_fits['is_shuffled'] == False
+        #real_neuron_fits = neuron_fits[real_neuron_fits]
+
+        #shuff_neuron_fits = neuron_fits['is_shuffled'] == True
+        #shuff_neuron_fits = neuron_fits[shuff_neuron_fits]
 
         try:
             real_ramp_score = real_neuron_fits['ramp_score'].values # extract fit
