@@ -18,7 +18,7 @@ def generate_speed_histogram(spike_data, recording_folder):
         os.makedirs(save_path)
     for cluster in range(len(spike_data)):
         session_id = spike_data.at[cluster, "session_id"]
-        speed = np.array(spike_data.iloc[cluster].spike_rate_in_time[1]).real/1000
+        speed = np.array(spike_data.iloc[cluster].spike_rate_in_time[1]).real
         speed = speed[speed > 0]
         try:
             posrange = np.linspace(0, 100, num=100)

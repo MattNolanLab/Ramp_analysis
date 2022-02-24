@@ -7,6 +7,9 @@ from elephant.statistics import isi, cv
 import os
 import Python_PostSorting.plot_utility
 import scipy.stats
+from elephant.statistics import time_histogram, instantaneous_rate
+from elephant.statistics import isi, cv
+
 
 """
 
@@ -80,6 +83,13 @@ def add_column_to_dataframe(spike_data):
     spike_data["cv_diff_nb"] = ""
     spike_data["isi_diff_p"] = ""
     spike_data["cv_diff_p"] = ""
+    return spike_data
+
+def add_basic_column_to_dataframe(spike_data):
+
+    spike_data["mean_cv2"] = ""
+    spike_data["mean_isi"] = ""
+
     return spike_data
 
 
@@ -174,7 +184,7 @@ def split_firing_by_trialtype(spike_locations, spike_trials, spike_trialtype):
     return beaconed_locations, beaconed_trials, nonbeaconed_locations, nonbeaconed_trials, probe_locations, probe_trials
 
 
-def generate_spike_isi(server_path, spike_data):
+def generate_spike_isi_by_trial(server_path, spike_data):
     print('I am calculating the interspike interval ...')
     spike_data = add_column_to_dataframe(spike_data)
     for cluster in range(len(spike_data)):
@@ -219,6 +229,49 @@ def generate_spike_isi(server_path, spike_data):
     return spike_data
 
 
+def calculate_cv2_from_train(spiketrain):
+    spike_cv = []
+    if spiketrain.shape[0] >= 2:
+        cv = elephant.statistics.cv2(spiketrain, with_nan=True) # calculate cv2
+        spike_cv= np.nanmean(cv)
+        return spike_cv
+    else:
+        return spike_cv
+
+
+def calculate_mean_isi(spike_times):
+    #spiketrain = np.absolute(np.diff(spike_times, axis=0)) #spiketrain = elephant.statistics.isi(trial_spikes, axis=-0) # not working, ripped from source code
+    #cv_list = [cv(isi(spiketrain)) for spiketrain in spiketrain_list]
+    isi = elephant.statistics.isi(spike_times, axis=0) # calculate cv2
+
+    spike_isi = np.nanmean(isi) # convert sampling points to ms
+    spike_cv = calculate_cv2_from_train(isi)
+    return spike_isi, spike_cv
+
+
+
+def generate_spike_isi(server_path, spike_data):
+    print('I am calculating the interspike interval ...')
+    spike_data = add_basic_column_to_dataframe(spike_data)
+    for cluster in range(len(spike_data)):
+        spike_times = np.array(spike_data.at[cluster, "firing_times_of"]) / 30 # convert to ms
+
+        spike_isi, cv = calculate_mean_isi(spike_times)
+        mean_isi = np.nanmean(spike_isi)
+        spike_data = add_data_to_frame(spike_data, cluster, mean_isi, cv)
+
+    print('I have finished calculating the interspike interval ...')
+
+    return spike_data
+
+
+
+def add_data_to_frame(spike_data, cluster, mean_isi, cv):
+    spike_data.at[cluster, "mean_isi"] = np.float(mean_isi)
+    spike_data.at[cluster, "mean_cv2"] = np.nanmean(cv)
+    return spike_data
+
+
 
 def add_beaconed_data_to_frame(spike_data, cluster, location_binned_interspike_interval, location_binned_cv2, mean_isi, cv):
     spike_data.at[cluster, "location_binned_interspike_interval"] = location_binned_interspike_interval
@@ -259,14 +312,12 @@ def plot_isi_data(recording_folder, spike_data, cluster, location_binned_isi, lo
 
     ax.locator_params(axis = 'x', nbins=3)
     ax.set_xticklabels(['0', '100', '200'])
-    #Python_PostSorting.plot_utility.makelegend(avg_spikes_on_track,ax, 0.3)
     ax.set_ylabel('CV2', fontsize=14, labelpad = 10)
     plt.xlabel('Location (cm)', fontsize=14, labelpad = 10)
     plt.xlim(0,200)
     #ax.set_ylim(0,1)
     plt.locator_params(axis = 'y', nbins  = 4)
-    #Python_PostSorting.plot_utility.style_vr_plot(ax, np.max(location_binned_cv), 0)
-    #Python_PostSorting.plot_utility.style_track_plot(ax, 200)
+
     plt.subplots_adjust(hspace = .35, wspace = .35,  bottom = 0.4, left = 0.2, right = 0.8, top = 0.92)
     plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_location_binned_cv_' + str(cluster_index +1) + str(prefix) + '.png', dpi=200)
     plt.close()

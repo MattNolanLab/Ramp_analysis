@@ -154,20 +154,6 @@ def split_and_save_data_with_all_speeds(spike_data):
         trials = data[:,3]
         types = data[:,4]
 
-        # remove outliers
-        #mean_speed = np.nanmean(speed)
-        #sd_speed = np.nanstd(speed)
-        #upper_speed_sd = mean_speed+(sd_speed*3)
-
-        #data = np.vstack((rates, speed, position, trials, types))
-        #data=data.transpose()
-        #data = data[data[:,1] < upper_speed_sd,:]
-        #rates = data[:,0]
-        #speed = data[:,1]
-        #position = data[:,2]
-        #trials = data[:,3]
-        #types = data[:,4]
-
         rewarded_rates = rates[np.isin(trials,rewarded_trials)]
         rewarded_speed = speed[np.isin(trials,rewarded_trials)]
         rewarded_position = position[np.isin(trials,rewarded_trials)]
@@ -217,10 +203,19 @@ def drop_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i, j
     return spike_data
 
 
+###------------------------------------------------------------------------------------------------------------------###
+
+
+###------------------------------------------------------------------------------------------------------------------###
+
+
+### Calculate average firing rate for trial outcomes
 
 def extract_time_binned_firing_rate_runthru_allspeeds(spike_data):
     spike_data["Avg_FiringRate_RunTrials"] = ""
     spike_data["SD_FiringRate_RunTrials"] = ""
+    spike_data["Avg_FiringRate_RunTrials_nb"] = ""
+    spike_data["SD_FiringRate_RunTrials_nb"] = ""
     spike_data["FiringRate_RunTrials_trials"] = ""
 
     for cluster in range(len(spike_data)):
@@ -239,19 +234,25 @@ def extract_time_binned_firing_rate_runthru_allspeeds(spike_data):
             # bin data over position bins
             bins = np.arange(0,200,1)
             trial_numbers = np.arange(min(trials),max(trials), 1)
-            binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0])); binned_data[:, :] = np.nan
+            binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0], 3)); binned_data[:, :, :] = np.nan
             for tcount, trial in enumerate(trial_numbers):
                 trial_data = data[data[:,4] == trial,:]
                 if trial_data.shape[0] > 0:
                     t_rates = trial_data[:,0]
                     t_pos = trial_data[:,2]
+                    type_in_position = int(trial_data[0,3])
+
                     for bcount, b in enumerate(bins):
                         rate_in_position = np.take(t_rates, np.where(np.logical_and(t_pos >= bcount, t_pos < bcount+1)))
                         average_rates = np.nanmean(rate_in_position)
-                        binned_data[bcount, tcount] = average_rates
+                        if type_in_position == 0 :
+                            binned_data[bcount, tcount, 0] = average_rates
+                        else:
+                            binned_data[bcount, tcount, 1] = average_rates
 
-            #remove nans interpolate
-            data_b = pd.DataFrame(binned_data[:,:], dtype=None, copy=False)
+
+
+            data_b = pd.DataFrame(binned_data[:,:,0], dtype=None, copy=False)
             data_b = data_b.dropna(axis = 1, how = "all")
             data_b.reset_index(drop=True, inplace=True)
             data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
@@ -263,11 +264,26 @@ def extract_time_binned_firing_rate_runthru_allspeeds(spike_data):
             x_sd = np.nanstd(data_b, axis=1)
             spike_data.at[cluster, 'Avg_FiringRate_RunTrials'] = list(x)# add data to dataframe
             spike_data.at[cluster, 'SD_FiringRate_RunTrials'] = list(x_sd)
-            spike_data.at[cluster, 'FiringRate_RunTrials_trials'] = list(data_b)# add data to dataframe
+            #spike_data.at[cluster, 'FiringRate_RunTrials_trials'] = list(data_b)# add data to dataframe
+
+
+            data_b = pd.DataFrame(binned_data[:,:,1], dtype=None, copy=False)
+            data_b = data_b.dropna(axis = 1, how = "all")
+            data_b.reset_index(drop=True, inplace=True)
+            data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
+            data_b = np.asarray(data_b)
+            x = np.reshape(data_b, (data_b.shape[0]*data_b.shape[1]))
+            x = signal.convolve(x, window, mode='same')/ sum(window)
+            data_b = np.reshape(x, (data_b.shape[0], data_b.shape[1]))
+            x = np.nanmean(data_b, axis=1)
+            x_sd = np.nanstd(data_b, axis=1)
+            spike_data.at[cluster, 'Avg_FiringRate_RunTrials_nb'] = list(x)# add data to dataframe
+            spike_data.at[cluster, 'SD_FiringRate_RunTrials_nb'] = list(x_sd)
         else:
             spike_data.at[cluster, 'Avg_FiringRate_RunTrials'] = np.nan
-            spike_data.at[cluster, 'SD_FiringRate_RunTrials'] = np.nan
-            spike_data.at[cluster, 'FiringRate_RunTrials_trials'] = np.nan# add data to dataframe
+            spike_data.at[cluster, 'SD_FiringRate_RunTrials'] =  np.nan
+            spike_data.at[cluster, 'Avg_FiringRate_RunTrials_nb'] =  np.nan
+            spike_data.at[cluster, 'SD_FiringRate_RunTrials_nb'] =  np.nan
     return spike_data
 
 
@@ -275,7 +291,8 @@ def extract_time_binned_firing_rate_runthru_allspeeds(spike_data):
 def extract_time_binned_firing_rate_try_allspeeds(spike_data):
     spike_data["Avg_FiringRate_TryTrials"] = ""
     spike_data["SD_FiringRate_TryTrials"] = ""
-    spike_data["FiringRate_TryTrials_trials"] = ""
+    spike_data["Avg_FiringRate_TryTrials_nb"] = ""
+    spike_data["SD_FiringRate_TryTrials_nb"] = ""
 
     for cluster in range(len(spike_data)):
         speed=np.array(spike_data.iloc[cluster].spikes_in_time_try[1])
@@ -293,19 +310,25 @@ def extract_time_binned_firing_rate_try_allspeeds(spike_data):
             # bin data over position bins
             bins = np.arange(0,200,1)
             trial_numbers = np.arange(min(trials),max(trials), 1)
-            binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0])); binned_data[:, :] = np.nan
+            binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0], 3)); binned_data[:, :, :] = np.nan
             for tcount, trial in enumerate(trial_numbers):
                 trial_data = data[data[:,4] == trial,:]
                 if trial_data.shape[0] > 0:
                     t_rates = trial_data[:,0]
                     t_pos = trial_data[:,2]
+                    type_in_position = int(trial_data[0,3])
+
                     for bcount, b in enumerate(bins):
                         rate_in_position = np.take(t_rates, np.where(np.logical_and(t_pos >= bcount, t_pos < bcount+1)))
                         average_rates = np.nanmean(rate_in_position)
-                        binned_data[bcount, tcount] = average_rates
+                        if type_in_position == 0 :
+                            binned_data[bcount, tcount, 0] = average_rates
+                        else:
+                            binned_data[bcount, tcount, 1] = average_rates
+
 
             #remove nans interpolate
-            data_b = pd.DataFrame(binned_data[:,:], dtype=None, copy=False)
+            data_b = pd.DataFrame(binned_data[:,:,0], dtype=None, copy=False)
             data_b = data_b.dropna(axis = 1, how = "all")
             data_b.reset_index(drop=True, inplace=True)
             data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
@@ -317,11 +340,26 @@ def extract_time_binned_firing_rate_try_allspeeds(spike_data):
             x_sd = np.nanstd(data_b, axis=1)
             spike_data.at[cluster, 'Avg_FiringRate_TryTrials'] = list(x)# add data to dataframe
             spike_data.at[cluster, 'SD_FiringRate_TryTrials'] = list(x_sd)
-            spike_data.at[cluster, 'FiringRate_TryTrials_trials'] = list(data_b)
+            #spike_data.at[cluster, 'FiringRate_TryTrials_trials'] = list(data_b)
+
+
+            data_p = pd.DataFrame(binned_data[:,:,1], dtype=None, copy=False)
+            data_p = data_p.dropna(axis = 1, how = "all")
+            data_p.reset_index(drop=True, inplace=True)
+            data_p = data_p.interpolate(method='linear', limit=None, limit_direction='both')
+            data_p = np.asarray(data_p)
+            x = np.reshape(data_p, (data_p.shape[0]*data_p.shape[1]))
+            x = signal.convolve(x, window, mode='same')/ sum(window)
+            data_p = np.reshape(x, (data_p.shape[0], data_p.shape[1]))
+            x = np.nanmean(data_p, axis=1)
+            x_sd = np.nanstd(data_p, axis=1)
+            spike_data.at[cluster, 'Avg_FiringRate_TryTrials_nb'] = list(x)# add data to dataframe
+            spike_data.at[cluster, 'SD_FiringRate_TryTrials_nb'] = list(x_sd)
         else:
             spike_data.at[cluster, 'Avg_FiringRate_TryTrials'] = np.nan
-            spike_data.at[cluster, 'FiringRate_TryTrials_trials'] = np.nan
-            spike_data.at[cluster, 'SD_FiringRate_TryTrials'] = np.nan
+            spike_data.at[cluster, 'SD_FiringRate_TryTrials'] =  np.nan
+            spike_data.at[cluster, 'Avg_FiringRate_TryTrials_nb'] =  np.nan
+            spike_data.at[cluster, 'SD_FiringRate_TryTrials_nb'] =  np.nan
     return spike_data
 
 
@@ -329,6 +367,8 @@ def extract_time_binned_firing_rate_try_allspeeds(spike_data):
 def extract_time_binned_firing_rate_rewarded_allspeeds(spike_data):
     spike_data["Avg_FiringRate_HitTrials"] = ""
     spike_data["SD_FiringRate_HitTrials"] = ""
+    spike_data["Avg_FiringRate_HitTrials_nb"] = ""
+    spike_data["SD_FiringRate_HitTrials_nb"] = ""
     spike_data["FiringRate_HitTrials_trials"] = ""
 
     for cluster in range(len(spike_data)):
@@ -347,19 +387,24 @@ def extract_time_binned_firing_rate_rewarded_allspeeds(spike_data):
             # bin data over position bins
             bins = np.arange(0,200,1)
             trial_numbers = np.arange(min(trials),max(trials), 1)
-            binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0])); binned_data[:, :] = np.nan
+            binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0], 3)); binned_data[:, :, :] = np.nan
             for tcount, trial in enumerate(trial_numbers):
                 trial_data = data[data[:,4] == trial,:]
                 if trial_data.shape[0] > 0:
                     t_rates = trial_data[:,0]
                     t_pos = trial_data[:,2]
+                    type_in_position = int(trial_data[0,3])
+
                     for bcount, b in enumerate(bins):
                         rate_in_position = np.take(t_rates, np.where(np.logical_and(t_pos >= bcount, t_pos < bcount+1)))
                         average_rates = np.nanmean(rate_in_position)
-                        binned_data[bcount, tcount] = average_rates
+                        if type_in_position == 0 :
+                            binned_data[bcount, tcount, 0] = average_rates
+                        else:
+                            binned_data[bcount, tcount, 1] = average_rates
 
             #remove nans interpolate
-            data_b = pd.DataFrame(binned_data[:,:], dtype=None, copy=False)
+            data_b = pd.DataFrame(binned_data[:,:,0], dtype=None, copy=False)
             data_b = data_b.dropna(axis = 1, how = "all")
             data_b.reset_index(drop=True, inplace=True)
             data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
@@ -371,11 +416,28 @@ def extract_time_binned_firing_rate_rewarded_allspeeds(spike_data):
             x_sd = np.nanstd(data_b, axis=1)
             spike_data.at[cluster, 'Avg_FiringRate_HitTrials'] = list(x)# add data to dataframe
             spike_data.at[cluster, 'SD_FiringRate_HitTrials'] = list(x_sd)
-            spike_data.at[cluster, 'FiringRate_HitTrials_trials'] = list(data_b)
+            #spike_data.at[cluster, 'FiringRate_HitTrials_trials'] = list(data_b)
+
+
+            #remove nans interpolate
+            data_b = pd.DataFrame(binned_data[:,:,1], dtype=None, copy=False)
+            data_b = data_b.dropna(axis = 1, how = "all")
+            data_b.reset_index(drop=True, inplace=True)
+            data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
+            data_b = np.asarray(data_b)
+            x = np.reshape(data_b, (data_b.shape[0]*data_b.shape[1]))
+            x = signal.convolve(x, window, mode='same')/ sum(window)
+            data_b = np.reshape(x, (data_b.shape[0], data_b.shape[1]))
+            x = np.nanmean(data_b, axis=1)
+            x_sd = np.nanstd(data_b, axis=1)
+            spike_data.at[cluster, 'Avg_FiringRate_HitTrials_nb'] = list(x)# add data to dataframe
+            spike_data.at[cluster, 'SD_FiringRate_HitTrials_nb'] = list(x_sd)
+            #spike_data.at[cluster, 'FiringRate_HitTrials_trials'] = list(data_b)
         else:
             spike_data.at[cluster, 'Avg_FiringRate_HitTrials'] = np.nan
-            spike_data.at[cluster, 'SD_FiringRate_HitTrials'] = np.nan
-            spike_data.at[cluster, 'FiringRate_HitTrials_trials'] = np.nan
+            spike_data.at[cluster, 'SD_FiringRate_HitTrials'] =  np.nan
+            spike_data.at[cluster, 'Avg_FiringRate_HitTrials_nb'] =  np.nan
+            spike_data.at[cluster, 'SD_FiringRate_HitTrials_nb'] =  np.nan
     return spike_data
 
 

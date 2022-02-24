@@ -27,6 +27,27 @@ def run_firststop_aligned_analysis(server_path,spike_data, prm):
     #spike_data = plot_FS_firing_rate(spike_data, prm)
     #spike_data = plot_heatmap_by_trial(spike_data, prm)
     spike_data = calculate_trial_by_trial_peaks(spike_data)
+    spike_data = calculate_trial_by_trial_minpeaks(spike_data)
+
+    #spike_data = calculate_positions_relative_to_FS_uncued(spike_data)
+    #spike_data = plot_positions_relative_to_FS_uncued(spike_data)
+    ##spike_data = plot_FS_firing_rate(spike_data, prm)
+    #spike_data = plot_heatmap_by_trial_uncued(spike_data, prm)
+    return spike_data
+
+
+def run_firststop_aligned_analysis_for_trytrials(server_path,spike_data, prm):
+    spike_data = Python_PostSorting.FirstStopAnalysis_behaviour.calculate_first_stop_per_cell_trytrials(spike_data)
+    #spike_data = calculate_spikes_on_track_relative_to_FS(spike_data)
+    #spike_data = calculate_stops_on_track_relative_to_FS(spike_data)
+    #spike_data = spikes_on_track_relative_to_FS(server_path, spike_data)
+
+    spike_data = calculate_positions_relative_to_FS_try_trials(spike_data)
+    spike_data = plot_positions_relative_to_FS_try_trials(spike_data)
+    #spike_data = plot_FS_firing_rate(spike_data, prm)
+    #spike_data = plot_heatmap_by_trial(spike_data, prm)
+    #spike_data = calculate_trial_by_trial_peaks(spike_data)
+    #spike_data = calculate_trial_by_trial_minpeaks(spike_data)
 
     #spike_data = calculate_positions_relative_to_FS_uncued(spike_data)
     #spike_data = plot_positions_relative_to_FS_uncued(spike_data)
@@ -320,7 +341,7 @@ def calculate_positions_relative_to_FS(spike_data):
         data=data.transpose()
         data = data[data[:,3] >= 3,:]
         data = data[data[:,4] == 0,:]
-        rates = data[:,0]
+        rates = data[:,0]*10
         trials = data[:,2]
 
         data_new = np.zeros((1,3))
@@ -346,6 +367,99 @@ def calculate_positions_relative_to_FS(spike_data):
 
 
 
+
+
+def calculate_positions_relative_to_FS_try_trials(spike_data):
+    print("I am recalculating positions...")
+    spike_data["spikes_in_time_try_relative_to_FS"] = ""
+
+    for cluster in range(len(spike_data)):
+        speed=np.array(spike_data.iloc[cluster].spikes_in_time_try[1])
+        rates=np.array(spike_data.iloc[cluster].spikes_in_time_try[0])
+        position=np.array(spike_data.iloc[cluster].spikes_in_time_try[2])
+        trials=np.array(spike_data.iloc[cluster].spikes_in_time_try[3], dtype= np.int32)
+        types=np.array(spike_data.iloc[cluster].spikes_in_time_try[4], dtype= np.int32)
+
+        first_trials = np.array(spike_data.loc[cluster, 'first_stop_trials_try'])
+        first_locations = np.array(spike_data.loc[cluster, 'first_stop_locations_try'])
+        #rates = signal.convolve(rates, window, mode='same')/ sum(window)
+        # stack data
+        data = np.vstack((rates,position, trials, speed, types))
+        data=data.transpose()
+        data = data[data[:,3] >= 3,:]
+        data = data[data[:,4] == 0,:]
+        rates = data[:,0]*10
+        trials = data[:,2]
+
+        data_new = np.zeros((1,3))
+        if data.shape[0] > 0:
+            # bin data over position bins
+            #trial_numbers = np.arange(min(trials),max(trials), 1)
+            trial_numbers = np.unique(data[:,2])
+            new_position_array = np.zeros((0, 0 )); new_position_array[:,:] = np.nan
+
+            for tcount, trial in enumerate(trial_numbers):
+                trial_data = data[data[:,2] == trial,:]
+                first_stop_location = first_locations[np.isin(first_trials,trial)]
+                for rowcount, row in enumerate(trial_data):
+                    try:
+                        new_position = row[1] - first_stop_location[0]
+                        new_position_array = np.append(new_position_array, new_position)
+                    except IndexError:
+                        continue
+
+            data_new = np.vstack((rates,new_position_array, trials))
+            data_new=data_new.transpose()
+
+        spike_data.at[cluster, 'spikes_in_time_try_relative_to_FS'] = pd.DataFrame(data_new)
+    return spike_data
+
+
+
+
+
+def plot_positions_relative_to_FS_try_trials(spike_data):
+    print("I am binning based on recalculated positions...")
+    spike_data["FR_reset_at_FS_try"] = ""
+    spike_data["FR_reset_at_FS_by_trial_try"] = ""
+    spike_data["FR_sd_reset_at_FS_try"] = ""
+
+    for cluster in range(len(spike_data)):
+        cluster_data = np.array(spike_data.loc[cluster, 'spikes_in_time_try_relative_to_FS'])
+
+        # bin data over position bins
+        bins = np.arange(-100,100,1)
+
+        if (cluster_data.size) > 3:
+            trial_numbers = np.unique(cluster_data[:,2])
+            binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0])); binned_data[:, :] = np.nan
+            for tcount, trial in enumerate(trial_numbers):
+                trial_data = cluster_data[cluster_data[:,2] == trial,:]
+                if trial_data.shape[0] > 0:
+                    trial_rates = trial_data[:,0]
+                    trial_positions = trial_data[:,1]
+                    for bcount, b in enumerate(bins):
+                        rate_in_position = np.take(trial_rates, np.where(np.logical_and(trial_positions >= b, trial_positions < b+1)))
+                        average_rates = np.nanmean(rate_in_position)
+                        binned_data[bcount, tcount] = average_rates
+
+            #remove nans interpolate
+            data_b = pd.DataFrame(binned_data[:,:], dtype=None, copy=False)
+            data_b = data_b.dropna(axis = 1, how = "all")
+            data_b.reset_index(drop=True, inplace=True)
+            data_b = data_b.interpolate(method='linear', limit=None, limit_direction='both')
+            data_b = np.asarray(data_b)
+            x = np.reshape(data_b, (data_b.shape[0]*data_b.shape[1]))
+            window = signal.gaussian(2, std=3)
+            x = signal.convolve(x, window, mode='same')/ sum(window)
+            data_b = np.reshape(x, (data_b.shape[0], data_b.shape[1]))
+            x = np.nanmean(data_b, axis=1)
+            x_sd = np.nanstd(data_b, axis=1)
+            spike_data.at[cluster, 'FR_reset_at_FS_try'] = list(x)# add data to dataframe
+            spike_data.at[cluster, 'FR_sd_reset_at_FS_try'] = list(x_sd)
+            spike_data.at[cluster, 'FR_reset_at_FS_by_trial_try'] = list(data_b)# add data to dataframe
+
+    return spike_data
 
 
 
@@ -385,7 +499,6 @@ def plot_positions_relative_to_FS(spike_data):
             x = signal.convolve(x, window, mode='same')/ sum(window)
             data_b = np.reshape(x, (data_b.shape[0], data_b.shape[1]))
             x = np.nanmean(data_b, axis=1)
-            #x = signal.convolve(x, window, mode='same')/ sum(window)
             x_sd = np.nanstd(data_b, axis=1)
             spike_data.at[cluster, 'FR_reset_at_FS'] = list(x)# add data to dataframe
             spike_data.at[cluster, 'FR_sd_reset_at_FS'] = list(x_sd)
@@ -396,6 +509,7 @@ def plot_positions_relative_to_FS(spike_data):
 
 
 def calculate_trial_by_trial_peaks(spike_data):
+    print("I am calculating trial by trial peaks...")
     spike_data["trial_peaks_max_fs"] = ""
     spike_data["trial_peak_locations_max_fs"] = ""
 
@@ -403,11 +517,12 @@ def calculate_trial_by_trial_peaks(spike_data):
         cluster_data = np.array(spike_data.loc[cluster, 'FR_reset_at_FS_by_trial'])
         peak_array = []
         peak_array_locs = []
-        for colcount, col in enumerate(cluster_data):
-            trial_data = cluster_data[:,colcount]
-            region_of_interest = trial_data[60:110]
-            peak_location = np.argmax(region_of_interest)+60
-            peak_firingrate = np.max(region_of_interest)*10
+        trials = (cluster_data.shape[1])-1
+        for trialcount, trial in enumerate(range(trials)):
+            trial_data = cluster_data[:,trialcount]
+            region_of_interest = trial_data[65:110]
+            peak_location = np.argmax(region_of_interest)+65
+            peak_firingrate = np.max(region_of_interest)
             peak_array = np.append(peak_array, peak_firingrate )
             peak_array_locs = np.append(peak_array_locs, peak_location )
 
@@ -415,6 +530,31 @@ def calculate_trial_by_trial_peaks(spike_data):
         spike_data.at[cluster, 'trial_peak_locations_max_fs'] = list(peak_array_locs)# add data to dataframe
 
     return spike_data
+
+
+def calculate_trial_by_trial_minpeaks(spike_data):
+    print("I am calculating trial by trial peaks...")
+    spike_data["trial_peaks_min_fs"] = ""
+    spike_data["trial_peak_locations_min_fs"] = ""
+
+    for cluster in range(len(spike_data)):
+        cluster_data = np.array(spike_data.loc[cluster, 'FR_reset_at_FS_by_trial'])
+        peak_array = []
+        peak_array_locs = []
+        trials = (cluster_data.shape[1])-1
+        for trialcount, trial in enumerate(range(trials)):
+            trial_data = cluster_data[:,trialcount]
+            region_of_interest = trial_data[65:110]
+            peak_location = np.argmin(region_of_interest)+65
+            peak_firingrate = np.min(region_of_interest)
+            peak_array = np.append(peak_array, peak_firingrate )
+            peak_array_locs = np.append(peak_array_locs, peak_location )
+
+        spike_data.at[cluster, 'trial_peaks_min_fs'] = list(peak_array)# add data to dataframe
+        spike_data.at[cluster, 'trial_peak_locations_min_fs'] = list(peak_array_locs)# add data to dataframe
+
+    return spike_data
+
 
 
 

@@ -26,9 +26,6 @@ def split_trials_by_reward(spike_data, cluster_index):
 
 def add_columns(spike_data):
     spike_data["spike_rate_in_time_rewarded"] = ""
-    spike_data["spike_rate_in_time_rewarded_b"] = ""
-    spike_data["spike_rate_in_time_rewarded_p"] = ""
-    spike_data["spike_rate_in_time_rewarded_nb"] = ""
     return spike_data
 
 
@@ -39,8 +36,8 @@ def extract_data_from_frame(spike_data, cluster):
     rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)
     speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
     position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
-    types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
     trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
+    types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
 
     # stack data
     data = np.vstack((rates,speed,position,types, trials))
@@ -69,30 +66,14 @@ def split_trials(data, rewarded_trials):
     return rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types
 
 
-def split_time_data_by_reward(spike_data, prm):
+def split_data_by_reward(spike_data, prm):
     spike_data = add_columns(spike_data)
 
     for cluster in range(len(spike_data)):
         rewarded_trials, data = extract_data_from_frame(spike_data, cluster)
 
-        ## for all trials
         rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data, rewarded_trials)
         spike_data = drop_alldata_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
-
-        ## for beaconed trials
-        data_filtered = data[data[:,4] == 0,:] # filter data for beaconed trials
-        rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data_filtered, rewarded_trials)
-        spike_data = drop_beaconed_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
-
-        ## for probe trials
-        data_filtered = data[data[:,4] == 2,:] # filter data for probe trials & nonbeaconed
-        rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data_filtered, rewarded_trials)
-        spike_data = drop_probe_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
-
-        ## for probe & nonbeaconed trials
-        data_filtered = data[data[:,4] != 0,:] # filter data for nonbeaconed trials
-        rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data_filtered, rewarded_trials)
-        spike_data = drop_nb_data_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
 
     return spike_data
 
@@ -108,41 +89,28 @@ def drop_alldata_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i
     return spike_data
 
 
-def drop_beaconed_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i, j):
-    sn=[]
-    sn.append(a) # rate
-    sn.append(b) # speed
-    sn.append(c) # position
-    sn.append(d) # trials
-    sn.append(e) # types
-    spike_data.at[cluster_index, 'spike_rate_in_time_rewarded_b'] = list(sn)
-    return spike_data
-
-
-def drop_probe_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i, j):
-    sn=[]
-    sn.append(a) # rate
-    sn.append(b) # speed
-    sn.append(c) # position
-    sn.append(d) # trials
-    sn.append(e) # types
-    spike_data.at[cluster_index, 'spike_rate_in_time_rewarded_p'] = list(sn)
-    return spike_data
-
-
-def drop_nb_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i, j):
-    sn=[]
-    sn.append(a) # rate
-    sn.append(b) # speed
-    sn.append(c) # position
-    sn.append(d) # trials
-    sn.append(e) # types
-    spike_data.at[cluster_index, 'spike_rate_in_time_rewarded_nb'] = list(sn)
-    return spike_data
-
-
 def convolve_with_scipy(rate):
     window = signal.gaussian(2, std=3)
     convolved_rate = signal.convolve(rate, window, mode='same')/ sum(window)
     return convolved_rate
 
+
+def convert_spikes_in_time_to_ms(spike_data):
+    #spike_data["spike_rate_in_time"] = ""
+
+    for cluster in range(len(spike_data)):
+        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10
+        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
+        position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
+        trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
+        types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
+
+        sn=[]
+        sn.append(rates) # rate
+        sn.append(speed) # speed
+        sn.append(position) # position
+        sn.append(trials) # trials
+        sn.append(types) # types
+        spike_data.at[cluster, 'spike_rate_in_time'] = list(sn)
+
+    return spike_data
