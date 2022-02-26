@@ -1,27 +1,9 @@
 import os
 import matplotlib.pylab as plt
 import Python_PostSorting.plot_utility
-import Python_PostSorting.Speed_Analysis
 import numpy as np
 import Python_PostSorting.ExtractFiringData
-import math
 from scipy import signal
-
-
-def load_stop_data(spatial_data):
-    locations = np.array(spatial_data.at[1,'stop_locations'])
-    trials = np.array(spatial_data.at[1,'stop_trials'])
-    trial_type = np.array(spatial_data.at[1,'stop_trial_types'])
-    return locations,trials,trial_type
-
-
-def split_stop_data_by_trial_type(spatial_data):
-    locations,trials,trial_type = load_stop_data(spatial_data)
-    stop_data=np.transpose(np.vstack((locations, trials, trial_type)))
-    beaconed = np.delete(stop_data, np.where(stop_data[:,2]>0),0)
-    nonbeaconed = np.delete(stop_data, np.where(stop_data[:,2]!=1),0)
-    probe = np.delete(stop_data, np.where(stop_data[:,2]!=2),0)
-    return beaconed[:,1], nonbeaconed[:,1], probe[:,1], beaconed[:,0], nonbeaconed[:,0], probe[:,0]
 
 
 def remake_trial_numbers(rewarded_beaconed_trial_numbers):
@@ -46,9 +28,8 @@ def remake_probe_trial_numbers(rewarded_beaconed_trial_numbers):
         num_stops_per_trial = len(trial_data)
         new_trials = np.repeat(trial_n, num_stops_per_trial)
         new_trial_numbers = np.append(new_trial_numbers, new_trials)
-        trial_n +=10
+        trial_n +=5
     return new_trial_numbers, unique_trials
-
 
 
 def calculate_average_stops(spike_data):
@@ -91,12 +72,14 @@ def calculate_average_nonbeaconed_stops(spike_data):
         stop_trial_types = calculate_stop_types(spike_data, cluster, stop_trials)
         beaconed,nonbeaconed,probe = split_stops_by_trial_type(stop_locations,stop_trials,stop_trial_types)
 
+        nonbeaconed = np.vstack((nonbeaconed, probe))
+
         stop_locations = nonbeaconed[:,0]
         stop_trials = nonbeaconed[:,1]
 
         if len(stop_trials) > 1:
             number_of_bins = 200
-            number_of_trials = np.nanmax(stop_trials)/3 # total number of trials
+            number_of_trials = np.unique(stop_trials) # total number of trials
             stops_in_bins = np.zeros((len(range(int(number_of_bins)))))
             for loc in range(int(number_of_bins)-1):
                 stops_in_bin = len(stop_locations[np.where(np.logical_and(stop_locations > (loc), stop_locations <= (loc+1)))])/number_of_trials
@@ -181,20 +164,21 @@ def plot_stop_histogram_per_cluster(spike_data, prm):
         stops_on_track = plt.figure(figsize=(3.7,3))
         ax = stops_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
         window = signal.gaussian(2, std=3)
-        position_bins =  np.array(spike_data.at[cluster, 'position_bins'])
-        average_stops =  np.array(spike_data.at[cluster, 'average_stops'])
+        position_bins = np.array(spike_data.at[cluster, 'position_bins'])
+        average_stops = np.array(spike_data.at[cluster, 'average_stops'])
         average_stops = signal.convolve(average_stops, window, mode='same')/ sum(window)
         ax.plot(position_bins,average_stops, '-', color='Black')
         average_stops_nb =  np.array(spike_data.at[cluster, 'average_stops_nb'])
         average_stops_nb = signal.convolve(average_stops_nb, window, mode='same')/ sum(window)
         ax.plot(position_bins,average_stops_nb, '-', color='Blue')
-        plt.ylabel('Stops (cm/s)', fontsize=18, labelpad = 0)
+        plt.ylabel('Stops (cm)', fontsize=18, labelpad = 0)
         plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
         plt.xlim(0,200)
         ax.yaxis.set_ticks_position('left')
         ax.xaxis.set_ticks_position('bottom')
         Python_PostSorting.plot_utility.style_track_plot(ax, 200)
         Python_PostSorting.plot_utility.style_vr_plot(ax)
+        ax.set_xticklabels(['-30', '70', '170'])
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
         plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_stop_raster_Cluster_' + str(cluster_index +1) + '.png', dpi=200)
         plt.close()
@@ -315,21 +299,23 @@ def plot_stops_on_track_per_cluster(spike_data, prm):
         ax = stops_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
 
         try:
-            rewarded_stop_locations = np.array(spike_data.at[cluster, 'rewarded_locations'], dtype=np.int16)
             rewarded_trials = np.array(spike_data.at[cluster, 'rewarded_trials'], dtype=np.int16)
             stop_locations = np.array(spike_data.at[cluster, 'stop_location_cm'], dtype=np.int16)
             stop_trials = np.array(spike_data.at[cluster, 'stop_trial_number'], dtype=np.int16)
             #stop_trial_types = np.array(spike_data.at[cluster, "stop_trial_type"])
         except KeyError:
-            rewarded_stop_locations = np.array(spike_data.at[cluster, 'rewarded_locations'], dtype=np.int16)
             rewarded_trials = np.array(spike_data.at[cluster, 'rewarded_trials'], dtype=np.int16)
             stop_locations = np.array(spike_data.at[cluster, 'stop_locations'], dtype=np.int16)
             stop_trials = np.array(spike_data.at[cluster, 'stop_trials'], dtype=np.int16)
             #stop_trial_types = np.array(spike_data.at[cluster, "stop_trial_type"])
 
+        stop_locations = stop_locations[stop_trials != 0]
+        stop_trials = stop_trials[stop_trials != 0]
+
         stop_trial_types = calculate_stop_types(spike_data, cluster, stop_trials)
         beaconed,nonbeaconed,probe = split_stops_by_trial_type(stop_locations,stop_trials,stop_trial_types)
         rewarded_beaconed_position_cm, rewarded_nonbeaconed_position_cm, rewarded_probe_position_cm, rewarded_beaconed_trial_numbers, rewarded_nonbeaconed_trial_numbers, rewarded_probe_trial_numbers = split_stops_by_reward(beaconed,nonbeaconed,probe, rewarded_trials)
+
         beaconed_trials, unique_trials = remake_trial_numbers(rewarded_beaconed_trial_numbers)
         nonbeaconed_trials, unique_trials = remake_probe_trial_numbers(rewarded_nonbeaconed_trial_numbers)
         probe_trials, unique_trials = remake_probe_trial_numbers(rewarded_probe_trial_numbers)
@@ -338,7 +324,6 @@ def plot_stops_on_track_per_cluster(spike_data, prm):
         ax.plot(rewarded_beaconed_position_cm, beaconed_trials, 'o', color='0.5', markersize=2)
         ax.plot(rewarded_nonbeaconed_position_cm, nonbeaconed_trials, 'o', color='blue', markersize=2)
         ax.plot(rewarded_probe_position_cm, probe_trials, 'o', color='blue', markersize=2)
-        #ax.plot(rewarded_stop_locations, rewarded_trials, '>', color='Red', markersize=3)
         plt.ylabel('Stops on trials', fontsize=18, labelpad = 0)
         plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
         plt.xlim(0,200)
@@ -346,8 +331,8 @@ def plot_stops_on_track_per_cluster(spike_data, prm):
         ax.yaxis.set_ticks_position('left')
         ax.xaxis.set_ticks_position('bottom')
         Python_PostSorting.plot_utility.style_track_plot(ax, 200)
-        #x_max = max(raw_position_data.trial_number)+0.5
         Python_PostSorting.plot_utility.style_vr_plot(ax)
+        ax.set_xticklabels(['-30', '70', '170'])
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
         plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_stop_raster_Cluster_' + str(cluster_index +1) + '.png', dpi=200)
         plt.close()
