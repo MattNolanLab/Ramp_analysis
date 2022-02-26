@@ -48,7 +48,7 @@ def add_mouse_to_frame(df):
         df.at[cluster,"Mouse"] = mouse
         df.at[cluster,"Day"] = day
         df.at[cluster,"Day_numeric"] = numericday
-        df.at[cluster,"cohort"] = 7
+        df.at[cluster,"cohort"] = 4 # Change this to current cohort analysed!!
     return df
 
 
@@ -64,7 +64,6 @@ def extract_mouse_and_day(session_id):
 def run_example_plots_for_paper(spike_data, server_path):
     #Python_PostSorting.MakePlots_FiringProperties.plot_autocorrelograms(spike_data, prm)
     #Python_PostSorting.MakePlots_FiringProperties.plot_waveforms(spike_data, prm)
-    #Python_PostSorting.MakePlots_FiringProperties.plot_clean_waveforms(spike_data, prm)
     #Python_PostSorting.MakePlots_FiringProperties.plot_spike_histogram(spike_data, prm)
 
     #Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm) # from postprocessing spatial data
@@ -83,7 +82,6 @@ def run_example_plots_for_paper(spike_data, server_path):
 
 
 def plot_behaviour(spike_data):
-    spike_data = Python_PostSorting.Calculate_Stops_from_Speed.calculate_stops_from_200ms_speed(spike_data)
     Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm) # from postprocessing spatial data
     spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_stops(spike_data) # from postprocessing spatial data
     spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_stops(spike_data) # from postprocessing spatial data
@@ -95,14 +93,6 @@ def plot_behaviour(spike_data):
     return spike_data
 
 
-def test_stop_data(spike_data,server_path ):
-    spike_data = Python_PostSorting.Calculate_Stops_from_Speed.calculate_stops_from_200ms_speed(spike_data)
-    spike_data = Python_PostSorting.Calculate_Stops_from_Speed.calculate_rewards_from_stops(spike_data)
-    #Python_PostSorting.Calculate_Stops_from_Speed.plot_stops_on_track_per_cluster(spike_data, prm)
-    #Python_PostSorting.Calculate_Stops_from_Speed.calculate_average_stops(spike_data)
-    #Python_PostSorting.Calculate_Stops_from_Speed.plot_stop_histogram(server_path, spike_data, prm)
-    return spike_data
-
 
 def test_speed_data(spike_data,server_path ):
     spike_data = Python_PostSorting.Test_SpeedData.calculate_speed_from_position(spike_data, server_path)
@@ -110,19 +100,17 @@ def test_speed_data(spike_data,server_path ):
 
 
 def run_main_figure_analysis(spike_data,server_path):
-    #spike_data = Python_PostSorting.Speed_Analysis.calculate_speed_from_position(spike_data, server_path)
-    #spike_data = Python_PostSorting.Calculate_Stops_from_Speed.calculate_stops_from_200ms_speed(spike_data)
-    #spike_data = Python_PostSorting.Calculate_Stops_from_Speed.calculate_rewards_from_stops(spike_data)
     #spike_data = Python_PostSorting.ExtractFiringData.extract_smoothed_average_firing_rate_data_for_rewarded_trials2(spike_data)
     spike_data = Python_PostSorting.Split_DataByReward.split_data_by_reward(spike_data, prm)
     spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_allspeeds(spike_data)
     #spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_rates(spike_data, prm)
     spike_data = Python_PostSorting.Calculate_Acceleration.generate_acceleration_rewarded_trials(spike_data, server_path)
-    #spike_data = Python_PostSorting.Split_DataByReward.rewrite_spikes_in_time(spike_data)
 
     return spike_data
 
-
+def run_stuff(spike_data):
+    spike_data = Python_PostSorting.Split_DataByReward.rewrite_spikes_in_time(spike_data)
+    return spike_data
 
 def run_supple_figure_analysis(spike_data):
     # Split data by TRIAL OUTCOME (HIT/TRY/RUN) : Analysis for Figure 7
@@ -184,7 +172,6 @@ def main():
 
     #LOAD DATA
     spike_data = Python_PostSorting.LoadDataFrames.process_allmice_dir(server_path, prm) # overall data
-    #spike_data = spike_data.head(n=5)
     spike_data.reset_index(drop=True, inplace=True)
 
     # CURATION (for spike data frame only)
@@ -193,34 +180,32 @@ def main():
     spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data)
     spike_data = add_mouse_to_frame(spike_data)
 
-    plot_behaviour(spike_data)
     # Add brain region and ramp score data for each neuron to dataframe
-    #spike_data = Python_PostSorting.Add_BrainRegion_Classifier.load_brain_region_data_into_frame(spike_data)
-    #spike_data = Python_PostSorting.Add_Teris_RampScore.load_Teris_ramp_score_data_into_frame(spike_data)
+    spike_data = Python_PostSorting.Add_BrainRegion_Classifier.load_brain_region_data_into_frame(spike_data)
+    spike_data = Python_PostSorting.Add_Teris_RampScore.load_Teris_ramp_score_data_into_frame(spike_data)
 
     ## use if wanting to test on specific mouse/day - otherwise COMMENT OUT
-    spike_data = spike_data[spike_data['Day'] == "D31"]
+    #spike_data = spike_data[spike_data['Day'] == "D31"]
     #spike_data = spike_data.head(n=2)
-    spike_data.reset_index(drop=True, inplace=True)
+    #spike_data.reset_index(drop=True, inplace=True)
+
+    spike_data = plot_behaviour(spike_data)
 
     # RUN EXAMPLE PLOTS - use if wanting to plot example data - otherwise COMMENT OUT
     #spike_data = run_example_plots_for_paper(spike_data,server_path)
-
-    # TEST stop data - use if wanting to check speed is correct measurement - otherwise COMMENT OUT
-    #spike_data = test_stop_data(spike_data,server_path)
 
     # TEST speed data - use if wanting to check speed is correct measurement - otherwise COMMENT OUT
     #spike_data = test_speed_data(spike_data,server_path)
 
     # RUN FIGURE ANALYSIS
-    #spike_data = run_main_figure_analysis(spike_data, server_path)
+    spike_data = run_main_figure_analysis(spike_data, server_path)
     #spike_data = Python_PostSorting.FR_relative_to_Behaviour.remake_firing_times_to_per_trial(spike_data)
     #spike_data = test_stop_data(spike_data, server_path)
-    #spike_data = run_supple_figure_analysis(spike_data)
+    spike_data = run_supple_figure_analysis(spike_data)
 
     # SAVE DATAFRAMES for R
     #spike_data = drop_columns_from_frame(spike_data)
-    #spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/all_cohort7.pkl')
+    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/all_cohort4.pkl')
 
 
 
