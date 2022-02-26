@@ -65,7 +65,7 @@ def calculate_stop_time_from_speed(spike_data):
         stop_times = []
 
         for rowcount, row in enumerate(data):
-            if data[rowcount,0] < 4.7 :
+            if data[rowcount,0] < 1.7 :
                 stop_positions = np.append(stop_positions, data[rowcount,1])
                 stop_trials = np.append(stop_trials, data[rowcount,3])
                 stop_types = np.append(stop_types, data[rowcount,2])
@@ -100,9 +100,9 @@ def remake_times_on_trials(time, trials):
 
 def calculate_stops_from_200ms_speed(spike_data):
     print("calculating stops from speed...")
-    spike_data["stops_cm_position"] = ""
-    spike_data["stops_cm_trial"] = ""
-    spike_data["stops_cm_trial_type"] = ""
+    spike_data["stop_location_cm"] = ""
+    spike_data["stop_trial_number"] = ""
+    spike_data["stop_trial_types"] = ""
     spike_data["stops_cm_time"] = ""
 
     for cluster in range(len(spike_data)):
@@ -124,7 +124,7 @@ def calculate_stops_from_200ms_speed(spike_data):
 
         for rowcount, row in enumerate(range(len(data)-1)):
             speed_200ms = data[rowcount,0] + data[rowcount+1,0]
-            if speed_200ms <= 4.7:
+            if speed_200ms <= 0.7:
                 stop_positions = np.append(stop_positions, data[rowcount,1])
                 stop_trials = np.append(stop_trials, data[rowcount,3])
                 stop_types = np.append(stop_types, data[rowcount,2])
@@ -132,9 +132,9 @@ def calculate_stops_from_200ms_speed(spike_data):
 
         stop_positions, stop_trials, stop_types, stop_times = remove_extra_stops_with_time(2, stop_positions, stop_trials, stop_types, stop_times)
 
-        spike_data.at[cluster, 'stops_cm_position'] = list(stop_positions)# add data to dataframe
-        spike_data.at[cluster, 'stops_cm_trial'] = list(stop_trials)# add data to dataframe
-        spike_data.at[cluster, 'stops_cm_trial_type'] = list(stop_types)# add data to dataframe
+        spike_data.at[cluster, 'stop_location_cm'] = list(stop_positions)# add data to dataframe
+        spike_data.at[cluster, 'stop_trial_number'] = list(stop_trials)# add data to dataframe
+        spike_data.at[cluster, 'stop_trial_types'] = list(stop_types)# add data to dataframe
         spike_data.at[cluster, 'stops_cm_time'] = list(stop_times)# add data to dataframe
 
     return spike_data
