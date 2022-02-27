@@ -46,7 +46,7 @@ def calculate_average_stops(spike_data):
 
         if len(stop_trials) > 1:
             number_of_bins = 200
-            number_of_trials = np.nanmax(stop_trials) # total number of trials
+            number_of_trials = len(np.unique(stop_trials)) # total number of trials
             stops_in_bins = np.zeros((len(range(int(number_of_bins)))))
             for loc in range(int(number_of_bins)-1):
                 stops_in_bin = len(stop_locations[np.where(np.logical_and(stop_locations > (loc), stop_locations <= (loc+1)))])/number_of_trials
@@ -60,6 +60,8 @@ def calculate_average_stops(spike_data):
 def calculate_average_nonbeaconed_stops(spike_data):
     spike_data["average_stops_nb"] = ""
     spike_data["position_bins_nb"] = ""
+    spike_data["average_stops_p"] = ""
+    spike_data["position_bins_p"] = ""
     for cluster in range(len(spike_data)):
         try:
             stop_locations = np.array(spike_data.at[cluster, 'stop_location_cm'], dtype=np.int16)
@@ -72,14 +74,13 @@ def calculate_average_nonbeaconed_stops(spike_data):
         stop_trial_types = calculate_stop_types(spike_data, cluster, stop_trials)
         beaconed,nonbeaconed,probe = split_stops_by_trial_type(stop_locations,stop_trials,stop_trial_types)
 
-        nonbeaconed = np.vstack((nonbeaconed, probe))
 
         stop_locations = nonbeaconed[:,0]
         stop_trials = nonbeaconed[:,1]
 
         if len(stop_trials) > 1:
             number_of_bins = 200
-            number_of_trials = np.unique(stop_trials) # total number of trials
+            number_of_trials = len(np.unique(stop_trials)) # total number of trials
             stops_in_bins = np.zeros((len(range(int(number_of_bins)))))
             for loc in range(int(number_of_bins)-1):
                 stops_in_bin = len(stop_locations[np.where(np.logical_and(stop_locations > (loc), stop_locations <= (loc+1)))])/number_of_trials
@@ -87,6 +88,21 @@ def calculate_average_nonbeaconed_stops(spike_data):
 
             spike_data.at[cluster,'average_stops_nb'] = list(stops_in_bins)
             spike_data.at[cluster,'position_bins_nb'] = list(range(int(number_of_bins)))
+
+        stop_locations = probe[:,0]
+        stop_trials = probe[:,1]
+
+        if len(stop_trials) > 1:
+            number_of_bins = 200
+            number_of_trials = len(np.unique(stop_trials)) # total number of trials
+            stops_in_bins = np.zeros((len(range(int(number_of_bins)))))
+            for loc in range(int(number_of_bins)-1):
+                stops_in_bin = len(stop_locations[np.where(np.logical_and(stop_locations > (loc), stop_locations <= (loc+1)))])/number_of_trials
+                stops_in_bins[loc] = stops_in_bin
+
+            spike_data.at[cluster,'average_stops_p'] = list(stops_in_bins)
+            spike_data.at[cluster,'position_bins_p'] = list(range(int(number_of_bins)))
+
     return spike_data
 
 
