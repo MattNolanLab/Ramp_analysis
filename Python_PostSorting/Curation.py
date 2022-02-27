@@ -4,10 +4,16 @@ import numpy as np
 
 def remove_false_positives(df):
     print("Removing sessions with low trial numbers..")
+
     df.reset_index(drop=True, inplace=True)
     df["max_trial_number"] = ""
+
     for cluster in range(len(df)):
-        df.at[cluster,"max_trial_number"] = max(df.loc[cluster,'trial_number'])
+        try:
+            df.at[cluster,"max_trial_number"] = max(df.loc[cluster,'trial_number'])
+        except ValueError:
+            df.at[cluster,"max_trial_number"] = 0
+
     df = df.drop(df[df.max_trial_number < 30].index)
     df = df.dropna(axis=0)
     df.reset_index(drop=True, inplace=True)
@@ -61,3 +67,21 @@ def make_neuron_number(spike_data):
 
 
 
+def check_graduation(df):
+    print("....")
+
+    df.reset_index(drop=True, inplace=True)
+    df["probe_trial_label"] = ""
+
+    for cluster in range(len(df)):
+        try:
+            types=np.unique(np.array(df.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32))
+            if len(types) == 3:
+                df.at[cluster,"probe_trial_label"] = 1
+            else:
+                df.at[cluster,"probe_trial_label"] = 0
+
+        except ValueError:
+            df.at[cluster,"probe_trial_label"] = 0
+
+    return df
