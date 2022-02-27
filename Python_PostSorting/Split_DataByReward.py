@@ -29,11 +29,11 @@ def add_columns(spike_data):
     return spike_data
 
 
-def extract_data_from_frame(spike_data, cluster):
+def extract_data_from_frame(spike_data, cluster, convert_to_hz):
     rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
     rewarded_trials = rewarded_trials[~np.isnan(rewarded_trials)]
 
-    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)
+    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*int(convert_to_hz)
     speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
     position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
     trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
@@ -66,11 +66,11 @@ def split_trials(data, rewarded_trials):
     return rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types
 
 
-def split_data_by_reward(spike_data, prm):
+def split_data_by_reward(spike_data, prm, convert_to_hz):
     spike_data = add_columns(spike_data)
 
     for cluster in range(len(spike_data)):
-        rewarded_trials, data = extract_data_from_frame(spike_data, cluster)
+        rewarded_trials, data = extract_data_from_frame(spike_data, cluster, convert_to_hz)
 
         rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data, rewarded_trials)
         spike_data = drop_alldata_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
