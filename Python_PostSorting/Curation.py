@@ -67,7 +67,7 @@ def make_neuron_number(spike_data):
 
 
 
-def check_graduation(df):
+def check_probe_trials_exist(df):
     print("....")
 
     df.reset_index(drop=True, inplace=True)
@@ -85,3 +85,33 @@ def check_graduation(df):
             df.at[cluster,"probe_trial_label"] = 0
 
     return df
+
+
+
+def load_crtieria_data_into_frame(spike_data):
+    print('I am loading brain region data into frame ...')
+    spike_data["graduation"] = ""
+    criteria_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data/Criteria_days.csv", header=int())
+
+    for cluster in range(len(spike_data)):
+        session_id = spike_data.session_id.values[cluster]
+        mouse = spike_data.Mouse[cluster]
+        day = int(spike_data.Day_numeric.values[cluster])
+        cohort = spike_data.cohort.values[cluster]
+
+        #find data for that mouse & day
+        session_fits = criteria_data['Mouse'] == mouse
+        session_fits = criteria_data[session_fits]
+        cohort_fits = session_fits['Cohort'] == cohort
+        cohort_fits = session_fits[cohort_fits]
+
+        # find the region
+        grad_day = int(cohort_fits['Graduation day'].values)
+
+        if day >= grad_day:
+            spike_data.at[cluster,"graduation"] = 1
+        elif day < grad_day:
+            spike_data.at[cluster,"graduation"] = 0
+
+    return spike_data
+
