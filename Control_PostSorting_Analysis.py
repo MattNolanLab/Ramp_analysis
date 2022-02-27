@@ -61,7 +61,7 @@ def extract_mouse_and_day(session_id):
     return day, day1, mouse
 
 
-def run_example_plots_for_paper(spike_data, server_path):
+def run_example_plots(spike_data, server_path):
     #Python_PostSorting.MakePlots_FiringProperties.plot_autocorrelograms(spike_data, prm)
     #Python_PostSorting.MakePlots_FiringProperties.plot_waveforms(spike_data, prm)
     #Python_PostSorting.MakePlots_FiringProperties.plot_spike_histogram(spike_data, prm)
@@ -82,10 +82,10 @@ def run_example_plots_for_paper(spike_data, server_path):
 
 
 def plot_behaviour(spike_data):
-    Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm) # from postprocessing spatial data
+    #Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm) # from postprocessing spatial data
     spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_stops(spike_data) # from postprocessing spatial data
     spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_stops(spike_data) # from postprocessing spatial data
-    Python_PostSorting.MakePlots_Behaviour.plot_stop_histogram_per_cluster(spike_data, prm) # from postprocessing spatial data
+    #Python_PostSorting.MakePlots_Behaviour.plot_stop_histogram_per_cluster(spike_data, prm) # from postprocessing spatial data
     #spike_data = Python_PostSorting.RewardFiring.split_data_by_reward(spike_data, prm)
     #spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_speed(spike_data) # from postprocessing spatial data
     #spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_speed(spike_data) # from postprocessing spatial data
@@ -99,9 +99,9 @@ def test_speed_data(spike_data,server_path ):
     return spike_data
 
 
-def run_main_figure_analysis(spike_data,server_path):
+def run_main_figure_analysis(spike_data,server_path, convert_to_hz):
     #spike_data = Python_PostSorting.ExtractFiringData.extract_smoothed_average_firing_rate_data_for_rewarded_trials2(spike_data)
-    spike_data = Python_PostSorting.Split_DataByReward.split_data_by_reward(spike_data, prm)
+    spike_data = Python_PostSorting.Split_DataByReward.split_data_by_reward(spike_data, prm, convert_to_hz)
     spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_time_binned_firing_rate_allspeeds(spike_data)
     #spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_rates(spike_data, prm)
     spike_data = Python_PostSorting.Calculate_Acceleration.generate_acceleration_rewarded_trials(spike_data, server_path)
@@ -112,9 +112,9 @@ def run_stuff(spike_data):
     spike_data = Python_PostSorting.Split_DataByReward.rewrite_spikes_in_time(spike_data)
     return spike_data
 
-def run_supple_figure_analysis(spike_data):
+def run_supple_figure_analysis(spike_data, convert_to_hz):
     # Split data by TRIAL OUTCOME (HIT/TRY/RUN) : Analysis for Figure 7
-    spike_data = Python_PostSorting.Split_DataByTrialOutcome2.split_time_data_by_trial_outcome(spike_data, prm)
+    spike_data = Python_PostSorting.Split_DataByTrialOutcome2.split_time_data_by_trial_outcome(spike_data, prm, convert_to_hz)
     spike_data = Python_PostSorting.Split_DataByTrialOutcome2.extract_time_binned_firing_rate_runthru_allspeeds(spike_data)
     spike_data = Python_PostSorting.Split_DataByTrialOutcome2.extract_time_binned_firing_rate_try_allspeeds(spike_data)
     spike_data = Python_PostSorting.Split_DataByTrialOutcome2.extract_time_binned_firing_rate_try_slow_allspeeds(spike_data)
@@ -175,37 +175,39 @@ def main():
     spike_data.reset_index(drop=True, inplace=True)
 
     # CURATION (for spike data frame only)
-    spike_data = Python_PostSorting.Curation.remove_false_positives(spike_data)
-    spike_data = Python_PostSorting.Curation.curate_data(spike_data)
-    spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data)
     spike_data = add_mouse_to_frame(spike_data)
+    spike_data = Python_PostSorting.Curation.remove_false_positives(spike_data) # removes cells with low trial numbers
+    spike_data = Python_PostSorting.Curation.curate_data(spike_data) # removes cells with low numbers of rewards
+    spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data) # this is for matching with Teris's ramp score dataframe
+    spike_data = Python_PostSorting.Curation.load_crtieria_data_into_frame(spike_data) # this is for curating data based on graduation day
 
-    # Add brain region and ramp score data for each neuron to dataframe
+    # ADD brain region and ramp score for each neuron to dataframe - COMMENT OUT IF NOT NEEDED
     spike_data = Python_PostSorting.Add_BrainRegion_Classifier.load_brain_region_data_into_frame(spike_data)
     spike_data = Python_PostSorting.Add_Teris_RampScore.load_Teris_ramp_score_data_into_frame(spike_data)
 
     ## use if wanting to test on specific mouse/day - otherwise COMMENT OUT
-    #spike_data = spike_data[spike_data['Day'] == "D31"]
+    #spike_data = spike_data[spike_data['Mouse'] == "M2"]
+    #spike_data = spike_data[spike_data['Day_numeric'] == "1"]
     #spike_data = spike_data.head(n=2)
-    #spike_data.reset_index(drop=True, inplace=True)
+    #spike_data.reset_index(drop=True, inplace=True) # Make sure you reset the index if you subset the data because otherwise some analysis based on rowcount wont work!!
 
-    spike_data = plot_behaviour(spike_data)
+    spike_data = plot_behaviour(spike_data) # plot stops, average stops etc
 
     # RUN EXAMPLE PLOTS - use if wanting to plot example data - otherwise COMMENT OUT
-    #spike_data = run_example_plots_for_paper(spike_data,server_path)
+    #spike_data = run_example_plots(spike_data,server_path)
 
     # TEST speed data - use if wanting to check speed is correct measurement - otherwise COMMENT OUT
     #spike_data = test_speed_data(spike_data,server_path)
 
     # RUN FIGURE ANALYSIS
-    spike_data = run_main_figure_analysis(spike_data, server_path)
-    #spike_data = Python_PostSorting.FR_relative_to_Behaviour.remake_firing_times_to_per_trial(spike_data)
+    convert_to_hz = 10 # Set as 10 if spikes_in_time was saved in ms, otherwise leave at 0
+    spike_data = run_main_figure_analysis(spike_data, server_path, convert_to_hz)
     #spike_data = test_stop_data(spike_data, server_path)
-    spike_data = run_supple_figure_analysis(spike_data)
+    spike_data = run_supple_figure_analysis(spike_data, convert_to_hz)
 
     # SAVE DATAFRAMES for R
-    #spike_data = drop_columns_from_frame(spike_data)
-    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/all_cohort4.pkl')
+    #spike_data = drop_columns_from_frame(spike_data) # UNCOMMENT if you want to drop unused columns from the dataframe so the saved file is smaller
+    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/all_cohort4.pkl') # path to where you want the pkl to be saved
 
 
 
