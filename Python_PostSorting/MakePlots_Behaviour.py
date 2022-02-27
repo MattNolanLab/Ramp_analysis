@@ -52,6 +52,9 @@ def calculate_average_stops(spike_data):
                 stops_in_bin = len(stop_locations[np.where(np.logical_and(stop_locations > (loc), stop_locations <= (loc+1)))])/number_of_trials
                 stops_in_bins[loc] = stops_in_bin
 
+            window = signal.gaussian(2, std=3)
+            stops_in_bins = signal.convolve(stops_in_bins, window, mode='same')/ sum(window)
+
             spike_data.at[cluster,'average_stops'] = list(stops_in_bins)
             spike_data.at[cluster,'position_bins'] = list(range(int(number_of_bins)))
     return spike_data
@@ -86,6 +89,9 @@ def calculate_average_nonbeaconed_stops(spike_data):
                 stops_in_bin = len(stop_locations[np.where(np.logical_and(stop_locations > (loc), stop_locations <= (loc+1)))])/number_of_trials
                 stops_in_bins[loc] = stops_in_bin
 
+            window = signal.gaussian(2, std=3)
+            stops_in_bins = signal.convolve(stops_in_bins, window, mode='same')/ sum(window)
+
             spike_data.at[cluster,'average_stops_nb'] = list(stops_in_bins)
             spike_data.at[cluster,'position_bins_nb'] = list(range(int(number_of_bins)))
 
@@ -99,6 +105,9 @@ def calculate_average_nonbeaconed_stops(spike_data):
             for loc in range(int(number_of_bins)-1):
                 stops_in_bin = len(stop_locations[np.where(np.logical_and(stop_locations > (loc), stop_locations <= (loc+1)))])/number_of_trials
                 stops_in_bins[loc] = stops_in_bin
+
+            window = signal.gaussian(2, std=3)
+            stops_in_bins = signal.convolve(stops_in_bins, window, mode='same')/ sum(window)
 
             spike_data.at[cluster,'average_stops_p'] = list(stops_in_bins)
             spike_data.at[cluster,'position_bins_p'] = list(range(int(number_of_bins)))
