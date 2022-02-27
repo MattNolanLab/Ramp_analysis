@@ -11,6 +11,7 @@ from scipy import signal
 
 ### CALCULATE ACCELERATION OVER TIME
 
+### --------------------------------------------------------------------------------------------------- ###
 
 
 def plot_acceleration(recording_folder, spike_data, cluster, speed, acceleration):
@@ -44,17 +45,17 @@ def generate_acceleration_rewarded_trials(spike_data, recording_folder):
 
 
         if speed.size > 1:
-            acceleration = np.diff(np.array(speed))
+            acceleration = np.diff(np.array(speed)) # calculate acceleration
             acceleration = np.hstack((0, acceleration))
 
-            # remove acceleration outliers
+            # remove acceleration outliers outside 3 SD from the mean
             mean_speed = np.nanmean(acceleration)
             sd_speed = np.nanstd(acceleration)
             upper_speed_sd = mean_speed+(sd_speed*3)
 
             data = np.vstack((rates, speed, acceleration, position, trials, types))
             data=data.transpose()
-            data = data[data[:,2] < upper_speed_sd,:]
+            data = data[data[:,2] < upper_speed_sd,:] # remove acceleration outliers outside 3 SD from the mean
             rates = data[:,0]
             speed = data[:,1]
             acceleration = data[:,2]
@@ -63,29 +64,13 @@ def generate_acceleration_rewarded_trials(spike_data, recording_folder):
             types = data[:,5]
         else:
             acceleration = np.zeros((speed.size))
+        # save data
         spike_data = store_acceleration_for_rewaded(spike_data, cluster, np.asarray(rates), np.asarray(position), np.asarray(speed), np.asarray(acceleration), np.asarray(trials), np.asarray(types))
+        # uncomment below to PLOT acceleration vs rates/speed/position
         #plot_instant_acceleration_by_segment(recording_folder, spike_data, cluster, cluster_index, rates, position, speed, acceleration)
     return spike_data
 
 
-
-
-
-def plot_instant_acceleration(recording_folder, spike_data, cluster, rates, position, speed, acceleration):
-    save_path = recording_folder + '/Figures/InstantRates'
-    if os.path.exists(save_path) is False:
-        os.makedirs(save_path)
-    avg_spikes_on_track = plt.figure(figsize=(4,3))
-    ax = avg_spikes_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
-    ax.plot(acceleration, rates, 'o', color='Black', markersize=1.5)
-    plt.ylabel('Spike rate (hz)', fontsize=10, labelpad = 10)
-    plt.xlabel('Speed (cm/s)', fontsize=10, labelpad = 10)
-    ax.locator_params(axis = 'x', nbins=3)
-    plt.locator_params(axis = 'y', nbins  = 4)
-    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-    plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_rate_map_Cluster_' + str(cluster +1) + '_acceleration' + '.png', dpi=200)
-    plt.close()
-    return
 
 
 def remove_low_speeds_and_segment(rates, speed, position, acceleration ):
@@ -264,18 +249,6 @@ def plot_instant_acceleration_by_segment(recording_folder, spike_data, cluster, 
     plt.close()
 
     return
-
-
-def store_acceleration(spike_data,cluster_index, rates, position, speed, acceleration,  trials, types):
-    sn=[]
-    sn.append(rates) # rate
-    sn.append(position) # position
-    sn.append(speed) # speed
-    sn.append(acceleration) # acceleration
-    sn.append(trials) # trials
-    sn.append(types) # types
-    spike_data.at[cluster_index, 'spikes_in_time_all'] = list(sn)
-    return spike_data
 
 
 
