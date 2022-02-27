@@ -91,7 +91,7 @@ def plot_instant_acceleration(recording_folder, spike_data, cluster, rates, posi
 def remove_low_speeds_and_segment(rates, speed, position, acceleration ):
     data = np.vstack((rates, speed, position, acceleration))
     data=data.transpose()
-    data_filtered = data[data[:,1] >= 2,:]
+    data_filtered = data[data[:,1] >= 3,:] # remove speed < 3 cm/s
 
     data_filtered = data_filtered[data_filtered[:,2] >= 30,:]
     data_filtered = data_filtered[data_filtered[:,2] <= 170,:]

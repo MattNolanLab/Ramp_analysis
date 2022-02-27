@@ -26,7 +26,7 @@ def extract_time_binned_firing_rate_rewarded(spike_data):
         # stack data
         data = np.vstack((rates,speed,position,types, trials))
         data=data.transpose()
-        data = data[data[:,1] >= 3,:]
+        data = data[data[:,1] >= 3,:] # remove speed < 3 cm/s
 
         # bin data over position bins
         bins = np.arange(0.5,199.5,1)
@@ -117,7 +117,7 @@ def extract_time_binned_firing_rate_allspeeds(spike_data):
         # stack data
         data = np.vstack((rates,speed,position,types, trials))
         data=data.transpose()
-        data = data[data[:,1] >= 3,:]
+        data = data[data[:,1] >= 3,:] # remove speed < 3 cm/s
 
         # bin data over position bins
         bins = np.arange(0.5,199.5,1)
@@ -181,104 +181,6 @@ def extract_time_binned_firing_rate_allspeeds(spike_data):
         x_sd = np.nanstd(data_nb, axis=1)
         spike_data.at[cluster, 'Rates_averaged_rewarded_nb'] = list(x)
         spike_data.at[cluster, 'Rates_sd_rewarded_nb'] = list(x_sd)
-    return spike_data
-
-
-
-def extract_time_binned_firing_rate_unsmoothed(spike_data, prm):
-    spike_data["data_set"] = ""
-
-    for cluster in range(len(spike_data)):
-        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)
-        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
-        position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
-        types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
-        trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
-
-        # stack data
-        data = np.vstack((rates,speed,position,types, trials))
-        data=data.transpose()
-        #data = data[data[:,1] >= 3,:]
-
-        # bin data over position bins
-        max_position = np.nanmax(position)
-        min_position = np.nanmin(position)
-        bin_size =  (max_position - min_position)/199
-        bins = np.arange(min_position, max_position, step=bin_size)
-        trial_numbers = np.unique(trials)
-        binned_data = np.zeros((bins.shape[0], trial_numbers.shape[0], 3)); binned_data[:, :, :] = np.nan
-        for tcount, trial in enumerate(trial_numbers):
-            trial_data = data[data[:,4] == trial,:]
-            if trial_data.shape[0] > 0:
-                t_rates = trial_data[:,0]
-                t_pos = trial_data[:,2]
-                for bcount, b in enumerate(bins):
-                    rate_in_position = np.take(t_rates, np.where(np.logical_and(t_pos >= b, t_pos < b+bin_size)))
-                    average_rates = np.nanmean(rate_in_position)
-                    binned_data[bcount, tcount, 0] = average_rates
-
-
-        #remove nans interpolate
-        data_b = pd.DataFrame(binned_data[:,:,0], dtype=None, copy=False)
-        data_b = data_b.dropna(axis = 1, how = "all")
-        data_b.reset_index(drop=True, inplace=True)
-
-        data_b = np.asarray(data_b)
-        rates = np.transpose(data_b)
-        rates = rates.flatten()
-        rates = pd.Series(rates)
-        rates = rates.interpolate(method='linear')
-        rates = np.asarray(rates)
-        save_data = np.reshape(rates, (data_b.shape[0], data_b.shape[1]), order='F')
-
-        x = np.nanmean(data_b, axis=1)
-        x_sd = np.nanstd(data_b, axis=1)
-
-        spike_data.at[cluster, 'data_set'] = list(save_data)
-
-        save_path = prm.get_local_recording_folder_path() + '/Figures/Firing_Rate_Maps'
-        if os.path.exists(save_path) is False:
-            os.makedirs(save_path)
-
-        if rates.size > 5:
-            cluster_index = spike_data.cluster_id.values[cluster] - 1
-
-            speed_histogram = plt.figure(figsize=(3.7,3))
-            ax = speed_histogram.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
-            ax.plot(bins,x, '-', color='Black')
-            ax.fill_between(bins, x-x_sd,x+x_sd, facecolor = 'Black', alpha = 0.2)
-            plt.ylabel('Firing rates (Hz)', fontsize=16, labelpad = 10)
-            plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
-            plt.xlim(0,200)
-            ax.yaxis.set_ticks_position('left')
-            ax.xaxis.set_ticks_position('bottom')
-            Python_PostSorting.plot_utility.style_track_plot(ax, 200)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
-            ax.spines['left'].set_visible(True)
-            ax.spines['bottom'].set_visible(True)
-            ax.tick_params(
-                axis='both',  # changes apply to the x-axis
-                which='both',  # both major and minor ticks are affected
-                bottom=True,  # ticks along the bottom edge are off
-                top=False,  # ticks along the top edge are off
-                right=False,
-                left=True,
-                labelleft=True,
-                labelbottom=True,
-                labelsize=16,
-                length=5,
-                width=1.5)  # labels along the bottom edge are off
-            ax.axvline(0, linewidth = 2.5, color = 'black') # bold line on the y axis
-            ax.axhline(0, linewidth = 2.5, color = 'black') # bold line on the x axis
-            ax.set_ylim(0)
-            plt.locator_params(axis = 'x', nbins  = 3)
-            plt.locator_params(axis = 'y', nbins  = 4)
-            ax.set_xticklabels(['-30', '70', '170'])
-            plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-            plt.savefig(save_path + '/time_binned_Rates_histogram_' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + 'unsmoothed2.png', dpi=200)
-            plt.close()
-
     return spike_data
 
 
