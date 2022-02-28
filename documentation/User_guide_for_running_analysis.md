@@ -19,9 +19,11 @@ dplyr v1.0.7, purrr v0.3.4, Pheatmap v1.0.12, RColorBrewer v1.1-2, tidyr v1.1.4 
 _Note : Entire list of necessary columns for analysis is in ‘Data_Organisation.md’._ 
 3. Dataframes have been concatenated across days/mice of interest using ‘concat_server_frames.py’ 
 Note : Harry also has a version of this
-4. If necessary (i.e. if the data is needed), paired Open field recordings are sorted together with the virtual reality recordings and dataframes from paired open field recordings have also been concatenated across days/mice of interest using ‘concat_server_frames_of.py’ 
+4. If necessary (i.e. if the data is needed), paired Open field recordings are sorted together with the virtual reality recordings and dataframes from paired open field recordings have also been concatenated across days/mice of interest using ‘concat_server_frames_of.py’
+5. You now have a single dataframe per cohort of mice/per mouse with all the recordings days in it and you want to analyse the data further.
 
-The framework uses one data frame for analyses at the level of spike clusters. Data from new behavioural sessions, or clusters, are added to the frames as new rows. Outputs of new analyses are added as new columns. Because the data frames store data and analyses, for multiple sessions and clusters respectively, it's straightforward to implement new analyses over many sessions or clusters without writing complicated looping code.
+PLEASE NOTE : This pipeline was generated specifically for the analysis and generation of figures for the Ramp manuscript. You may need to edit the pipeline for your own needs!!
+
 
 ##Adding new analyses
 New analysis code should be added in a way that uses the data frames. If analyses require access to raw data, then a processing step should be used to add the required data to the data frames. Results of subsequent analyses should be added into these data frames as new columns. For instance, if we implement calculating the speed score of cells, this should be a new column in the data frame that contains information on clusters.
