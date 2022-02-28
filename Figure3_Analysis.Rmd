@@ -48,6 +48,11 @@ spatial_firing <- spatial_firing %>%
 
 ```
 
+```{r}
+df <- spatial_firing  %>%
+  select(hit_trials_number) %>%
+  mutate(mean_r = mean(hit_trials_number), sem_r = std.error(hit_trials_number))
+```
 
 ### --------------------------------------------------------------------------------------- ###
 

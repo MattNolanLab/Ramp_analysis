@@ -137,7 +137,7 @@ Ramp like cells are identified by whether the coefficients of the linear model l
 ```{r}
 #library(gdata)
 # shuffles defines the number of shuffes. Use a smaller value for testing.
-shuffle_rates <- function(df, startbin, endbin, shuffles = 4) {
+shuffle_rates <- function(df, startbin, endbin, shuffles = 10) {
   df_modified <- data.frame(neuron=as.numeric(),
                  slope=as.numeric(), 
                  rsquared=as.numeric(), 
@@ -166,7 +166,7 @@ return(df_modified)
 # spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-shuffles <- 4
+shuffles <- 10
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
@@ -174,11 +174,11 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
     mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
 }
 
-if (save_results == 1) {
-  #saveRDS(spatial_firing, "SpatialFiring_with_just1000_shuffles_final_of2.Rda")
+#if (save_results == 1) {
+  #saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles_of.Rda")
   # And use this to save a truncated version. Useful for testing code.
   # saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
-}
+#}
 #To reload use:
 # spatial_firing <- readRDS("SpatialFiring_with_1000_shuffles.Rda")
 ```
@@ -645,6 +645,7 @@ normalise_rates_beaconed <- function(df1, df2){
 }
 
 ```
+
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
@@ -768,8 +769,8 @@ spatial_firing <- spatial_firing %>%
 1. extract neurons that are ++ or -- on beaconed trials, position encoding (Figure 3) and driven by path integration (Figure 4)
 ```{r}
 df_position_pi <- spatial_firing %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  #%>% 
+  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
   
 ```
 
@@ -829,18 +830,23 @@ if (save_figures == 1) {
 1. Here we subset neurons based on position encoding (Figure 3) and path integrating (Figure 4) and either reset or contiuous firing. 
 ```{r}
 position_neurons_reset <- spatial_firing  %>% 
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
   filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
   filter(reset_group == "Reset")
 
 position_neurons_continuous <- spatial_firing  %>% 
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
   filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
   filter(reset_group == "Continuous")
 
 position_neurons_all <- spatial_firing  %>% 
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
+
+unclassified_neurons <- spatial_firing  %>% 
+  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  filter(lm_group_b == "Unclassified") 
+
 ```
 
 2. Plot scatter plot
@@ -859,7 +865,11 @@ ggplot() +
                aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
-    #geom_point(data=subset(position_neurons_continuous, track_category == "pospos" | track_category == "negneg"),
+    geom_point(data=unclassified_neurons,
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=4, alpha=0.8) +     
+  #geom_point(data=subset(position_neurons_continuous, track_category == "pospos" | track_category == "negneg"),
                #aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
                #    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                #    color=factor(unlist(lm_group_b))), shape=1, alpha=0.8) +
@@ -872,7 +882,7 @@ ggplot() +
     xlab("Outbound slope") +
     ylab("Homebound slope") +
     theme_classic() +
-    scale_color_manual(values=c("violetred2", "chartreuse3")) +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey81")) +
     theme(axis.text.x = element_text(size=18),
           axis.text.y = element_text(size=18),
           legend.position="bottom", 
@@ -1152,9 +1162,9 @@ mean_SEM_plots <- function(df, colour1 = "blue"){
     mutate(Position = rep(-29:169))
 
   ggplot(data=df) +
-  annotate("rect", xmin=-30, xmax=0, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  annotate("rect", xmin=-30, xmax=0, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
   geom_line(aes(y=mean_r, x=Position), color = colour1) +
   theme_classic() +
@@ -1176,11 +1186,11 @@ mean_SEM_plots <- function(df, colour1 = "blue"){
 
 3. Subset data by group then average rates for plotting          **Negative Negative**
 ```{r}
-df_neg_cue <- df %>%
+df_neg_neg <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
   group_by(Position)
   
-mean_SEM_plots(df_neg_cue, colour1 = "black")
+mean_SEM_plots(df_neg_neg, colour1 = "black")
 
 if (save_figures == 1) {
  ggsave(file = "plots/negneg_mean_Hz.png",  width = 3.6, height = 2.9) 
@@ -1188,54 +1198,16 @@ if (save_figures == 1) {
 ```
 
 
-Function to plot mean and SEM of firing rate as a function of position.
-```{r}
-mean_SEM_plots2 <- function(df, colour1 = "blue"){
-
-  ggplot(data=df) +
-  annotate("rect", xmin=0, xmax=30, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=170, xmax=200, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=90, xmax=110, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  #geom_ribbon(aes(x=Position, y=Rates, ymin = Rates - sem_r, ymax = Rates + sem_r), fill = colour1, alpha=0.2) +
-  geom_line(aes(y=Rates, x=Position), color = colour1) +
-  facet_wrap(~session_id + cluster, scales = "free")+
-  theme_classic() +
-  scale_x_continuous(breaks=seq(0,200,100), expand = c(0, 0)) +
-  #annotate("text", x = 140, y=7, label = paste0("n = ", str(cell_no)), size=8) +
-  #geom_text(aes(x = 140, y= 6, label = paste0("n = ", str(cell_no))), vjust = "inward", hjust = "inward")
-  #scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
-  labs(y = "Z-scored firing rate", x = "Position") +
-  theme(axis.text.x = element_text(size=18),
-        axis.text.y = element_text(size=18),
-        legend.title = element_blank(),
-        text = element_text(size=18),
-        plot.margin = margin(21, 25, 5, 20))
-}
-
-```
-
-3. Subset data by group then average rates for plotting          **Negative Positive**
-```{r}
-df_pos_cue <- df %>%
-  subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
-  group_by(Position)
-
-mean_SEM_plots2(df_pos_cue, colour1 = "black")
-
-if (save_figures == 1) {
- ggsave(file = "plots/pospos_mean_Hz_percell2.png", width = 30.6, height = 30.9) 
-}
-```
 
 
 3. Subset data by group then average rates for plotting          **Positive Positive **
 ```{r}
-df_pos_pi <- df %>%
+df_pos_pos <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
   group_by(Position) 
 
   
-mean_SEM_plots(df_pos_pi, colour1 = "black")
+mean_SEM_plots(df_pos_pos, colour1 = "black")
 
 
 if (save_figures == 1) {
@@ -1246,15 +1218,31 @@ if (save_figures == 1) {
 
 3. Subset data by group then average rates for plotting          **Positive Negative**
 ```{r}
-df_pos_pi <- df %>%
+df_pos_neg <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
+  group_by(Position)
+
+
+mean_SEM_plots(df_pos_neg, colour1 = "black")
+
+if (save_figures == 1) {
+  ggsave(file = "plots/posneg_mean.png", width = 3.6, height = 2.9)
+}
+```
+
+
+
+3. Subset data by group then average rates for plotting          **Positive Negative**
+```{r}
+df_neg_pos <- df %>%
+  subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
   group_by(Position)
 
 
 mean_SEM_plots(df_pos_pi, colour1 = "black")
 
 if (save_figures == 1) {
-  ggsave(file = "plots/posneg_mean.png", width = 3.6, height = 2.9)
+  ggsave(file = "plots/negpos_mean.png", width = 3.6, height = 2.9)
 }
 ```
 
@@ -1421,3 +1409,202 @@ if (save_figures == 1) {
   save_pheatmap_png(myheatmap, "plots/my_heatmap_all_update.png")
 }
 ```
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+# Plot ramp scores for high and low firing rate neurons
+First, extract ramp score from the dataframe for annotating heatmap
+_since its a list of three (outbound/homebound/all) we extract the first one_
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(start_ramp_score = map(ramp_score, ~.x[1]))
+  
+```
+
+
+```{r}
+position_neurons_all <- spatial_firing  %>% 
+  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
+
+unclassified_neurons_all <- spatial_firing  %>% 
+  #filter(final_model_o_b != "P" & final_model_o_b != "PS" & final_model_o_b != "PA" & final_model_o_b != "PSA")  %>% 
+  filter(lm_group_b == "Unclassified") 
+
+```
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_point(data=spatial_firing,
+               aes(x = as.numeric(unlist(mean_firing_rate)), 
+                   y = as.numeric(unlist(start_ramp_score)),
+                   color=as.factor(unlist(lm_group_b))), alpha=0.8) +
+    ylab("Ramp score (0 - 60 cm)") +
+    xlab("Mean firing rate (Hz)") +
+    theme_classic() +
+    scale_color_manual(values=c( "violetred2", "chartreuse3", "grey32")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/rampscore_comparison_FR.png", width = 4, height = 4) 
+}
+```
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_point(data=unclassified_neurons_all,
+               aes(x = as.numeric(unlist(mean_firing_rate)), 
+                   y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
+                   color="grey32"), alpha=0.8) +
+    geom_point(data=subset(position_neurons_all, start_ramp_score > 0),
+               aes(x = as.numeric(unlist(mean_firing_rate)), 
+                   y = as.numeric(unlist(start_ramp_score)),
+                   color=as.factor(unlist(lm_group_b))), alpha=0.8) +
+    #coord_cartesian(ylim = c(-.45,.61), xlim = c(-.45,.45)) +
+    ylab("Ramp score (0 - 60 cm)") +
+    xlab("Mean firing rate (Hz)") +
+    theme_classic() +
+    scale_color_manual(values=c("grey32", "chartreuse3","chartreuse3")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/rampscore_comparison_FR_positive.png", width = 4, height = 4) 
+}
+```
+
+
+```{r}
+position_neurons_all <- spatial_firing  %>% 
+  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
+
+unclassified_neurons_all <- spatial_firing  %>% 
+  #filter(final_model_o_b != "P" & final_model_o_b != "PS" & final_model_o_b != "PA" & final_model_o_b != "PSA")  %>% 
+  filter(lm_group_b == "Unclassified") 
+
+```
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_point(data=spatial_firing,
+               aes(x = as.numeric(unlist(mean_firing_rate)), 
+                   y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    #coord_cartesian(ylim = c(-.45,.61), xlim = c(-.45,.45)) +
+    #geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    #geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
+    ylab("Slope (0 - 60 cm)") +
+    xlab("Mean firing rate (Hz)") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey32")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/Slope_comparison_FR.png", width = 4, height = 4) 
+}
+```
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_point(data=unclassified_neurons_all,
+               aes(x = as.numeric(unlist(mean_firing_rate)), 
+                   y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_point(data=subset(position_neurons_all, lm_group_b == "Positive"),
+               aes(x = as.numeric(unlist(mean_firing_rate)), 
+                   y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    ylab("Slope (0 - 60 cm)") +
+    xlab("Mean firing rate (Hz)") +
+    theme_classic() +
+    scale_color_manual(values=c( "chartreuse3", "grey32")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/Slope_comparison_FR_positive.png", width = 4, height = 4) 
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+3. Subset data by group then average rates for plotting          **Positive Unclassified**
+```{r}
+
+df <-  
+  tibble(average_stops = unlist(spatial_firing$average_stops), 
+            average_stops_p = c(as.numeric(unlist(spatial_firing$average_stops_p)), rep(0, times=199)))
+
+df <- df %>%
+  mutate(Position = rep(-30:169, times = nrow(spatial_firing))) %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(as.numeric(average_stops), na.rm =TRUE), sem_r = std.error(as.numeric(average_stops)), 
+                   mean_nb = mean(as.numeric(average_stops_p), na.rm =TRUE), sem_nb = std.error(as.numeric(average_stops_p))) 
+  
+
+```
+
+
+```{r}
+ggplot(data=df) +
+  annotate("rect", xmin=-30, xmax=0, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=0,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_line(aes(y=mean_r, x=Position), color = "Black") +
+  geom_line(aes(y=mean_nb, x=Position), color = "Blue") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  labs(y = "Stops (cm)", x = "Location (cm)") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+      axis.text.y = element_text(size=18),
+      legend.title = element_blank(),
+      text = element_text(size=18),
+      plot.margin = margin(21, 25, 5, 20))
+if (save_figures == 1) {
+  ggsave(file = "plots/stops_mean.png", width = 3.6, height = 2.9)
+}
+```
+
