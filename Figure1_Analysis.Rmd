@@ -179,8 +179,6 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   # And use this to save a truncated version. Useful for testing code.
   # saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
 #}
-#To reload use:
-# spatial_firing <- readRDS("SpatialFiring_with_1000_shuffles.Rda")
 ```
 
 
@@ -497,6 +495,7 @@ shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope)
                        max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = 999))
 ```
 
+
 2. Function to classify shuffled cells based on shuffled distribution
 ```{r}
 shuff_slopes <- shuff_slopes %>%
@@ -512,6 +511,7 @@ shuff_slopes <- shuff_slopes %>%
     )
   )
 ```
+
 
 3. Calculate proportion of cells in the shuffled datasets that pass criteria
 ```{r}
@@ -1239,7 +1239,7 @@ df_neg_pos <- df %>%
   group_by(Position)
 
 
-mean_SEM_plots(df_pos_pi, colour1 = "black")
+mean_SEM_plots(df_neg_pos, colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/negpos_mean.png", width = 3.6, height = 2.9)
@@ -1273,7 +1273,15 @@ if (save_figures == 1) {
   ggsave(file = "plots/negnon_mean.png", width = 3.6, height = 2.9)
 }
 ```
-
+# get numbers for the plots
+```{r}
+num_pospos <-spatial_firing %>% filter(track_category_numeric == 1)
+num_posneg <-spatial_firing %>% filter(track_category_numeric == 2)
+num_posnon <-spatial_firing %>% filter(track_category_numeric == 3)
+num_negneg <-spatial_firing %>% filter(track_category_numeric == 4)
+num_negpos <-spatial_firing %>% filter(track_category_numeric == 5)
+num_negnon <-spatial_firing %>% filter(track_category_numeric == 6)
+```
 
 
 ### ----------------------------------------------------------------------------------------- ###
