@@ -30,12 +30,13 @@ prm = Python_PostSorting.parameters.Parameters()
 def initialize_parameters(recording_folder):
     prm.set_is_ubuntu(True)
     prm.set_sampling_rate(30000)
-    prm.set_stop_threshold(10.7)  # speed is given in cm/200ms 0.7*1/2000
+    prm.set_stop_threshold(4.7)  # speed is given in cm/200ms 0.7*1/2000
     prm.set_file_path(recording_folder)
     prm.set_local_recording_folder_path(recording_folder)
     prm.set_output_path(recording_folder)
 
 
+# this function makes analysis based on mice/cohort/days easier later down the line in R
 def add_mouse_to_frame(df):
     print("Adding ID for Mouse and Day to dataframe...")
     df["Mouse"] = ""
@@ -48,7 +49,7 @@ def add_mouse_to_frame(df):
         df.at[cluster,"Mouse"] = mouse
         df.at[cluster,"Day"] = day
         df.at[cluster,"Day_numeric"] = numericday
-        df.at[cluster,"cohort"] = 4 # Change this to current cohort analysed!!
+        df.at[cluster,"cohort"] = 7 # Change this to current cohort analysed!!
     return df
 
 
@@ -85,7 +86,7 @@ def plot_behaviour(spike_data):
     #Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm) # from postprocessing spatial data
     spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_stops(spike_data) # from postprocessing spatial data
     spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_stops(spike_data) # from postprocessing spatial data
-    #Python_PostSorting.MakePlots_Behaviour.plot_stop_histogram_per_cluster(spike_data, prm) # from postprocessing spatial data
+    Python_PostSorting.MakePlots_Behaviour.plot_stop_histogram_per_cluster(spike_data, prm) # from postprocessing spatial data
     #spike_data = Python_PostSorting.RewardFiring.split_data_by_reward(spike_data, prm)
     #spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_speed(spike_data) # from postprocessing spatial data
     #spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_speed(spike_data) # from postprocessing spatial data
@@ -192,7 +193,8 @@ def main():
     #spike_data.reset_index(drop=True, inplace=True) # Make sure you reset the index if you subset the data because otherwise some analysis based on rowcount wont work!!
 
     spike_data = plot_behaviour(spike_data) # plot stops, average stops etc
-
+    spike_data = Python_PostSorting.Calculate_Stops_from_Speed.calculate_stops_from_200ms_speed(spike_data)
+    spike_data = Python_PostSorting.Calculate_Stops_from_Speed.calculate_rewards_from_stops(spike_data)
     # RUN EXAMPLE PLOTS - use if wanting to plot example data - otherwise COMMENT OUT
     #spike_data = run_example_plots(spike_data,server_path)
 
@@ -200,14 +202,13 @@ def main():
     #spike_data = test_speed_data(spike_data,server_path)
 
     # RUN FIGURE ANALYSIS
-    convert_to_hz = 10 # Set as 10 if spikes_in_time was saved in ms, otherwise leave at 0
+    convert_to_hz = 0 # Set as 10 if spikes_in_time was saved in ms, otherwise leave at 0
     spike_data = run_main_figure_analysis(spike_data, server_path, convert_to_hz)
-    #spike_data = test_stop_data(spike_data, server_path)
     spike_data = run_supple_figure_analysis(spike_data, convert_to_hz)
 
     # SAVE DATAFRAMES for R
     #spike_data = drop_columns_from_frame(spike_data) # UNCOMMENT if you want to drop unused columns from the dataframe so the saved file is smaller
-    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/all_cohort4.pkl') # path to where you want the pkl to be saved
+    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/all_cohort7_2.pkl') # path to where you want the pkl to be saved
 
 
 
