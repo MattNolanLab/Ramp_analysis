@@ -36,7 +36,6 @@ The linear model uses firing rate data binned in space. For this we want to load
 - Add position for each point (data is binned into 200, 1 cm bins )
 - Insert result back into dataframe
 - Do this for beaconed, nonbeaconed and probe trials
-- Do this for shuffled spike rate (beaconed)
 
 1. Write function to add position
 ```{r}
@@ -910,30 +909,38 @@ if (save_figures == 1) {
 Function to fit mixed effect models
 ```{r}
 mm_fit <- function(df, TT = 0) {
-  if (length(df) == 1)
-    return(NA)
+  if (length(df) == 1){
+    return(NA)}
   df <-
     tibble(
-      Rates = as.numeric(Re(df[[1]])),
-      Position = as.numeric(Re(df[[2]])),
-      Acceleration = as.numeric(Re(df[[4]])),
-      Speed = as.numeric(Re(df[[3]])),
-      Trials = as.factor(df[[5]]),
+      Rates = as.numeric(df[[1]]),
+      Position = as.numeric(df[[2]]),
+      Acceleration = as.numeric(df[[4]]),
+      Speed = as.numeric(df[[3]]),
+      Trials = as.factor(df[[5]]), 
       Types = as.factor(df[[6]])
     )
-  df <- df %>%
-    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == TT)
   
-  if (length(df) == 1 | nrow(df) < 3)
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == 0 & Rates > 0.01) %>%
+    select(-Types) 
+
+  df$Acceleration <- scale(df$Acceleration, center=FALSE, scale=TRUE)
+  df$Rates <- scale(df$Rates, center=FALSE, scale=TRUE)
+  df$Speed <- scale(df$Speed, center=FALSE, scale=TRUE)
+  df$Position <- scale(df$Position, center=FALSE, scale=TRUE)
+  
+  if (length(df) == 1 | nrow(df) < 20) {
     return(NA)
+  }
+  glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = Gamma(link = "log"), data = df)
 
-  df_int <-
-    lme4::lmer(
-      Rates ~ Position + Speed + Acceleration + (1 + Position | Trials),
-      data = df,
-      na.action = na.exclude
-    )
-
+  df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
+                        data = df, 
+                        na.action = na.exclude,
+                        family = Gamma(link = "log"),
+                        start=list(fixef=coef(glm1)),
+                        control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 }
 ```
 
@@ -965,13 +972,25 @@ mm_pvalues <- function(mm, session_id) {
 ```
 
 
+Function to extract P values for each coefficient from the model
+```{r}
+
+mm_fit_function <- function(mm, TT) {
+  tryCatch({
+      mm_fit(mm,TT)
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+   
+```
+
 2. Run on all cells.
 Note here, there may be some overfitting with the mixed effect model. This is likely because some  coefficients likely do not vary with position. However, we can't address this by tailoring the model to each cell as we want to treat each cell the same way. The standardized coefficients should still be interpretable.
 See discussion in ?isSingular and here: https://stats.stackexchange.com/questions/378939/dealing-with-singular-fit-in-mixed-models
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
   #select(-contains('o_mm_p_b_')) %>%
-  mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit),
+  mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit_function),
          #o_mm_nb = map2(spikes_in_time, 1, mm_fit),
          o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues)) %>%
          #o_mm_p_nb = map(o_mm_nb, mm_pvalues))
@@ -1295,7 +1314,7 @@ _For start ramps, steepest slope should be negative - thus will have the highest
 
 pospos <-spatial_firing %>% filter(track_category_numeric == 1)
 posneg <-spatial_firing %>% filter(track_category_numeric == 2)
-posnon <-spatial_firing %>% filter(track_category_numeric == 3)
+posnon <-spatial_firing %>% filter(track_category_numeric == 3, mean_firing_rate > 1)
 negneg <-spatial_firing %>% filter(track_category_numeric == 4)
 negpos <-spatial_firing %>% filter(track_category_numeric == 5)
 negnon <-spatial_firing %>% filter(track_category_numeric == 6)
@@ -1579,7 +1598,7 @@ if (save_figures == 1) {
 
 
 
-3. Subset data by group then average rates for plotting          **Positive Unclassified**
+3. Subset data by group then average rates for plotting         
 ```{r}
 
 df <-  
@@ -1614,5 +1633,13 @@ ggplot(data=df) +
 if (save_figures == 1) {
   ggsave(file = "plots/stops_mean.png", width = 3.6, height = 2.9)
 }
+```
+
+```{r}
+df <- spatial_firing %>%
+  select(Day, Mouse, cohort, max_trial_number, number_of_rewards) %>%
+  distinct() %>%
+  dplyr::summarise(mean_r = mean(as.numeric(number_of_rewards), na.rm =TRUE), sem_r = std.error(as.numeric(number_of_rewards))) 
+
 ```
 
