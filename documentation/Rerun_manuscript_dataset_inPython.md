@@ -3,11 +3,11 @@
 
 The manuscript uses data from 4 cohorts of animals that can be found here :
 
-'/'
+''
 
 Individual recordings from each mouse, session and cohort are spike sorted using the following pipeline :
 
-'/ '
+'https://github.com/MattNolanLab/in_vivo_ephys_openephys' 
 
 cohort 1-4 : analysed using the vr_fix_bugs branch
 cohort 7 : analysed using harrys branch
