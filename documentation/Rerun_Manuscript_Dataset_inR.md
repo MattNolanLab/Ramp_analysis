@@ -1,12 +1,12 @@
 
 # How to rerun data for the Tennant et al., 2022 Ramp cell manuscript (R pipeline)
 
-##Overview
+## Overview
 This repository was designed to carry out analysis of in vivo electrophysiology recordings from the virtual reality for the Ramp manuscript (Tennant et al., 2022). The aim is to classify neurons based on their firing activity along the linear track of the virtual reality task. 
 
 Specifically, this analyses determines whether firing rates of individual neurons show 'ramping' activity (linear increases or decreases in activity) within specific regions of the track (0-60 cm and 80 - 140 cm), whether firing rate can be explained best by position, speed or acceleration (or a combination), if ramping activity is stable across trial types (beaconed, non-beaconed, probe) and outcomes (hit, run through, try). Subsequent analyses in generates the plots used in figures and performs statistical analysis on processed datasets. 
 
-##What this analysis pipeline does:
+## What this analysis pipeline does:
 1. Runs a linear model on average firing rates binned in space for each neuron to determine if there are linear increases or decreases in activity with position.
 2. Shuffles average firing rates binned in space 1000 times, runs the above linear model on each shuffled dataset then classify's the neurons based on the coefficients of the linear model in respect to the coefficients from the 1000 shuffles
 3. Runs the above linear model on first the region of the track before the reward zone (0-60 cm) then after (80-140 cm) and assigns a classifyer to the cell based on their activity in both regions. 
@@ -15,7 +15,7 @@ Specifically, this analyses determines whether firing rates of individual neuron
 6. Run above linear model for nonbeaconed and probe trials
 7. Run the above linear model on different trial outcomes (hit, run through, try)
 
-##Preconditions
+## Preconditions
 
 1. You have the following datafiles that contain all cells for each cohort:
   - ‘PythonOutput_Concat.Rda’
@@ -32,7 +32,7 @@ _if you have these .pkl dataframes go to loading data IF running code for the fi
 
 You are now ready to run the R pipeline to analyse, plot and save data for the Tennant et al (2022) manuscript.
 
-##Setting up
+## Setting up
 
 1. Navigate to ‘Setup.Rmd’ and ensure save_figures = 1 if you want to save the output figures of the analysis, save_data = 1 if you want to save the output data of the analysis. Set these parameters to 0 if you do not want to save the output of the analysis pipeline. 
 2. Ensure you have the correct folder structure. 
@@ -42,9 +42,9 @@ Ramp_Analysis as a parent folder, Data, plots and Data_out as child folders. Thi
 
 4. Ensure your RProject has the correct working directory (i.e. to the current repo) for loading/saving data.
 
-##Loading data 
+## Loading data 
 
-###IF running code for the first time from Python output, 
+### IF running code for the first time from Python output, 
 
 first the .pkl dataframe needs to be loaded and converted into a .Rda file for R. to do this run the following : 
 
@@ -55,14 +55,14 @@ Note : for the Tennant et al., 2022 manuscript, 5 cohorts of animals are loaded 
 4. Navigate to ‘Setup.Rmd’ and under the readRDS function make sure ‘PythonOutput_Concat.Rda’ is in the path to the dataframe to load in future. 
 _this is so when rerunning analysis you don't have to convert .pkl dataframes again but just reload the concatenated frame._
 
-###IF rerunning code using already saved .Rda file 
+### IF rerunning code using already saved .Rda file 
 
 1. Navigate to ‘Setup.Rmd’ and under the readRDS function make sure ‘PythonOutput_Concat.Rda’ is in the path to the dataframe to load 
 ALTERNATIVELY if you have the spatial_firing_with1000shuffles.Rda datafile load this. This is the same dataframe as PythonOutput_Concat.Rda but with the shuffle analysis done on it already. This will just save time to run the shuffles.
 2. Run the entire markdown document to give one dataframe for all cohorts (this is called spatial_firing in the code). 
 3. Ensure you have curated the data by graduation day and removed artefacts (this should happen automatically if you run the whole markdown document). Spatial_firing should be 1261 rows long (i.e. 1261 cells in the dataset). 
 
-##Running analysis 
+## Running analysis 
 
 Once your dataframe is loaded and your R environment is set up, you are ready to rerun the analysis!
 

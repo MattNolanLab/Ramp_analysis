@@ -12,13 +12,12 @@ Individual recordings from each mouse, session and cohort are spike sorted using
 cohort 1-4 : analysed using the vr_fix_bugs branch
 cohort 7 : analysed using harrys branch
 
-
 Once sorted, data for each cohort is concatenated together, giving one dataframe for each cohort/mouse. The following script is used to do this:
 
 Once you have a dataframe with all the sessions from one cohort, you are ready to run the python post sorting analysis pipeline. 
 
 
-#Steps to run RampAnalysis (Python pipeline)
+## Steps to run RampAnalysis (Python pipeline)
 
 There are three main stages to running the python post sorting pipeline. 
 
@@ -42,7 +41,7 @@ Graduation day :
 The day each mouse graduates to probe trials can be found at 'Data/Criteria_days.csv'.
 
 
-##Post Sorting data from the virtual reality
+## Post Sorting data from the virtual reality
 
 1. Copy the path to your data frame (the concatenated one for a whole cohort) in the process_allmice_dir function in ‘LoadDataFrames.py’
 2. Go to the main function in ‘Control_PostSorting_Analysis.py’. The following functions should be uncommented : 
@@ -73,7 +72,7 @@ The day each mouse graduates to probe trials can be found at 'Data/Criteria_days
 
 5. The last line of the main function contains a path for the dataframe to be saved too, change this to your desired output and dataframe name (lets call it dataframe1). 
  
-##Post sorting open field recordings
+## Post sorting open field recordings
 
 6. Copy the path to your data frame in the process_allmice_dir_of function in ‘LoadDataFrames.py’. Note : this is the open field dataframe (i.e. of recordings from the open field), sorted WITH the VR
 7. Go to the main function in ‘Control_PostSorting_Analysis_of.py’. The following functions should be uncommented : 
@@ -82,7 +81,7 @@ The day each mouse graduates to probe trials can be found at 'Data/Criteria_days
 
 8. The last line of the main function contains a path for the dataframe to be saved too, change this to your desired output and dataframe name. Note : choose a DIFFERENT name to the output of the VR analysis, let's call it dataframe2.  
 
-##Match open field and virtual reality recordings
+## Match open field and virtual reality recordings
 
 9. Go to ‘Match_Session_and_Cluster.py’ and in process_allmice_of copy the path to your data frame output from the ‘Control_PostSorting_Analysis_of.py’ i.e. dataframe2. 
 10. In process_allmice_VR copy the path to your data frame output from the ‘Control_PostSorting_Analysis.py’ i.e. dataframe1. 
@@ -91,7 +90,7 @@ The day each mouse graduates to probe trials can be found at 'Data/Criteria_days
 
 Now you have ran the python postsorting pipeline, you are ready to run your datasets in R. Please switch to 
 
-##Adding new analyses
+## Adding new analyses
 
 New analysis code should be added in a way that uses the data frames. If analyses require access to raw data, then a processing step should be used to add the required data to the data frames. Results of subsequent analyses should be added into these data frames as new columns. For instance, if we implement calculating the speed score of cells, this should be a new column in the data frame that contains information on clusters.
 
