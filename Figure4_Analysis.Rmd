@@ -1,5 +1,7 @@
 ---
-title: "RampCodes_Figure2"
+title: "RampCodes_Figure4"
+author: "Sarah Tennant & Matt Nolan"
+date: "20/10/2021"
 output: html_document
 ---
 
@@ -7,12 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
----
-title: "RampCodes_Figure2"
-author: "Sarah Tennant & Matt Nolan"
-date: "20/10/2021"
-output: html_document
----
 
 ### ------------------------------------------------------------------------------------------ ### 
 
@@ -1212,7 +1208,7 @@ spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
                               r_squared_homebound_p =  spatial_firing_save$asr_p_h_rewarded_fit_r.squared,
                               slope_homebound_p =  spatial_firing_save$asr_p_h_rewarded_fit_slope         )
 
-write.table(spatial_firing_save, "AllMice_LinearModelResults.txt", quote=FALSE, sep="\t")
+write.table(spatial_firing_save, "data_out/AllMice_LinearModelResults.txt", quote=FALSE, sep="\t")
 ```
 
 

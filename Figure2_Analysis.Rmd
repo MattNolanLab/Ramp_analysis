@@ -1,5 +1,7 @@
 ---
-title: "RC_Supplemental8"
+title: "RampCodes_Figure2"
+author: "Sarah Tennant & Matt Nolan"
+date: "20/10/2021"
 output: html_document
 ---
 
@@ -8,10 +10,16 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-### ----------------------------------------------------------------------------------------- ###
 
 
-### Plot model selection results
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## Do ramping neurons encode speed, position or acceleration?
+
+### ------------------------------------------------------------------------------------------ ### 
+
+### Plot model selection results performed in Figure1_Analysis.Rmd
 
 First for all cells. 
 
@@ -173,9 +181,9 @@ spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id,
 
 ```
 
-3. save to csv file _this is for matching to plots from python_
+3. save to csv file _this is for matching the coefficient values to plots of instantaneous rates from python_
 ```{r}
-write_csv2(spatial_firing_save, "all_results_coefficients.csv")
+write_csv2(spatial_firing_save, "data_out/all_results_coefficients.csv")
 ```
 
 4. put data into a tibble for plotting
@@ -197,7 +205,6 @@ data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), time
 ```
 
 _Plot coefficients for all cells_
-
 
 Make function for plotting standardised coefficients
 ```{r}
@@ -365,10 +372,9 @@ if (save_figures == 1) {
 
 ###----------------------------------------------------------------------------###
 
-Analyses
+Statistical analyses to compare coefficients for position, speed and acceleration.
 
-Compare coefficients for position, speed and acceleration.
-
+1. Take only 
 ```{r}
 position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```

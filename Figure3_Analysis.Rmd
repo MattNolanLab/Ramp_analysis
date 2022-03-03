@@ -1,5 +1,7 @@
 ---
-title: "Figure7"
+title: "RampCodes_Figure3"
+author: "Sarah Tennant & Matt Nolan"
+date: "20/10/2021"
 output: html_document
 ---
 
@@ -13,9 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Differences in the positional dependance of firing between rewarded trials, run through trials and trials where the animal "tries" 
 
-
 trial types :
-1. rewarded = animal recieves a reward
+1. rewarded/hit = animal recieves a reward
 2. try = speed in the reward zone is within the 95% confidence interval of speed in the reward zone in
 rewarded trials
 3. run through = speed in the reward zone is outside the 95% confidence interval of speed in the reward zone in rewarded trials
@@ -24,39 +25,8 @@ rewarded trials
 ### --------------------------------------------------------------------------------------- ###
 
 
-## To address low trial numbers in run through and try catagories, first lets create a new dataset with only high trial numbers. 
 
-First extract number of trials for each type
-```{r}
-trial_adder <- function(df) {
-  df <-
-  tibble(
-    Rates = as.numeric(df[[1]]),
-    Position = as.numeric(df[[3]]),
-    Trials = as.numeric(df[[4]])
-  )
-  
-  trials <- length(unique(df$Trials))
-  return(trials)
-}
-
-
-spatial_firing <- spatial_firing %>%
-  mutate(try_trials_number = map(spikes_in_time_try,trial_adder),
-         run_trials_number = map(spikes_in_time_run,trial_adder),
-         hit_trials_number = map(spikes_in_time_reward,trial_adder))
-
-```
-
-```{r}
-df <- spatial_firing  %>%
-  select(hit_trials_number) %>%
-  mutate(mean_r = mean(hit_trials_number), sem_r = std.error(hit_trials_number))
-```
-
-### --------------------------------------------------------------------------------------- ###
-
-Then combine hit and miss trials together with an indicator of trial type (hit, try, run)
+First combine hit and miss trials together with an indicator of trial type (hit, try, run)
 
 First, function that extracts data into a tibble, saves space in the function below
 
@@ -102,6 +72,7 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
 }
 
 ```
+
 
 1. Generate firing rate tibble for each cell
 ```{r}
@@ -356,12 +327,9 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
 ```
 
 
-_plots for all position encoding neurons (P, PA, PS, PSA)_
+_plots for conjunctive position encoding neurons (PA, PS, PSA)_
 
-1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
-```{r}
-#position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
-```
+1. Split data based on conjunctive position encoding (PA, PS, PSA) (Figure 2) as we are only interested in these neurons here
 
 ```{r}
 position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
@@ -438,7 +406,7 @@ _plots for pure position encoding neurons (P)_
 
 Repeat above for just position neurons
 
-1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
+1. Split data based position encoding group (P) (Figure 2) as we are only interested in position neurons here
 ```{r}
 position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P")
 ```
@@ -517,7 +485,7 @@ _plots for pure speed encoding neurons (S) with POSITIVE or NEGATIVE slopes_
 
 Repeat above plots but for speed encoding neurons
 
-1. Split data based on positive/negative slope (Figure2) and speed encoding group (Figure 3) as we are only interested in these neurons here
+1. Split data based on speed encoding group (Figure 2) as we are only interested in these neurons here
 ```{r}
 speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA")
 ```
@@ -594,7 +562,7 @@ _plots for all speed encoding encoding neurons (S, A, SA)_
 
 Repeat above plots but for speed encoding neurons, regardless of classification in Figure 2.
 
-1. Split data based on speed encoding group (Figure 3) as we are only interested in these neurons here
+1. Split data based on speed encoding group (Figure 2) as we are only interested in these neurons here
 ```{r}
 all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA")
 ```
@@ -666,7 +634,7 @@ data <- tibble(session_id = rep(unlist(spatial_firing$unique_id), times=3),
 
 ```
 
-2. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 2) and subset based on position encoding (Figure 3) and are ++ or -- in beaconed trials
+2. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 1) and subset based on position encoding (Figure 2) and are ++ or -- in beaconed trials
 ```{r}
 df <- data %>%
   filter(final_model_o_b == "P") %>%
@@ -720,7 +688,7 @@ standard_pos_violin_plot <- function(df) {
 
 _plots for just position encoding encoding neurons (P)_
 
-4. Select cells classified in Figure 2 as having positive or negative slopes and plot
+4. Select cells classified in Figure 1 as having positive or negative slopes and plot
 ```{r}
 data_pos <- df %>%
   subset(lm_group_b == "Positive" & lm_group_b_h == "Positive")
@@ -823,7 +791,7 @@ res
 
 _plots for all position encoding encoding neurons (P, PS, PA, PSA)_
 
-1. repeat plots above but for all position neurons (Figure 3) (P, PS, PA, PSA)
+1. repeat plots above but for all position neurons (Figure 2) (P, PS, PA, PSA)
 ```{r}
 df <- data %>%
   filter(final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
@@ -839,7 +807,7 @@ data_pos <- df %>%
 
 (pos_neg_coef_plot <- standard_pos_violin_plot(data_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_fig7_pos_AllPosition.png",width = 3.2, height = 2.5)
+  ggsave(file = "plots/PredictProbe_pos_AllPosition.png",width = 3.2, height = 2.5)
 }
 
 data_pos <- df %>%
@@ -847,7 +815,7 @@ data_pos <- df %>%
 
 (pos_neg_coef_plot <- standard_neg_violin_plot(data_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_fig7_neg_AllPosition.png",width = 3.2, height = 2.5)
+  ggsave(file = "plots/PredictProbe_neg_AllPosition.png",width = 3.2, height = 2.5)
 }
   
 ```
@@ -966,7 +934,7 @@ data_pos <- df %>%
 
 (pos_neg_coef_plot <- standard_pos_violin_plot(data_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_fig7_pos_AllSpeed.png",width = 4, height = 2.5)
+  ggsave(file = "plots/PredictProbe_pos_AllSpeed.png",width = 4, height = 2.5)
 }
 
 data_pos <- df %>%
@@ -974,7 +942,7 @@ data_pos <- df %>%
 
 (pos_neg_coef_plot <- standard_neg_violin_plot(data_pos))
 if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_fig7_neg_AllSpeed.png",width = 4, height = 2.5)
+  ggsave(file = "plots/PredictProbe_neg_AllSpeed.png",width = 4, height = 2.5)
 }
   
 ```
@@ -1070,7 +1038,7 @@ res
 ### ----------------------------------------------------------------------------- ###
 
 
-## Figure 7 stats
+## Figure 3 statistical analysis
 
 Find proportion & numbers of neurons that are significant/non-significiant
 

@@ -1,5 +1,7 @@
 ---
 title: "RampCodes_Figure1"
+author: "Sarah Tennant & Matt Nolan"
+date: "20/10/2021"
 output: html_document
 ---
 
@@ -7,13 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
----
-title: "RampCodes_Figure1"
-author: "Sarah Tennant & Matt Nolan"
-date: "20/10/2021"
-output: html_document
----
 
 ## Analysis of neurons recorded from the parahippocampal areas during virtual navigation
 
