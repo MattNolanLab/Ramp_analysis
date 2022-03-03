@@ -258,24 +258,24 @@ _Plot coefficients for all cells_
 5. Split by positive slope _PS cells_
 ```{r}
 data_coef_pos_PS <- data_coef %>%
-  subset(group == "PS") %>%
+  subset(group == "PSA") %>%
   subset(lm_result == "Positive" )
 
 (pos_PS_coef_plot <- standard_plot(data_coef_pos_PS))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositivePScells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_PositivePSAcells.png", width = 3, height = 2.5)
 }
 ```
 
 6. Split by negative slope
 ```{r}
 data_coef_neg_PS <- data_coef %>%
-  subset(group == "PS") %>%
+  subset(group == "PSA") %>%
   subset(lm_result == "Negative" )
 
 (neg_PS_coef_plot <- standard_plot(data_coef_neg_PS))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativePScells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_NegativePSAcells.png", width = 3, height = 2.5)
 }
 ```
 
