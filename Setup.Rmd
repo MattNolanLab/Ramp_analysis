@@ -30,13 +30,13 @@ library(networkD3) # This package lets you make and plot Sankey diagrams
 library(zoo) # some mathematical functions that are useful
 library(tibbletime)
 library(agricolae) # post hoc Tukey test
+library(ggallin) # this is for the pseudolog10_trans function used in coeff plots in Figure2_Analysis
 
 # Import functions
 source("Functions.R")
-source("Functions_Outbound_LMER.R")
 
 # Parameter to save figures. Set to 1 if you'd like to save them.
-save_figures = 0
+save_figures = 1
 
 # Parameter to save data snapshots as analysis proceeds. Set to 1 to save.
 save_results = 0
@@ -45,7 +45,10 @@ save_results = 0
 # Load data
 # Alternative file names commented out
 #spatial_firing <- readRDS(file="PythonOutput_Concat.Rda")
-spatial_firing <- readRDS(file="SpatialFiring_with_1000_shuffles.Rda") 
+spatial_firing <- readRDS(file="SpatialFiring_with_1000_shuffles_of.Rda") 
+shuffles <- select(spatial_firing_shuffles,c('session_id', 'cluster_id', 'shuffle_results_nb_o', 'shuffle_results_b_o', 'shuffle_results_p_o'))
+saveRDS(shuffles, "SpatialFiring_JUST1000_shuffles_final_of.Rda")
+spatial_firing <- readRDS(file="PythonOutput_Concat_final_of_withshuffles.Rda") 
 # To work on  a subset of data for testing
 # spatial_firing <-  slice_head(spatial_firing, n = 10)
 ```
