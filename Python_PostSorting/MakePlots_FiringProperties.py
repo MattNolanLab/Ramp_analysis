@@ -78,6 +78,8 @@ def calculate_autocorrelogram_hist(spikes, bin_size, window):
 
 
 def plot_autocorrelograms(spike_data, prm):
+    spike_data["corr"] = ""
+
     print('I will plot autocorrelograms for each cluster.')
     save_path = prm.get_output_path() + '/Figures/firing_properties/autocorrelograms'
     if os.path.exists(save_path) is False:
@@ -98,6 +100,7 @@ def plot_autocorrelograms(spike_data, prm):
         ax = fig.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
         #ax.plot(snippets, color='lightslategray', linewidth=1, alpha=0.5)
         corr, time = calculate_autocorrelogram_hist(np.array(firing_times_cluster)/prm.get_sampling_rate(), 1, 500)
+        spike_data.at[cluster,'average_speed_nb'] = list(stops_in_bins)
         ax.plot(time, corr, linewidth=1, color='black')
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
@@ -128,6 +131,26 @@ def plot_autocorrelograms(spike_data, prm):
         #x=np.max(corr)
         plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_' + str(cluster_index) + '_autocorrelogram_250ms.png', dpi=300)
         plt.close()
+
+
+
+
+def calculate_autocorrelogram(spike_data, prm):
+    spike_data["corr"] = ""
+
+    print('I will plot autocorrelograms for each cluster.')
+    save_path = prm.get_output_path() + '/Figures/firing_properties/autocorrelograms'
+    if os.path.exists(save_path) is False:
+        os.makedirs(save_path)
+    for cluster in range(len(spike_data)):
+        cluster_index = spike_data.cluster_id.values[cluster] - 1
+        #theta_index = spike_data.ThetaIndex.values[cluster]
+        firing_times_cluster = spike_data.firing_times[cluster]
+
+        #ax.plot(snippets, color='lightslategray', linewidth=1, alpha=0.5)
+        corr, time = calculate_autocorrelogram_hist(np.array(firing_times_cluster)/prm.get_sampling_rate(), 1, 500)
+        spike_data.at[cluster,'corr'] = list(corr)
+    return spike_data
 
 
 def plot_spikes_for_channel(grid, spike_data, cluster, channel):

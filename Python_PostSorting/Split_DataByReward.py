@@ -5,6 +5,18 @@ import matplotlib.pylab as plt
 from scipy import signal
 from scipy import stats
 
+"""
+
+## Split data within sessions by whether trial was rewarded
+
+The following functions split firing rate data binned in time (100 ms) by whether the trial was rewarded 
+
+- load spike rates in time and rewarded trial numbers
+- split based on reward
+- store in dataframe
+
+
+"""
 
 
 def split_trials_by_reward(spike_data, cluster_index):
@@ -29,11 +41,11 @@ def add_columns(spike_data):
     return spike_data
 
 
-def extract_data_from_frame(spike_data, cluster, convert_to_hz):
+def extract_data_from_frame(spike_data, cluster):
     rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
     rewarded_trials = rewarded_trials[~np.isnan(rewarded_trials)]
 
-    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*int(convert_to_hz)
+    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)
     speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
     position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
     trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
@@ -66,11 +78,11 @@ def split_trials(data, rewarded_trials):
     return rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types
 
 
-def split_data_by_reward(spike_data, prm, convert_to_hz):
+def split_data_by_reward(spike_data):
     spike_data = add_columns(spike_data)
 
     for cluster in range(len(spike_data)):
-        rewarded_trials, data = extract_data_from_frame(spike_data, cluster, convert_to_hz)
+        rewarded_trials, data = extract_data_from_frame(spike_data, cluster)
 
         rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types = split_trials(data, rewarded_trials)
         spike_data = drop_alldata_into_frame(spike_data, cluster, rewarded_rates, rewarded_speed , rewarded_position, reward_trials, reward_types, failed_rates, failed_speed, failed_position, failed_trials , failed_types)
@@ -95,6 +107,10 @@ def convolve_with_scipy(rate):
     return convolved_rate
 
 
+
+
+
+
 def convert_spikes_in_time_to_ms(spike_data):
     #spike_data["spike_rate_in_time"] = ""
 
@@ -114,3 +130,12 @@ def convert_spikes_in_time_to_ms(spike_data):
         spike_data.at[cluster, 'spike_rate_in_time'] = list(sn)
 
     return spike_data
+
+
+
+def rename_columns(df):
+
+    df.rename(columns={'stop_location_cm': 'stop_locations', 'stop_trial_number': 'stop_trials'}, inplace=True)
+
+    return df
+

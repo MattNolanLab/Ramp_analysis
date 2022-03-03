@@ -7,25 +7,21 @@ import csv
 """
 Required columns to concatinate from server: 
 
-        'session_id' 'cluster_id' 'tetrode' 'number_of_spikes' 'mean_firing_rate' 
-         'isolation' 'noise_overlap' 'firing_times' 'x_position_cm' 'speed_per200ms'
-         'trial_numbers' 'trial_types' 'rewarded_trials' 'rewarded_stop_locations'
-         'spike_num_on_trials' 'spike_rate_on_trials' 'binned_time_ms_per_trial' 
-         'binned_time_ms_per_trial' 'binned_speed_ms_per_trial' 
+        '''
+        'session_id' 'cluster_id' 'tetrode' 'number_of_spikes' 'mean_firing_rate'
+        'isolation' 'noise_overlap' 'firing_times' 'x_position_cm' 'speed_per200ms'
+        'trial_number' 'trial_type' 'random_snippets'
+        'spike_rate_on_trials' 'spike_rate_on_trials_smoothed'
+        'rewarded_trials' 'rewarded_stop_locations' 'spike_rate_in_time'
+
         
 
 """
 
 
 def process_allmice_dir(recording_folder, prm):
-<<<<<<< HEAD
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort1_dataset.pkl'
-=======
-    #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort2_dataset.pkl'
-    #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/NewContext/data/M2_nc_all.pkl'
-    #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/spatial_firing.pkl'
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/concatenated_spike_data.pkl'
->>>>>>> cbf0c0d9fb293494a9c01d278f8b293238d6ebee
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort3_dataset_final.pkl'
+    #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/concatenated_spike_data_cohort7.pkl'
 
     if os.path.exists(prm.get_output_path()):
         print('I found the output folder.')
@@ -50,7 +46,7 @@ def process_allmice_dir(recording_folder, prm):
 
 
 def process_allmice_dir_of(recording_folder, prm):
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/All_mice_of.pkl'
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/combined_Cohort4.pkl'
 
 
     if os.path.exists(prm.get_output_path()):
@@ -62,18 +58,4 @@ def process_allmice_dir_of(recording_folder, prm):
         spike_data = pd.read_pickle(spike_data_frame_path)
 
     return spike_data
-
-
-def add_combined_id_to_df(df_all_mice):
-    animal_ids = [session_id.split('_')[0] for session_id in df_all_mice.session_id.values]
-    dates = [session_id.split('_')[1] for session_id in df_all_mice.session_id.values]
-    tetrode = df_all_mice.tetrode.values
-    cluster = df_all_mice.cluster_id.values
-
-    combined_ids = []
-    for cell in range(len(df_all_mice)):
-        id = animal_ids[cell] +  '-' + dates[cell] + '-Tetrode-' + str(tetrode[cell]) + '-Cluster-' + str(cluster[cell])
-        combined_ids.append(id)
-    df_all_mice['false_positive_id'] = combined_ids
-    return df_all_mice
 

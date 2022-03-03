@@ -27,11 +27,11 @@ def extract_first_stop_rewarded(spike_data):
     spike_data["first_stop_trials"] = ""
 
     for cluster in range(len(spike_data)):
-        speed=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[1])
-        rates=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[0])
-        position=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[2])
-        trials=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[3], dtype= np.int32)
-        types=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[4], dtype= np.int32)
+        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[0].real)
+        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[1].real)
+        position=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[2].real)
+        types=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[4].real, dtype= np.int32)
+        trials=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[3].real, dtype= np.int32)
 
         # stack data
         data = np.vstack((rates,speed,position,types, trials))
@@ -67,11 +67,11 @@ def extract_first_stop_per_cluster(spike_data):
     spike_data["first_stop_trials"] = ""
 
     for cluster in range(len(spike_data)):
-        speed=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[1])
-        rates=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[0])
-        position=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[2])
-        trials=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[3], dtype= np.int32)
-        types=np.array(spike_data.iloc[cluster].spikes_in_time_rewarded[4], dtype= np.int32)
+        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[0].real)
+        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[1].real)
+        position=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[2].real)
+        types=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[4].real, dtype= np.int32)
+        trials=np.array(spike_data.iloc[cluster].spike_rate_in_time_rewarded[3].real, dtype= np.int32)
 
         # stack data
         data = np.vstack((rates,speed,position,types, trials))
@@ -110,8 +110,8 @@ def calculate_first_stop(spike_data):
     spike_data["SD_FirstStopcm"] = ""
 
     for cluster in range(len(spike_data)):
-        stop_location_cm=np.array(spike_data.loc[cluster].stop_location_cm)
-        stop_trial_number=np.array(spike_data.loc[cluster].stop_trial_number)
+        stop_location_cm=np.array(spike_data.loc[cluster].stop_locations)
+        stop_trial_number=np.array(spike_data.loc[cluster].stop_trials)
         rewarded_trials=np.array(spike_data.loc[cluster].rewarded_trials)
 
         rewarded_stop_location_cm = stop_location_cm[np.isin(stop_trial_number,rewarded_trials)]
@@ -165,7 +165,7 @@ def calculate_first_stop_per_cell(spike_data):
         data=np.vstack((rewarded_stop_location_cm,rewarded_stop_trial_number))
         data = np.transpose(data)
 
-        data = data[data[:,0] > 52,:] # filter data for beaconed trials
+        data = data[data[:,0] >= 60,:] # filter data for beaconed trials
         data = data[data[:,0] <= 150,:] # filter data for beaconed trials
 
         trials = data[:,1]
@@ -187,6 +187,50 @@ def calculate_first_stop_per_cell(spike_data):
         #sd_firststop = np.nanstd(firststop_over_trials)
         spike_data.at[cluster, 'first_stop_locations'] = firststop_over_trials
         spike_data.at[cluster, 'first_stop_trials'] = trials_over_trials
+
+    return spike_data
+
+
+
+
+
+def calculate_first_stop_per_cell_trytrials(spike_data):
+    print('calculating first stop')
+    #spike_data["FirstStop"] = ""
+    #spike_data["SD_FirstStopcm"] = ""
+
+    spike_data["first_stop_locations_try"] = ""
+    spike_data["first_stop_trials_try"] = ""
+
+    for cluster in range(len(spike_data)):
+        stop_location_cm=np.array(spike_data.loc[cluster].stop_location_cm)
+        stop_trial_number=np.array(spike_data.loc[cluster].stop_trial_number)
+
+        data=np.vstack((stop_location_cm,stop_trial_number))
+        data = np.transpose(data)
+
+        data = data[data[:,0] >= 50,:] # filter data for beaconed trials
+        data = data[data[:,0] <= 160,:] # filter data for beaconed trials
+
+        trials = data[:,1]
+        position = data[:,0]
+
+        firststop_over_trials = []
+        trials_over_trials = []
+
+        for trialcount, trial in enumerate(trials):
+            locations = np.take(position, np.where(trials == trial)[0])
+            try:
+                first_location = locations[0]
+                firststop_over_trials = np.append(firststop_over_trials, first_location)
+                trials_over_trials = np.append(trials_over_trials, trial)
+            except IndexError:
+                print("")
+
+        #avg_firststop = np.nanmean(firststop_over_trials)
+        #sd_firststop = np.nanstd(firststop_over_trials)
+        spike_data.at[cluster, 'first_stop_locations_try'] = firststop_over_trials
+        spike_data.at[cluster, 'first_stop_trials_try'] = trials_over_trials
 
     return spike_data
 

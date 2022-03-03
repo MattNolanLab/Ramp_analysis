@@ -8,7 +8,7 @@ def extract_data_from_frame(spike_data, cluster, convert_to_hz):
     rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
     rewarded_trials = rewarded_trials[~np.isnan(rewarded_trials)]
 
-    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10
+    rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*int(convert_to_hz)
     speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
     position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
     types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
@@ -144,7 +144,7 @@ def split_and_save_data_with_all_speeds(spike_data, convert_to_hz):
         runthru_trials = np.array(spike_data.loc[cluster, 'run_through_trialid'])
         rewarded_trials = np.array(spike_data.loc[cluster, 'rewarded_trials'])
 
-        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10
+        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*int(convert_to_hz)
         speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real, dtype=np.float32)
         position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real, dtype=np.float32)
         trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)

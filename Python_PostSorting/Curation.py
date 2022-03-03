@@ -89,12 +89,11 @@ def check_probe_trials_exist(df):
 
 
 def load_crtieria_data_into_frame(spike_data):
-    print('I am loading brain region data into frame ...')
+    print("....")
     spike_data["graduation"] = ""
     criteria_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data/Criteria_days.csv", header=int())
 
     for cluster in range(len(spike_data)):
-        session_id = spike_data.session_id.values[cluster]
         mouse = spike_data.Mouse[cluster]
         day = int(spike_data.Day_numeric.values[cluster])
         cohort = spike_data.cohort.values[cluster]
@@ -115,3 +114,24 @@ def load_crtieria_data_into_frame(spike_data):
 
     return spike_data
 
+
+
+def remove_lick_artefact(df):
+    print("Removing cells that are lick artefacts..")
+
+    df.reset_index(drop=True, inplace=True)
+    df["artefact"] = ""
+
+    for cluster in range(len(df)):
+        try:
+            highest_value = df.loc[cluster,'peak_amp']
+
+            if highest_value >= 20: # when manually checking values by eye against waveforms, those with peak amp above 20 appear to be artefacts
+                df.at[cluster,"artefact"] = 1
+            else:
+                df.at[cluster,"artefact"] = 0
+        except ValueError:
+            df.at[cluster,"artefact"] = 0
+
+
+    return df

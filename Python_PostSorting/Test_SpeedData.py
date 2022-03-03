@@ -77,23 +77,21 @@ def calculate_speed_from_position(spike_data, recording_folder):
     spike_data["speed"] = ""
     for cluster in range(len(spike_data)):
         session_id = spike_data.at[cluster, "session_id"]
-        speed = np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real, dtype=np.float32)
-        position = np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real, dtype=np.float32)
-        rates =  np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real, dtype=np.float32)
-        try:
-            position = fix_position(position)
-            cum_position = cumulative_position(position)
-            pos_diff = np.diff(cum_position)
-            pos_diff = (pos_diff*10)
+        speed = np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
+        position = np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
+        #rates =  np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)
+        position = fix_position(position)
+        cum_position = cumulative_position(position)
+        pos_diff = np.diff(cum_position)
+        pos_diff = (pos_diff*10)
+        plt.scatter(position,speed, s=1)
+        plt.scatter(position[1:], pos_diff, s=1)
+        #plt.scatter(pos_diff, rates[1:], marker='o', s=1, color='blue')
+        #plt.scatter(speed, rates, s=1, color='red')
+        plt.ylim(-10, 80)
+        plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_speed_Cluster_' + str(cluster +1) + '_3' + '.png', dpi=200)
+        plt.close()
 
-            plt.scatter(pos_diff, rates[1:], marker='o', s=1, color='blue')
-            plt.scatter(speed, rates, s=1, color='red')
-            plt.xlim(-50, 120)
-            plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_speed_Cluster_' + str(cluster +1) + '_3' + '.png', dpi=200)
-            plt.close()
-
-        except IndexError:
-            print(session_id)
 
     return spike_data
 

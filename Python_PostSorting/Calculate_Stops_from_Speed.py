@@ -123,7 +123,7 @@ def calculate_stops_from_200ms_speed(spike_data):
         stop_times = []
 
         for rowcount, row in enumerate(range(len(data)-1)):
-            speed_200ms = data[rowcount,0] + data[rowcount+1,0]
+            speed_200ms = (data[rowcount,0] + data[rowcount+1,0])/2
             if speed_200ms <= 0.7:
                 stop_positions = np.append(stop_positions, data[rowcount,1])
                 stop_trials = np.append(stop_trials, data[rowcount,3])
@@ -187,8 +187,8 @@ def calculate_rewards_from_stops(spike_data):
     spike_data["rewarded_times"] = ""
 
     for cluster in range(len(spike_data)):
-        stops = np.array(spike_data.at[cluster, 'stops_cm_position'], dtype=np.int16)
-        trials = np.array(spike_data.at[cluster, 'stops_cm_trial'], dtype=np.int16)
+        stops = np.array(spike_data.at[cluster, 'stop_location_cm'], dtype=np.int16)
+        trials = np.array(spike_data.at[cluster, 'stop_trial_number'], dtype=np.int16)
         time = np.array(spike_data.at[cluster, 'stops_cm_time'], dtype=np.int16)
 
         data = np.vstack((stops, trials, time))
@@ -210,7 +210,6 @@ def calculate_rewards_from_stops(spike_data):
                             reward_trials = np.append(reward_trials, trial_data[rowcount,1])
                             reward_times = np.append(reward_times, trial_data[rowcount,2])
                             break
-                    break
 
         spike_data.at[cluster, 'rewarded_locations'] = list(reward_positions)# add data to dataframe
         spike_data.at[cluster, 'rewarded_trials'] = list(reward_trials)# add data to dataframe

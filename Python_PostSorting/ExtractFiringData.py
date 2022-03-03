@@ -4,6 +4,7 @@ from scipy import stats
 from scipy import signal
 import math
 
+
 def extract_firing_rate_data(spike_data, cluster_index):
     cluster_firings = pd.DataFrame({ 'firing_rate' :  spike_data.iloc[cluster_index].spike_rate_on_trials[0], 'trial_number' :  spike_data.iloc[cluster_index].spike_rate_on_trials[1], 'trial_type' :  spike_data.iloc[cluster_index].spike_rate_on_trials[2]})
     return cluster_firings
@@ -55,7 +56,7 @@ def reshape_and_average_over_trials(beaconed_cluster_firings, nonbeaconed_cluste
     average_nonbeaconed_spike_rate = signal.convolve(average_nonbeaconed_spike_rate, window, mode='same')/ sum(window)
     average_probe_spike_rate = np.nanmean(probe_reshaped_hist, axis=0)
     average_probe_spike_rate = signal.convolve(average_probe_spike_rate, window, mode='same')/ sum(window)
-    average_beaconed_sd = np.nanstd(beaconed_reshaped_hist, axis=0)/2
+    average_beaconed_sd = np.nanstd(beaconed_reshaped_hist, axis=0)
 
     return np.array(average_beaconed_spike_rate, dtype=np.float16), np.array(average_nonbeaconed_spike_rate, dtype=np.float16), np.array(average_probe_spike_rate, dtype=np.float16), average_beaconed_sd
 
@@ -138,7 +139,7 @@ def extract_smoothed_average_firing_rate_data_for_rewarded_trials(spike_data, cl
     rewarded_trials = rewarded_trials[rewarded_trials >0]
     cluster_firings = extract_smoothed_firing_rate_data(spike_data, cluster_index)
     cluster_firings = split_firing_data_by_reward(cluster_firings, rewarded_trials)
-    max_trials = int(np.shape(np.unique(rewarded_trials))[0])
+    max_trials = int(len(np.unique(rewarded_trials)))
     beaconed_cluster_firings, nonbeaconed_cluster_firings, probe_cluster_firings = split_firing_data_by_trial_type(cluster_firings)
     average_beaconed_spike_rate, average_nonbeaconed_spike_rate, average_probe_spike_rate, average_beaconed_sd = reshape_and_average_over_trials(np.array(beaconed_cluster_firings["firing_rate"]), np.array(nonbeaconed_cluster_firings["firing_rate"]), np.array(probe_cluster_firings["firing_rate"]), max_trials)
     return average_beaconed_spike_rate, average_nonbeaconed_spike_rate, average_probe_spike_rate, average_beaconed_sd

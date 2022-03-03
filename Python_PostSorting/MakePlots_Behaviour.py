@@ -6,17 +6,19 @@ import Python_PostSorting.ExtractFiringData
 from scipy import signal
 
 
-def remake_trial_numbers(rewarded_beaconed_trial_numbers):
-    unique_trials = np.unique(rewarded_beaconed_trial_numbers)
+
+def remake_trial_numbers(trial_numbers):
+    unique_trials = np.unique(trial_numbers)
     new_trial_numbers = []
     trial_n = 1
     for trial in unique_trials:
-        trial_data = rewarded_beaconed_trial_numbers[rewarded_beaconed_trial_numbers == trial]# get data only for each tria
+        trial_data = trial_numbers[trial_numbers == trial]# get data only for each tria
         num_stops_per_trial = len(trial_data)
         new_trials = np.repeat(trial_n, num_stops_per_trial)
         new_trial_numbers = np.append(new_trial_numbers, new_trials)
-        trial_n +=1
-    return new_trial_numbers, unique_trials
+        trial_n += 1
+    return new_trial_numbers, unique_trials, np.unique(new_trial_numbers)
+
 
 
 def remake_probe_trial_numbers(rewarded_beaconed_trial_numbers):
@@ -57,6 +59,9 @@ def calculate_average_stops(spike_data):
 
             spike_data.at[cluster,'average_stops'] = list(stops_in_bins)
             spike_data.at[cluster,'position_bins'] = list(range(int(number_of_bins)))
+        else:
+            spike_data.at[cluster,'average_stops'] = np.nan
+            spike_data.at[cluster,'position_bins'] = np.nan
     return spike_data
 
 
@@ -94,6 +99,9 @@ def calculate_average_nonbeaconed_stops(spike_data):
 
             spike_data.at[cluster,'average_stops_nb'] = list(stops_in_bins)
             spike_data.at[cluster,'position_bins_nb'] = list(range(int(number_of_bins)))
+        else:
+            spike_data.at[cluster,'average_stops_nb'] = np.nan
+            spike_data.at[cluster,'position_bins_nb'] = np.nan
 
         stop_locations = probe[:,0]
         stop_trials = probe[:,1]
@@ -111,6 +119,9 @@ def calculate_average_nonbeaconed_stops(spike_data):
 
             spike_data.at[cluster,'average_stops_p'] = list(stops_in_bins)
             spike_data.at[cluster,'position_bins_p'] = list(range(int(number_of_bins)))
+        else:
+            spike_data.at[cluster,'average_stops_p'] = np.nan
+            spike_data.at[cluster,'position_bins_p'] = np.nan
 
     return spike_data
 
@@ -313,6 +324,15 @@ def split_stops_by_reward(beaconed,nonbeaconed,probe, rewarded_trials):
     return rewarded_beaconed_position_cm, rewarded_nonbeaconed_position_cm, rewarded_probe_position_cm, rewarded_beaconed_trial_numbers, rewarded_nonbeaconed_trial_numbers, rewarded_probe_trial_numbers
 
 
+def renumber_stop_trials_based_on_renumbered(unique_trial_numbers, old_unique_trial_numbers, stop_trials):
+    new_trial_array = np.zeros((stop_trials.shape[0]))
+    for rowcount, row in enumerate(stop_trials):
+        current_trial = row
+        new_trial = unique_trial_numbers[old_unique_trial_numbers[:] == current_trial]
+        new_trial_array[rowcount] = new_trial
+    return new_trial_array
+
+
 def plot_stops_on_track_per_cluster(spike_data, prm):
     print('I am plotting stop rasta...')
     save_path = prm.get_local_recording_folder_path() + '/Figures/behaviour/Stops_on_trials'
@@ -325,11 +345,13 @@ def plot_stops_on_track_per_cluster(spike_data, prm):
 
         try:
             rewarded_trials = np.array(spike_data.at[cluster, 'rewarded_trials'], dtype=np.int16)
+            rewarded_locations = np.array(spike_data.at[cluster, 'rewarded_locations'], dtype=np.int16)
             stop_locations = np.array(spike_data.at[cluster, 'stop_location_cm'], dtype=np.int16)
             stop_trials = np.array(spike_data.at[cluster, 'stop_trial_number'], dtype=np.int16)
             #stop_trial_types = np.array(spike_data.at[cluster, "stop_trial_type"])
         except KeyError:
             rewarded_trials = np.array(spike_data.at[cluster, 'rewarded_trials'], dtype=np.int16)
+            rewarded_locations = np.array(spike_data.at[cluster, 'rewarded_locations'], dtype=np.int16)
             stop_locations = np.array(spike_data.at[cluster, 'stop_locations'], dtype=np.int16)
             stop_trials = np.array(spike_data.at[cluster, 'stop_trials'], dtype=np.int16)
             #stop_trial_types = np.array(spike_data.at[cluster, "stop_trial_type"])
@@ -341,14 +363,22 @@ def plot_stops_on_track_per_cluster(spike_data, prm):
         beaconed,nonbeaconed,probe = split_stops_by_trial_type(stop_locations,stop_trials,stop_trial_types)
         rewarded_beaconed_position_cm, rewarded_nonbeaconed_position_cm, rewarded_probe_position_cm, rewarded_beaconed_trial_numbers, rewarded_nonbeaconed_trial_numbers, rewarded_probe_trial_numbers = split_stops_by_reward(beaconed,nonbeaconed,probe, rewarded_trials)
 
-        beaconed_trials, unique_trials = remake_trial_numbers(rewarded_beaconed_trial_numbers)
-        nonbeaconed_trials, unique_trials = remake_probe_trial_numbers(rewarded_nonbeaconed_trial_numbers)
-        probe_trials, unique_trials = remake_probe_trial_numbers(rewarded_probe_trial_numbers)
+        rewarded_trials, old_unique_trial_numbers, new_unique_trial_numbers = remake_trial_numbers(rewarded_trials) # this is for the sake of plotting so it doesnt show large gaps where failed trials are
+        #stop_rewarded_trials = renumber_stop_trials_based_on_renumbered(new_unique_trial_numbers, old_unique_trial_numbers, stop_rewarded_trials)
+        beaconed_trials = renumber_stop_trials_based_on_renumbered(new_unique_trial_numbers, old_unique_trial_numbers, rewarded_beaconed_trial_numbers)
+        nonbeaconed_trials = renumber_stop_trials_based_on_renumbered(new_unique_trial_numbers, old_unique_trial_numbers, rewarded_nonbeaconed_trial_numbers)
+        probe_trials = renumber_stop_trials_based_on_renumbered(new_unique_trial_numbers, old_unique_trial_numbers, rewarded_probe_trial_numbers)
+
+        #beaconed_trials, unique_trials = remake_trial_numbers(rewarded_beaconed_trial_numbers)
+        #nonbeaconed_trials, unique_trials = remake_probe_trial_numbers(rewarded_nonbeaconed_trial_numbers)
+        #probe_trials, unique_trials = remake_probe_trial_numbers(rewarded_probe_trial_numbers)
+        #rewarded_trials, unique_trials = remake_trial_numbers(rewarded_trials)
 
 
         ax.plot(rewarded_beaconed_position_cm, beaconed_trials, 'o', color='0.5', markersize=2)
         ax.plot(rewarded_nonbeaconed_position_cm, nonbeaconed_trials, 'o', color='blue', markersize=2)
         ax.plot(rewarded_probe_position_cm, probe_trials, 'o', color='blue', markersize=2)
+        #ax.plot(rewarded_locations, rewarded_trials, '<', color='red', markersize=3)
         plt.ylabel('Stops on trials', fontsize=18, labelpad = 0)
         plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
         plt.xlim(0,200)

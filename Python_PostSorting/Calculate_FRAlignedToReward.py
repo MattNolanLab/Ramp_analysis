@@ -7,7 +7,7 @@ import matplotlib.pylab as plt
 import Python_PostSorting.plot_utility
 from scipy import signal
 import pandas as pd
-
+import Python_PostSorting.Split_DataByReward
 
 """
 
@@ -21,7 +21,7 @@ def run_reward_aligned_analysis(server_path,spike_data, prm):
     spike_data = plot_spikes_on_track_relative_to_reward_time(server_path, spike_data)
 
     #spike_data = plot_rewarded_spikes_on_track(server_path,spike_data)
-    #spike_data = plot_rewarded_spikes_on_track_with_tt(server_path,spike_data)
+    spike_data = plot_rewarded_spikes_on_track_with_tt(server_path,spike_data)
     spike_data = calculate_spikes_on_track_relative_to_reward(spike_data)
     spike_data = calculate_stops_on_track_relative_to_reward(spike_data)
     #spike_data = plot_spikes_on_track_relative_to_reward(server_path, spike_data)
@@ -260,7 +260,7 @@ def plot_rewarded_spikes_on_track_with_tt(recording_folder,spike_data):
 
         # split spikes by reward
         #spike_position_cm, spike_trial_numbers = split_spikes_by_reward(spike_data, cluster, rewarded_trials)
-        rewarded_beaconed_position_cm, rewarded_nonbeaconed_position_cm, rewarded_probe_position_cm, rewarded_beaconed_trial_numbers, rewarded_nonbeaconed_trial_numbers, rewarded_probe_trial_numbers = Python_PostSorting.RewardFiring.split_trials_by_reward(spike_data, cluster)
+        rewarded_beaconed_position_cm, rewarded_nonbeaconed_position_cm, rewarded_probe_position_cm, rewarded_beaconed_trial_numbers, rewarded_nonbeaconed_trial_numbers, rewarded_probe_trial_numbers = Python_PostSorting.Split_DataByReward.split_trials_by_reward(spike_data, cluster)
 
         # split stops by reward
         #stop_rewarded_trials = stop_trials[np.isin(stop_trials,spike_trial_numbers)]  # take all stops on spike trials
@@ -276,11 +276,11 @@ def plot_rewarded_spikes_on_track_with_tt(recording_folder,spike_data):
         spike_trial_numbers_p = renumber_stop_trials_based_on_renumbered(new_unique_trial_numbers, old_unique_trial_numbers, rewarded_probe_trial_numbers)
 
 
-        ax.plot(rewarded_locations, rewarded_trials, '>', color='Red', markersize=2)
+        #ax.plot(rewarded_locations, rewarded_trials, '>', color='Red', markersize=2)
         #ax.plot(stop_locations, stop_rewarded_trials, 'o', color='DodgerBlue', markersize=1.5, alpha=0.5)
         ax.plot(rewarded_beaconed_position_cm, spike_trial_numbers, '|', color='Black', markersize=2.5)
-        ax.plot(rewarded_nonbeaconed_position_cm, spike_trial_numbers_nb, '|', color='red', markersize=2.5)
-        ax.plot(rewarded_probe_position_cm, (spike_trial_numbers_p), '|', color='red', markersize=2.5)
+        ax.plot(rewarded_nonbeaconed_position_cm, spike_trial_numbers_nb, '|', color='Blue', markersize=2.5)
+        ax.plot(rewarded_probe_position_cm, (spike_trial_numbers_p), '|', color='Blue', markersize=2.5)
         plt.ylabel('Trials', fontsize=18, labelpad = 0)
         plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
         plt.xlim(0,200)
