@@ -19,7 +19,7 @@ The following R and RStudio packages are required for the pipeline to run :
 dplyr v1.0.7, purrr v0.3.4, Pheatmap v1.0.12, RColorBrewer v1.1-2, tidyr v1.1.4 , ggplot2 v3.3.5,  tidyverse v1.3.1, broom v0.7.11, lme4 v1.1-27.1, agricolae v1.3-5, plotrix v3.8-2, Metrics v0.1.4, Hmisc v4.6-0 , scales v1.1.1, networkD3 v0.4 
 
 
-##Preconditions to running RampAnalysis
+## Preconditions to running RampAnalysis
 1. All Open Ephys recordings in virtual reality have been sorted as described : https://github.com/MattNolanLab/in_vivo_ephys_openephys/blob/master/documentation/user_guide_for_running_analyss.md
 2. The postsorting analysis for processing spatial firing outputs the following columns : ‘spike_rates_on_trials_smoothed’, ‘spike_rates_in_time’ *note these are necessary for the RampAnalysis pipeline. 
 _Note : Entire list of necessary columns for analysis is in ‘Data_Organisation.md’._ 
@@ -32,7 +32,7 @@ Note : Harry also has a version of this
 PLEASE NOTE : This pipeline was generated specifically for the analysis and generation of figures for the Ramp manuscript. You may need to edit the pipeline for your own needs!!
 
 
-##Adding new analyses
+## Adding new analyses
 New analysis code should be added in a way that uses the data frames. If analyses require access to raw data, then a processing step should be used to add the required data to the data frames. Results of subsequent analyses should be added into these data frames as new columns. For instance, if we implement calculating the speed score of cells, this should be a new column in the data frame that contains information on clusters.
 
 
