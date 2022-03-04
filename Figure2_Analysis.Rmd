@@ -177,12 +177,15 @@ spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id,
   unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
     final_model_o_b, lm_group_b)) %>%
   as.tibble()
+spatial_firing_save$o_b_mod_coefs_pos <- as.numeric(spatial_firing_save$o_b_mod_coefs_pos)
+spatial_firing_save$o_b_mod_coefs_speed <- as.numeric(spatial_firing_save$o_b_mod_coefs_speed)
+spatial_firing_save$o_b_mod_coefs_accel <- as.numeric(spatial_firing_save$o_b_mod_coefs_accel)
 
 ```
 
 3. save to csv file _this is for matching the coefficient values to plots of instantaneous rates from python_
 ```{r}
-write_csv2(spatial_firing_save, "data_out/all_results_coefficients.csv")
+write_csv2(spatial_firing_save, "data_out/all_results_coefficients.csv", quote=FALSE, sep="\t")
 ```
 
 4. put data into a tibble for plotting
@@ -326,7 +329,6 @@ data_coef_pos_SA <- data_coef %>%
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_PositiveSAcells.png", width = 3, height = 2.5)
 }
-```
 
 
 
