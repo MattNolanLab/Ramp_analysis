@@ -29,7 +29,7 @@ def reshape_and_average_over_trials(beaconed_cluster_firings, nonbeaconed_cluste
     probe_cluster_firings[probe_cluster_firings==0] = np.nan
     window = signal.gaussian(2, std=3)
 
-    bin=200
+    bin=199
     beaconed_reshaped_hist = np.reshape(beaconed_cluster_firings, (int(beaconed_cluster_firings.size/bin),bin))
     nonbeaconed_reshaped_hist = np.reshape(nonbeaconed_cluster_firings, (int(nonbeaconed_cluster_firings.size/bin), bin))
     probe_reshaped_hist = np.reshape(probe_cluster_firings, (int(probe_cluster_firings.size/bin), bin))

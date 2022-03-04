@@ -511,7 +511,7 @@ def calculate_stops_on_track_relative_to_reward(spike_data):
 
 def plot_spikes_on_track_relative_to_reward(recording_folder,spike_data):
     print('plotting spike rasters relative to reward...')
-    save_path = recording_folder + '/Figures/spike_trajectories_with_reward'
+    save_path = recording_folder + '/Figures/spike_trajectories_on_rewarded_trials'
     if os.path.exists(save_path) is False:
         os.makedirs(save_path)
 

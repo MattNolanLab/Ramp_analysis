@@ -49,7 +49,7 @@ def remove_low_speeds_and_segment_beaconed(rates, speed, acceleration, position,
 
 def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_data):
     print('I am plotting instant rate against location ...')
-    save_path = recording_folder + '/Figures/InstantRates'
+    save_path = recording_folder + '/Figures/instant_firing_rates'
     if os.path.exists(save_path) is False:
         os.makedirs(save_path)
     for cluster in range(len(spike_data)):

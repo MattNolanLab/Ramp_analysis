@@ -89,9 +89,8 @@ def check_probe_trials_exist(df):
 
 
 def load_crtieria_data_into_frame(spike_data):
-    print("....")
     spike_data["graduation"] = ""
-    criteria_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data/Criteria_days.csv", header=int())
+    criteria_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data_in/Criteria_days.csv", header=int())
 
     for cluster in range(len(spike_data)):
         mouse = spike_data.Mouse[cluster]

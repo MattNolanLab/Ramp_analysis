@@ -17,7 +17,7 @@ def initialize_parameters(recording_folder):
 
 
 def process_allmice_of(recording_folder, prm):
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/All_mice_of.pkl'
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/combined_Cohort7.pkl'
     if os.path.exists(prm.get_output_path()):
         print('I found the output folder.')
 
@@ -29,7 +29,8 @@ def process_allmice_of(recording_folder, prm):
 
 
 def process_allmice_vr(recording_folder, prm):
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/All_cohort_harry.pkl'
+    #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/all_cohort7_final.pkl'
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/all_comb_cohort7_reward.pkl'
     if os.path.exists(prm.get_output_path()):
         print('I found the output folder.')
 
@@ -52,7 +53,7 @@ def add_date_to_frame(df):
 def add_mouse_to_frame(df):
     print("Adding ID for Mouse and Day to dataframe...")
     df["Mouse"] = ""
-    df["Cohort"] = ""
+    #df["Cohort"] = ""
     df["Day"] = ""
     df["Day_numeric"] = ""
     for cluster in range(len(df)):
@@ -61,7 +62,7 @@ def add_mouse_to_frame(df):
         df.at[cluster,"Mouse"] = mouse
         df.at[cluster,"Day"] = day
         df.at[cluster,"Day_numeric"] = numericday
-        df.at[cluster,"cohort"] = 1
+        #df.at[cluster,"cohort"] = 5
     return df
 
 # extract what mouse and day it is from the session_id column in spatial_firing
@@ -90,15 +91,18 @@ def load_openfield_data_into_frame(of_data, vr_data):
     vr_data["rayleigh_threshold"] = ""
     vr_data["spatial_threshold"] = ""
     vr_data["grid_threshold"] = ""
-    vr_data["grid_cell"] = ""
-    vr_data["border_cell"] = ""
-    vr_data["hd_cell"] = ""
-    vr_data["hd_cell_rayleigh"] = ""
-    vr_data["spatial_cell"] = ""
-    vr_data["speed_cell"] = ""
-    vr_data["classifier"] = ""
+    #vr_data["grid_cell"] = ""
+    #vr_data["border_cell"] = ""
+    #vr_data["hd_cell"] = ""
+    #vr_data["hd_cell_rayleigh"] = ""
+    #vr_data["spatial_cell"] = ""
+    #vr_data["speed_cell"] = ""
+    #vr_data["classifier"] = ""
     vr_data["mean_firing_rate_of"] = ""
-
+    vr_data["mean_isi"] = ""
+    vr_data["mean_cv2"] = ""
+    vr_data["spike_width"] = ""
+    #vr_data["cohort"] = ""
 
     for cluster in range(len(vr_data)):
         session_id=vr_data.at[cluster, "Date"]
@@ -136,14 +140,18 @@ def load_openfield_data_into_frame(of_data, vr_data):
             spatial_threshold = neuron_fits['spatial_threshold'].values # extract fit
             grid_threshold = neuron_fits['grid_threshold'].values # extract fit
             border_threshold = neuron_fits['border_threshold'].values # extract fit
-            grid_cell = neuron_fits['grid_cell'].values # extract fit
-            border_cell = neuron_fits['border_cell'].values # extract fit
-            hd_cell = neuron_fits['hd_cell'].values # extract fit
-            hd_cell_rayleigh = neuron_fits['hd_cell_rayleigh'].values # extract fit
-            spatial_cell = neuron_fits['spatial_cell'].values # extract fit
-            speed_cell = neuron_fits['speed_cell'].values # extract fit
-            classifier = neuron_fits['classifier'].values # extract fit
+            #grid_cell = neuron_fits['grid_cell'].values # extract fit
+            #border_cell = neuron_fits['border_cell'].values # extract fit
+            #hd_cell = neuron_fits['hd_cell'].values # extract fit
+            #hd_cell_rayleigh = neuron_fits['hd_cell_rayleigh'].values # extract fit
+            #spatial_cell = neuron_fits['spatial_cell'].values # extract fit
+            #speed_cell = neuron_fits['speed_cell'].values # extract fit
+            #classifier = neuron_fits['classifier'].values # extract fit
             mean_firing_rate_of = neuron_fits['mean_firing_rate_of'].values # extract fit
+            #mean_isi = neuron_fits['mean_isi'].values # extract fit
+            #mean_cv2 = neuron_fits['mean_cv2'].values # extract fit
+            #spike_width = neuron_fits['spike_width'].values # extract fit
+            #cohort = neuron_fits['cohort'].values # extract fit
 
             vr_data.at[cluster,"speed_score"] = speed_score
             vr_data.at[cluster,"speed_score_p_values"] = speed_score_p_values
@@ -160,14 +168,18 @@ def load_openfield_data_into_frame(of_data, vr_data):
             vr_data.at[cluster,"spatial_threshold"] = spatial_threshold
             vr_data.at[cluster,"grid_threshold"] = grid_threshold
             vr_data.at[cluster,"border_threshold"] = border_threshold
-            vr_data.at[cluster,"grid_cell"] = grid_cell
-            vr_data.at[cluster,"border_cell"] = border_cell
-            vr_data.at[cluster,"hd_cell"] = hd_cell
-            vr_data.at[cluster,"hd_cell_rayleigh"] = hd_cell_rayleigh
-            vr_data.at[cluster,"spatial_cell"] = spatial_cell
-            vr_data.at[cluster,"speed_cell"] = speed_cell
-            vr_data.at[cluster,"classifier"] = classifier
+            #vr_data.at[cluster,"grid_cell"] = grid_cell
+            #vr_data.at[cluster,"border_cell"] = border_cell
+            #vr_data.at[cluster,"hd_cell"] = hd_cell
+            #vr_data.at[cluster,"hd_cell_rayleigh"] = hd_cell_rayleigh
+            #vr_data.at[cluster,"spatial_cell"] = spatial_cell
+            #vr_data.at[cluster,"speed_cell"] = speed_cell
+            #vr_data.at[cluster,"classifier"] = classifier
             vr_data.at[cluster,"mean_firing_rate_of"] = mean_firing_rate_of
+            #vr_data.at[cluster,"mean_isi"] = mean_isi
+            #vr_data.at[cluster,"mean_cv2"] = mean_cv2
+            #vr_data.at[cluster,"spike_width"] = spike_width
+            #vr_data.at[cluster,"cohort"] = cohort
             #except (IndexError or ValueError):
         else:
             vr_data.at[cluster,"speed_score"] = np.nan
@@ -185,16 +197,20 @@ def load_openfield_data_into_frame(of_data, vr_data):
             vr_data.at[cluster,"spatial_threshold"] = np.nan
             vr_data.at[cluster,"grid_threshold"] = np.nan
             vr_data.at[cluster,"border_threshold"] = np.nan
-            vr_data.at[cluster,"grid_cell"] = np.nan
-            vr_data.at[cluster,"border_cell"] = np.nan
-            vr_data.at[cluster,"hd_cell"] = np.nan
-            vr_data.at[cluster,"hd_cell_rayleigh"] = np.nan
-            vr_data.at[cluster,"spatial_cell"] = np.nan
-            vr_data.at[cluster,"speed_cell"] = np.nan
-            vr_data.at[cluster,"classifier"] = np.nan
+            #vr_data.at[cluster,"grid_cell"] = np.nan
+            #vr_data.at[cluster,"border_cell"] = np.nan
+            #vr_data.at[cluster,"hd_cell"] = np.nan
+            #vr_data.at[cluster,"hd_cell_rayleigh"] = np.nan
+            #vr_data.at[cluster,"spatial_cell"] = np.nan
+            #vr_data.at[cluster,"speed_cell"] = np.nan
+            #vr_data.at[cluster,"classifier"] = np.nan
             vr_data.at[cluster,"mean_firing_rate_of"] = np.nan
+            #vr_data.at[cluster,"mean_isi"] = np.nan
+            #vr_data.at[cluster,"mean_cv2"] = np.nan
+            #vr_data.at[cluster,"spike_width"] = np.nan
+            #vr_data.at[cluster,"cohort"] = np.nan
 
-    print('finished loading harry open field data into frame ...')
+    print('finished loading open field data into frame ...')
     return vr_data
 
 
@@ -222,7 +238,7 @@ def main():
 
     data = load_openfield_data_into_frame(of_data, vr_data)
     # SAVE DATAFRAMES for R
-    data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/All_cohort_harry_of.pkl')
+    data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/All_cohort7_reward_ofandvr.pkl')
 
 
 

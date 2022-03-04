@@ -38,8 +38,11 @@ def reshape_and_average_over_trials(beaconed_cluster_firings, nonbeaconed_cluste
     average_beaconed_spike_rate = np.nanmean(beaconed_reshaped_hist, axis=0)
     average_nonbeaconed_spike_rate = np.nanmean(nonbeaconed_reshaped_hist, axis=0)
     average_probe_spike_rate = np.nanmean(probe_reshaped_hist, axis=0)
+    average_beaconed_sd = np.nanstd(beaconed_reshaped_hist, axis=0)
+    average_nonbeaconed_sd = np.nanstd(nonbeaconed_reshaped_hist, axis=0)
+    average_probe_sd = np.nanstd(probe_reshaped_hist, axis=0)
 
-    return np.array(average_beaconed_spike_rate, dtype=np.float16), np.array(average_nonbeaconed_spike_rate, dtype=np.float16), np.array(average_probe_spike_rate, dtype=np.float16)
+    return np.array(average_beaconed_spike_rate, dtype=np.float16), np.array(average_nonbeaconed_spike_rate, dtype=np.float16), np.array(average_probe_spike_rate, dtype=np.float16), average_beaconed_sd, average_nonbeaconed_sd, average_probe_sd
 
 
 
@@ -78,6 +81,8 @@ def reshape_and_average_over_trials2(beaconed_cluster_firings, nonbeaconed_clust
     average_probe_spike_rate = np.nanmean(probe_reshaped_hist, axis=0)
     average_probe_spike_rate = signal.convolve(average_probe_spike_rate, window, mode='same')/ sum(window)
     average_beaconed_sd = np.nanstd(beaconed_reshaped_hist, axis=0)
+    average_nonbeaconed_sd = np.nanstd(nonbeaconed_reshaped_hist, axis=0)
+    average_probe_sd = np.nanstd(probe_reshaped_hist, axis=0)
 
     return np.array(average_beaconed_spike_rate, dtype=np.float16), np.array(average_nonbeaconed_spike_rate, dtype=np.float16), np.array(average_probe_spike_rate, dtype=np.float16), average_beaconed_sd
 
@@ -87,6 +92,9 @@ def extract_smoothed_average_firing_rate_data(spike_data):
     spike_data["Rates_averaged_rewarded_b"] = ""
     spike_data["Rates_averaged_rewarded_nb"] = ""
     spike_data["Rates_averaged_rewarded_p"] = ""
+    spike_data["Rates_sd_rewarded_b"] = ""
+    spike_data["Rates_sd_rewarded_nb"] = ""
+    spike_data["Rates_sd_rewarded_p"] = ""
     for cluster in range(len(spike_data)):
         rewarded_trials = np.array(spike_data.at[cluster, 'rewarded_trials'], dtype=np.int16)
         rewarded_trials = rewarded_trials[rewarded_trials >0]
@@ -94,12 +102,14 @@ def extract_smoothed_average_firing_rate_data(spike_data):
         cluster_firings = extract_smoothed_firing_rate_data(spike_data, cluster)
         cluster_firings = split_firing_data_by_reward(cluster_firings, rewarded_trials)
         beaconed_cluster_firings, nonbeaconed_cluster_firings, probe_cluster_firings = split_firing_data_by_trial_type(cluster_firings)
-        avg_b, avg_nb, avg_p = reshape_and_average_over_trials(np.array(beaconed_cluster_firings["firing_rate"]), np.array(nonbeaconed_cluster_firings["firing_rate"]), np.array(probe_cluster_firings["firing_rate"]), max(cluster_firings["trial_number"]))
+        avg_b, avg_nb, avg_p, sd, s_nb, sd_p = reshape_and_average_over_trials(np.array(beaconed_cluster_firings["firing_rate"]), np.array(nonbeaconed_cluster_firings["firing_rate"]), np.array(probe_cluster_firings["firing_rate"]), max(cluster_firings["trial_number"]))
 
         spike_data.at[cluster, 'Rates_averaged_rewarded_b'] = list(avg_b)
         spike_data.at[cluster, 'Rates_averaged_rewarded_nb'] = list(avg_nb)
         spike_data.at[cluster, 'Rates_averaged_rewarded_p'] = list(avg_p)
-
+        spike_data.at[cluster, 'Rates_sd_rewarded_b'] = list(sd)
+        spike_data.at[cluster, 'Rates_sd_rewarded_nb'] = list(s_nb)
+        spike_data.at[cluster, 'Rates_sd_rewarded_p'] = list(sd_p)
 
     return spike_data
 

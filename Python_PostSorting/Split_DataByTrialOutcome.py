@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 from scipy import signal
 from scipy import stats
+import matplotlib.pylab as plt
+import Python_PostSorting.plot_utility
 
 
 def extract_data_from_frame(spike_data, cluster):
@@ -442,3 +444,49 @@ def extract_time_binned_firing_rate_rewarded_allspeeds(spike_data):
 
 
 
+
+import os
+
+def plot_rates_on_trial_outcomes(spike_data, prm):
+    save_path = prm.get_local_recording_folder_path() + '/Figures/firing_rates_on_trial_outcomes'
+    if os.path.exists(save_path) is False:
+        os.makedirs(save_path)
+
+    for cluster in range(len(spike_data)):
+        cluster_index = spike_data.cluster_id.values[cluster] - 1
+        position_array=np.arange(0,199,1)
+        rates_hit=np.array(spike_data.loc[cluster, 'Avg_FiringRate_HitTrials'])
+        sd_hit=np.array(spike_data.loc[cluster, 'SD_FiringRate_HitTrials'])
+
+        rates_try=np.array(spike_data.loc[cluster, 'Avg_FiringRate_TryTrials'])
+        sd_try =np.array(spike_data.loc[cluster, 'SD_FiringRate_TryTrials'])
+
+
+        rates_run=np.array(spike_data.loc[cluster, 'Avg_FiringRate_RunTrials'])
+        sd_run =np.array(spike_data.loc[cluster, 'SD_FiringRate_RunTrials'])
+
+        if rates_try.size > 1:
+            speed_histogram = plt.figure(figsize=(3.7,3))
+            ax = speed_histogram.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
+            ax.plot(position_array,rates_hit, '-', color='Black')
+            ax.fill_between(position_array, rates_hit-sd_hit,rates_hit+sd_hit, facecolor = 'Black', alpha = 0.2)
+
+            ax.plot(position_array,rates_try, '-', color='Red')
+            ax.fill_between(position_array, rates_try-sd_try,rates_try+sd_try, facecolor = 'Red', alpha = 0.2)
+
+            ax.plot(position_array,rates_run, '-', color='Red')
+            ax.fill_between(position_array, rates_run-sd_run,rates_run+sd_run, facecolor = 'Red', alpha = 0.2)
+
+            plt.ylabel('Firing rate (Hz)', fontsize=19, labelpad = 0)
+            plt.xlabel('Location (cm)', fontsize=18, labelpad = 10)
+            plt.xlim(0,200)
+            Python_PostSorting.plot_utility.style_track_plot(ax, 200)
+            Python_PostSorting.plot_utility.style_vr_plot(ax)
+            ax.set_ylim(0)
+            plt.locator_params(axis = 'x', nbins  = 3)
+            plt.locator_params(axis = 'y', nbins  = 4)
+            ax.set_xticklabels(['-30', '70', '170'])
+            plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+            plt.savefig(save_path + '/Rates_histogram_' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + '_outcomes.png', dpi=200)
+            plt.close()
+    return spike_data

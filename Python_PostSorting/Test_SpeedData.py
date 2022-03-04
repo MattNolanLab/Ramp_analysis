@@ -8,36 +8,6 @@ from scipy import signal
 
 
 
-## histogram of speeds
-
-def generate_speed_histogram(spike_data, recording_folder):
-    print('I am calculating speed histogram...')
-    spike_data["speed_histogram"] = ""
-    save_path = recording_folder + 'Figures/Speed_histogram'
-    if os.path.exists(save_path) is False:
-        os.makedirs(save_path)
-    for cluster in range(len(spike_data)):
-        session_id = spike_data.at[cluster, "session_id"]
-        speed = np.array(spike_data.iloc[cluster].spike_rate_in_time[1]).real
-        speed = speed[speed > 0]
-        try:
-            posrange = np.linspace(0, 100, num=100)
-            values = np.array([[posrange[0], posrange[-1]]])
-            H, bins = np.histogram(speed, bins=(posrange), range=values)
-            plt.plot(bins[1:], H)
-            #plt.hist(speed, density=True, bins=50)
-            #plt.xlim(-5, 100)
-            plt.ylabel('Probability')
-            plt.xlabel('Data')
-            plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_speed_histogram_Cluster_' + str(cluster +1) + '_1' + '.png', dpi=200)
-            plt.close()
-
-            spike_data.at[cluster,"speed_histogram"] = [H, bins]
-        except ValueError:
-            continue
-    return spike_data
-
-
 ### --------------------------------------------------------------------------------------- ###
 
 
