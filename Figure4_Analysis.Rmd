@@ -1226,3 +1226,56 @@ write.table(spatial_firing_save, "data_out/AllMice_LinearModelResults.txt", quot
 ```
 
 
+
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+
+
+
+### Calculate average stop histogram for all mice, sessions and plot
+
+
+1. Subset data by group         
+```{r}
+
+df <-  
+  tibble(average_stops = unlist(spatial_firing$average_stops), 
+            average_stops_p = c(as.numeric(unlist(spatial_firing$average_stops_p)), rep(0, times=199)))
+
+
+```
+
+2. Average rates
+```{r}
+df <- df %>%
+  mutate(Position = rep(-30:169, times = nrow(spatial_firing))) %>%
+  group_by(Position) %>%
+  dplyr::summarise(mean_r = mean(as.numeric(average_stops), na.rm =TRUE), sem_r = std.error(as.numeric(average_stops)), 
+                   mean_nb = mean(as.numeric(average_stops_p), na.rm =TRUE), sem_nb = std.error(as.numeric(average_stops_p))) 
+
+```
+
+3. Plot
+```{r}
+ggplot(data=df) +
+  annotate("rect", xmin=-30, xmax=0, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=0,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_line(aes(y=mean_r, x=Position), color = "Black") +
+  geom_line(aes(y=mean_nb, x=Position), color = "Blue") +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  labs(y = "Stops (cm)", x = "Location (cm)") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=18),
+      axis.text.y = element_text(size=18),
+      legend.title = element_blank(),
+      text = element_text(size=18),
+      plot.margin = margin(21, 25, 5, 20))
+if (save_figures == 1) {
+  ggsave(file = "plots/stops_mean.png", width = 3.6, height = 2.9)
+}
+```
+
+

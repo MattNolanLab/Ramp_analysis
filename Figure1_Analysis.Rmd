@@ -1162,20 +1162,15 @@ outbound homebound  reset
     
     
 
-1. Subset data based on position encoding
-```{r}
-pi_data <-subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-2. make tibble with average firing rates and classifications : 
+1. make tibble with average firing rates and classifications : 
 ```{r}
 bin = 200
-df <- tibble(session_id = rep(pi_data$session_id, each=bin),
-             cluster = rep(as.character(pi_data$cluster_id), each=bin),
-             Position = rep(1:bin, times=nrow(pi_data)), 
-             Rates = unlist(pi_data$normalised_rates), 
-             Outbound_beaconed = rep(pi_data$lm_group_b, each=bin), 
-             Homebound_beaconed = rep(pi_data$lm_group_b_h, each=bin))
+df <- tibble(session_id = rep(spatial_firing$session_id, each=bin),
+             cluster = rep(as.character(spatial_firing$cluster_id), each=bin),
+             Position = rep(1:bin, times=nrow(spatial_firing)), 
+             Rates = unlist(spatial_firing$normalised_rates), 
+             Outbound_beaconed = rep(spatial_firing$lm_group_b, each=bin), 
+             Homebound_beaconed = rep(spatial_firing$lm_group_b_h, each=bin))
 
 ```
 
@@ -1598,50 +1593,11 @@ if (save_figures == 1) {
 
 
 
+## Find average and STD number of rewarded sessions in the data
 
-
-
-
-
-
-
-
-3. Subset data by group then average rates for plotting         
-```{r}
-
-df <-  
-  tibble(average_stops = unlist(spatial_firing$average_stops), 
-            average_stops_p = c(as.numeric(unlist(spatial_firing$average_stops_p)), rep(0, times=199)))
-
-df <- df %>%
-  mutate(Position = rep(-30:169, times = nrow(spatial_firing))) %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(as.numeric(average_stops), na.rm =TRUE), sem_r = std.error(as.numeric(average_stops)), 
-                   mean_nb = mean(as.numeric(average_stops_p), na.rm =TRUE), sem_nb = std.error(as.numeric(average_stops_p))) 
-  
-
-```
-
-
-```{r}
-ggplot(data=df) +
-  annotate("rect", xmin=-30, xmax=0, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=0,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_line(aes(y=mean_r, x=Position), color = "Black") +
-  geom_line(aes(y=mean_nb, x=Position), color = "Blue") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  labs(y = "Stops (cm)", x = "Location (cm)") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=18),
-      axis.text.y = element_text(size=18),
-      legend.title = element_blank(),
-      text = element_text(size=18),
-      plot.margin = margin(21, 25, 5, 20))
-if (save_figures == 1) {
-  ggsave(file = "plots/stops_mean.png", width = 3.6, height = 2.9)
-}
-```
+1. select columns we want
+2. find distinct columns (this is because multiple days have many cells, an we only want unique days so the mean is accurate)
+3. find mean number of rewarded trials and std of rewarded trials
 
 ```{r}
 df <- spatial_firing %>%
