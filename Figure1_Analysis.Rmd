@@ -50,9 +50,9 @@ Rates_averaged_rewarded_nb = non-beaconed and probe trials
 Rates_averaged_rewarded_p = probe trials only
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(asr_b_rewarded = pmap(list(Rates_averaged_rewarded_b, session_id, cluster_id), add_position),
-         asr_nb_rewarded = pmap(list(Rates_averaged_rewarded_nb, session_id, cluster_id), add_position),
-         asr_p_rewarded = pmap(list(Rates_averaged_rewarded_p, session_id, cluster_id), add_position)
+  mutate(asr_b_rewarded = pmap(list(Rates2_averaged_rewarded_b, session_id, cluster_id), add_position),
+         asr_nb_rewarded = pmap(list(Rates2_averaged_rewarded_nb, session_id, cluster_id), add_position),
+         asr_p_rewarded = pmap(list(Rates2_averaged_rewarded_p, session_id, cluster_id), add_position)
          )
 ```
 
@@ -163,9 +163,9 @@ return(df_modified)
 shuffles <- 10
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
-    mutate(shuffle_results_nb_o = pmap(list(Rates_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
-    mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
+    mutate(shuffle_results_b_o = pmap(list(Rates2_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_nb_o = pmap(list(Rates2_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_p_o = pmap(list(Rates2_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
 }
 
 #if (save_results == 1) {
@@ -358,6 +358,12 @@ spatial_firing <- spatial_firing %>%
   select(-contains('asr_b_h_rewarded_fit_')) %>%
   select(-contains('asr_b_h_rewarded_fit_')) %>%
   select(-contains('asr_b_h_rewarded_fit_')) %>%
+  select(-contains('asr_nb_h_rewarded_fit_')) %>%
+  select(-contains('asr_nb_h_rewarded_fit_')) %>%
+  select(-contains('asr_nb_h_rewarded_fit_')) %>%
+  select(-contains('asr_p_h_rewarded_fit_')) %>%
+  select(-contains('asr_p_h_rewarded_fit_')) %>%
+  select(-contains('asr_p_h_rewarded_fit_')) %>%
   mutate(asr_b_h_rewarded_fit = pmap(list(asr_b_rewarded, 110, 170), lm_helper),
          asr_nb_h_rewarded_fit = pmap(list(asr_nb_rewarded, 110, 170), lm_helper),
          asr_p_h_rewarded_fit = pmap(list(asr_p_rewarded, 110, 170), lm_helper)) %>%
@@ -485,8 +491,8 @@ nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spat
 shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), 
                        r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
                        pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
-                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, times = 999), 
-                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = 999))
+                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, times = shuffles-1), 
+                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = shuffles-1))
 ```
 
 
@@ -608,7 +614,8 @@ First, normalise firing rates.
 1. make function to load rates and normalise
 ```{r}
 normalise_rates <- function(df){
-  df <- tibble(Rates = unlist(df), Position = rep(1:199))
+  #df <- tibble(Rates = unlist(df), Position = rep(1:199))
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
   x <- scale(df$Rates, center=TRUE, scale=TRUE)
   return(x)
 }
@@ -621,8 +628,10 @@ normalise_rates <- function(df){
 normalise_rates_probe <- function(df1, df2){
   df <- c(df1, df2)
   df <- tibble(Rates = unlist(df), Position = rep(1:398))
+  #df <- tibble(Rates = unlist(df), Position = rep(1:400))
   x <- scale(df$Rates, center=TRUE, scale=TRUE)
   x_p <- x[200:398]
+  #x_p <- x[200:400]
   return(x_p)
 }
 
@@ -633,8 +642,10 @@ normalise_rates_probe <- function(df1, df2){
 normalise_rates_beaconed <- function(df1, df2){
   df <- c(df1, df2)
   df <- tibble(Rates = unlist(df), Position = rep(1:398))
+  #df <- tibble(Rates = unlist(df), Position = rep(1:400))
   x <- scale(df$Rates, center=TRUE, scale=TRUE)
   x_p <- x[0:199]
+  #x_p <- x[0:200]
   return(x_p)
 }
 
@@ -643,9 +654,9 @@ normalise_rates_beaconed <- function(df1, df2){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates = map2(Rates_averaged_rewarded_b, Rates_averaged_rewarded_nb,normalise_rates_beaconed)) %>%
-  mutate(normalised_rates_nb = map2(Rates_averaged_rewarded_b,Rates_averaged_rewarded_nb, normalise_rates_probe)) %>%
-  mutate(normalised_rates_p = map2(Rates_averaged_rewarded_b,Rates_averaged_rewarded_p, normalise_rates_probe)) 
+  mutate(normalised_rates = map2(Rates2_averaged_rewarded_b, Rates2_averaged_rewarded_nb,normalise_rates_beaconed)) %>%
+  mutate(normalised_rates_nb = map2(Rates2_averaged_rewarded_b,Rates2_averaged_rewarded_nb, normalise_rates_probe)) %>%
+  mutate(normalised_rates_p = map2(Rates2_averaged_rewarded_b,Rates2_averaged_rewarded_p, normalise_rates_probe)) 
 
 ```
 
@@ -986,11 +997,11 @@ See discussion in ?isSingular and here: https://stats.stackexchange.com/question
 spatial_firing <- spatial_firing  %>%
   #select(-contains('o_mm_p_b_')) %>%
   mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit_function),
-         #o_mm_nb = map2(spikes_in_time, 1, mm_fit),
-         o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues)) %>%
-         #o_mm_p_nb = map(o_mm_nb, mm_pvalues))
-  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal") #%>%
-  #unnest_wider(o_mm_p_nb, names_sep = "_", names_repair = "universal")
+         o_mm_p = map2(spikes_in_time, 1, mm_fit_function),
+         o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues), 
+         o_mm_p_p = map(o_mm_p, session_id, mm_pvalues)) %>% 
+  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal")%>%
+  unnest_wider(o_mm_p_p, names_sep = "_", names_repair = "universal")
 ```
 
 
@@ -1103,7 +1114,9 @@ std_coef <- function(mm) {
 spatial_firing <- spatial_firing  %>%
   select(-contains('o_b_mod_coefs_')) %>%
   mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
-  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal")
+  mutate(o_p_mod_coefs = map(o_mm_p, std_coef)) %>%
+  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(o_p_mod_coefs, names_sep = "_", names_repair = "universal")
 ```
 
 Standardized coefficients are in:
@@ -1156,7 +1169,7 @@ pi_data <-subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS
 
 2. make tibble with average firing rates and classifications : 
 ```{r}
-bin = 199
+bin = 200
 df <- tibble(session_id = rep(pi_data$session_id, each=bin),
              cluster = rep(as.character(pi_data$cluster_id), each=bin),
              Position = rep(1:bin, times=nrow(pi_data)), 

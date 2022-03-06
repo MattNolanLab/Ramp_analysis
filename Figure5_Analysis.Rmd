@@ -1,16 +1,10 @@
 ---
-title: "Untitled"
+title: "RampCodes_Figure5"
+author: "Sarah Tennant & Matt Nolan"
+date: "20/10/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
----
-title: "Figure4_Analysis"
-output: html_document
----
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -22,10 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Runs analysis that compares cued trials (Beaconed) to uncued (Non-beaconed + Probe)
 
-_note : focuses on activity in outbound region_
 
-
-### --------------------------------------------------------------------------------- ###
 ### --------------------------------------------------------------------------------- ###
 
 
@@ -522,7 +513,7 @@ if (save_figures == 1) {
 
 
 ###----------------------------------------------------------------------------------------------###
-Additional analyses related to Figure 4.
+Additional analyses related to Figure 5.
 
 First split data based on cue independent/cue dependent as we are only interested in position neurons here
 ```{r}
@@ -604,7 +595,7 @@ data_coef_2 <- tibble(session_id = rep(unlist(position_neurons$unique_id), times
                     lm_result = rep(as.character(position_neurons$lm_group_b), times=3))
 ```
 
-Use function 'standard_plot' from Figure 3. This expects a tibble with columns 'coef_type' (either P, S or A) and 'coef' (the coefficients)
+Use function 'standard_plot' from Figure 2. This expects a tibble with columns 'coef_type' (either P, S or A) and 'coef' (the coefficients)
 
 
 Plot coefficients for cells classified in Figure 3 as having 'significant' positional coefficients in the mixed effect model, and Figure 4 as having ramp-like activity on both beaconed and non-beaconed/probe trials. 
@@ -638,7 +629,7 @@ if (save_figures == 1) {
 
 
 
-Plot coefficients for cells classified in Figure 3 as having 'significant' positional coefficients in the mixed effect model, and Figure 4 as having ramp-like activity on beaconed but not non-beaconed/probe trials. 
+Plot coefficients for cells classified in Figure 2 as having 'significant' positional coefficients in the mixed effect model, and Figure 4 as having ramp-like activity on beaconed but not non-beaconed/probe trials. 
 
 
 ```{r}
@@ -661,11 +652,12 @@ standard_plot(data_coef_PSA_cue_pos)
 
 ### ----------------------------------------------------------------------------------------- ###
 
-_Figure 4C stats_
+_Figure 5C stats_
 
 Compare coefficients for position, speed and acceleration from lmer model for neurons that maintain slope on beaconed and non beaconed
-_focus on all position neurons (Figure 3) that have positive or negative slope (Figure 2)_
 
+
+1.focus on all position neurons (Figure 2) that have positive or negative slope (Figure 1)
 ```{r}
 position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA" )
 
@@ -682,7 +674,7 @@ spatial_firing_save <- select(position_ramp_cells, session_id, cluster_id, uniqu
 
 ```
 
-1. put data into a tibble for plotting
+3. put data into a tibble for plotting
 ```{r}
 data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
                     cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
@@ -697,14 +689,14 @@ data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), time
                     lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
 ```
 
-2. run anova
+4. run anova
 ```{r}
 one.way <- aov(coef ~ coef_type, data = data_coef)
 
 summary(one.way)
 ```
 
-3. Post hoc Tukey's test
+5. Post hoc Tukey's test
 ```{r}
 tukey.test <- TukeyHSD(one.way)
 tukey.test$coef_type
@@ -712,19 +704,19 @@ tukey.test$coef_type
 
 
 same as above but split by positive or negative slope
-_focus on all position neurons (Figure 3) that have positive or negative slopes (Figure2)_
-
+1.focus on all position neurons (Figure 2)
 ```{r}
 position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
+2. Split by positive or negative slope (Figure 1)
 ```{r}
 pos_position_cells <- subset(spatial_firing, lm_group_b == "Positive")
 neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
 
 ```
 
-2. take only columns we need for the rest of the analysis
+3. take only columns we need for the rest of the analysis
 ```{r}
 spatial_firing_save <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
   unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
@@ -733,7 +725,7 @@ spatial_firing_save <- select(pos_position_cells, session_id, cluster_id, unique
 
 ```
 
-1. put data into a tibble for plotting
+4. put data into a tibble for plotting
 ```{r}
 data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
                     cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
@@ -748,14 +740,14 @@ data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), time
                     lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
 ```
 
-2. run anova
+5. run anova
 ```{r}
 one.way <- aov(coef ~ coef_type, data = data_coef)
 
 summary(one.way)
 ```
 
-3. Post hoc Tukey's test
+6. Post hoc Tukey's test
 ```{r}
 tukey.test <- TukeyHSD(one.way)
 tukey.test$coef_type
@@ -772,12 +764,12 @@ We want to know about whether the slope classification of neurons on beaconed tr
 
 We first ask this question for all neurons whose classification is independent of the reward zone cue.
 
-1. Split by path integrating neurons (Figure 4)
+1. Split by position neurons (Figure 2)
 ```{r}
 position_cells <- subset(spatial_firing_high , final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
-2. Select cells that are path integrating i.e. have slopes on both the beaconed and non-beaconed (Figure 4)
+2. Select cells that have slopes on both the beaconed and non-beaconed (Figure 1)
 ```{r}
 pi_data <- subset(spatial_firing_high, lm_group_b == "Positive" | lm_group_b == "Negative")
 ```
@@ -800,7 +792,7 @@ negnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassifie
 x <- (nrow(pospos) + nrow(negneg) + nrow(posneg) + (nrow(negpos) +nrow(posnon) + nrow(negnon)))
 ```
 
-3. Split by linear model result (figure 5) in outbound and homebound region for beaconed trials
+4. Split by linear model result (figure 1) in outbound and homebound region for beaconed trials
 ```{r}
 # Beaconed: pospos
 # stays the same
@@ -881,7 +873,7 @@ negnon_pospos <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "
 ```
 
 
-
+5. put into tibble
 ```{r}
 
 data_long <-
@@ -1001,10 +993,5 @@ sankeyNetwork(Links = data_long, Nodes = nodes,
 if (save_figures == 1) {
   ggsave(file = "plots/model_movement.png", width = 24, height = 18)
 }
-```
-
-
-```{r}
-spatial_firing_ramp <- spatial_firing
 ```
 

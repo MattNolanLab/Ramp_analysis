@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### ------------------------------------------------------------------------------------------ ### 
 
-First, classify neurons based on their slope activity in the outbound and homebound region in probe trials (similar to beaconed trials in Figure5_Analysis.Rmd)
+First, classify neurons based on their slope activity in the outbound and homebound region in probe trials (similar to beaconed trials in Figure1_Analysis.Rmd)
 
 i.e. pospos = positive in outbound, positive in homebound
 i.e. posneg = positive in outbound, negative in homebound
@@ -39,25 +39,7 @@ Now, we want to find out if within pospos and negneg cue_groups - is their firin
 
 To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
 
-First, normalise firing rates. 
-
-1. make function to load rates and normalise
-```{r}
-normalise_rates <- function(df){
-  df <- tibble(Rates = unlist(df), Position = rep(1:199))
-  x <- scale(df$Rates, center=TRUE, scale=TRUE)
-  return(x)
-}
-
-```
-
-2. run on all cells
-```{r}
-#spatial_firing <- spatial_firing %>%
-#  mutate(normalised_rates_p = map(Rates_averaged_rewarded_p, normalise_rates))
-```
-
-Then, predict firing rate in homebound region based on fit from real data in outbound region
+First, predict firing rate in homebound region based on fit from real data in outbound region
 
 Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
 
@@ -79,7 +61,7 @@ Now, we can classify cells based on their predicted activity.
 
 1. Function to classify neurons based on offset (Matt code that does it based on prediction)
 
-Use function 'mark_reset_group_predict' defined in Figure 5.
+Use function 'mark_reset_group_predict' defined in Figure 1.
 
 2. Run on all cells
 ```{r}
@@ -128,7 +110,7 @@ spatial_firing_probeonly <- subset(spatial_firing_high, asr_p_sum != 0 )
 
 
 ## plot outbound and homebound slopes for each neuron - seperated by whether they reset or are continuous 
-1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 3) and reset activity in probe trials
+1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 2) and reset activity in probe trials
 ```{r}
 slope_df <- spatial_firing_probeonly  %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>% 
@@ -342,9 +324,6 @@ mean_SEM_plots <- function(df, colour1 = "blue"){
   geom_line(aes(y=mean_r, x=Position), color = colour1) +
   theme_classic() +
   scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  #annotate("text", x = 140, y=7, label = paste0("n = ", str(cell_no)), size=8) +
-  #geom_text(aes(x = 140, y= 6, label = paste0("n = ", str(cell_no))), vjust = "inward", hjust = "inward")
-  #scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
   labs(y = "Z-scored firing rate", x = "Position") +
   theme(axis.text.x = element_text(size=18),
         axis.text.y = element_text(size=18),
@@ -785,19 +764,19 @@ We want to know about whether the slope classification of neurons on beaconed tr
 
 We first ask this question for all neurons whose classification is independent of the reward zone cue.
 
-1. Split by path integrating neurons (Figure 4)
+1. Split by position neurons (Figure 2)
 ```{r}
 position_cells <- subset(spatial_firing_high , final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
 
-2. Select cells that are path integrating i.e. have slopes on both the beaconed and non-beaconed (Figure 4)
+2. Select cells that have slopes on both the beaconed and non-beaconed (Figure 1)
 ```{r}
 pi_data <- subset(spatial_firing_high, lm_group_b == "Positive" | lm_group_b == "Negative")
 ```
 
 The groups we want to consider are +/+(O), +/+(C), +/-, -/-(O), -/-(C) and -/+. In addition for probe trials there will be a group 'other' for activity that is no longer in one of these categories.
 
-3. Split by linear model result (figure 2) in outbound and homebound region for beaconed trials
+3. Split by linear model result (figure 1) in outbound and homebound region for beaconed trials
 ```{r}
 pospos <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
 posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
@@ -1036,7 +1015,7 @@ if (save_figures == 1) {
 
 ## Calculate number of neurons that areset/switch/continuous across outbound and homebound
 
-1. First, select cells that are position encoding (figure 3)
+1. First, select cells that are position encoding (figure 2)
 ```{r}
 pi_data <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 ```
@@ -1083,7 +1062,42 @@ total_cells_same_on_probe <- (nrow(pospos_same_probe) + nrow(negneg_same_probe) 
 
 
 
+### ------------------------------------------------------------------------------------------ ### 
 
+## Plot coefficients for Figure 4I
+
+
+
+_Plot coefficients for just position cells_
+
+
+6a. Plot coefficients for cells classified in Figure 1 as having a positive slope and in Figure 2 as having significant fit coefficients for position only.
+
+```{r}
+data_coef_pos_allp <- data_coef %>%
+  subset(group == "P" | group == "PS" | group == "PSA" | group == "PA") %>%
+  subset(lm_result == "Positive")
+
+(pos_SA_coef_plot <- standard_plot(data_coef_pos_allp))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_PositiveAllPositioncells.png", width = 3, height = 2.5)
+}
+```
+
+
+
+6b. Plot coefficients for cells classified in Figure 1 as having a negative slope and in Figure 2 as having significant fit coefficients for position only.
+
+```{r}
+data_coef_neg_allp <- data_coef %>%
+  subset(group == "P" | group == "PS" | group == "PSA" | group == "PA") %>%
+  subset(lm_result == "Negative")
+
+(neg_SA_coef_plot <- standard_plot(data_coef_neg_allp))
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_NegativeAllPositioncells.png", width = 3, height = 2.5)
+}
+```
 
 
 
@@ -1112,7 +1126,7 @@ nonneg <-subset(pi_data, lm_group_b == "Unclassified" & lm_group_b_h == "Negativ
 
 ```
 
-5. for +- and -+ groups as classified on beaconed trials, how many are the same on probe?
+4. for +- and -+ groups as classified on beaconed trials, how many are the same on probe?
 ```{r}
 posneg_same_probe <-subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative")
 negpos_same_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive")

@@ -10,9 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-
-
-
 ### ------------------------------------------------------------------------------------------ ### 
 
 ## Do ramping neurons encode speed, position or acceleration?
@@ -70,7 +67,7 @@ NONE_none <- nrow(subset(none ,final_model_o_b == "None"))/nrow(none)*100
 
 ```
 
-2. number of cells in each group - positive sloping neurons
+3. number of cells in each group - positive sloping neurons
 ```{r}
 P_positive_num <- nrow(subset(pos, final_model_o_b == "P"))
 P_A_positive_num <- nrow(subset(pos, final_model_o_b == "PA"))
@@ -83,7 +80,7 @@ NONE_positive_num <- nrow(subset(pos, final_model_o_b == "None"))
 
 ```
 
-3. number of cells in each group - negative sloping neurons
+4. number of cells in each group - negative sloping neurons
 ```{r}
 P_negative_num <- nrow(subset(neg, final_model_o_b == "P"))
 P_A_negative_num <- nrow(subset(neg, final_model_o_b == "PA"))
@@ -96,7 +93,7 @@ NONE_negative_num <- nrow(subset(neg, final_model_o_b == "None"))
 
 ```
 
-3. number of cells in each group - unclassified  neurons
+5. number of cells in each group - unclassified  neurons
 ```{r}
 P_none_num <- nrow(subset(none, final_model_o_b == "P"))
 P_A_none_num <- nrow(subset(none, final_model_o_b == "PA"))
@@ -109,7 +106,7 @@ NONE_none_num <- nrow(subset(none, final_model_o_b == "None"))
 
 ```
 
-3. Put data into tibble
+6. Put data into tibble
 ```{r}
 
 mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative, S_none, A_positive,A_negative,A_none,  P_S_positive, P_S_negative,P_S_none, P_A_positive, P_A_negative, P_A_none, S_A_positive, S_A_negative, S_A_none,P_S_A_positive, P_S_A_negative, P_S_A_none, NONE_positive,NONE_negative, NONE_none), 
@@ -127,7 +124,7 @@ mixed_ramps <- tibble(perc=c(P_positive,P_negative,P_none,S_positive, S_negative
 
 ```
 
-4. Plot model results
+7. Plot model results
 ```{r}
 # plot data
 level_order <- c("P", "S", "A", "PS", "PA","SA", "PAS", "None")
@@ -198,9 +195,6 @@ data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), time
                     group = c(as.character(spatial_firing_save$final_model_o_b),
                               as.character(spatial_firing_save$final_model_o_b),
                               as.character(spatial_firing_save$final_model_o_b)), 
-                    # cue_group = c(as.character(spatial_firing_save$cue_group_o),
-                    #            as.character(spatial_firing_save$cue_group_o),
-                    #            as.character(spatial_firing_save$cue_group_o)),
                     coef_type = rep(c("P", "S", "A"),
                                     each = nrow(spatial_firing_save)),
                     lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
@@ -218,9 +212,7 @@ standard_plot <- function(df) {
   geom_jitter(alpha=0.05) +
   scale_fill_manual(values=c("firebrick1","gold","dodgerblue2")) +
   labs(y = "std coef", x="\n model parameter") +
-  #scale_y_continuous(breaks=c(0,0.5, 1, 4)) +
   scale_y_continuous(trans=pseudolog10_trans) +
-  #coord_trans(y='log2', x=) +
   theme_classic() +
   theme(axis.text.x = element_text(size=14),
         axis.text.y = element_text(size=12),
@@ -318,7 +310,7 @@ if (save_figures == 1) {
 _Plot coefficients for just position cells_
 
 
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position only.
+6a. Plot coefficients for cells classified in Figure 1 as having a positive slope and in Figure 2 as having significant fit coefficients for position only.
 
 ```{r}
 data_coef_pos_SA <- data_coef %>%
@@ -329,10 +321,10 @@ data_coef_pos_SA <- data_coef %>%
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_PositiveSAcells.png", width = 3, height = 2.5)
 }
+```
 
 
-
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position only.
+6b. Plot coefficients for cells classified in Figure 1 as having a negative slope and in Figure 2 as having significant fit coefficients for position only.
 
 ```{r}
 data_coef_neg_SA <- data_coef %>%
@@ -345,7 +337,8 @@ if (save_figures == 1) {
 }
 ```
 
-6c. Plot coefficients for cells classified in Figure 2 as being unclassified but that have 'significant' positional coefficients in the mixed effect model.
+
+6c. Plot coefficients for cells classified in Figure 1 as being unclassified but that have 'significant' positional coefficients in the mixed effect model.
 
 ```{r}
 data_coef_UC_PSA <- data_coef %>%
