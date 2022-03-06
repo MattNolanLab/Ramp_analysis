@@ -1,5 +1,7 @@
 ---
-title: "RC_Supplemental9"
+title: "ExtraAnalysis_Figure2"
+author: "Sarah Tennant & Matt Nolan"
+date: "20/10/2021"
 output: html_document
 ---
 
@@ -7,12 +9,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## For supplemental 6, plot coefficents for remaining groups
+
+## Plot coefficents for remaining groups (S, SA, PA, PSA)
 
 
 _Plot coefficients for just speed cells_
 
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for speed only.
+6a. Plot coefficients for cells classified in Figure 1 as having a positive slope and in Figure 2 as having significant fit coefficients for speed only.
 
 ```{r}
 data_coef_pos_S <- data_coef %>%
@@ -25,7 +28,7 @@ if (save_figures == 1) {
 }
 ```
 
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for speed only.
+6b. Plot coefficients for cells classified in Figure 1 as having a negative slope and in Figure 2 as having significant fit coefficients for speed only.
 
 ```{r}
 data_coef_neg_S <- data_coef %>%
@@ -41,7 +44,7 @@ if (save_figures == 1) {
 
 _Plot coefficients for just acceleration cells_
 
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for acceleration only.
+6a. Plot coefficients for cells classified in Figure 1 as having a positive slope and in Figure 2 as having significant fit coefficients for acceleration only.
 
 ```{r}
 data_coef_pos_A <- data_coef %>%
@@ -54,7 +57,7 @@ if (save_figures == 1) {
 }
 ```
 
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for acceleration only.
+6b. Plot coefficients for cells classified in Figure 1 as having a negative slope and in Figure 2 as having significant fit coefficients for acceleration only.
 
 ```{r}
 data_coef_neg_A <- data_coef %>%
@@ -70,7 +73,7 @@ if (save_figures == 1) {
 
 _Plot coefficients for just position and acceleration cells_
 
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position and acceleration. 
+6a. Plot coefficients for cells classified in Figure 1 as having a positive slope and in Figure 2 as having significant fit coefficients for position and acceleration. 
 
 ```{r}
 data_coef_pos_PA <- data_coef %>%
@@ -83,7 +86,7 @@ if (save_figures == 1) {
 }
 ```
 
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position and acceleration
+6b. Plot coefficients for cells classified in Figure 1 as having a negative slope and in Figure 2 as having significant fit coefficients for position and acceleration
 
 ```{r}
 data_coef_neg_PA <- data_coef %>%
@@ -99,7 +102,7 @@ if (save_figures == 1) {
 
 _Plot coefficients for just position and acceleration cells_
 
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position and acceleration. 
+6a. Plot coefficients for cells classified in Figure 1 as having a positive slope and in Figure 2 as having significant fit coefficients for position and acceleration. 
 
 ```{r}
 data_coef_pos_PSA <- data_coef %>%
@@ -112,7 +115,7 @@ if (save_figures == 1) {
 }
 ```
 
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for speed only.
+6b. Plot coefficients for cells classified in Figure 1 as having a negative slope and in Figure 2 as having significant fit coefficients for speed only.
 
 ```{r}
 data_coef_neg_PSA <- data_coef %>%
