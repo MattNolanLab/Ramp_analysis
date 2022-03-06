@@ -32,7 +32,6 @@ Sys.setenv(RETICULATE_PYTHON = "/usr/local/bin/python/bin/python")
 ### ----------------------------------------------------------------------------------------------- ###
 
 ### LOAD ALL MICE ALL DAYS DATAFRAMES
-### VIRTUAL REALITY ONLY
 
 ### ----------------------------------------------------------------------------------------------- ###
 
@@ -44,15 +43,7 @@ source_python("pickle_reader.py") # run python script which loads the dataframes
 
 ```
 
-
-### ----------------------------------------------------------------------------------------------- ###
-
-### LOAD ALL MICE ALL DAYS DATAFRAMES
-### OPEN FIELD AND VIRTUAL REALITY (SORTED TOGETHER)
-
-### ----------------------------------------------------------------------------------------------- ###
-
-2. Load all cohorts
+2. Load all cohorts, and necessary columns for analysis
 ```{r}
 dataframe_to_load <- "data/All_cohort3_ofandvr.pkl"  
 spatial_firing1 <- read_pickle_file(file.path(dataframe_to_load)) 
@@ -79,26 +70,25 @@ spatial_firing5 <- select(spatial_firing5,c('session_id', 'cluster_id', 'brain_r
 
 2. Load all cohorts
 ```{r}
-dataframe_to_load <- "data_in/all_cohort3.pkl"  
+dataframe_to_load <- "data_in/Processed_cohort5_sarah.pkl"  
 spatial_firing1 <- read_pickle_file(file.path(dataframe_to_load)) 
-spatial_firing1 <- select(spatial_firing1,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', "graduation"))
+spatial_firing1 <- select(spatial_firing1,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'Rates2_averaged_rewarded_b','Rates2_averaged_rewarded_nb','Rates2_averaged_rewarded_p', 'graduation'))
 
-dataframe_to_load <- "data_in/all_cohort4.pkl" 
+dataframe_to_load <- "data_in/Processed_cohort4_sarah.pkl" 
 spatial_firing2 <- read_pickle_file(file.path(dataframe_to_load)) 
-spatial_firing2 <- select(spatial_firing2,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', "graduation"))
+spatial_firing2 <- select(spatial_firing2,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'Rates2_averaged_rewarded_b','Rates2_averaged_rewarded_nb','Rates2_averaged_rewarded_p', 'graduation'))
 
-dataframe_to_load <- "data_in/all_cohort1.pkl" 
+dataframe_to_load <- "data_in/Processed_cohort2_sarah.pkl" 
 spatial_firing3 <- read_pickle_file(file.path(dataframe_to_load)) 
-spatial_firing3 <- select(spatial_firing3,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', "graduation"))
+spatial_firing3 <- select(spatial_firing3,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'Rates2_averaged_rewarded_b','Rates2_averaged_rewarded_nb','Rates2_averaged_rewarded_p', 'graduation'))
 
-dataframe_to_load <- "data_in/all_cohort7.pkl" 
+dataframe_to_load <- "data_in/Processed_cohort7_sarah.pkl" 
 spatial_firing4 <- read_pickle_file(file.path(dataframe_to_load))
-spatial_firing4 <- subset(spatial_firing4, peak_amp < 20) # remove artefacts
-spatial_firing4 <- select(spatial_firing4,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', "graduation"))
+spatial_firing4 <- select(spatial_firing4,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'Rates2_averaged_rewarded_b','Rates2_averaged_rewarded_nb','Rates2_averaged_rewarded_p', 'graduation'))
 
-dataframe_to_load <- "data_in/all_cohort2.pkl"  
+dataframe_to_load <- "data_in/Processed_cohort3_sarah.pkl"  
 spatial_firing5 <- read_pickle_file(file.path(dataframe_to_load)) 
-spatial_firing5 <- select(spatial_firing5,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', "graduation"))
+spatial_firing5 <- select(spatial_firing5,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'Rates2_averaged_rewarded_b','Rates2_averaged_rewarded_nb','Rates2_averaged_rewarded_p', 'graduation'))
 
 ```
 
@@ -108,33 +98,34 @@ spatial_firing <- rbind(spatial_firing1, spatial_firing2, spatial_firing3, spati
 ```
 
 
+### ----------------------------------------------------------------------------------------------- ###
 
-```{r}
-spatial_firing_shuffles <- readRDS(file="SpatialFiring_with_1000_shuffles_of.Rda") 
+### Curate the data
 
-```
-
-```{r}
-spatial_firing_shuffles <- select(spatial_firing_shuffles,c('shuffle_min_slope_b_o', 'shuffle_max_slope_b_o', 'shuffle_min_slope_nb_o', 'shuffle_max_slope_nb_o', 'shuffle_min_slope_p_o',  'shuffle_max_slope_p_o'))
-
-```
-
-```{r}
-spatial_firing_shuffles <- select(spatial_firing_shuffles, -contains(c('session_id', 'cluster_id')))
-```
-
-3. Concatinate cohorts together
-```{r}
-spatial_firing <- cbind(spatial_firing, spatial_firing_shuffles)
-```
+### ----------------------------------------------------------------------------------------------- ###
 
 
+4. Curate by graduation day 
 ```{r}
 spatial_firing <- subset(spatial_firing, graduation == 1 )
 ```
 
-4. Save concatinated dataframes
+5. Remove artefacts
 ```{r}
-saveRDS(spatial_firing, file="PythonOutput_Concat_final_of_withshuffles.Rda")
+spatial_firing <- subset(spatial_firing, peak_amp < 20 )
+```
+
+
+
+### ----------------------------------------------------------------------------------------------- ###
+
+### Save concatenated frames for future loading
+
+### ----------------------------------------------------------------------------------------------- ###
+
+
+6. Save final concatinated dataframe
+```{r}
+saveRDS(spatial_firing, file="PythonOutput_Concat_final.Rda")
 
 ```
