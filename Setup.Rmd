@@ -33,7 +33,7 @@ library(agricolae) # post hoc Tukey test
 library(ggallin) # this is for the pseudolog10_trans function used in coeff plots in Figure2_Analysis
 
 # Import functions
-source("Functions.R")
+source("Functions.R") ## is this even used??? I dont think so! Keeping it just incase..
 
 # Parameter to save figures. Set to 1 if you'd like to save them.
 save_figures = 1
