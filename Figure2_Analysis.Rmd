@@ -16,6 +16,241 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### ------------------------------------------------------------------------------------------ ### 
 
+
+
+## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
+
+Function to fit mixed effect models
+```{r}
+mm_fit <- function(df, TT = 0) {
+  if (length(df) == 1){
+    return(NA)}
+  df <-
+    tibble(
+      Rates = as.numeric(df[[1]]),
+      Position = as.numeric(df[[2]]),
+      Acceleration = as.numeric(df[[4]]),
+      Speed = as.numeric(df[[3]]),
+      Trials = as.factor(df[[5]]), 
+      Types = as.factor(df[[6]])
+    )
+  
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == 0 & Rates > 0.01) %>%
+    select(-Types) 
+
+  df$Acceleration <- scale(df$Acceleration, center=FALSE, scale=TRUE)
+  df$Rates <- scale(df$Rates, center=FALSE, scale=TRUE)
+  df$Speed <- scale(df$Speed, center=FALSE, scale=TRUE)
+  df$Position <- scale(df$Position, center=FALSE, scale=TRUE)
+  
+  if (length(df) == 1 | nrow(df) < 20) {
+    return(NA)
+  }
+  glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = Gamma(link = "log"), data = df)
+
+  df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
+                        data = df, 
+                        na.action = na.exclude,
+                        family = Gamma(link = "log"),
+                        start=list(fixef=coef(glm1)),
+                        control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+}
+```
+
+
+Function to extract P values for each coefficient from the model
+```{r}
+mm_function <- function(mm, session_id) {
+  if (is.na(mm)) {
+    return(tibble(pos = NA, speed = NA, accel = NA))
+  }
+    print(session_id)
+    modelAnova <- car::Anova(mm)
+    return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
+                  speed = modelAnova$"Pr(>Chisq)"[[2]],
+                  accel = modelAnova$"Pr(>Chisq)"[[3]])
+}
+```
+
+Function to extract P values for each coefficient from the model
+```{r}
+
+mm_pvalues <- function(mm, session_id) {
+  tryCatch({
+      mm_function(mm,session_id)
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+   
+```
+
+
+Function to extract P values for each coefficient from the model
+```{r}
+
+mm_fit_function <- function(mm, TT) {
+  tryCatch({
+      mm_fit(mm,TT)
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+   
+```
+
+2. Run on all cells.
+Note here, there may be some overfitting with the mixed effect model. This is likely because some  coefficients likely do not vary with position. However, we can't address this by tailoring the model to each cell as we want to treat each cell the same way. The standardized coefficients should still be interpretable.
+See discussion in ?isSingular and here: https://stats.stackexchange.com/questions/378939/dealing-with-singular-fit-in-mixed-models
+```{r, warning=FALSE}
+spatial_firing <- spatial_firing  %>%
+  #select(-contains('o_mm_p_b_')) %>%
+  mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit_function),
+         o_mm_p = map2(spikes_in_time, 1, mm_fit_function),
+         o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues), 
+         o_mm_p_p = map(o_mm_p, session_id, mm_pvalues)) %>% 
+  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal")%>%
+  unnest_wider(o_mm_p_p, names_sep = "_", names_repair = "universal")
+```
+
+
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+## Select best model 
+
+1. Write function to categorise neurons based on significant model coefficients
+```{r}
+
+model_comparison <- function(null_pos, null_speed, null_accel){
+  pval <- 0.01
+  if( is.na(null_pos) & is.na(null_accel)) {
+    return( "None" )
+  
+  } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
+    return( "P" )
+    
+  } else if( null_pos > pval & null_accel > pval & null_speed < pval) {
+    return( "S" ) 
+    
+  } else if( null_pos > pval & null_accel < pval & null_speed > pval) {
+    return( "A" )
+    
+  } else if( null_pos < pval & null_accel > pval & null_speed < pval) {
+    return("PS")
+    
+  } else if( null_pos < pval & null_accel < pval & null_speed > pval) {
+    return( "PA" )
+        
+  } else if( null_pos > pval & null_accel < pval & null_speed < pval) {
+    return("SA")
+
+  } else if( null_pos < pval & null_accel < pval & null_speed < pval) {
+    return("PSA")
+    
+  } else {
+    return("None")
+  }
+}
+
+```
+
+
+2. Run on all cells in dataframe
+```{r}
+spatial_firing <- spatial_firing  %>%
+    select(-contains('final_model_o_b')) %>%
+    mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel), model_comparison))
+           #final_model_o_nb  = pmap(list(o_mm_p_nb_pos, o_mm_p_nb_speed, o_mm_p_nb_accel), model_comparison))#%>%
+    #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
+
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
+1. extract position cells
+```{r}
+ramp_cells <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+
+position_cells <- subset(ramp_cells, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## Calculate standardized coefficients for position, speed and acceleration in LMER model
+
+
+1. Load functions to calculate and extract standardised coefficients for each variable in the lmer
+```{r}
+#1. Function to calculate standardized coefficients for a LMER
+#https://stackoverflow.com/questions/25142901/standardized-coefficients-for-lmer-model 
+
+
+stdCoef.merMod <- function(object) {
+  sdy <- sd(getME(object,"y"))
+  sdx <- apply(getME(object,"X"), 2, sd)
+  sc <- fixef(object)*sdx/sdy
+  se.fixef <- coef(summary(object))[,"Std. Error"]
+  se <- se.fixef*sdx/sdy
+  return(data.frame(stdcoef=sc, stdse=se))
+}
+```
+
+1. calculate and extract standardized coefficients for position, speed and acceleration
+
+Function to calculate standardized coefficients from the model fits
+```{r}
+std_coef <- function(mm) {
+  tryCatch({
+  mod <- stdCoef.merMod(mm) 
+  mod_coefs <- tibble(pos = mod[2,1],
+                      speed = mod[3,1],
+                      accel = mod[4,1])
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+  
+```
+
+
+3. Run on all cells
+```{r, warning=FALSE}
+
+spatial_firing <- spatial_firing  %>%
+  select(-contains('o_b_mod_coefs_')) %>%
+  mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
+  mutate(o_p_mod_coefs = map(o_mm_p, std_coef)) %>%
+  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(o_p_mod_coefs, names_sep = "_", names_repair = "universal")
+```
+
+Standardized coefficients are in:
+spatial_firing$o_b_mod_coefs_pos
+spatial_firing$o_b_mod_coefs_speed
+spatial_firing$o_b_mod_coefs_accel
+
+
+1. make unique id for each neuron (session_id + cluster_id)
+```{r}
+# First make a function to concatenate session id and cluster id
+make_unique_id <- function(session,cluster) {
+  x <- paste(session, cluster, sep="_")
+  return(as.character(x))
+}
+
+# run on all cells
+spatial_firing <- spatial_firing  %>%
+  mutate(unique_id = map2(session_id, cluster_id, make_unique_id))
+
+```
+
+
 ### Plot model selection results performed in Figure1_Analysis.Rmd
 
 First for all cells. 
