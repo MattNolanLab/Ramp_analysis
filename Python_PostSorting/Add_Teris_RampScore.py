@@ -9,7 +9,7 @@ def load_Teris_ramp_score_data_into_frame(spike_data):
     spike_data["ramp_score"] = ""
     spike_data["ramp_score_shuff"] = ""
 
-    fit_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data/ramp_peak_analysis.csv", header=int())
+    fit_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data_in/ramp_peak_analysis.csv", header=int())
 
 
     for cluster in range(len(spike_data)):

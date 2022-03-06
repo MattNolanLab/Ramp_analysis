@@ -61,6 +61,19 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
         position = np.array(spike_data.iloc[cluster].spike_rate_in_time[2]).real
         acceleration = np.diff(np.array(speed)) # calculate acceleration
         acceleration = np.hstack((0, acceleration))
+
+        # remove outliers
+        rates =  pd.Series(rates)
+        speed =  pd.Series(speed)
+        position =  pd.Series(position)
+        acceleration =  pd.Series(acceleration)
+        types =  pd.Series(types)
+        rates = rates[speed.between(speed.quantile(.05), speed.quantile(.95))] # without outliers
+        position = position[speed.between(speed.quantile(.05), speed.quantile(.95))] # without outliers
+        acceleration = acceleration[speed.between(speed.quantile(.05), speed.quantile(.95))] # without outliers
+        types = types[speed.between(speed.quantile(.05), speed.quantile(.95))] # without outliers
+        speed = speed[speed.between(speed.quantile(.05), speed.quantile(.95))] # without outliers
+
         # filter data
         try:
             window = signal.gaussian(2, std=3)
@@ -70,16 +83,6 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
                 continue
 
         rates_o, speed_o, position_o,rates_h, speed_h, position_h, accel_o, accel_h = remove_low_speeds_and_segment_beaconed(rates, speed, acceleration, position, types )
-
-        # remove outliers
-        rates =  pd.Series(rates_o)
-        speed =  pd.Series(speed_o)
-        position =  pd.Series(position_o)
-        accel =  pd.Series(accel_o)
-        rates_o = rates[speed.between(speed.quantile(.05), speed.quantile(.95))] # without outliers
-        speed_o = speed[speed.between(speed.quantile(.05), speed.quantile(.95))] # without outliers
-        position_o = position[speed.between(speed.quantile(.05), speed.quantile(.95))] # without outliers
-        accel_o = accel[speed.between(speed.quantile(.05), speed.quantile(.95))] # without outliers
 
         avg_spikes_on_track = plt.figure(figsize=(3.7,3))
         ax = avg_spikes_on_track.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
@@ -111,7 +114,7 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
         ax.spines['left'].set_linewidth(1.5)
         ax.spines['bottom'].set_linewidth(1.5)
         plt.locator_params(axis = 'x', nbins=3)
-        ax.set_xticklabels(['10', '30', '50'])
+        #ax.set_xticklabels(['10', '30', '50'])
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
         plt.savefig(save_path + '/' + spike_data.session_id.values[cluster] + '_rate_map_Cluster_' + str(cluster_index +1) + '_speed' + '_coded_outbound.png', dpi=200)
         plt.close()
@@ -146,7 +149,7 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
         ax.spines['left'].set_linewidth(1.5)
         ax.spines['bottom'].set_linewidth(1.5)
         plt.locator_params(axis = 'x', nbins=3)
-        ax.set_xticklabels(['10', '30', '50'])
+        ax.set_xticklabels(['0','10', '30', '50'])
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
         plt.savefig(save_path + '/' + spike_data.session_id.values[cluster] + '_rate_map_Cluster_' + str(cluster_index +1) + '_location' + '_coded_outbound.png', dpi=200)
         plt.close()
@@ -157,8 +160,9 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
         cbar=plt.colorbar() #plt.cm.ScalarMappable(cmap='jet')
         cbar.ax.tick_params(labelsize=16)
         ax.set_ylim(0)
+        ax.set_ylim(-15, 15)
         plt.ylabel('Firing rate (Hz)', fontsize=16, labelpad = 10)
-        plt.xlabel('Location (cm)', fontsize=16, labelpad = 10)
+        plt.xlabel('Acceleration $(cm/s)^2$', fontsize=16, labelpad = 10) # "meters $10^1$"
         ax.locator_params(axis = 'x', nbins=3)
         plt.locator_params(axis = 'y', nbins  = 4)
         ax.tick_params(
@@ -180,7 +184,6 @@ def plot_color_coded_instant_rates_according_to_segment(recording_folder, spike_
         ax.spines['left'].set_linewidth(1.5)
         ax.spines['bottom'].set_linewidth(1.5)
         plt.locator_params(axis = 'x', nbins=3)
-        ax.set_xticklabels(['10', '30', '50'])
         plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
         plt.savefig(save_path + '/' + spike_data.session_id.values[cluster] + '_rate_map_Cluster_' + str(cluster_index +1) + '_accel' + '_coded_outbound.png', dpi=200)
         plt.close()

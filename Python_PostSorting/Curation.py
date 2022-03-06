@@ -15,7 +15,6 @@ def remove_false_positives(df):
             df.at[cluster,"max_trial_number"] = 0
 
     df = df.drop(df[df.max_trial_number < 30].index)
-    df = df.dropna(axis=0)
     df.reset_index(drop=True, inplace=True)
     return df
 

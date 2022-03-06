@@ -20,7 +20,7 @@ The following functions load rewarded firing rate data binned in time (100 ms) a
 
 """
 
-def extract_time_binned_firing_rate_rewarded(spike_data):
+def extract_firing_rate_rewarded(spike_data):
     spike_data["Rates_averaged_rewarded_b"] = ""
     spike_data["Rates_averaged_rewarded_nb"] = ""
     spike_data["Rates_averaged_rewarded_p"] = ""
@@ -131,7 +131,7 @@ The following functions load firing rate data binned in time (100 ms) an bins th
 """
 
 
-def extract_time_binned_firing_rate(spike_data):
+def extract_firing_rate(spike_data):
     spike_data["Rates_bytrial"] = ""
 
     for cluster in range(len(spike_data)):

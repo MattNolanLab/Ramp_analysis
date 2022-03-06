@@ -1,6 +1,5 @@
-import Python_PostSorting.ISI_Analysis
 import Python_PostSorting.LoadDataFrames
-import Python_PostSorting.SpikeHalfWidth
+import Python_PostSorting.Calculate_SpikeHalfWidth
 
 prm = Python_PostSorting.parameters.Parameters()
 
@@ -27,7 +26,6 @@ def main():
     #spike_data = spike_data.tail(n=20)
     spike_data.reset_index(drop=True, inplace=True)
 
-    spike_data = Python_PostSorting.ISI_Analysis.generate_spike_isi(server_path, spike_data)
     spike_data = Python_PostSorting.SpikeHalfWidth.calculate_spike_width(spike_data)
 
     # SAVE DATAFRAMES for R
