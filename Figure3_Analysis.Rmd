@@ -215,7 +215,9 @@ normalise_rates <- function(df){
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(normalised_rates_try = map(Avg_FiringRate_TryTrials, normalise_rates), 
-         normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates))
+         normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates),
+         normalised_rates_hit = map(Avg_FiringRate_HitTrials, normalise_rates))
+
 ```
 
 Then, predict firing rate in homebound region based on fit from real data in outbound region
@@ -288,7 +290,6 @@ join_average_rates <- function(hit, run, try, session_id, cluster_id) {
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(avg_both_asr_b = pmap(list(normalised_rates, normalised_rates_run, normalised_rates_try, session_id, cluster_id), join_average_rates))
-  #mutate(avg_both_asr_b = pmap(list(Avg_FiringRate_HitTrials, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials, session_id, cluster_id), join_average_rates))
 
 ```
 
@@ -343,7 +344,7 @@ position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b
          lm_group_b_h == "Negative") %>%
   select(avg_both_asr_b) %>%
   unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-29,171))
+  mean_SEM_plots_by_Outcome(-29,169))
 
 if (save_figures==1) {
  ggsave(file = "plots/TrialOutcome_NegNeg_allpositionBUTP.png", width = 3.6, height = 2.9) 
