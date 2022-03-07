@@ -39,7 +39,7 @@ source("Functions.R") ## is this even used??? I dont think so! Keeping it just i
 save_figures = 1
 
 # Parameter to save data snapshots as analysis proceeds. Set to 1 to save.
-save_results = 0
+save_results = 1
 
 
 # Load data
