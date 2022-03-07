@@ -1,5 +1,6 @@
 import Python_PostSorting.LoadDataFrames
 import Python_PostSorting.Calculate_SpikeHalfWidth
+import Python_PostSorting.parameters
 
 prm = Python_PostSorting.parameters.Parameters()
 
@@ -17,19 +18,19 @@ def main():
     print('-------------------------------------------------------------')
     print('-------------------------------------------------------------')
 
-    server_path= '/Users/sarahtennant/Work/Analysis/Ephys/OverallAnalysis'
-    initialize_parameters(server_path)
-    print('Processing ' + str(server_path))
+    save_path= '/Users/sarahtennant/Work/Analysis/Ramp_Plots'
+    initialize_parameters(save_path)
+    print('Processing ' + str(save_path))
 
     #LOAD DATA
-    spike_data = Python_PostSorting.LoadDataFrames.process_allmice_dir_of(server_path, prm) # overall data
+    spike_data = Python_PostSorting.LoadDataFrames.process_allmice_dir_of(save_path, prm) # overall data
     #spike_data = spike_data.tail(n=20)
     spike_data.reset_index(drop=True, inplace=True)
 
-    spike_data = Python_PostSorting.SpikeHalfWidth.calculate_spike_width(spike_data)
+    spike_data = Python_PostSorting.Calculate_SpikeHalfWidth.calculate_spike_width(spike_data, prm)
 
     # SAVE DATAFRAMES for R
-    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/combined_Cohort2_of.pkl')
+    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/combined_Cohort3_of.pkl')
 
 
 
