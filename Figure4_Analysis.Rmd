@@ -227,7 +227,7 @@ offset_df <- spatial_firing_high  %>%
 2. Plot scatter of offset on beacconed&probe
 ```{r}
 ggplot() + 
-    geom_jitter(data=offset_df,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(track_category))),alpha=0.8) +
+    geom_point(data=offset_df,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(track_category))),alpha=0.8) +
     #coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
     geom_smooth(data=offset_df,aes(x=predict_diff, y=predict_diff_p), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
@@ -317,9 +317,9 @@ Function to plot mean and SEM of firing rate as a function of position.
 ```{r}
 mean_SEM_plots <- function(df, colour1 = "blue"){
   ggplot(data=df) +
-  annotate("rect", xmin=-30, xmax=0, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  annotate("rect", xmin=-30, xmax=0, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
   geom_line(aes(y=mean_r, x=Position), color = colour1) +
   theme_classic() +
@@ -634,7 +634,7 @@ if (save_figures == 1) {
 
 
 # +/- on beaconed and probe trials
-spatial_firing_high  %>%
+spatial_firing  %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
   filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Positive") %>%
