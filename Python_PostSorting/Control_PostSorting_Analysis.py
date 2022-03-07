@@ -1,28 +1,25 @@
-import Python_PostSorting.MakePlots
-import Python_PostSorting.MakePlots_FiringProperties
 import Python_PostSorting.LoadDataFrames
 import Python_PostSorting.parameters
+import Python_PostSorting.Curation
 import Python_PostSorting.Split_DataByReward
 import Python_PostSorting.Test_SpeedData
-import Python_PostSorting.Curation
+import Python_PostSorting.Add_BrainRegion_Classifier
 import Python_PostSorting.Add_Teris_RampScore
 import Python_PostSorting.Calculate_Acceleration
 import Python_PostSorting.AnalyseRewardedSpikes
-import Python_PostSorting.Add_BrainRegion_Classifier
 import Python_PostSorting.Calculate_RewardSpeed_ByOutcome
 import Python_PostSorting.BehaviourAnalysis
 import Python_PostSorting.RewardAnalysis_behaviour
 import Python_PostSorting.FirstStopAnalysis_behaviour
-import Python_PostSorting.Split_DataByTrialOutcome_slowandfast
+import Python_PostSorting.Split_DataByTrialOutcome
 import Python_PostSorting.Split_SpeedByTrialOutcome
-import Python_PostSorting.Calculate_FRAlignedToReward
 import Python_PostSorting.Calculate_Stops_from_Speed
-import Python_PostSorting.Calculate_SpikeHalfWidth
-import Python_PostSorting.Plot_TrialHeatmaps_SuppleFig6
-import Python_PostSorting.Shuffle_Analysis
 import Python_PostSorting.AvgRewardedSpikes
+import Python_PostSorting.MakePlots
+import Python_PostSorting.MakePlots_FiringProperties
 import Python_PostSorting.Plot_RatesinTime_Fig2D
 import Python_PostSorting.Plot_RawData_Fig2A
+import Python_PostSorting.Plot_TrialHeatmaps_SuppleFig6
 import numpy as np
 import pandas as pd
 import os
@@ -50,6 +47,7 @@ def initialize_parameters(recording_folder):
 
 
 # this function makes analysis based on mice/cohort/days easier later down the line in R
+# I add cohort in manually which is annoying, but its for further down the line in R when I do stats based on animals. Problem is a lot of animals have a similar id i.e M2. So adding cohort distinguishes them
 def add_mouse_to_frame(df):
     print("Adding ID for Mouse and Day to dataframe...")
     df["Mouse"] = ""
@@ -62,7 +60,7 @@ def add_mouse_to_frame(df):
         df.at[cluster,"Mouse"] = mouse
         df.at[cluster,"Day"] = day
         df.at[cluster,"Day_numeric"] = numericday
-        df.at[cluster,"cohort"] = 5 # Change this to current cohort analysed!!
+        df.at[cluster,"cohort"] = 4 # Change this to current cohort analysed!! This should be on the name of the
     return df
 
 
@@ -92,7 +90,7 @@ def run_example_plots(spike_data, save_path):
 
 
 def plot_behaviour(spike_data):
-    Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm) # from postprocessing spatial data
+    #Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm) # from postprocessing spatial data
     #spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_stops(spike_data) # from postprocessing spatial data
     #spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_stops(spike_data) # from postprocessing spatial data
     #Python_PostSorting.MakePlots_Behaviour.plot_stop_histogram_per_cluster(spike_data, prm) # from postprocessing spatial data
@@ -110,38 +108,28 @@ def test_speed_data(spike_data,save_path ):
 
 
 def run_main_figure_analysis(spike_data,save_path):
-    spike_data = Python_PostSorting.Split_DataByReward.split_data_by_reward(spike_data)
-    spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_firing_rate_rewarded(spike_data)
     spike_data = Python_PostSorting.AvgRewardedSpikes.extract_smoothed_average_firing_rate_data(spike_data)
-    spike_data = Python_PostSorting.AnalyseRewardedSpikes.plot_rewarded_rates(spike_data, prm)
+    spike_data = Python_PostSorting.Split_DataByReward.split_data_by_reward(spike_data)
     spike_data = Python_PostSorting.Calculate_Acceleration.generate_acceleration_rewarded_trials(spike_data, save_path)
-    return spike_data
-
-
-def run_stuff(spike_data):
-    spike_data = Python_PostSorting.Split_DataByReward.convert_spikes_in_time_to_ms(spike_data)
-    spike_data = Python_PostSorting.Split_DataByReward.rename_columns(spike_data)
-    spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_firing_rate(spike_data)
-    spike_data = Python_PostSorting.AvgRewardedSpikes.rewrite_smoothed_average_firing_rate_data(spike_data)
-    #spike_data = Python_PostSorting.AvgRewardedSpikes.extract_smoothed_average_firing_rate_data(spike_data)
+    spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_stops(spike_data) # from postprocessing spatial data
+    spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_stops(spike_data) # from postprocessing spatial data
     return spike_data
 
 
 def run_supple_figure_analysis(spike_data):
     # Split data by TRIAL OUTCOME (HIT/TRY/RUN) : Analysis for Figure 7
-    spike_data = Python_PostSorting.Split_DataByTrialOutcome_slowandfast.split_time_data_by_trial_outcome(spike_data, prm)
-    spike_data = Python_PostSorting.Split_DataByTrialOutcome_slowandfast.extract_time_binned_firing_rate_runthru_allspeeds(spike_data)
-    spike_data = Python_PostSorting.Split_DataByTrialOutcome_slowandfast.extract_time_binned_firing_rate_try_allspeeds(spike_data)
-    spike_data = Python_PostSorting.Split_DataByTrialOutcome_slowandfast.extract_time_binned_firing_rate_try_slow_allspeeds(spike_data)
-    spike_data = Python_PostSorting.Split_DataByTrialOutcome_slowandfast.extract_time_binned_firing_rate_rewarded_allspeeds(spike_data)
+    spike_data = Python_PostSorting.Split_DataByTrialOutcome.split_time_data_by_trial_outcome(spike_data, prm)
+    spike_data = Python_PostSorting.Split_DataByTrialOutcome.extract_time_binned_firing_rate_runthru(spike_data)
+    spike_data = Python_PostSorting.Split_DataByTrialOutcome.extract_time_binned_firing_rate_try(spike_data)
+    spike_data = Python_PostSorting.Split_DataByTrialOutcome.extract_time_binned_firing_rate_rewarded(spike_data)
 
     #spike_data = Python_PostSorting.Plot_TrialHeatmaps_SuppleFig6.plot_heatmap_by_trial(spike_data, prm)
     #spike_data = Python_PostSorting.Plot_TrialHeatmaps_SuppleFig6.plot_average(spike_data, prm)
 
-    #spike_data = Python_PostSorting.Split_SpeedByTrialOutcome.split_and_save_speed_data(spike_data)
-    #spike_data = Python_PostSorting.Split_SpeedByTrialOutcome.extract_time_binned_speed_by_outcome(spike_data)
+    spike_data = Python_PostSorting.Split_SpeedByTrialOutcome.split_and_save_speed_data(spike_data)
+    spike_data = Python_PostSorting.Split_SpeedByTrialOutcome.extract_time_binned_speed_by_outcome(spike_data)
 
-    #spike_data = Python_PostSorting.Calculate_RewardSpeed_ByOutcome.calc_histo_speed(spike_data)
+    spike_data = Python_PostSorting.Calculate_RewardSpeed_ByOutcome.calc_histo_speed(spike_data)
 
     return spike_data
 
@@ -213,15 +201,12 @@ def main():
     #spike_data = run_example_plots(spike_data,server_path)
     #spike_data = plot_behaviour(spike_data) # plot stops, average stops etc
 
-    #Python_PostSorting.Plot_RatesinTime_Fig2D.plot_color_coded_instant_rates_according_to_segment(save_path, spike_data)
-
     # TEST speed data - use if wanting to check speed is correct measurement - otherwise COMMENT OUT
     #spike_data = test_speed_data(spike_data,server_path)
 
     # RUN FIGURE ANALYSIS
     spike_data = run_main_figure_analysis(spike_data, save_path)
-    #spike_data = run_supple_figure_analysis(spike_data)
-    #spike_data = run_stuff(spike_data)
+    spike_data = run_supple_figure_analysis(spike_data)
     # SAVE DATAFRAMES for R
     #spike_data = drop_columns_from_frame(spike_data) # UNCOMMENT if you want to drop unused columns from the dataframe so the saved file is smaller
     spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Processed_cohort5_sarah.pkl') # path to where you want the pkl to be saved
