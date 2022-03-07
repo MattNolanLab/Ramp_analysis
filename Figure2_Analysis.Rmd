@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-## Fit mixed effect models to evaluate contributions of speed, acceleration and position to firing rate
+## Fit general linear mixed effect models (GLMER) using LME4 package to evaluate contributions of speed, acceleration and position to firing rate
 
 Function to fit mixed effect models
 ```{r}
@@ -39,6 +39,7 @@ mm_fit <- function(df, TT = 0) {
     subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == 0 & Rates > 0.01) %>%
     select(-Types) 
 
+  #scale varibles, do not center or values go below 0 which does not work for this gamma model
   df$Acceleration <- scale(df$Acceleration, center=FALSE, scale=TRUE)
   df$Rates <- scale(df$Rates, center=FALSE, scale=TRUE)
   df$Speed <- scale(df$Speed, center=FALSE, scale=TRUE)
@@ -105,17 +106,22 @@ See discussion in ?isSingular and here: https://stats.stackexchange.com/question
 spatial_firing <- spatial_firing  %>%
   #select(-contains('o_mm_p_b_')) %>%
   mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit_function),
-         o_mm_p = map2(spikes_in_time, 1, mm_fit_function),
-         o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues), 
-         o_mm_p_p = map(o_mm_p, session_id, mm_pvalues)) %>% 
-  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal")%>%
-  unnest_wider(o_mm_p_p, names_sep = "_", names_repair = "universal")
+         #o_mm_p = map2(spikes_in_time, 1, mm_fit_function),
+         o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues)) %>% 
+         #o_mm_p_p = map(o_mm_p, session_id, mm_pvalues)) %>% 
+  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal")
+  #unnest_wider(o_mm_p_p, names_sep = "_", names_repair = "universal")
 ```
 
 
 
 
-
+```{r}
+if (save_results == 1) {
+  saveRDS(spatial_firing, "SpatialFiring_with_glmer.Rda")
+  # And use this to save a truncated version. Useful for testing code.
+}
+```
 
 ### ----------------------------------------------------------------------------------------- ###
 
@@ -164,8 +170,7 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 spatial_firing <- spatial_firing  %>%
     select(-contains('final_model_o_b')) %>%
     mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel), model_comparison))
-           #final_model_o_nb  = pmap(list(o_mm_p_nb_pos, o_mm_p_nb_speed, o_mm_p_nb_accel), model_comparison))#%>%
-    #mutate(final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
+           #final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
 
 ```
 
