@@ -624,9 +624,9 @@ First, normalise firing rates.
 ```{r}
 normalise_rates_probe <- function(df1, df2){
   df <- c(df1, df2)
-  df <- tibble(Rates = unlist(df[0:398]), Position = rep(0:397))
+  df <- tibble(Rates = unlist(df), Position = rep(1:398))
   x <- scale(df$Rates, center=TRUE, scale=TRUE)
-  x_p <- x[199:398]
+  x_p <- x[200:398]
   return(x_p)
 }
 
@@ -636,9 +636,9 @@ normalise_rates_probe <- function(df1, df2){
 ```{r}
 normalise_rates_beaconed <- function(df1, df2){
   df <- c(df1, df2)
-  df <- tibble(Rates = unlist(df[0:398]), Position = rep(0:397))
+  df <- tibble(Rates = unlist(df), Position = rep(1:398))
   x <- scale(df$Rates, center=TRUE, scale=TRUE)
-  x_p <- x[0:199]
+  x_p <- x[1:199]
   return(x_p)
 }
 
@@ -674,11 +674,9 @@ predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 
   model <- lm(Rates ~ Position, data = filter(df, Position >= fit_start, Position <= fit_end))
   # predict
   homebound_prediction_pos <- tibble(Position = rep(1:199))
-  #homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "confidence")
   homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "prediction", level = 0.99) 
   as.tibble(homebound_prediction)
 }
-
 
 ```
 
