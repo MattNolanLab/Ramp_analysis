@@ -79,6 +79,7 @@ def split_trials(data, rewarded_trials):
 
 
 def split_data_by_reward(spike_data):
+    print("splitting data by reward...")
     spike_data = add_columns(spike_data)
 
     for cluster in range(len(spike_data)):
@@ -106,36 +107,4 @@ def convolve_with_scipy(rate):
     convolved_rate = signal.convolve(rate, window, mode='same')/ sum(window)
     return convolved_rate
 
-
-
-
-
-
-def convert_spikes_in_time_to_ms(spike_data):
-    #spike_data["spike_rate_in_time"] = ""
-
-    for cluster in range(len(spike_data)):
-        rates=np.array(spike_data.iloc[cluster].spike_rate_in_time[0].real)*10
-        speed=np.array(spike_data.iloc[cluster].spike_rate_in_time[1].real)
-        position=np.array(spike_data.iloc[cluster].spike_rate_in_time[2].real)
-        trials=np.array(spike_data.iloc[cluster].spike_rate_in_time[3].real, dtype= np.int32)
-        types=np.array(spike_data.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32)
-
-        sn=[]
-        sn.append(rates) # rate
-        sn.append(speed) # speed
-        sn.append(position) # position
-        sn.append(trials) # trials
-        sn.append(types) # types
-        spike_data.at[cluster, 'spike_rate_in_time'] = list(sn)
-
-    return spike_data
-
-
-
-def rename_columns(df):
-
-    df.rename(columns={'stop_location_cm': 'stop_locations', 'stop_trial_number': 'stop_trials'}, inplace=True)
-
-    return df
 
