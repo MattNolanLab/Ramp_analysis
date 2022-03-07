@@ -111,18 +111,3 @@ def extract_smoothed_average_firing_rate_data(spike_data):
 
 
 
-
-def rewrite_smoothed_average_firing_rate_data(spike_data):
-    spike_data["spike_rate_on_trials_smoothed"] = ""
-
-    for cluster in range(len(spike_data)):
-        rates = np.array(spike_data.at[cluster, 'Rates_bytrial'])
-
-        spike_data.at[cluster, 'spike_rate_on_trials_smoothed'] = list(rates)
-
-
-    spike_data
-
-    return spike_data
-
-

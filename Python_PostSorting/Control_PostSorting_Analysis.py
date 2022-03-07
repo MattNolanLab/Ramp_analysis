@@ -68,7 +68,6 @@ def add_mouse_to_frame(df):
 def extract_mouse_and_day(session_id):
     mouse = session_id.rsplit('_', 3)[0]
     day1 = session_id.rsplit('_', 3)[1]
-    #mouse = mouse1.rsplit('M', 3)[1]
     day = day1.rsplit('D', 3)[1]
     return day, day1, mouse
 
@@ -90,10 +89,10 @@ def run_example_plots(spike_data, save_path):
 
 
 def plot_behaviour(spike_data):
-    #Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm) # from postprocessing spatial data
-    #spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_stops(spike_data) # from postprocessing spatial data
-    #spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_stops(spike_data) # from postprocessing spatial data
-    #Python_PostSorting.MakePlots_Behaviour.plot_stop_histogram_per_cluster(spike_data, prm) # from postprocessing spatial data
+    Python_PostSorting.MakePlots_Behaviour.plot_stops_on_track_per_cluster(spike_data, prm) # from postprocessing spatial data
+    spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_stops(spike_data) # from postprocessing spatial data
+    spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_stops(spike_data) # from postprocessing spatial data
+    Python_PostSorting.MakePlots_Behaviour.plot_stop_histogram_per_cluster(spike_data, prm) # from postprocessing spatial data
     #spike_data = Python_PostSorting.RewardFiring.split_data_by_reward(spike_data, prm)
     #spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_speed(spike_data) # from postprocessing spatial data
     #spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_speed(spike_data) # from postprocessing spatial data
@@ -139,10 +138,6 @@ def run_reward_aligned_analysis(server_path,spike_data):
     return spike_data
 
 
-def plot_raw_spike_data(spike_data):
-    return spike_data
-
-
 def drop_columns_from_frame(spike_data):
     spike_data.drop(['random_snippets'], axis='columns', inplace=True, errors='ignore')
     spike_data.drop(['x_position_cm'], axis='columns', inplace=True, errors='ignore')
@@ -179,6 +174,10 @@ def main():
     spike_data = Python_PostSorting.LoadDataFrames.process_allmice_dir(save_path, prm) # overall data
     spike_data.reset_index(drop=True, inplace=True)
 
+    ## use if wanting to test on specific mouse/day - otherwise COMMENT OUT
+    #spike_data = spike_data.head(n=2)
+    #spike_data.reset_index(drop=True, inplace=True) # Make sure you reset the index if you subset the data because otherwise some analysis based on rowcount wont work!!
+
     # CURATION (for spike data frame only)
     spike_data = add_mouse_to_frame(spike_data)
     #spike_data = Python_PostSorting.Curation.remove_lick_artefact(spike_data)
@@ -191,12 +190,6 @@ def main():
     spike_data = Python_PostSorting.Add_BrainRegion_Classifier.load_brain_region_data_into_frame(spike_data)
     spike_data = Python_PostSorting.Add_Teris_RampScore.load_Teris_ramp_score_data_into_frame(spike_data)
 
-    ## use if wanting to test on specific mouse/day - otherwise COMMENT OUT
-    #spike_data = spike_data.head(n=2)
-    #spike_data = spike_data[spike_data['Mouse'] == "M3"]
-    #spike_data = spike_data[spike_data['Day_numeric'] == "28"]
-    #spike_data.reset_index(drop=True, inplace=True) # Make sure you reset the index if you subset the data because otherwise some analysis based on rowcount wont work!!
-
     # RUN EXAMPLE PLOTS - use if wanting to plot example data - otherwise COMMENT OUT
     #spike_data = run_example_plots(spike_data,server_path)
     #spike_data = plot_behaviour(spike_data) # plot stops, average stops etc
@@ -207,6 +200,7 @@ def main():
     # RUN FIGURE ANALYSIS
     spike_data = run_main_figure_analysis(spike_data, save_path)
     spike_data = run_supple_figure_analysis(spike_data)
+
     # SAVE DATAFRAMES for R
     #spike_data = drop_columns_from_frame(spike_data) # UNCOMMENT if you want to drop unused columns from the dataframe so the saved file is smaller
     spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Processed_cohort5_sarah.pkl') # path to where you want the pkl to be saved
