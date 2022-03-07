@@ -20,8 +20,8 @@ Required columns to concatinate from server:
 
 
 def process_allmice_dir(recording_folder, prm):
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/concatenated_spike_data_cohort5.pkl'
-    #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Concat_cohort2_sarah.pkl'
+    #spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/concatenated_spike_data_cohort2.pkl'
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Concat_cohort5_sarah.pkl'
 
     if os.path.exists(prm.get_output_path()):
         print('I found the output folder.')
