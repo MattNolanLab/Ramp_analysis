@@ -169,7 +169,7 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
 }
 
 if (save_results == 1) {
-  saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles_of.Rda")
+  saveRDS(spatial_firing, "data_out/SpatialFiring_with_1000_shuffles_of.Rda")
   # And use this to save a truncated version. Useful for testing code.
   saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
 }
