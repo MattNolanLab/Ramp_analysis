@@ -34,9 +34,9 @@ mm_fit <- function(df, TT = 0) {
       Trials = as.factor(df[[5]]), 
       Types = as.factor(df[[6]])
     )
-  
+  # subset by position, speed, types (beaconed/probe) and remove rates < 0.01 as model does not like this
   df <- df %>%
-    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == 0 & Rates > 0.01) %>%
+    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == TT & Rates > 0.01) %>%
     select(-Types) 
 
   #scale varibles, do not center or values go below 0 which does not work for this gamma model
@@ -119,7 +119,6 @@ spatial_firing <- spatial_firing  %>%
 ```{r}
 if (save_results == 1) {
   saveRDS(spatial_firing, "SpatialFiring_with_glmer.Rda")
-  # And use this to save a truncated version. Useful for testing code.
 }
 ```
 
@@ -196,7 +195,6 @@ position_cells <- subset(ramp_cells, final_model_o_b == "P" | final_model_o_b ==
 #1. Function to calculate standardized coefficients for a LMER
 #https://stackoverflow.com/questions/25142901/standardized-coefficients-for-lmer-model 
 
-
 stdCoef.merMod <- function(object) {
   sdy <- sd(getME(object,"y"))
   sdx <- apply(getME(object,"X"), 2, sd)
@@ -226,7 +224,6 @@ std_coef <- function(mm) {
 
 3. Run on all cells
 ```{r, warning=FALSE}
-
 spatial_firing <- spatial_firing  %>%
   select(-contains('o_b_mod_coefs_')) %>%
   mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
