@@ -213,7 +213,7 @@ def drop_data_into_frame(spike_data, cluster_index, a,b, c, d, e, f,  g, h, i, j
 
 ### Calculate average firing rate for trial outcomes
 
-def extract_time_binned_firing_rate_runthru_allspeeds(spike_data):
+def extract_time_binned_firing_rate_runthru(spike_data):
     spike_data["Avg_FiringRate_RunTrials"] = ""
     spike_data["SD_FiringRate_RunTrials"] = ""
     spike_data["Avg_FiringRate_RunTrials_nb"] = ""
@@ -290,7 +290,7 @@ def extract_time_binned_firing_rate_runthru_allspeeds(spike_data):
 
 
 
-def extract_time_binned_firing_rate_try_allspeeds(spike_data):
+def extract_time_binned_firing_rate_try(spike_data):
     spike_data["Avg_FiringRate_TryTrials"] = ""
     spike_data["SD_FiringRate_TryTrials"] = ""
     spike_data["Avg_FiringRate_TryTrials_nb"] = ""
@@ -366,7 +366,7 @@ def extract_time_binned_firing_rate_try_allspeeds(spike_data):
 
 
 
-def extract_time_binned_firing_rate_rewarded_allspeeds(spike_data):
+def extract_time_binned_firing_rate_rewarded(spike_data):
     spike_data["Avg_FiringRate_HitTrials"] = ""
     spike_data["SD_FiringRate_HitTrials"] = ""
     spike_data["Avg_FiringRate_HitTrials_nb"] = ""
