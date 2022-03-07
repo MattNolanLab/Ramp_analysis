@@ -666,3 +666,9 @@ tukey.test_n <- TukeyHSD(one.way_n)
 tukey.test_n$coef_type
 ```
 
+
+
+```{r}
+saveRDS(spatial_firing, "SpatialFiring_with_Results.Rda")
+
+```

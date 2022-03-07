@@ -17,7 +17,7 @@ def initialize_parameters(recording_folder):
 
 
 def process_allmice_of(recording_folder, prm):
-    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/combined_Cohort7.pkl'
+    spike_data_frame_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/combined_Cohort7_of.pkl'
     if os.path.exists(prm.get_output_path()):
         print('I found the output folder.')
 
@@ -215,7 +215,7 @@ def main():
 
     data = load_openfield_data_into_frame(of_data, vr_data)
     # SAVE DATAFRAMES for R
-    data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/All_cohort7_reward_ofandvr.pkl')
+    data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/All_cohort7_ofandvr.pkl')
 
 
 
