@@ -104,7 +104,6 @@ Note here, there may be some overfitting with the mixed effect model. This is li
 See discussion in ?isSingular and here: https://stats.stackexchange.com/questions/378939/dealing-with-singular-fit-in-mixed-models
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
-  #select(-contains('o_mm_p_b_')) %>%
   mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit_function),
          #o_mm_p = map2(spikes_in_time, 1, mm_fit_function),
          o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues)) %>% 
@@ -167,7 +166,6 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 2. Run on all cells in dataframe
 ```{r}
 spatial_firing <- spatial_firing  %>%
-    select(-contains('final_model_o_b')) %>%
     mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel), model_comparison))
            #final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
 
@@ -225,11 +223,10 @@ std_coef <- function(mm) {
 3. Run on all cells
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
-  select(-contains('o_b_mod_coefs_')) %>%
   mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
-  mutate(o_p_mod_coefs = map(o_mm_p, std_coef)) %>%
-  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(o_p_mod_coefs, names_sep = "_", names_repair = "universal")
+  #mutate(o_p_mod_coefs = map(o_mm_p, std_coef)) %>%
+  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal") #%>%
+  #unnest_wider(o_p_mod_coefs, names_sep = "_", names_repair = "universal")
 ```
 
 Standardized coefficients are in:
@@ -419,7 +416,8 @@ spatial_firing_save$o_b_mod_coefs_accel <- as.numeric(spatial_firing_save$o_b_mo
 
 3. save to csv file _this is for matching the coefficient values to plots of instantaneous rates from python_
 ```{r}
-write_csv2(spatial_firing_save, "data_out/all_results_coefficients.csv", quote=FALSE, sep="\t")
+write.table(spatial_firing_save, "data_out/all_results_coefficients.csv", quote=FALSE, sep="\t")
+
 ```
 
 4. put data into a tibble for plotting
