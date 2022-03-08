@@ -60,7 +60,7 @@ def add_mouse_to_frame(df):
         df.at[cluster,"Mouse"] = mouse
         df.at[cluster,"Day"] = day
         df.at[cluster,"Day_numeric"] = numericday
-        df.at[cluster,"cohort"] = 4 # Change this to current cohort analysed!! This should be on the name of the
+        df.at[cluster,"cohort"] = 7 # Change this to current cohort analysed!! This should be on the name of the
     return df
 
 
@@ -107,8 +107,9 @@ def test_speed_data(spike_data,save_path ):
 
 
 def run_main_figure_analysis(spike_data,save_path):
-    spike_data = Python_PostSorting.AvgRewardedSpikes.extract_smoothed_average_firing_rate_data(spike_data)
+    #spike_data = Python_PostSorting.AvgRewardedSpikes.extract_smoothed_average_firing_rate_data(spike_data) ## this should be used but not working with harrys current output!!! Not sure whats wrong!!! Its coming out terrible !!
     spike_data = Python_PostSorting.Split_DataByReward.split_data_by_reward(spike_data)
+    spike_data = Python_PostSorting.AnalyseRewardedSpikes.extract_firing_rate_rewarded(spike_data)
     spike_data = Python_PostSorting.Calculate_Acceleration.generate_acceleration_rewarded_trials(spike_data, save_path)
     spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_nonbeaconed_stops(spike_data) # from postprocessing spatial data
     spike_data = Python_PostSorting.MakePlots_Behaviour.calculate_average_stops(spike_data) # from postprocessing spatial data
@@ -180,10 +181,10 @@ def main():
 
     # CURATION (for spike data frame only)
     spike_data = add_mouse_to_frame(spike_data)
-    #spike_data = Python_PostSorting.Curation.remove_lick_artefact(spike_data)
+    #spike_data = Python_PostSorting.Curation.remove_lick_artefact(spike_data) # I do this in R now but keeping here just in case
     spike_data = Python_PostSorting.Curation.remove_false_positives(spike_data) # removes cells with low trial numbers
     spike_data = Python_PostSorting.Curation.curate_data(spike_data) # removes cells with low numbers of rewards
-    spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data) # this is for matching with Teris's ramp score dataframe
+    #spike_data = Python_PostSorting.Curation.make_neuron_number(spike_data) # this is for matching with Teris's ramp score dataframe
     spike_data = Python_PostSorting.Curation.load_crtieria_data_into_frame(spike_data) # this is for curating data based on graduation day
 
     # ADD brain region and ramp score for each neuron to dataframe - COMMENT OUT IF NOT NEEDED
@@ -203,7 +204,7 @@ def main():
 
     # SAVE DATAFRAMES for R
     #spike_data = drop_columns_from_frame(spike_data) # UNCOMMENT if you want to drop unused columns from the dataframe so the saved file is smaller
-    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Processed_cohort5_sarah.pkl') # path to where you want the pkl to be saved
+    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Processed_cohort7_vr.pkl') # path to where you want the pkl to be saved
 
 
 

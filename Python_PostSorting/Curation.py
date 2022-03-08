@@ -15,6 +15,7 @@ def remove_false_positives(df):
             df.at[cluster,"max_trial_number"] = 0
 
     df = df.drop(df[df.max_trial_number < 30].index)
+    #df = df.dropna(axis=0)
     df.reset_index(drop=True, inplace=True)
     return df
 
@@ -94,21 +95,24 @@ def load_crtieria_data_into_frame(spike_data):
     for cluster in range(len(spike_data)):
         mouse = spike_data.Mouse[cluster]
         day = int(spike_data.Day_numeric.values[cluster])
-        cohort = spike_data.cohort.values[cluster]
+        cohort = int(spike_data.cohort.values[cluster])
+        try:
+            #find data for that mouse & day
+            session_fits = criteria_data['Mouse'] == mouse
+            session_fits = criteria_data[session_fits]
+            cohort_fits = session_fits['Cohort'] == cohort
+            cohort_fits = session_fits[cohort_fits]
 
-        #find data for that mouse & day
-        session_fits = criteria_data['Mouse'] == mouse
-        session_fits = criteria_data[session_fits]
-        cohort_fits = session_fits['Cohort'] == cohort
-        cohort_fits = session_fits[cohort_fits]
+            # find the region
+            grad_day = int(cohort_fits['Graduation day'].values)
 
-        # find the region
-        grad_day = int(cohort_fits['Graduation day'].values)
+            if day >= grad_day:
+                spike_data.at[cluster,"graduation"] = 1
+            elif day < grad_day:
+                spike_data.at[cluster,"graduation"] = 0
+        except ValueError:
+                spike_data.at[cluster,"graduation"] = 1
 
-        if day >= grad_day:
-            spike_data.at[cluster,"graduation"] = 1
-        elif day < grad_day:
-            spike_data.at[cluster,"graduation"] = 0
 
     return spike_data
 

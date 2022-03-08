@@ -620,6 +620,17 @@ To do this, we will predict the firing rate on the homebound zone from the activ
 
 First, normalise firing rates. 
 
+
+1. make function to load rates and normalise
+```{r}
+normalise_rates <- function(df1, df2){
+  df <- tibble(Rates = unlist(df), Position = rep(1:199))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  return(x)
+}
+
+```
+
 1. make function to load rates and normalise
 ```{r}
 normalise_rates_probe <- function(df1, df2){
@@ -647,9 +658,9 @@ normalise_rates_beaconed <- function(df1, df2){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates = map2(Rates_averaged_rewarded_b, Rates_averaged_rewarded_nb,normalise_rates_beaconed)) %>%
-  mutate(normalised_rates_nb = map2(Rates_averaged_rewarded_b,Rates_averaged_rewarded_nb, normalise_rates_probe)) %>%
-  mutate(normalised_rates_p = map2(Rates_averaged_rewarded_b,Rates_averaged_rewarded_p, normalise_rates_probe)) 
+  mutate(normalised_rates = map2(Rates_averaged_rewarded_b, Rates_averaged_rewarded_nb,normalise_rates)) %>%
+  mutate(normalised_rates_nb = map2(Rates_averaged_rewarded_b,Rates_averaged_rewarded_nb, normalise_rates)) %>%
+  mutate(normalised_rates_p = map2(Rates_averaged_rewarded_b,Rates_averaged_rewarded_p, normalise_rates)) 
 
 ```
 

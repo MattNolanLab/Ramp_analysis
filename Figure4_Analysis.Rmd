@@ -228,7 +228,7 @@ offset_df <- spatial_firing_high  %>%
 ```{r}
 ggplot() + 
     geom_point(data=offset_df,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(track_category))),alpha=0.8) +
-    #coord_cartesian(ylim = c(-5,5), xlim = c(-5,5)) +
+    coord_cartesian(ylim = c(-2.5,2.5), xlim = c(-3.5,5)) +
     geom_smooth(data=offset_df,aes(x=predict_diff, y=predict_diff_p), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed offset") +
@@ -1193,7 +1193,7 @@ spatial_firing_save <- select(spatial_firing,c('session_id', 'cluster_id', 'Mous
 ```
 
 ```{r}
-saveRDS(spatial_firing_save, "SpatialFiringSave_final_of.Rda")
+saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
 
 ```
 

@@ -48,20 +48,19 @@ def reshape_and_average_over_trials2(beaconed_cluster_firings, nonbeaconed_clust
 
 
 def reshape_and_average_over_trials(beaconed_cluster_firings, nonbeaconed_cluster_firings, probe_cluster_firings, max_trial_number):
-    bin=199
-    probe_cluster_firings[probe_cluster_firings==0] = np.nan
-    beaconed_cluster_firings[beaconed_cluster_firings==0] = np.nan
+    bin=200
+    window = signal.gaussian(2, std=3)
 
     data_b = pd.DataFrame(beaconed_cluster_firings, dtype=None, copy=False)
-    data_b = data_b.interpolate(method='pad')
+    data_b = data_b.interpolate(method='linear', limit=None)
     beaconed_cluster_firings = np.asarray(data_b)
 
     data_nb = pd.DataFrame(nonbeaconed_cluster_firings, dtype=None, copy=False)
-    data_nb = data_nb.interpolate(method='pad')
+    data_nb = data_nb.interpolate(method='linear', limit=None)
     nonbeaconed_cluster_firings = np.asarray(data_nb)
 
     data_p = pd.DataFrame(probe_cluster_firings, dtype=None, copy=False)
-    data_p = data_p.interpolate(method='pad')
+    data_p = data_p.interpolate(method='linear', limit=None)
     probe_cluster_firings = np.asarray(data_p)
 
     beaconed_reshaped_hist = np.reshape(beaconed_cluster_firings, (int(beaconed_cluster_firings.size/bin),bin))
@@ -69,18 +68,15 @@ def reshape_and_average_over_trials(beaconed_cluster_firings, nonbeaconed_cluste
     probe_reshaped_hist = np.reshape(probe_cluster_firings, (int(probe_cluster_firings.size/bin), bin))
 
     average_beaconed_spike_rate = np.nanmean(beaconed_reshaped_hist, axis=0)
-    average_beaconed_spike_rate = np.hstack((np.nan,np.nan,np.nan, average_beaconed_spike_rate[3:196],np.nan,np.nan,np.nan,)) ## get rid of edges but really this needs to be done properly
     average_nonbeaconed_spike_rate = np.nanmean(nonbeaconed_reshaped_hist, axis=0)
-    average_nonbeaconed_spike_rate = np.hstack((np.nan,np.nan,np.nan, average_nonbeaconed_spike_rate[3:196],np.nan,np.nan,np.nan,))
     average_probe_spike_rate = np.nanmean(probe_reshaped_hist, axis=0)
-    average_probe_spike_rate = np.hstack((np.nan,np.nan,np.nan, average_probe_spike_rate[3:196],np.nan,np.nan,np.nan,))
     average_beaconed_sd = np.nanstd(beaconed_reshaped_hist, axis=0)
     average_nonbeaconed_sd = np.nanstd(nonbeaconed_reshaped_hist, axis=0)
     average_probe_sd = np.nanstd(probe_reshaped_hist, axis=0)
     plt.plot(average_beaconed_spike_rate)
     plt.close()
 
-    return np.array(average_beaconed_spike_rate, dtype=np.float16), np.array(average_nonbeaconed_spike_rate, dtype=np.float16), np.array(average_probe_spike_rate, dtype=np.float16), average_beaconed_sd, average_nonbeaconed_sd, average_probe_sd
+    return np.array(average_beaconed_spike_rate[1:], dtype=np.float16), np.array(average_nonbeaconed_spike_rate[1:], dtype=np.float16), np.array(average_probe_spike_rate[1:], dtype=np.float16), average_beaconed_sd, average_nonbeaconed_sd, average_probe_sd
 
 
 

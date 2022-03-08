@@ -38,13 +38,8 @@ def calculate_average_stops(spike_data):
     spike_data["average_stops"] = ""
     spike_data["position_bins"] = ""
     for cluster in range(len(spike_data)):
-        try:
-            stop_locations = np.array(spike_data.at[cluster, 'stop_location_cm'], dtype=np.int16)
-            stop_trials = np.array(spike_data.at[cluster, 'stop_trial_number'], dtype=np.int16)
-            #stop_trial_types = np.array(spike_data.at[cluster, "stop_trial_type"])
-        except KeyError:
-            stop_locations = np.array(spike_data.at[cluster, 'stop_locations'], dtype=np.int16)
-            stop_trials = np.array(spike_data.at[cluster, 'stop_trials'], dtype=np.int16)
+        stop_locations = np.array(spike_data.at[cluster, 'stop_locations'], dtype=np.int16)
+        stop_trials = np.array(spike_data.at[cluster, 'stop_trials'], dtype=np.int16)
 
         if len(stop_trials) > 1:
             number_of_bins = 200
@@ -71,17 +66,12 @@ def calculate_average_nonbeaconed_stops(spike_data):
     spike_data["average_stops_p"] = ""
     spike_data["position_bins_p"] = ""
     for cluster in range(len(spike_data)):
-        try:
-            stop_locations = np.array(spike_data.at[cluster, 'stop_location_cm'], dtype=np.int16)
-            stop_trials = np.array(spike_data.at[cluster, 'stop_trial_number'], dtype=np.int16)
-            #stop_trial_types = np.array(spike_data.at[cluster, "stop_trial_type"])
-        except KeyError:
-            stop_locations = np.array(spike_data.at[cluster, 'stop_locations'], dtype=np.int16)
-            stop_trials = np.array(spike_data.at[cluster, 'stop_trials'], dtype=np.int16)
+        stop_locations = np.array(spike_data.at[cluster, 'stop_locations'], dtype=np.int16)
+        stop_trials = np.array(spike_data.at[cluster, 'stop_trials'], dtype=np.int16)
+
 
         stop_trial_types = calculate_stop_types(spike_data, cluster, stop_trials)
         beaconed,nonbeaconed,probe = split_stops_by_trial_type(stop_locations,stop_trials,stop_trial_types)
-
 
         stop_locations = nonbeaconed[:,0]
         stop_trials = nonbeaconed[:,1]
