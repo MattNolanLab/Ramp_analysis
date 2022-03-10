@@ -7,6 +7,21 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+### Check experiment groups
+```{r}
+# Cohorts
+unique(as.character(spatial_firing$cohort))
+
+# Mouse numbers within each cohort
+unique(spatial_firing$Mouse)
+
+# Mice,  identified by cohort and number
+unique(paste(spatial_firing$Mouse, as.character(spatial_firing$cohort)))
+```
+
+
+
+
 ### Script performs basic stats (n numbers, statistical test etc) on the dataset
 
 ### ----------------------------------------------------------------------------------------- ###
