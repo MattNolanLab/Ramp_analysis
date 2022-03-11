@@ -19,8 +19,8 @@ output folder for all mice, all days frame: /Users/sarahtennant/Work/Analysis/Ep
 
 
 def concat_all_mice_dir():
-    local_output_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/Alldays_cohort1_dataset.pkl'
-    frames_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/IndividualFrames/c3/'
+    local_output_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/spatial_firing_allcohorts.pkl'
+    frames_path = '/Users/sarahtennant/Work/Analysis/Data/Ramp_data/WholeFrame/final_pickles2022/'
 
     allmice_data = pd.DataFrame()
     if os.path.exists(frames_path):
@@ -41,7 +41,9 @@ def concat_all_mice_dir():
             
             '''
             print('I found a firing data frame with ', spatial_firing.shape[0], ' cell(s)')
-            spatial_firing = spatial_firing[['session_id', 'cluster_id', 'mean_firing_rate', 'firing_times', 'random_snippets', 'x_position_cm', 'trial_number', 'trial_type', 'spike_rate_on_trials', 'spike_rate_on_trials_smoothed', 'spike_rate_in_time', 'position_rate_in_time', 'speed_rate_in_time', 'rewarded_trials', 'rewarded_locations', 'stop_location_cm', 'stop_trial_number']].copy()
+            #spatial_firing = spatial_firing[['session_id', 'cluster_id', 'mean_firing_rate', 'firing_times', 'primary_channel','random_snippets', 'x_position_cm', 'trial_number', 'trial_type', 'spike_rate_on_trials', 'spike_rate_on_trials_smoothed', 'spike_rate_in_time', 'position_rate_in_time', 'speed_rate_in_time', 'rewarded_trials', 'rewarded_locations', 'stop_location_cm', 'stop_trial_number']].copy()
+            spatial_firing = spatial_firing[['session_id', 'cluster_id', 'mean_firing_rate', 'brain_region', 'max_trial_number','firing_times', 'x_position_cm', 'trial_number', 'trial_type', 'spike_rate_in_time', 'spike_rate_in_time_rewarded', 'spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p','rewarded_trials', 'rewarded_locations']].copy()
+            #spatial_firing = spatial_firing[['session_id', 'cluster_id','spikes_in_time', 'spike_rate_on_trials_smoothed']].copy()
             allmice_data = allmice_data.append(spatial_firing)
 
     allmice_data.to_pickle(local_output_path)
@@ -49,10 +51,7 @@ def concat_all_mice_dir():
 
 
 def remove_false_positives(df):
-    df["max_trial_number"] = ""
-    for cluster in range(len(df)):
-        df.at[cluster,"max_trial_number"] = max(df.loc[cluster].spike_rate_on_trials_smoothed[1])
-    df = df.drop(df[df.max_trial_number < 15].index)
+    df = df.drop(df[df.max_trial_number < 80].index)
     df = df.dropna(axis=0)
     return df
 
@@ -104,7 +103,7 @@ def main():
     ### For spatial data
     #concat_all_mice_spatial_dir()
 
-    #spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/in_vivo_virtual_reality/data/Allmice_alldays_finaldf.pkl')
+    spike_data.to_pickle('/Users/sarahtennant/Work/Analysis/in_vivo_virtual_reality/data/Allmice_alldays_nina.pkl')
 
 
 if __name__ == '__main__':

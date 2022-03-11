@@ -4,12 +4,18 @@ import numpy as np
 
 def remove_false_positives(df):
     print("Removing sessions with low trial numbers..")
+
     df.reset_index(drop=True, inplace=True)
     df["max_trial_number"] = ""
+
     for cluster in range(len(df)):
-        df.at[cluster,"max_trial_number"] = max(df.loc[cluster,'trial_number'])
+        try:
+            df.at[cluster,"max_trial_number"] = max(df.loc[cluster,'trial_number'])
+        except ValueError:
+            df.at[cluster,"max_trial_number"] = 0
+
     df = df.drop(df[df.max_trial_number < 30].index)
-    df = df.dropna(axis=0)
+    #df = df.dropna(axis=0)
     df.reset_index(drop=True, inplace=True)
     return df
 
@@ -61,3 +67,73 @@ def make_neuron_number(spike_data):
 
 
 
+def check_probe_trials_exist(df):
+    print("....")
+
+    df.reset_index(drop=True, inplace=True)
+    df["probe_trial_label"] = ""
+
+    for cluster in range(len(df)):
+        try:
+            types=np.unique(np.array(df.iloc[cluster].spike_rate_in_time[4].real, dtype= np.int32))
+            if len(types) == 3:
+                df.at[cluster,"probe_trial_label"] = 1
+            else:
+                df.at[cluster,"probe_trial_label"] = 0
+
+        except ValueError:
+            df.at[cluster,"probe_trial_label"] = 0
+
+    return df
+
+
+
+def load_crtieria_data_into_frame(spike_data):
+    spike_data["graduation"] = ""
+    criteria_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data_in/Criteria_days.csv", header=int())
+
+    for cluster in range(len(spike_data)):
+        mouse = spike_data.Mouse[cluster]
+        day = int(spike_data.Day_numeric.values[cluster])
+        cohort = int(spike_data.cohort.values[cluster])
+        try:
+            #find data for that mouse & day
+            session_fits = criteria_data['Mouse'] == mouse
+            session_fits = criteria_data[session_fits]
+            cohort_fits = session_fits['Cohort'] == cohort
+            cohort_fits = session_fits[cohort_fits]
+
+            # find the region
+            grad_day = int(cohort_fits['Graduation day'].values)
+
+            if day >= grad_day:
+                spike_data.at[cluster,"graduation"] = 1
+            elif day < grad_day:
+                spike_data.at[cluster,"graduation"] = 0
+        except ValueError:
+                spike_data.at[cluster,"graduation"] = 1
+
+
+    return spike_data
+
+
+
+def remove_lick_artefact(df):
+    print("Removing cells that are lick artefacts..")
+
+    df.reset_index(drop=True, inplace=True)
+    df["artefact"] = ""
+
+    for cluster in range(len(df)):
+        try:
+            highest_value = df.loc[cluster,'peak_amp']
+
+            if highest_value >= 20: # when manually checking values by eye against waveforms, those with peak amp above 20 appear to be artefacts
+                df.at[cluster,"artefact"] = 1
+            else:
+                df.at[cluster,"artefact"] = 0
+        except ValueError:
+            df.at[cluster,"artefact"] = 0
+
+
+    return df

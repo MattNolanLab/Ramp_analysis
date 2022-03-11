@@ -7,35 +7,123 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+### Check experiment groups
+```{r}
+# Cohorts
+unique(as.character(spatial_firing$cohort))
+
+# Mouse numbers within each cohort
+unique(spatial_firing$Mouse)
+
+# Mice,  identified by cohort and number
+unique(paste(spatial_firing$Mouse, as.character(spatial_firing$cohort)))
+```
+
+
+
+
 ### Script performs basic stats (n numbers, statistical test etc) on the dataset
 
 ### ----------------------------------------------------------------------------------------- ###
 
-First we might want to know how many sessions for each mouse
-
 ```{r}
 data <- spatial_firing  %>%
-  select(Mouse, Day, session_id) %>%
-  group_by(Mouse, Day) 
-
-data <- data[!duplicated(data$session_id), ]
-
-data <- data  %>%
-  group_by(Mouse) 
+  select(Mouse, cohort) %>%
+  filter(Mouse != "1124") %>%
+  dplyr::group_by(Mouse, cohort, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) 
+  
 ```
 
 ```{r}
-write_csv2(data, "mouse_session_data.csv")
+
+data <- spatial_firing  %>%
+  select(Mouse, cohort, joined_id) %>%
+  filter(Mouse != "1124") %>%
+  dplyr::group_by(joined_id, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) 
+  
+```
+
+
+
+First we might want to know how many sessions for each mouse
+
+```{r}
+position_ramps <- spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+  
+```
+
+```{r}
+data <- spatial_firing  %>%
+  select(Mouse, Day, cohort, session_id) %>%
+  filter(Mouse != "1124") %>%
+  dplyr::group_by(Mouse, cohort, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) 
+  
+data <- data[!duplicated(data$session_id), ]
+
+data <- data  %>%
+  select(session_id)
+```
+
+```{r}
+write_csv2(data, "mouse_session_data_harry.csv")
+
+```
+
+```{r}
+data <- position_ramps  %>%
+  select(Mouse, cohort, session_id) %>%
+  dplyr::group_by(Mouse, cohort, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = round(n / sum(n)*100, 2)) 
+  #group_by(Mouse, Day) 
+```
+
+
+```{r}
+data <- spatial_firing  %>%
+  select(Mouse, cohort, session_id, track_category, track_category_p) %>%
+  filter(Mouse != "1124") %>%
+  dplyr::group_by(Mouse, cohort, track_category, track_category_p, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::group_by(track_category, track_category_p, .drop=FALSE) %>%
+  dplyr::mutate(proportion = round(n / sum(n)*100, 2)) 
+  #group_by(Mouse, Day) 
+
+data$track_category <- as.character(data$track_category)
+data$track_category_p <- as.character(data$track_category_p)
+
+```
+
+```{r}
+write_csv2(data, "position_session_data_harry.csv")
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+### How many neurons passed criteria in the linear model ? - either outbound or homebound
+
+
+```{r}
+unclassified_neurons_total <- subset(spatial_firing, lm_group_b != "Unclassified" )
+unclassified_neurons <- subset(unclassified_neurons_total, lm_group_b_h == "Unclassified")
 
 ```
 
 ### ----------------------------------------------------------------------------------------- ###
+
 
 ### How many neurons passed criteria in the linear model ? 
 
 1. get numbers of cells for each lm group (positive/negative/unclassified)
 ```{r}
-start <- nrow(subset(spatial_firing, lm_group_b == "Negative"))
+start <- nrow(subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive"))
 reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))
 nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))
 ```
@@ -47,12 +135,43 @@ reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))/nrow(spatial_fi
 nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spatial_firing)*100
 ```
 
+
+
 # How many numbers on average for each animal?
 
 ```{r}
 data <- spatial_firing %>%
-  select(lm_group_b,Mouse) %>%
-  group_by(Mouse, lm_group_b) %>%
+  dplyr::select(track_category, Mouse, cohort, Day) %>%
+  filter(Mouse != "1124") %>%
+  dplyr::group_by(Mouse, cohort, track_category, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = round(n / sum(n)*100, 2))  %>%
+  filter(track_category != "None" & track_category != "NAs") %>%
+  dplyr::group_by(Mouse, cohort, .drop=FALSE) %>%
+  dplyr::summarise(avg = sum(proportion), sd = std.error(proportion))() %>%
+  dplyr::ungroup() %>%
+  summarise(mean = mean(avg), sd = std.error(avg), min=min(avg), max=max(avg))
+
+data <- data %>%
+  select(proportion,lm_group_b, cohort, Mouse) %>%
+  filter(lm_group_b != "Unclassified" | lm_group_b != "NaN") %>%
+  summarise(avg = mean(proportion), sd = std.error(proportion), min=min(proportion), max=max(proportion))
+
+
+data$lm_group_b <- as.character(data$lm_group_b)
+```
+
+
+```{r}
+write_csv2(data, "mouse_session_data_proportions.csv")
+
+```
+
+```{r}
+data <- spatial_firing %>%
+  filter(cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI") %>%
+  select(track_category,Mouse, cohort) %>%
+  group_by(Mouse, track_category, cohort) %>%
   summarise(n = n()) %>%
   summarise(proportion = n / sum(n)) %>%
   filter(Mouse != "1124") %>%
@@ -60,11 +179,7 @@ data <- spatial_firing %>%
   select(proportion,lmgroup) %>%
   group_by(lmgroup) %>%
   summarise(avg = mean(proportion), sd = std.error(proportion), min=min(proportion), max=max(proportion))
-
-
-
 ```
-
 
 
 ### ----------------------------------------------------------------------------------------- ###
@@ -97,9 +212,10 @@ shuff_slopes <- shuff_slopes %>%
 
 3. Calculate proportion of cells in the shuffled datasets that pass criteria
 ```{r}
+total_shuffles <- nrow(shuff_slopes)
 shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" ))
-non_shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" ))
-non_shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" ))/nrow(shuff_slopes)*100
+non_shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" | shuff_lm_group_b == "NA" ))
+non_shuff_ramps_percentage <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" | shuff_lm_group_b == "NA"))/nrow(shuff_slopes)*100
 
 ```
 
@@ -223,6 +339,7 @@ _Figure 4B-E stats_
 position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
 1. extract position cells
 ```{r}
+
 position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 
 position_ramp_cells <- subset(position_cells, lm_group_b == "Negative" | lm_group_b == "Positive")
@@ -250,8 +367,8 @@ neurons_same <- (posnb_position_cells + negnb_position_cells)
 
 5. the same as above but for neurons that switch ramp polarity in the non beaconed trial
 ```{r}
-posnb_position_cells <- nrow(subset(pos_position_cells, lm_group_nb != "Positive"))
-negnb_position_cells <- nrow(subset(neg_position_cells, lm_group_nb != "Negative"))
+posnb_position_cells <- nrow(subset(pos_position_cells, lm_group_nb == "Unclassified"))
+negnb_position_cells <- nrow(subset(neg_position_cells, lm_group_nb == "Unclassified"))
 ```
 
 ```{r}
@@ -334,7 +451,7 @@ neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
 
 2. take only columns we need for the rest of the analysis
 ```{r}
-spatial_firing_save <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+spatial_firing_save <- select(neg_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
   unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
     final_model_o_b, lm_group_b)) %>%
   as.tibble()
@@ -383,6 +500,17 @@ position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_
 ```{r}
 pi_data <- subset(position_cells, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
 ```
+
+
+```{r}
+speed_cells <- subset(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA" | final_model_o_b == "A")
+```
+
+
+```{r}
+pi_data <- subset(speed_cells, lm_group_b == "Positive" | lm_group_b == "Negative")
+```
+
 
 ```{r}
 

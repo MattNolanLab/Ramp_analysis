@@ -78,6 +78,8 @@ def calculate_autocorrelogram_hist(spikes, bin_size, window):
 
 
 def plot_autocorrelograms(spike_data, prm):
+    spike_data["corr"] = ""
+
     print('I will plot autocorrelograms for each cluster.')
     save_path = prm.get_output_path() + '/Figures/firing_properties/autocorrelograms'
     if os.path.exists(save_path) is False:
@@ -98,6 +100,7 @@ def plot_autocorrelograms(spike_data, prm):
         ax = fig.add_subplot(1, 1, 1)  # specify (nrows, ncols, axnum)
         #ax.plot(snippets, color='lightslategray', linewidth=1, alpha=0.5)
         corr, time = calculate_autocorrelogram_hist(np.array(firing_times_cluster)/prm.get_sampling_rate(), 1, 500)
+        spike_data.at[cluster,'average_speed_nb'] = list(stops_in_bins)
         ax.plot(time, corr, linewidth=1, color='black')
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
@@ -131,32 +134,28 @@ def plot_autocorrelograms(spike_data, prm):
 
 
 
-def plot_extended_autocorrelograms(spike_data, prm):
-    plt.close()
+
+def calculate_autocorrelogram(spike_data, prm):
+    spike_data["corr"] = ""
+
     print('I will plot autocorrelograms for each cluster.')
     save_path = prm.get_output_path() + '/Figures/firing_properties/autocorrelograms'
     if os.path.exists(save_path) is False:
         os.makedirs(save_path)
     for cluster in range(len(spike_data)):
         cluster_index = spike_data.cluster_id.values[cluster] - 1
+        #theta_index = spike_data.ThetaIndex.values[cluster]
         firing_times_cluster = spike_data.firing_times[cluster]
-        #lags = plt.acorr(firing_times_cluster, maxlags=firing_times_cluster.size-1)
-        corr, time = calculate_autocorrelogram_hist(np.array(firing_times_cluster)/prm.get_sampling_rate(), 1, 1000)
-        plt.xlim(-500, 500)
-        plt.bar(time, corr, align='center', width=1, color='black')
-        plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_' + str(cluster_index) + '_autocorrelogram_500ms.png', dpi=300, bbox_inches='tight', pad_inches=0)
-        plt.close()
-        plt.figure()
-        corr, time = calculate_autocorrelogram_hist(np.array(firing_times_cluster)/prm.get_sampling_rate(), 1, 2000)
-        plt.xlim(-1000, 1000)
-        plt.bar(time, corr, align='center', width=1, color='black')
-        plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_' + str(cluster_index) + '_autocorrelogram_1sec.png', dpi=300, bbox_inches='tight', pad_inches=0)
-        plt.close()
+
+        #ax.plot(snippets, color='lightslategray', linewidth=1, alpha=0.5)
+        corr, time = calculate_autocorrelogram_hist(np.array(firing_times_cluster)/prm.get_sampling_rate(), 1, 500)
+        spike_data.at[cluster,'corr'] = list(corr)
+    return spike_data
 
 
-def plot_spikes_for_channel(grid, highest_value, lowest_value, spike_data, cluster, channel):
+def plot_spikes_for_channel(grid, spike_data, cluster, channel):
     snippet_plot = plt.subplot(grid[int(channel/2), channel % 2])
-    plt.ylim(lowest_value - 10, highest_value + 30)
+    #plt.ylim(lowest_value - 10, highest_value + 30)
     Python_PostSorting.plot_utility.style_plot(snippet_plot)
     snippet_plot.plot(spike_data.random_snippets[cluster][channel, :, :] * -1, color='lightslategray', alpha=0.5)
     snippet_plot.plot(np.mean(spike_data.random_snippets[cluster][channel, :, :], 1) * -1, color='red')
@@ -170,15 +169,15 @@ def plot_waveforms(spike_data, prm):
         os.makedirs(save_path)
     for cluster in range(len(spike_data)):
         cluster_index = spike_data.cluster_id.values[cluster] - 1
-        max_channel = spike_data.primary_channel[cluster]
-        highest_value = np.max(spike_data.random_snippets[cluster][max_channel-1, :, :] * -1)
-        lowest_value = np.min(spike_data.random_snippets[cluster][max_channel-1, :, :] * -1)
+        #max_channel = spike_data.primary_channel[cluster]
+        #highest_value = np.max(spike_data.random_snippets[cluster][max_channel-1, :, :] * -1)
+        #lowest_value = np.min(spike_data.random_snippets[cluster][max_channel-1, :, :] * -1)
         fig = plt.figure(figsize=(5, 5))
         grid = plt.GridSpec(2, 2, wspace=0.5, hspace=0.5)
         for channel in range(4):
-            plot_spikes_for_channel(grid, highest_value, lowest_value, spike_data, cluster, channel)
+            plot_spikes_for_channel(grid, spike_data, cluster, channel)
 
-        plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_' + str(cluster_index) + '_waveforms.png', dpi=300, bbox_inches='tight', pad_inches=0)
+        plt.savefig(save_path + '/' + spike_data.session_id[cluster] + '_' + str(cluster_index +1) + '_waveforms.png', dpi=300, bbox_inches='tight', pad_inches=0)
         plt.close()
 
 

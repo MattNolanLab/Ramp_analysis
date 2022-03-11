@@ -6,7 +6,7 @@ import numpy as np
 def load_brain_region_data_into_frame(spike_data):
     print('I am loading brain region data into frame ...')
     spike_data["brain_region"] = ""
-    region_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data/tetrode_locations.csv", header=int())
+    region_data = pd.read_csv("/Users/sarahtennant/Work/Analysis/Ramp_analysis/data_in/tetrode_locations2.csv", header=int())
 
     for cluster in range(len(spike_data)):
         session_id = spike_data.session_id.values[cluster]

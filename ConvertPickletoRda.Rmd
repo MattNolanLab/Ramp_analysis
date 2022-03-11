@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## This code loads dataframes with spatial firing of neurons in the virtual reality
 
-Aim:We want to load dataframes from python output which are in pickled format, and save them in Rs dataframe format (.Rda). 
+Aim: We want to load dataframes from python output which are in pickled format, and save them in Rs dataframe format (.Rda). 
 
 ### ----------------------------------------------------------------------------------------------- ###
 
@@ -43,77 +43,63 @@ source_python("pickle_reader.py") # run python script which loads the dataframes
 
 ```
 
-2. Load frame for each cohort
+2. Load all cohorts, and necessary columns for analysis
+
+## cols needed 
+c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'graduation', 'average_stops', 'average_stops_p', 'Avg_FiringRate_RunTrials', 'Avg_FiringRate_TryTrials', 'Avg_FiringRate_HitTrials', 'rewardzone_speed_run', 'rewardzone_speed_try', 'rewardzone_speed_hit', 'speed_in_time_reward', 'speed_in_time_run', 'speed_in_time_try', 'spikes_in_time_reward', 'spikes_in_time_run', 'spikes_in_time_try', 'Speed_mean_rewarded', 'Speed_mean_try', 'Speed_mean_run', 'speed_score', 'speed_score_p_values', 'preferred_HD', 'hd_score', 'rayleigh_score', 'spatial_information_score', 'grid_score', 'border_score', 'speed_threshold_pos', 'speed_threshold_neg', 'hd_threshold', 'rayleigh_threshold', 'spatial_threshold', 'grid_threshold', 'border_threshold','mean_firing_rate_of', 'spike_width', ))
+
 ```{r}
-dataframe_to_load <- "data/Alldays_cohort_1.pkl" # name of the pickled dataframe want to load 
-spatial_firing1 <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
+dataframe_to_load <- "data_in/All_cohort5_ofandvr.pkl"  
+spatial_firing1 <- read_pickle_file(file.path(dataframe_to_load)) 
+spatial_firing1 <- select(spatial_firing1,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'graduation', 'average_stops', 'average_stops_p', 'Avg_FiringRate_RunTrials', 'Avg_FiringRate_TryTrials', 'Avg_FiringRate_HitTrials', 'rewardzone_speed_run', 'rewardzone_speed_try', 'rewardzone_speed_hit', 'speed_in_time_reward', 'speed_in_time_run', 'speed_in_time_try', 'spikes_in_time_reward', 'spikes_in_time_run', 'spikes_in_time_try', 'Speed_mean_rewarded', 'Speed_mean_try', 'Speed_mean_run', 'speed_score', 'speed_score_p_values', 'preferred_HD', 'hd_score', 'rayleigh_score', 'spatial_information_score', 'grid_score', 'border_score', 'speed_threshold_pos', 'speed_threshold_neg', 'hd_threshold', 'rayleigh_threshold', 'spatial_threshold', 'grid_threshold', 'border_threshold','mean_firing_rate_of', 'spike_width'))
 
-dataframe_to_load <- "data/Alldays_cohort_2.pkl" 
-source_python("pickle_reader.py") 
+dataframe_to_load <- "data_in/All_cohort4_ofandvr.pkl" 
 spatial_firing2 <- read_pickle_file(file.path(dataframe_to_load)) 
+spatial_firing2 <- select(spatial_firing2,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'graduation', 'average_stops', 'average_stops_p','Avg_FiringRate_RunTrials', 'Avg_FiringRate_TryTrials', 'Avg_FiringRate_HitTrials', 'rewardzone_speed_run', 'rewardzone_speed_try', 'rewardzone_speed_hit', 'speed_in_time_reward', 'speed_in_time_run', 'speed_in_time_try', 'spikes_in_time_reward', 'spikes_in_time_run', 'spikes_in_time_try', 'Speed_mean_rewarded', 'Speed_mean_try', 'Speed_mean_run', 'speed_score', 'speed_score_p_values', 'preferred_HD', 'hd_score', 'rayleigh_score', 'spatial_information_score', 'grid_score', 'border_score', 'speed_threshold_pos', 'speed_threshold_neg', 'hd_threshold', 'rayleigh_threshold', 'spatial_threshold', 'grid_threshold', 'border_threshold','mean_firing_rate_of', 'spike_width'))
 
-dataframe_to_load <- "data/Alldays_cohort_3.pkl"  
-source_python("pickle_reader.py") 
+dataframe_to_load <- "data_in/All_cohort2_ofandvr.pkl" 
 spatial_firing3 <- read_pickle_file(file.path(dataframe_to_load)) 
+spatial_firing3 <- select(spatial_firing3,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'graduation', 'average_stops', 'average_stops_p','Avg_FiringRate_RunTrials', 'Avg_FiringRate_TryTrials', 'Avg_FiringRate_HitTrials', 'rewardzone_speed_run', 'rewardzone_speed_try', 'rewardzone_speed_hit', 'speed_in_time_reward', 'speed_in_time_run', 'speed_in_time_try', 'spikes_in_time_reward', 'spikes_in_time_run', 'spikes_in_time_try', 'Speed_mean_rewarded', 'Speed_mean_try', 'Speed_mean_run', 'speed_score', 'speed_score_p_values', 'preferred_HD', 'hd_score', 'rayleigh_score', 'spatial_information_score', 'grid_score', 'border_score', 'speed_threshold_pos', 'speed_threshold_neg', 'hd_threshold', 'rayleigh_threshold', 'spatial_threshold', 'grid_threshold', 'border_threshold','mean_firing_rate_of', 'spike_width'))
 
-dataframe_to_load <- "data/Alldays_cohort_4.pkl" 
-source_python("pickle_reader.py") 
-spatial_firing4 <- read_pickle_file(file.path(dataframe_to_load)) 
+dataframe_to_load <- "data_in/All_cohort7_ofandvr.pkl" 
+spatial_firing4 <- read_pickle_file(file.path(dataframe_to_load))
+spatial_firing4 <- subset(spatial_firing4, peak_amp < 20 ) ## remove artefacts in this cohort!! They are only in this cohort
+spatial_firing4 <- select(spatial_firing4,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'graduation', 'average_stops', 'average_stops_p','Avg_FiringRate_RunTrials', 'Avg_FiringRate_TryTrials', 'Avg_FiringRate_HitTrials', 'rewardzone_speed_run', 'rewardzone_speed_try', 'rewardzone_speed_hit', 'speed_in_time_reward', 'speed_in_time_run', 'speed_in_time_try', 'spikes_in_time_reward', 'spikes_in_time_run', 'spikes_in_time_try', 'Speed_mean_rewarded', 'Speed_mean_try', 'Speed_mean_run', 'speed_score', 'speed_score_p_values', 'preferred_HD', 'hd_score', 'rayleigh_score', 'spatial_information_score', 'grid_score', 'border_score', 'speed_threshold_pos', 'speed_threshold_neg', 'hd_threshold', 'rayleigh_threshold', 'spatial_threshold', 'grid_threshold', 'border_threshold','mean_firing_rate_of', 'spike_width'))
+
+dataframe_to_load <- "data_in/All_cohort3_ofandvr.pkl"  
+spatial_firing5 <- read_pickle_file(file.path(dataframe_to_load)) 
+spatial_firing5 <- select(spatial_firing5,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number','brain_region', 'ramp_score','mean_firing_rate','spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'graduation', 'average_stops', 'average_stops_p','Avg_FiringRate_RunTrials', 'Avg_FiringRate_TryTrials', 'Avg_FiringRate_HitTrials', 'rewardzone_speed_run', 'rewardzone_speed_try', 'rewardzone_speed_hit', 'speed_in_time_reward', 'speed_in_time_run', 'speed_in_time_try', 'spikes_in_time_reward', 'spikes_in_time_run', 'spikes_in_time_try', 'Speed_mean_rewarded', 'Speed_mean_try', 'Speed_mean_run', 'speed_score', 'speed_score_p_values', 'preferred_HD', 'hd_score', 'rayleigh_score', 'spatial_information_score', 'grid_score', 'border_score', 'speed_threshold_pos', 'speed_threshold_neg', 'hd_threshold', 'rayleigh_threshold', 'spatial_threshold', 'grid_threshold', 'border_threshold','mean_firing_rate_of', 'spike_width'))
 
 ```
 
 3. Concatinate cohorts together
 ```{r}
-spatial_firing <- rbind(spatial_firing1, spatial_firing2, spatial_firing3, spatial_firing4)
+spatial_firing <- rbind(spatial_firing1, spatial_firing2, spatial_firing3, spatial_firing4, spatial_firing5)
 ```
 
-4. Save concatinated dataframes
+
+### ----------------------------------------------------------------------------------------------- ###
+
+### Curate the data
+
+### ----------------------------------------------------------------------------------------------- ###
+
+
+4. Curate by graduation day 
 ```{r}
-saveRDS(spatial_firing, file="PythonOutput_Concat.Rda")
-
+spatial_firing <- subset(spatial_firing, graduation == 1 )
 ```
 
 
-## Loading specific column for all mice and days
+### ----------------------------------------------------------------------------------------------- ###
+
+### Save concatenated frames for future loading
+
+### ----------------------------------------------------------------------------------------------- ###
+
+
+6. Save final concatinated dataframe
 ```{r}
-dataframe_to_load <- "data/Alldays_cohort_1_speed.pkl" # name of the pickled dataframe want to load 
-spatial_firing1 <- read_pickle_file(file.path(dataframe_to_load)) # function to call in the python code
-spatial_firing1 <- select(spatial_firing1,c('speed_CI_rewarded', 'speed_CI_try', 'speed_CI_run'))
-
-dataframe_to_load <- "data/Alldays_cohort_2_speed.pkl" 
-source_python("pickle_reader.py") 
-spatial_firing2 <- read_pickle_file(file.path(dataframe_to_load)) 
-spatial_firing2 <- select(spatial_firing2,c('speed_CI_rewarded', 'speed_CI_try', 'speed_CI_run'))
-
-dataframe_to_load <- "data/Alldays_cohort_3_speed.pkl"  
-source_python("pickle_reader.py") 
-spatial_firing3 <- read_pickle_file(file.path(dataframe_to_load)) 
-spatial_firing3 <- select(spatial_firing3,c('speed_CI_rewarded', 'speed_CI_try', 'speed_CI_run'))
-
-dataframe_to_load <- "data/Alldays_cohort_4_speed.pkl" 
-source_python("pickle_reader.py") 
-spatial_firing4 <- read_pickle_file(file.path(dataframe_to_load)) 
-spatial_firing4 <- select(spatial_firing4,c('speed_CI_rewarded', 'speed_CI_try', 'speed_CI_run'))
+saveRDS(spatial_firing, file="PythonOutput_Concat_final.Rda")
 
 ```
-
-1. Concatinate cohorts together
-```{r}
-spatial_firing_speed <- rbind(spatial_firing1, spatial_firing2, spatial_firing3, spatial_firing4)
-```
-
-2. Concatinate with main dataframe
-```{r}
-spatial_firing <- cbind(spatial_firing, spatial_firing_speed)
-
-```
-
-
-```{r}
-spatial_firing <- spatial_firing %>%
-  select(-contains(c('speed_CI_rewarded', 'speed_CI_try', 'speed_CI_run')))
-  
-  
-
-```
-

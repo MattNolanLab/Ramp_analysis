@@ -1,0 +1,229 @@
+---
+title: "FirstStopAnalysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+Load csv with "type column"
+```{r}
+mouse_sessions_c1 <- read.csv(file = 'data/graduation-1.csv',header = FALSE, sep = ",")
+mouse_sessions_c2 <- read.csv(file = 'data/graduation-2.csv',header = FALSE, sep = ",")
+mouse_sessions_c3 <- read.csv(file = 'data/graduation-3.csv',header = FALSE, sep = ",")
+mouse_sessions_c4 <- read.csv(file = 'data/graduation-4.csv',header = FALSE, sep = ",")
+mouse_sessions_c5 <- read.csv(file = 'data/graduation-7.csv',header = FALSE, sep = ",")
+
+mouse_sessions <- rbind(mouse_sessions_c1, mouse_sessions_c2, mouse_sessions_c3, mouse_sessions_c4,mouse_sessions_c5)
+```
+
+
+Extract distinct behavioural days
+```{r}
+exp_behavioural_data <- distinct(mouse_sessions)
+```
+
+```{r}
+names(exp_behavioural_data)[1] <- 'Mouse'
+names(exp_behavioural_data)[2] <- 'Day'
+names(exp_behavioural_data)[3] <- 'cohort'
+names(exp_behavioural_data)[4] <- 'Progression'
+names(exp_behavioural_data)[5] <- 'RewardRate'
+names(exp_behavioural_data)[6] <- 'FirstStop'
+names(exp_behavioural_data)[7] <- 'Type'
+
+```
+
+```{r}
+#write.table(exp_behavioural_data, "AllMice_BehaviourResults.txt", quote=FALSE, sep="\t")
+
+```
+
+
+Unnest the data 
+```{r}
+dfavg <- exp_behavioural_data %>%
+  select(Mouse, Day, cohort, RewardRate, FirstStop, Type) %>%
+  unnest(c(RewardRate, FirstStop,Type))
+```
+
+
+## ---------------------------------------------------------------------------------- ##
+
+
+```{r}
+join_mouse_cohort <- function(mouse, cohort_n){
+  if (is.na(cohort_n)) {
+    return('NaN')
+  }  
+  df <- paste0(mouse, "_", cohort_n)
+  df
+}
+
+```
+
+1. run on all cells
+```{r}
+dfavg <- dfavg %>%
+  mutate(joined_id = map2(Mouse, cohort, join_mouse_cohort))
+
+```
+
+```{r}
+dfavg <- dfavg %>%
+  filter(Type != 0)
+
+```
+
+## ---------------------------------------------------------------------------------- ##
+
+
+
+```{r}
+df <- dfavg %>%
+  select(joined_id, Day, FirstStop, Type) %>%
+  filter(Type != 0) %>%
+  group_by(Type, joined_id) %>%
+  summarise(mean_val = mean(FirstStop, na.rm=TRUE)) %>%
+  group_by(Type) %>%
+  summarise(mean = mean(mean_val, na.rm=TRUE)-30, sd = std.error(mean_val, na.rm=TRUE))
+
+```
+
+
+```{r}
+dfmice <- dfavg %>%
+  select(joined_id, Day, FirstStop, Type) %>%
+  filter(Type != 0) %>%
+  group_by(Type, joined_id) %>%
+  summarise(mean_val = mean(FirstStop, na.rm=TRUE)-30)
+
+```
+
+```{r}
+level_order <- c("Baseline", "Pre-criterion", "Experimental")
+
+ggplot(data=df, aes(x=factor(unlist(Type)), y=mean)) +
+  coord_cartesian(ylim=c(0,60), xlim=c(0.5,3.5)) +
+  geom_point(data=dfmice, aes(x=factor(unlist(Type)), y=mean_val, group=factor(unlist(joined_id))),color="blue", alpha=0.3) +
+  geom_point() +
+  geom_errorbar(data=df,aes(ymin=mean-sd, ymax=mean+sd), width=.1) +
+  ylab("First stop (cm)") +
+  xlab("") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+  theme(axis.text.x = element_text(angle = 70, vjust = 0.5, hjust=.5))
+ggsave(file = "plots/behaviour_firststop_avgs_update.png", width = 4.5, height = 2.5)
+
+```
+
+
+
+
+## do anova
+
+# on all data
+
+1. put data into a tibble for plotting
+```{r}
+data_coef <- tibble(session_id = unlist(dfavg$joined_id), 
+                    FirstStop = dfavg$FirstStop, 
+                    Type = as.character(dfavg$Type))
+```
+
+2. run anova
+```{r}
+one.way <- aov(FirstStop ~ Type, data = data_coef)
+
+summary(one.way)
+```
+
+3. Post hoc Tukey's test
+```{r}
+tukey.test <- TukeyHSD(one.way)
+tukey.test$Type
+```
+
+
+
+## ---------------------------------------------------------------------------------- ##
+
+
+```{r}
+df <- dfavg %>%
+  select(joined_id, Day, RewardRate, Type) %>%
+  filter(Type != 0) %>%
+  group_by(Type, joined_id) %>%
+  summarise(mean_val = mean(RewardRate, na.rm=TRUE)) %>%
+  group_by(Type) %>%
+  summarise(mean = mean(mean_val, na.rm=TRUE), sd = std.error(mean_val, na.rm=TRUE))
+
+```
+
+
+
+```{r}
+dfmice <- dfavg %>%
+  select(joined_id, Day, RewardRate, Type) %>%
+  filter(Type != 0) %>%
+  group_by(Type, joined_id) %>%
+  summarise(mean_val = mean(RewardRate, na.rm=TRUE))
+
+```
+
+```{r}
+level_order <- c("Baseline", "Pre-criterion", "Experimental")
+level_order <- c("Baseline", "Pre-criterion", "Experimental")
+
+ggplot(data=df, aes(x=factor(unlist(Type)), y=mean)) +
+  coord_cartesian(ylim=c(0,100), xlim=c(0.5,3.5)) +
+  geom_point(data=dfmice, aes(x=factor(unlist(Type)), y=mean_val, group=factor(unlist(joined_id))),color="blue", alpha=0.3) +
+  geom_point() +
+  geom_errorbar(data=df,aes(ymin=mean-sd, ymax=mean+sd), width=.1) +
+  ylab("% rewarded trials") +
+  xlab("") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=14), 
+        legend.text=element_text(size=14), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) +
+  theme(axis.text.x = element_text(angle = 70, vjust = 0.5, hjust=.5))
+ggsave(file = "plots/behaviour_reward_avgs_final.png", width = 4.5, height = 2.5)
+
+```
+
+
+## do anova
+
+1. put data into a tibble for plotting
+```{r}
+data_coef <- tibble(session_id = unlist(dfavg$joined_id), 
+                    RewardRate = dfavg$RewardRate,
+                    Type = as.character(dfavg$Type))
+```
+
+2. run anova
+```{r}
+one.way <- aov(RewardRate ~ Type, data = data_coef)
+
+summary(one.way)
+```
+
+3. Post hoc Tukey's test
+```{r}
+tukey.test <- TukeyHSD(one.way)
+tukey.test$Type
+```
+

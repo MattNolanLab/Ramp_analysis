@@ -1,0 +1,291 @@
+---
+title: "Figure7"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## Seperate 
+
+```{r}
+spatial_firing_high  <- subset(spatial_firing, max_trial_number >= 60 )
+```
+
+
+1. Write function to add position
+```{r}
+add_position <- function(df, session_id, cluster_id) {
+  sum = sum(unlist(df), na.rm=TRUE)
+  return(sum)
+}
+```
+
+2. Run on dataframe : Average trials with reward
+
+input columns: 
+Rates_averaged_rewarded_b = beaconed trials
+Rates_averaged_rewarded_nb = non-beaconed and probe trials
+Rates_averaged_rewarded_p = probe trials only
+```{r}
+spatial_firing_high <- spatial_firing_high %>%
+  mutate(asr_t_sum = pmap(list(Avg_FiringRate_TryTrials, session_id, cluster_id), add_position),
+         asr_ts_sum = pmap(list(Avg_FiringRate_SlowTryTrials, session_id, cluster_id), add_position))
+```
+
+```{r}
+spatial_firing_probeonly <- subset(spatial_firing_high, asr_p_sum != 0 )
+```
+
+
+### ----------------------------------------------------------------------------------------------- ###
+
+### ----------------------------------------------------------------------------- ###
+
+
+First, normalise firing rates. 
+
+1. make function to load rates and normalise
+```{r}
+normalise_rates <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  return(x)
+}
+
+```
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates_try_fast = map(Avg_FiringRate_TryTrials, normalise_rates), 
+         normalised_rates_try_slow = map(Avg_FiringRate_SlowTryTrials, normalise_rates),
+         normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates))
+
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+Now we want to examine if there are differences in the reset activity between trial types (hit, try, run). To do this, we can plot population rate for rewarded and failed trials across whole track. 
+
+Function to join firing rates from different trial types and add indicator of the type of trial
+
+First combine hit and miss trials together with an indicator of trial type (hit, try, run)
+
+Function to join firing rates from different trial types and add indicator of the type of trial
+```{r}
+join_average_rates <- function(hit, run, try_s,try_f,  session_id, cluster_id) {
+  if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
+    return(
+      df <- tibble(Rates = rep(NA, times=800), 
+               Position = rep(NA, times=800),
+               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try-fast", times=200), rep("Try-slow", times=200)))
+    )
+  }
+  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try_f), unlist(try_s)), Reward_indicator = c(rep("Rewarded", times=199), rep("Run Through", times=200), rep("Try-fast", times=200), rep("Try-slow", times=200)), Position = c(rep(-29:169), rep(-30:169), rep(-30:169), rep(-30:169)))
+  return (df)
+}
+```
+
+1. Generate firing rate tibble for each cell
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(avg_both_asr_b = pmap(list(normalised_rates, normalised_rates_run, normalised_rates_try_slow, normalised_rates_try_fast, session_id, cluster_id), join_average_rates))
+  #mutate(avg_both_asr_b = pmap(list(Avg_FiringRate_HitTrials, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials, session_id, cluster_id), join_average_rates))
+
+```
+
+
+Generic function to plot firing rate ± SEM as a function of position and colour coded according to trial outcome. The function expects to receive the unnested mean firing rates for all neurons that are to be plotted. Conditions for selection should be given before calling the function. Column names of the input data frame should be 'Rates', 'Position' and 'Reward_indicator'.
+```{r}
+mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
+  df$Rates <- as.double(df$Rates)
+
+ df <- df %>%
+   group_by(Position, Reward_indicator) %>%
+   dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
+             se_b = std.error(Rates, na.rm = TRUE))
+ 
+ ggplot(data=df) +
+  annotate("rect", xmin=-30, xmax=0, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=140, xmax=170, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+  annotate("rect", xmin=60, xmax=80, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
+                  fill=factor(Reward_indicator)), alpha=0.1) +
+  geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
+  scale_fill_manual(values=c("black", "red", "blue", "purple")) +
+  scale_color_manual(values=c("black", "red", "blue", "purple")) +
+  #labs(y = "Mean firing rate (Hz)", x = "Location (cm)") +
+  labs(y = "Z-scored firing rate", x = "Location (cm)") +
+  #xlim(-30, 170) +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        legend.title = element_blank(),
+        legend.position="none", 
+        text = element_text(size=14),
+        plot.margin = margin(21, 25, 5, 20))
+}
+```
+
+
+_plots for all position encoding neurons (P, PA, PS, PSA)_
+
+1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
+```{r}
+#position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+```
+
+```{r}
+position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+```
+
+
+3. Subset data by group then average rates for plotting          **Negative Negative Reset**
+```{r}
+(NegNegR_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-29,171))
+
+if (save_figures==1) {
+ ggsave(file = "plots/TrialOutcome_NegNeg_allpositionBUTP_BIMODAL.png", width = 3.6, height = 2.9) 
+}
+
+```
+
+
+5. Subset data by group then average rates for plotting          **Positive Positive Reset**
+```{r}
+(PosPosR_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Positive") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_PosPos_allpositionBUTP_BIMODAL.png", width = 3.6, height = 2.9)
+}
+
+```
+
+6. Subset data by group then average rates for plotting          **Positive Unclassified**
+```{r}
+(PosUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_PosNeg_allpositionBUTP_BIMODAL.png", width = 3.6, height = 2.9)
+}
+
+```
+
+7. Subset data by group then average rates for plotting          **Positive Unclassified**
+```{r}
+(NegUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Positive") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_NegPos_allpositionBUTP_BIMODAL.png", width = 3.6, height = 2.9)
+}
+
+```
+
+
+
+_plots for pure position encoding neurons (P)_
+
+Repeat above for just position neurons
+
+1. Split data based on cue independant/cue dependant (Figure 5) and encoding group (Figure 3) as we are only interested in position neurons here
+```{r}
+position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P")
+```
+
+
+3. Subset data by group then average rates for plotting          **Negative Negative**
+```{r}
+(NegNegR_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+if (save_figures==1) {
+ ggsave(file = "plots/TrialOutcome_NegNeg_justposition_BIMODAL.png", width = 3.6, height = 2.9) 
+}
+
+```
+
+4. Subset data by group then average rates for plotting          **Positive Positive**
+```{r}
+(PosPosC_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Positive") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_PosPos_justposition_BIMODAL.png", width = 3.6, height = 2.9)
+}
+
+```
+
+
+6. Subset data by group then average rates for plotting          **Positive Negative**
+```{r}
+(PosUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Positive",
+         lm_group_b_h == "Negative") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_PosNeg_justposition_BIMODAL.png", width = 3.6, height = 2.9)
+}
+
+```
+
+7. Subset data by group then average rates for plotting          **Negative Positive**
+```{r}
+(NegUC_plot <- position_neurons %>%
+  filter(lm_group_b == "Negative",
+         lm_group_b_h == "Positive") %>%
+  select(avg_both_asr_b) %>%
+  unnest(c(avg_both_asr_b)) %>%
+  mean_SEM_plots_by_Outcome(-30,170))
+
+
+
+if (save_figures==1) {
+  ggsave(file = "plots/TrialOutcome_NegPos_justposition_BIMODAL.png", width = 3.6, height = 2.9)
+}
+
+```
+
+
