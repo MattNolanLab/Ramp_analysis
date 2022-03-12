@@ -31,6 +31,7 @@ library(zoo) # some mathematical functions that are useful
 library(tibbletime)
 library(agricolae) # post hoc Tukey test
 library(ggallin) # this is for the pseudolog10_trans function used in coeff plots in Figure2_Analysis
+library(car)
 
 # Import functions
 source("Functions.R") ## is this even used??? I dont think so! Keeping it just incase..
@@ -45,7 +46,7 @@ save_results = 1
 # Load data
 # Alternative file names commented out
 spatial_firing <- readRDS(file="data_in/PythonOutput_Concat.Rda") ## concatenated all cohorts prior to R analysis
-#spatial_firing <- readRDS(file="data_in/SpatialFiring_with_1000_shuffles.Rda") ## concatenated all cohorts with shuffled ran
+#spatial_firing <- readRDS(file="data_in/SpatialFiring_with_1000_shuffles_of.Rda") ## concatenated all cohorts with shuffled ran
 # To work on  a subset of data for testing
 # spatial_firing <-  slice_head(spatial_firing, n = 10)
 ```
