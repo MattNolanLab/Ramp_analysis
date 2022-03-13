@@ -87,7 +87,7 @@ join_average_rates <- function(hit, run, try_s,try_f,  session_id, cluster_id) {
                Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try-fast", times=200), rep("Try-slow", times=200)))
     )
   }
-  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try_f), unlist(try_s)), Reward_indicator = c(rep("Rewarded", times=199), rep("Run Through", times=200), rep("Try-fast", times=200), rep("Try-slow", times=200)), Position = c(rep(-29:169), rep(-30:169), rep(-30:169), rep(-30:169)))
+  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try_f), unlist(try_s)), Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try-fast", times=200), rep("Try-slow", times=200)), Position = c(rep(-30:169), rep(-30:169), rep(-30:169), rep(-30:169)))
   return (df)
 }
 ```
