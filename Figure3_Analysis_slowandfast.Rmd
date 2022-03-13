@@ -33,7 +33,7 @@ Rates_averaged_rewarded_nb = non-beaconed and probe trials
 Rates_averaged_rewarded_p = probe trials only
 ```{r}
 spatial_firing_high <- spatial_firing_high %>%
-  mutate(asr_t_sum = pmap(list(Avg_FiringRate_TryTrials, session_id, cluster_id), add_position),
+  mutate(asr_t_sum = pmap(list(Avg_FiringRate_FastTryTrials, session_id, cluster_id), add_position),
          asr_ts_sum = pmap(list(Avg_FiringRate_SlowTryTrials, session_id, cluster_id), add_position))
 ```
 
@@ -62,7 +62,7 @@ normalise_rates <- function(df){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_try_fast = map(Avg_FiringRate_TryTrials, normalise_rates), 
+  mutate(normalised_rates_try_fast = map(Avg_FiringRate_FastTryTrials, normalise_rates), 
          normalised_rates_try_slow = map(Avg_FiringRate_SlowTryTrials, normalise_rates),
          normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates))
 
