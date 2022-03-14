@@ -139,7 +139,7 @@ shuffle_rates <- function(df, startbin, endbin, shuffles = 10) {
   names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
   x <- 1
   repeat {
-  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:199))
+  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
   df_mod <- lm_helper(shuff_df, startbin, endbin)
   data <- data.frame(as.numeric(x), df_mod$slope, df_mod$r.squared, df_mod$p.value)
   names(data) <- c("neuron", "slope", "r.squared", "p.value")
@@ -156,11 +156,12 @@ return(df_modified)
 
 2. Run if shuffles haven't already been generated.
 ```{r}
+shuffles <- 1000
+
 # Uncomment the line below to load pre-saved shuffled data
-# spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
+#spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
 
 # Check to see if the column shuffle_results exists. If it does then don't run again.
-shuffles <- 1000
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
@@ -624,43 +625,20 @@ First, normalise firing rates.
 1. make function to load rates and normalise
 ```{r}
 normalise_rates <- function(df1, df2){
-  df <- tibble(Rates = unlist(df), Position = rep(1:199))
+  df <- c(df1, df2)
+  df <- tibble(Rates = unlist(df), Position = rep(1:400))
   x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  x <- x[1:200]
   return(x)
 }
-
-```
-
-1. make function to load rates and normalise
-```{r}
-normalise_rates_probe <- function(df1, df2){
-  df <- c(df1, df2)
-  df <- tibble(Rates = unlist(df), Position = rep(1:398))
-  x <- scale(df$Rates, center=TRUE, scale=TRUE)
-  x_p <- x[200:398]
-  return(x_p)
-}
-
-```
-
-1. make function to load rates and normalise
-```{r}
-normalise_rates_beaconed <- function(df1, df2){
-  df <- c(df1, df2)
-  df <- tibble(Rates = unlist(df), Position = rep(1:398))
-  x <- scale(df$Rates, center=TRUE, scale=TRUE)
-  x_p <- x[1:199]
-  return(x_p)
-}
-
 ```
 
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(normalised_rates = map2(Rates_averaged_rewarded_b, Rates_averaged_rewarded_nb,normalise_rates)) %>%
-  mutate(normalised_rates_nb = map2(Rates_averaged_rewarded_b,Rates_averaged_rewarded_nb, normalise_rates)) %>%
-  mutate(normalised_rates_p = map2(Rates_averaged_rewarded_b,Rates_averaged_rewarded_p, normalise_rates)) 
+  mutate(normalised_rates_nb = map2(Rates_averaged_rewarded_nb,Rates_averaged_rewarded_b, normalise_rates)) %>%
+  mutate(normalised_rates_p = map2(Rates_averaged_rewarded_p,Rates_averaged_rewarded_b, normalise_rates)) 
 
 ```
 
@@ -680,11 +658,11 @@ predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 
   if(all(is.na(df))) 
     return(NA)
   # Make track column
-  df <- tibble(Rates = unlist(df), Position=rep(1:199))
+  df <- tibble(Rates = unlist(df), Position=rep(1:200))
   # fit
   model <- lm(Rates ~ Position, data = filter(df, Position >= fit_start, Position <= fit_end))
   # predict
-  homebound_prediction_pos <- tibble(Position = rep(1:199))
+  homebound_prediction_pos <- tibble(Position = rep(1:200))
   homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "prediction", level = 0.99) 
   as.tibble(homebound_prediction)
 }
@@ -917,7 +895,7 @@ outbound homebound  reset
 
 1. make tibble with average firing rates and classifications : 
 ```{r}
-bin = 199
+bin = 200
 df <- tibble(session_id = rep(spatial_firing$session_id, each=bin),
              cluster = rep(as.character(spatial_firing$cluster_id), each=bin),
              Position = rep(1:bin, times=nrow(spatial_firing)), 
@@ -934,7 +912,7 @@ mean_SEM_plots <- function(df, colour1 = "blue"){
   cell_no <- ncol(df)
   df <- df %>%
     dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
-    mutate(Position = rep(-29:169))
+    mutate(Position = rep(-29.5:169.5))
 
   ggplot(data=df) +
   annotate("rect", xmin=-30, xmax=0, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
@@ -1082,9 +1060,9 @@ negneg<-negneg[order(negneg$asr_b_o_rewarded_fit_slope),decreasing = TRUE]
 negpos<-negpos[order(negpos$asr_b_o_rewarded_fit_slope),decreasing = TRUE]
 negnon<-negnon[order(negnon$asr_b_o_rewarded_fit_slope),decreasing = TRUE]
 
-start_ramps <- rbind(pospos,posneg,posnon,negneg,negpos,negnon)
-#start_ramps<-spatial_firing[order(unlist(spatial_firing$track_category_numeric),spatial_firing$asr_b_o_rewarded_fit_slope),]
-#start_ramps<-start_ramps %>% filter(track_category_numeric != 0)
+#start_ramps <- rbind(pospos,posneg,posnon,negneg,negpos,negnon)
+start_ramps<-spatial_firing[order(unlist(spatial_firing$track_category_numeric),spatial_firing$asr_b_o_rewarded_fit_slope),]
+start_ramps<-start_ramps %>% filter(track_category_numeric != 0)
 start_ramp_number = nrow(start_ramps)
 new_cluster_id = seq(from = 1, to = start_ramp_number, by = 1)
 start_ramps <- cbind(start_ramps, new_cluster_id)
@@ -1096,7 +1074,7 @@ Then, scale firing rate for all neurons
 2. Run on dataframe 
 ```{r}
 normalise_rates_outbound <- function(df){
-  df <- tibble(Rates = unlist(df), Position = rep(1:199))
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
   df <- df %>%
     filter(Position >=30, Position <= 170)
   x <- normalit(df$Rates)
@@ -1164,8 +1142,8 @@ mydf <- data.frame(row.names = paste("neuron", 1:max(start_ramps$new_cluster_id)
 Var1        <- c("violetred2", "black", "chartreuse3")
 names(Var1) <- c("Negative", "Unclassified", "Positive")
 
-Var2        <- c("coral2", "deepskyblue2", "deepskyblue2", "blueviolet" , "grey29")
-names(Var2) <- c("PS", "UN", "RH", "MEC", "V1")
+Var2        <- c("coral2", "deepskyblue2", "blueviolet" , "grey29")
+names(Var2) <- c("PS", "RH", "MEC", "V1")
 
 #Var3        <- c("violetred2", "black", "chartreuse3")
 #names(Var3) <- c("Negative", "Unclassified", "Positive")

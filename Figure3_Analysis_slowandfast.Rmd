@@ -33,7 +33,7 @@ Rates_averaged_rewarded_nb = non-beaconed and probe trials
 Rates_averaged_rewarded_p = probe trials only
 ```{r}
 spatial_firing_high <- spatial_firing_high %>%
-  mutate(asr_t_sum = pmap(list(Avg_FiringRate_TryTrials, session_id, cluster_id), add_position),
+  mutate(asr_t_sum = pmap(list(Avg_FiringRate_FastTryTrials, session_id, cluster_id), add_position),
          asr_ts_sum = pmap(list(Avg_FiringRate_SlowTryTrials, session_id, cluster_id), add_position))
 ```
 
@@ -62,7 +62,7 @@ normalise_rates <- function(df){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_try_fast = map(Avg_FiringRate_TryTrials, normalise_rates), 
+  mutate(normalised_rates_try_fast = map(Avg_FiringRate_FastTryTrials, normalise_rates), 
          normalised_rates_try_slow = map(Avg_FiringRate_SlowTryTrials, normalise_rates),
          normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates))
 
@@ -87,7 +87,7 @@ join_average_rates <- function(hit, run, try_s,try_f,  session_id, cluster_id) {
                Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try-fast", times=200), rep("Try-slow", times=200)))
     )
   }
-  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try_f), unlist(try_s)), Reward_indicator = c(rep("Rewarded", times=199), rep("Run Through", times=200), rep("Try-fast", times=200), rep("Try-slow", times=200)), Position = c(rep(-29:169), rep(-30:169), rep(-30:169), rep(-30:169)))
+  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try_f), unlist(try_s)), Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try-fast", times=200), rep("Try-slow", times=200)), Position = c(rep(-30:169), rep(-30:169), rep(-30:169), rep(-30:169)))
   return (df)
 }
 ```
