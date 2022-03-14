@@ -7,7 +7,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Check experiment groups
+Returns basic features of the data reported at the start of the results section.
+
+### Check identity and number of mice
 ```{r}
 # Cohorts
 unique(as.character(spatial_firing$cohort))
@@ -15,35 +17,76 @@ unique(as.character(spatial_firing$cohort))
 # Mouse numbers within each cohort
 unique(spatial_firing$Mouse)
 
-# Mice,  identified by cohort and number
+# Miceidentified by cohort and number
 unique(paste(spatial_firing$Mouse, as.character(spatial_firing$cohort)))
+
+# Number of mice
+length(unique(paste(spatial_firing$Mouse, as.character(spatial_firing$cohort))))
 ```
 
 
 
 
-### Script performs basic stats (n numbers, statistical test etc) on the dataset
 
-### ----------------------------------------------------------------------------------------- ###
+### Check the number of sessions and the number per mouse
+```{r}
+# Number of sessions
+length(unique(spatial_firing$session_id))
+
+# Numbers of neurons per session
+(sessions <- spatial_firing  %>%
+  select(Mouse, session_id) %>%
+  group_by(Mouse, session_id, .drop=FALSE) %>%
+  summarise(n = n())) 
+
+# Number of sessions per mouse
+table(sessions$Mouse)
+# Mean
+mean(table(sessions$Mouse))
+# Range
+range(table(sessions$Mouse))
+```
+
+
+### Check the number of neurons and the number per mouse
 
 ```{r}
-data <- spatial_firing  %>%
+# Total number of neurons
+dim(spatial_firing)[[1]]
+
+# Show numbers of neurons per mouse
+(neuron_numbers <- spatial_firing  %>%
   select(Mouse, cohort) %>%
-  filter(Mouse != "1124") %>%
-  dplyr::group_by(Mouse, cohort, .drop=FALSE) %>%
-  dplyr::summarise(n = n()) 
+  group_by(Mouse, cohort, .drop=FALSE) %>%
+  summarise(n = n())) 
   
+# mean
+mean(neuron_numbers$n)
+
+#range
+range(neuron_numbers$n)
 ```
 
+
+### Number of trials per session
 ```{r}
+# Trial numbers for all sessions
+trials_numbers <- spatial_firing  %>%
+  select(session_id, cohort, max_trial_number) %>%
+  mutate(max_trial_number = unlist(max_trial_number)) %>%
+  distinct(session_id, .keep_all = TRUE)
 
-data <- spatial_firing  %>%
-  select(Mouse, cohort, joined_id) %>%
-  filter(Mouse != "1124") %>%
-  dplyr::group_by(joined_id, .drop=FALSE) %>%
-  dplyr::summarise(n = n()) 
-  
+# Mean
+mean(trials_numbers$max_trial_number)
+# Range
+range(trials_numbers$max_trial_number)
 ```
+
+
+
+
+### ----------------------------------------------------------------------
+### Code below here should be deleted or incorporated into specific figures
 
 
 
