@@ -529,6 +529,8 @@ if (save_figures == 1) {
 }
 ```
 
+
+This should now be in Figure 5. Check Figure 5 and then delete.
 ```{r}
 # -/- on beaconed but not probe trials
 spatial_firing_high  %>%
@@ -542,7 +544,7 @@ spatial_firing_high  %>%
                    sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
                    sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
+  mutate(Position = rep(-29:170)) %>%
   mean_SEM_plots_comp()
 
 if (save_figures == 1) {
@@ -561,7 +563,7 @@ spatial_firing_high  %>%
                    sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
                    sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
+  mutate(Position = rep(-29:170)) %>%
   mean_SEM_plots_comp()
 
 
@@ -1008,8 +1010,9 @@ spatial_firing_save <- select(spatial_firing,c('session_id', 'cluster_id', 'Mous
 ```
 
 ```{r}
-saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
-
+if (save_results == 1) {
+  saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
+}
 ```
 
 
@@ -1037,7 +1040,9 @@ spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
                               r_squared_homebound_p =  spatial_firing_save$asr_p_h_rewarded_fit_r.squared,
                               slope_homebound_p =  spatial_firing_save$asr_p_h_rewarded_fit_slope         )
 
-write.table(spatial_firing_save, "data_out/AllMice_LinearModelResults.txt", quote=FALSE, sep="\t")
+if (save_results == 1) {
+  write.table(spatial_firing_save, "data_out/AllMice_LinearModelResults.txt", quote=FALSE, sep="\t")
+}
 ```
 
 
