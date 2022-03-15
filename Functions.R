@@ -1,4 +1,14 @@
-### This script contains functions which are called in the OverallAnalysis markdown code
+### This script contains functions which are called in the Analysis markdown code
+
+
+# Adds positions to a single column data frame that contains a neurons binned mean firing rate
+add_position <- function(df, session_id = "", cluster_id = "") {
+  len = length(unlist(df))
+  df <- tibble(Rates = unlist(df), Position = rep(1:len)) 
+  #if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
+  df
+}
+
 
 ## ----------------------------------------------------------##
 
