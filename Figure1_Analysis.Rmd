@@ -37,7 +37,7 @@ The linear model uses firing rate data binned in space. For this we want to load
 add_position <- function(df, session_id, cluster_id) {
   len = length(unlist(df))
   df <- tibble(Rates = unlist(df), Position = rep(1:len)) 
-  if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
+  #if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
   df
 }
 ```

@@ -72,7 +72,7 @@ range(neuron_numbers$n)
 ```{r}
 # Trial numbers for all sessions
 trials_numbers <- spatial_firing  %>%
-  select(session_id, cohort, max_trial_number) %>%
+    select(session_id, cohort, max_trial_number) %>%
   mutate(max_trial_number = unlist(max_trial_number)) %>%
   distinct(session_id, .keep_all = TRUE)
 
