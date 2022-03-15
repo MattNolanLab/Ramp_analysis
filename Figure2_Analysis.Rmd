@@ -669,6 +669,9 @@ tukey.test_n$coef_type
 
 
 ```{r}
-saveRDS(spatial_firing, "SpatialFiring_with_Results.Rda")
+if (save_results == 1) {
+  saveRDS(spatial_firing, "SpatialFiring_with_Results.Rda")
+}
+
 
 ```
