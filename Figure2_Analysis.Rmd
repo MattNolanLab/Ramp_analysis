@@ -672,6 +672,4 @@ tukey.test_n$coef_type
 if (save_results == 1) {
   saveRDS(spatial_firing, "SpatialFiring_with_Results.Rda")
 }
-
-
 ```

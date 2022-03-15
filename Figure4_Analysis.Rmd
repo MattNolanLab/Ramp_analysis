@@ -289,7 +289,7 @@ outbound homebound  reset
 
 # go into dataframe and from each average_rates column : just path integration neurons
 ```{r}
-bin = 199
+bin = 200
 extract_cols_for_plot <- function(df){
  df <- tibble(Position = rep(1:bin, times=nrow(df)), 
              Rates = unlist(df$normalised_rates),
@@ -349,69 +349,44 @@ mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "blue"){
 
 ```{r}
 # -/- on probe trials
-spatial_firing_high  %>%
+# OB_b, HB_b, OB_p, HB_p are strings that define the slope for each track segment and trial type 
+plot_beaconed_vs_probe <- function(df, OB_b, HB_b, OB_p, HB_p) {
+  df  %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
   extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Unclassified") %>%
+  filter(Outbound_beaconed_b == OB_b & Homebound_beaconed_b == HB_b) %>%
+  filter(Outbound_beaconed_p == OB_p & Homebound_beaconed_p == HB_p) %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
                    sem_r = std.error(Rates, na.rm = TRUE),
                    mean_c = mean(Rates_c, na.rm = TRUE),
                    sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
+  mutate(Position = rep(-29:170)) %>%
   mean_SEM_plots_comp()
+}
+
+spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Negative", "Unclassified", "Unclassified")
 
 if (save_figures == 1) {
   ggsave(file = "plots/Negneg_probe_JustB.png",width = 3.6, height = 2.9)
 }
 
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p == "Unclassified" & Homebound_beaconed_p == "Negative") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
+
+spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Negative", "Unclassified", "Negative")
 
 if (save_figures == 1) {
   ggsave(file = "plots/Negneg_probe_outboundchange.png",width = 3.6, height = 2.9)
 }
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Unclassified") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
+
+
+spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative", "Unclassified")
 
 if (save_figures == 1) {
   ggsave(file = "plots/Negneg_probe_homeboundchange.png",width = 3.6, height = 2.9)
 }
 
 # -/- on beaconed and probe trials
-spatial_firing_high  %>%
-  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p == "Negative" & Homebound_beaconed_p == "Negative") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:169)) %>%
-  mean_SEM_plots_comp()
+spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative", "Negative")
 
 
 if (save_figures == 1) {
