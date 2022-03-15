@@ -1,13 +1,79 @@
 ### This script contains functions which are called in the Analysis markdown code
 
 
-# Adds positions to a single column data frame that contains a neurons binned mean firing rate
+## Adds positions to a single column data frame that contains a neurons binned mean firing rate
 add_position <- function(df, session_id = "", cluster_id = "") {
   len = length(unlist(df))
   df <- tibble(Rates = unlist(df), Position = rep(1:len)) 
   #if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
   df
 }
+
+
+
+## Fits a linear model to firing rate data contained in df, across the range from startbin to endbin.
+# Returns output as a dataframe containing key model parameters extracted with glance and tidy.
+lm_tidy_helper <- function(df,
+                           startbin,
+                           endbin) {
+  # Check for NAs
+  if (all(is.na(df$Rates))) {
+    df <-
+      tibble(
+        r.squared = c(NA),
+        p.value = c(NA),
+        intercept = c(NA),
+        slope = c(NA)
+      )
+    return(df)
+  }
+  
+  df <- df %>%
+    subset(Position >= startbin & Position <= endbin)
+  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
+  
+  # get the model parameters
+  params <- select(glance(df_fit), r.squared, p.value)
+  # get the coefficients
+  coeffs <- tidy(df_fit)
+  # combine the parameters and coefficients
+  params$intercept <- coeffs$estimate[[1]]
+  params$slope <- coeffs$estimate[[2]]
+  return(params)
+}
+
+###Function to generate shuffled datasets from a neuron's mean firing rate profile.
+# shuffles defines the number of shuffles. The default value is for testing.
+# Use a larger value for analyses, e.g. 1000.
+# shuffles spikes using sample() function
+# fits lm
+# extracts coefficients
+# stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
+# The id, slope, r2 and p values for each shuffled dataset are returned.
+
+shuffle_rates <- function(df, startbin, endbin, shuffles = 10) {
+  df_modified <- data.frame(neuron=as.numeric(),
+                            slope=as.numeric(), 
+                            rsquared=as.numeric(), 
+                            pval=vector())
+  names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
+  x <- 1
+  repeat {
+    shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
+    df_mod <- lm_tidy_helper(shuff_df, startbin, endbin)
+    data <- data.frame(as.numeric(x), df_mod$slope, df_mod$r.squared, df_mod$p.value)
+    names(data) <- c("neuron", "slope", "r.squared", "p.value")
+    df_modified <- rbind(df_modified,data)
+    
+    x = x+1
+    if (x == shuffles){ 
+      break
+    }
+  }
+  return(df_modified)
+}
+
+
 
 
 ## ----------------------------------------------------------##
