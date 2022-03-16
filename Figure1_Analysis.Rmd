@@ -154,10 +154,11 @@ return(df_modified)
 }
 ```
 
-2. Run if shuffles haven't already been generated.
+2. Run if shuffles haven't already been generated. 
 
-Edit: We're only making 2 shuffles and will fill the shuffled rate tables with shuffled data generated in Python at the spike-level. 
-Set this to 1000 and disregard the next step if you want to use the space binned fr method of shuffling
+You can either run a crude shuffle by shuffling the firing rate binned in space per cell or extract shuffles from a cyclic shuffling procedure done in Python
+Set "shuffles" accordingly for a crude shuffle or set to a low number as the nested tables created will be used in the next step to extract the cyclic shuffles 
+(this won't affect the number of cyclic shuffles extracted per cell)
 ```{r}
 shuffles <- 2
 
@@ -180,8 +181,10 @@ if (save_results == 1) {
 ```
 
 
-2. Extract shuffled results from spike-level shuffle dataframe
+2. Extract shuffled results from spike-level shuffle dataframe (this contains 1000 shuffles)
 ```{r}
+# set shuffles to 1000 as in the .feather file, this is used downstream to extract shuffle slopes
+shuffles <- 1000
 path = file.path(getwd(),"all_mice_concatenated_shuffle_data_rewarded.feather")
 shuffled_df <- read_feather(path)
 
@@ -244,9 +247,6 @@ spatial_firing <- spatial_firing[,!grepl("^shuffle_results_p_o",names(spatial_fi
 names(spatial_firing)[names(spatial_firing) == "spike_shuffle_results_b_o"] <- "shuffle_results_b_o"
 names(spatial_firing)[names(spatial_firing) == "spike_shuffle_results_nb_o"] <- "shuffle_results_nb_o"
 names(spatial_firing)[names(spatial_firing) == "spike_shuffle_results_p_o"] <- "shuffle_results_p_o"
-
-# set shuffles to 1000 as in the .feather file
-shuffles <- 1000
 ```
 
 
