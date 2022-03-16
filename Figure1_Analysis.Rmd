@@ -10,12 +10,12 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-## Analysis of neurons recorded from the parahippocampal areas during virtual navigation
+## Identification of ramping activity of neurons recorded from the parahippocampal areas during a location memory task
 
-The aim of this analysis is to identify all ramp cells within a specified dataset (all mice or all days for one mouse) and perform analysis to investigate their firing properties. 
-1. Identify cells that represent location by ramping their firing rate using LM modeling 
-2. Subset data by model fit (r2 value)
-3. Compare firing rates of cells in this group
+The aim of this analysis is:
+1. Identify cells that show ramping changes in their firing rate.
+2. Classify cells according to the profile of their activity.
+3. Examine the population average activity of different cell groups.
 
 
 To set up, including loading packages and data, first run SetUp.Rmd.
@@ -24,25 +24,9 @@ To set up, including loading packages and data, first run SetUp.Rmd.
 
 ### ----------------------------------------------------------------------------------------- ###
 
-## Average firing rate (for LM modelling)
+## Prepare data for fitting linear models
 
-The linear model uses firing rate data binned in space. For this we want to load average firing rate over trials from the data frame for each cluster. 
-- Map over "Rates_averaged" column and extract averaged rates
-- Add position for each point (data is binned into 200, 1 cm bins )
-- Insert result back into dataframe
-- Do this for beaconed, nonbeaconed and probe trials
-
-1. Write function to add position
-```{r}
-add_position <- function(df, session_id, cluster_id) {
-  len = length(unlist(df))
-  df <- tibble(Rates = unlist(df), Position = rep(1:len)) 
-  if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
-  df
-}
-```
-
-2. Run on dataframe : Average trials with reward
+Make a copy of the average firing rates for each cell that has position added.
 
 input columns: 
 Rates_averaged_rewarded_b = beaconed trials
@@ -59,51 +43,20 @@ spatial_firing <- spatial_firing %>%
 
 ### ----------------------------------------------------------------------------------------- ###
 
-# Run simple linear model to examine relationship between firing rate and position
-_note:for now we are only interested in the outbound region of the track (30 - 90 cm)_
+# Fit linear models to examine relationship between firing rate and position
 
-1. Make function to run linear model
-```{r}
-lm_helper <- function(df,
-                      startbin,
-                      endbin) {
-  # Check for NAs
-  if (all(is.na(df$Rates))) {
-    df <-
-      tibble(
-        r.squared = c(NA),
-        p.value = c(NA),
-        intercept = c(NA),
-        slope = c(NA)
-      )
-    return(df)
-  }
 
-  df <- df %>%
-    subset(Position >= startbin & Position <= endbin)
-  df_fit <- lm(Rates ~ Position, data = df, na.action = na.exclude)
+# Focus on the region of the track before the reward zone (labelled as 30-90 cm here)
 
-  # get the model parameters
-  params <- select(glance(df_fit), r.squared, p.value)
-  # get the coefficients
-  coeffs <- tidy(df_fit)
-  # combine the parameters and coefficients
-  params$intercept <- coeffs$estimate[[1]]
-  params$slope <- coeffs$estimate[[2]]
-  return(params)
-}
-```
-
-2. run lm on all cells.
-Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
+Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider). The function lm_tidy_helper fits the linear model and then returns data extracted from the model fit using glance and tidy tools.
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('asr_b_o_rewarded_fit_')) %>%
   select(-contains('asr_nb_o_rewarded_fit_')) %>%
   select(-contains('asr_p_o_rewarded_fit_')) %>%
-  mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_helper),
-         asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_helper),
-         asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_helper)) %>%
+  mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_tidy_helper),
+         asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_tidy_helper),
+         asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_tidy_helper)) %>%
   unnest_wider(asr_b_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_nb_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_p_o_rewarded_fit, names_sep = "_", names_repair = "universal")
@@ -118,43 +71,9 @@ spatial_firing$asr_b_o_rewarded_fit_r.squared
 
 ### ----------------------------------------------------------------------------------------- ###
 
-## Identification of ramp cells in dataset 
+## Generate a comparable shuffled data for each neuron.
 
-Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled data sets.
-
-
-1. Function to generate shuffles
-- shuffles spikes using sample() function
-- runs lm
-- extracts coefficients
-- stores coefficients for each 1000 shuffles (less memory than saving 1000 shuffles)
-```{r}
-#library(gdata)
-# shuffles defines the number of shuffes. Use a smaller value for testing.
-shuffle_rates <- function(df, startbin, endbin, shuffles = 10) {
-  df_modified <- data.frame(neuron=as.numeric(),
-                 slope=as.numeric(), 
-                 rsquared=as.numeric(), 
-                 pval=vector())
-  names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
-  x <- 1
-  repeat {
-  shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
-  df_mod <- lm_helper(shuff_df, startbin, endbin)
-  data <- data.frame(as.numeric(x), df_mod$slope, df_mod$r.squared, df_mod$p.value)
-  names(data) <- c("neuron", "slope", "r.squared", "p.value")
-  df_modified <- rbind(df_modified,data)
-
-  x = x+1
-  if (x == shuffles){ 
-  break
-  }
-  }
-return(df_modified)
-}
-```
-
-2. Run if shuffles haven't already been generated.
+If shuffles haven't already been generated then make them.
 ```{r}
 shuffles <- 1000
 
@@ -179,9 +98,8 @@ if (save_results == 1) {
 
 ### ---------------------------------------------------------------------------- ### 
 
-### classify neurons based on shuffle activity
+### Identify ramping activity by whether the coefficients of the linear model lie outside the 5th-95th percentiles of the same result from 1000 shuffled data sets.
 
-If outside the 95% of the shuffled data set, a neuron is considered to have ramp like activity along the track. 
 
 First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron 
 
@@ -349,7 +267,7 @@ _note:for now we are only interested in the homebound region of the track (110 -
 
 1. Make function to run linear model
 
-Use lm_helper defined above.
+Use lm_tidy_helper defined above.
 
 
 2. run lm on all cells.
@@ -365,9 +283,9 @@ spatial_firing <- spatial_firing %>%
   select(-contains('asr_p_h_rewarded_fit_')) %>%
   select(-contains('asr_p_h_rewarded_fit_')) %>%
   select(-contains('asr_p_h_rewarded_fit_')) %>%
-  mutate(asr_b_h_rewarded_fit = pmap(list(asr_b_rewarded, 110, 170), lm_helper),
-         asr_nb_h_rewarded_fit = pmap(list(asr_nb_rewarded, 110, 170), lm_helper),
-         asr_p_h_rewarded_fit = pmap(list(asr_p_rewarded, 110, 170), lm_helper)) %>%
+  mutate(asr_b_h_rewarded_fit = pmap(list(asr_b_rewarded, 110, 170), lm_tidy_helper),
+         asr_nb_h_rewarded_fit = pmap(list(asr_nb_rewarded, 110, 170), lm_tidy_helper),
+         asr_p_h_rewarded_fit = pmap(list(asr_p_rewarded, 110, 170), lm_tidy_helper)) %>%
   unnest_wider(asr_b_h_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_nb_h_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_p_h_rewarded_fit, names_sep = "_", names_repair = "universal")

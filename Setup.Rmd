@@ -37,10 +37,10 @@ library(car)
 source("Functions.R") ## is this even used??? I dont think so! Keeping it just incase..
 
 # Parameter to save figures. Set to 1 if you'd like to save them.
-save_figures = 1
+save_figures = 0
 
 # Parameter to save data snapshots as analysis proceeds. Set to 1 to save.
-save_results = 1
+save_results = 0
 
 
 # Load data
@@ -49,6 +49,9 @@ save_results = 1
 spatial_firing <- readRDS(file="data_in/SpatialFiring_with_1000_shuffles_of.Rda") ## concatenated all cohorts with shuffled ran
 # To work on  a subset of data for testing
 # spatial_firing <-  slice_head(spatial_firing, n = 10)
+
+# Load functions used in later analyses.
+source("Functions.R")
 ```
 
 
@@ -68,7 +71,7 @@ colnames(spatial_firing)
 # stop from printing too much if looking at variables
 
 
-options(max.print = 10)
+options(max.print = 30)
 ```
 
 
