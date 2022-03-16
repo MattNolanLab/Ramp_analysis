@@ -76,6 +76,18 @@ shuffle_rates <- function(df, startbin, endbin, shuffles = 10) {
 
 
 
+# Functions to return the slope for a given quantile in the shuffled datasets 
+extract_quantile_shuffle_slopes <- function(df, q_prob = 0.05){
+  df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
+  if (all(is.na(df$slopes))) {
+    return(NA)
+  }
+  min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(q_prob))[1]
+  return(min_slope_o)
+}
+
+
+
 ## ----------------------------------------------------------##
 
 lm_helper <- function(df, bins){

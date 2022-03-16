@@ -71,7 +71,7 @@ spatial_firing$asr_b_o_rewarded_fit_r.squared
 
 ### ----------------------------------------------------------------------------------------- ###
 
-## Generate a comparable shuffled data for each neuron.
+## Generate comparable shuffled data for each neuron.
 
 If shuffles haven't already been generated then make them.
 ```{r}
@@ -101,43 +101,17 @@ if (save_results == 1) {
 ### Identify ramping activity by whether the coefficients of the linear model lie outside the 5th-95th percentiles of the same result from 1000 shuffled data sets.
 
 
-First, extract the 5 % and 95 % limits of 1000 shuffles for each neuron 
-
-1. write function to find min and max slope for shuffled datasets 
-```{r}
-
-extract_min_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
-  if (all(is.na(df$slopes))) {
-    return(NA)
-  }
-  min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[1]][1]
-  return(min_slope_o)
-}
-
-extract_max_shuffle_slopes <- function(df){
-  df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
-    if (all(is.na(df$slopes))) {
-    return(NA)
-  }
-  max_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(.05, .95)) [[2]][1]
-  return(max_slope_o)
-}
-
-```
-
-2. Run on all neurons
+First, extract the 5 % and 95 % quantiles of 1000 shuffles for each neuron.
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('shuffle_min_slope_')) %>%
   select(-contains('shuffle_max_slope_')) %>%
-  mutate(shuffle_min_slope_b_o = map_dbl(shuffle_results_b_o, extract_min_shuffle_slopes),
-         shuffle_max_slope_b_o = map_dbl(shuffle_results_b_o, extract_max_shuffle_slopes),
-         shuffle_min_slope_nb_o = map_dbl(shuffle_results_nb_o, extract_min_shuffle_slopes),
-         shuffle_max_slope_nb_o = map_dbl(shuffle_results_nb_o, extract_max_shuffle_slopes),
-         shuffle_min_slope_p_o = map_dbl(shuffle_results_p_o, extract_min_shuffle_slopes),
-         shuffle_max_slope_p_o = map_dbl(shuffle_results_p_o, extract_max_shuffle_slopes))
-
+  mutate(shuffle_min_slope_b_o = map2_dbl(shuffle_results_b_o, 0.05, extract_quantile_shuffle_slopes),
+         shuffle_max_slope_b_o = map2_dbl(shuffle_results_b_o, 0.95, extract_quantile_shuffle_slopes),
+         shuffle_min_slope_nb_o = map2_dbl(shuffle_results_nb_o, 0.05, extract_quantile_shuffle_slopes),
+         shuffle_max_slope_nb_o = map2_dbl(shuffle_results_nb_o, 0.95, extract_quantile_shuffle_slopes),
+         shuffle_min_slope_p_o = map2_dbl(shuffle_results_p_o, 0.05, extract_quantile_shuffle_slopes),
+         shuffle_max_slope_p_o = map2_dbl(shuffle_results_p_o, 0.95, extract_quantile_shuffle_slopes))
 ```
 
 
