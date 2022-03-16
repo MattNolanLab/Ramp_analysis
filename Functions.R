@@ -76,6 +76,40 @@ shuffle_rates <- function(df, startbin, endbin, shuffles = 10) {
 
 
 
+# Functions to return the slope for a given quantile in the shuffled datasets 
+extract_quantile_shuffle_slopes <- function(df, q_prob = 0.05){
+  df <- tibble(slopes = unlist(df$slope), r.squared = unlist(df$r.squared))
+  if (all(is.na(df$slopes))) {
+    return(NA)
+  }
+  min_slope_o <- quantile(as.numeric(unlist(df$slopes)), c(q_prob))[1]
+  return(min_slope_o)
+}
+
+
+
+# To classify neurons based on:
+# 1. Whether their slopes are outside the 5-95% range of the shufled data.
+# 2. Whether the adjusted p-value of the linear model fit is <= 0.01.
+compare_slopes <-
+  function(min_slope = 1,
+           max_slope = 1,
+           slope = 1,
+           pval = 1) {
+    if (any(is.na(list(min_slope, max_slope, slope, pval)))) {
+      return("Unclassified")
+    }
+    if (pval > 0.01) {
+      return("Unclassified")
+    } else if (slope < min_slope & pval < 0.01) {
+      return("Negative")
+    } else if (slope > max_slope & pval < 0.01) {
+      return("Positive")
+    } else {
+      return("Unclassified")
+    }
+  }
+
 ## ----------------------------------------------------------##
 
 lm_helper <- function(df, bins){
