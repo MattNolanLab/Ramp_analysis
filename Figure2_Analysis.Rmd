@@ -411,6 +411,7 @@ spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id,
 spatial_firing_save$o_b_mod_coefs_pos <- as.numeric(spatial_firing_save$o_b_mod_coefs_pos)
 spatial_firing_save$o_b_mod_coefs_speed <- as.numeric(spatial_firing_save$o_b_mod_coefs_speed)
 spatial_firing_save$o_b_mod_coefs_accel <- as.numeric(spatial_firing_save$o_b_mod_coefs_accel)
+spatial_firing_save$cluster_id <- as.numeric(spatial_firing_save$cluster_id)
 
 ```
 
