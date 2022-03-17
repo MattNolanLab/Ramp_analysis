@@ -79,7 +79,7 @@ level_order <- c("Negative", "Positive", "Unclassified")
 
 ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
   coord_cartesian(xlim = c(-0.45,0.45)) +
-  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, alpha=0.5) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, alpha=1) +
   ylab("Proportion") +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
   scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
