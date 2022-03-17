@@ -148,8 +148,8 @@ shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope)
 shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), 
                        r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
                        pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
-                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, times = 999), 
-                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = 999))
+                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, times = 1000), 
+                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = 1000))
 ```
 
 2. Function to classify shuffled cells based on shuffled distribution
