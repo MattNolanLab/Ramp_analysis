@@ -32,6 +32,7 @@ library(tibbletime)
 library(agricolae) # post hoc Tukey test
 library(ggallin) # this is for the pseudolog10_trans function used in coeff plots in Figure2_Analysis
 library(car)
+library(feather)
 
 # Load functions used in later analyses.
 source("Functions.R")
@@ -42,7 +43,9 @@ save_figures = 0
 # Parameter to save data snapshots as analysis proceeds. Set to 1 to save.
 save_results = 0
 
-
+# Type of shuffle to use
+# Change this to c"circular" to use circular shuffles of the data.
+shuffle_type <- "mean"
 # Load data
 # Alternative file names commented out
 # spatial_firing <- readRDS(file="data_in/PythonOutput_Concat.Rda") ## concatenated all cohorts prior to R analysis
