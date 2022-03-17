@@ -1052,6 +1052,7 @@ ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & rewa
 sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ramps_with_enough_trials)*100
 nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps_with_enough_trials)*100
 ```
+
 ```{r}
 sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
 nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))

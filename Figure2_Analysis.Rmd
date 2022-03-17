@@ -242,11 +242,12 @@ make_unique_id <- function(session,cluster) {
   x <- paste(session, cluster, sep="_")
   return(as.character(x))
 }
+```
 
+```{r}
 # run on all cells
 spatial_firing <- spatial_firing  %>%
   mutate(unique_id = map2(session_id, cluster_id, make_unique_id))
-
 ```
 
 
@@ -395,7 +396,9 @@ make_unique_id <- function(session,cluster) {
   x <- paste(session, cluster, sep="_")
   return(as.character(x))
 }
+```
 
+```{r}
 # run on all cells
 spatial_firing <- spatial_firing  %>%
   mutate(unique_id = map2(session_id, cluster_id, make_unique_id))
