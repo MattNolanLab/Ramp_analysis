@@ -43,7 +43,9 @@ save_figures = 1
 # Parameter to save data snapshots as analysis proceeds. Set to 1 to save.
 save_results = 1
 
-
+# Type of shuffle to use
+# Change this to c"circular" to use circular shuffles of the data.
+shuffle_type <- "mean"
 # Load data
 # Alternative file names commented out
 # spatial_firing <- readRDS(file="data_in/PythonOutput_Concat.Rda") ## concatenated all cohorts prior to R analysis
