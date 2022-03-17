@@ -95,10 +95,8 @@ if (save_results == 1) {
 
 cs_path = "data_in/all_mice_concatenated_shuffle_data_rewarded.feather"
 
+shuffle_type="circular"
 if(shuffle_type=="circular") {spatial_firing <- load_circ_shuffles(spatial_firing, cs_path)}
-
-cs_path = "data_in/test_spatial_firing.feather"
-shuffled_df <- read_feather(cs_path)
 ```
 
 
