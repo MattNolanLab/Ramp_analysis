@@ -176,8 +176,8 @@ Removes any previously generated results (select), fits the data (mutate) and th
 spatial_firing <- spatial_firing %>%
   select(-contains('asr_b_try_fit_')) %>%
   select(-contains('asr_b_run_fit_')) %>%
-  mutate(asr_b_try_fit = pmap(list(asr_b_try, 30, 90), lm_helper)) %>%
-  mutate(asr_b_run_fit = pmap(list(asr_b_run, 30, 90), lm_helper)) %>%
+  mutate(asr_b_try_fit = pmap(list(asr_b_try, 30, 90), lm_tidy_helper)) %>%
+  mutate(asr_b_run_fit = pmap(list(asr_b_run, 30, 90), lm_tidy_helper)) %>%
   unnest_wider(asr_b_try_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_b_run_fit, names_sep = "_", names_repair = "universal")
 
@@ -1052,6 +1052,7 @@ ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & rewa
 sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ramps_with_enough_trials)*100
 nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps_with_enough_trials)*100
 ```
+
 ```{r}
 sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
 nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))

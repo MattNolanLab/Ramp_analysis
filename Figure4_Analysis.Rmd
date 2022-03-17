@@ -346,7 +346,6 @@ mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "blue"){
 ```
 
 
-
 ```{r}
 # -/- on probe trials
 # OB_b, HB_b, OB_p, HB_p are strings that define the slope for each track segment and trial type 
@@ -364,7 +363,9 @@ plot_beaconed_vs_probe <- function(df, OB_b, HB_b, OB_p, HB_p) {
   mutate(Position = rep(-29:170)) %>%
   mean_SEM_plots_comp()
 }
+```
 
+```{r}
 spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Negative", "Unclassified", "Unclassified")
 
 if (save_figures == 1) {
@@ -392,8 +393,6 @@ spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative
 if (save_figures == 1) {
   ggsave(file = "plots/Negneg_probe_BandP.png", width = 3.6, height = 2.9)
 }
-
-
 ```
 
 
@@ -891,6 +890,7 @@ _Plot coefficients for just position cells_
 6a. Plot coefficients for cells classified in Figure 1 as having a positive slope and in Figure 2 as having significant fit coefficients for position only.
 
 ```{r}
+# this cell requires data_coef made in Figure 2 Analysis Rmd
 data_coef_pos_allp <- data_coef %>%
   subset(group == "P" | group == "PS" | group == "PSA" | group == "PA") %>%
   subset(lm_result == "Positive")
@@ -957,7 +957,7 @@ negnon_same_probe <-subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "U
 nonpos_same_probe <-subset(nonpos, lm_group_p == "Unclassified" & lm_group_p_h == "Positive")
 nonneg_same_probe <-subset(nonneg, lm_group_p == "Unclassified" & lm_group_p_h == "Negative")
 
-all_same_data <- rbind(posneg_same_probe, negpos_same_probe, negneg_same_probe, pospos_same_probe, posnon_same_probe, negnon_same_probe, nonpos_same_probe, nonneg_same_probe)
+all_same_data <- bind_rows(posneg_same_probe, negpos_same_probe, negneg_same_probe, pospos_same_probe, posnon_same_probe, negnon_same_probe, nonpos_same_probe, nonneg_same_probe)
 ```
 
 
@@ -971,7 +971,7 @@ pospos_diff_probe <-subset(pospos, lm_group_p != "Positive" | lm_group_p_h != "P
 posnon_diff_probe <-subset(posnon, lm_group_p != "Positive" | lm_group_p_h != "Unclassified")
 negnon_diff_probe <-subset(negnon, lm_group_p != "Negative" | lm_group_p_h != "Unclassified")
 
-all_diff_data <- rbind(posneg_diff_probe, negpos_diff_probe, negneg_diff_probe, pospos_diff_probe, posnon_diff_probe, negnon_diff_probe)
+all_diff_data <-  bind_rows(posneg_diff_probe, negpos_diff_probe, negneg_diff_probe, pospos_diff_probe, posnon_diff_probe, negnon_diff_probe)
 
 
 ```
@@ -986,13 +986,12 @@ all_diff_data <- cbind(all_diff_data, col1)
 ```
 
 ```{r}
-all_data <- rbind(all_same_data, all_diff_data)
+all_data <- bind_rows(all_same_data, all_diff_data)
 ```
 
 ```{r}
 data <- all_data  %>%
   select(Mouse, cohort, session_id, col1) %>%
-  filter(Mouse != "1124") %>%
   dplyr::group_by(Mouse, cohort, col1, .drop=FALSE) %>%
   dplyr::summarise(n = n()) %>%
   dplyr::mutate(proportion = round(n / sum(n)*100, 2)) 
