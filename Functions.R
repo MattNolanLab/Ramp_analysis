@@ -270,8 +270,8 @@ load_circ_shuffles <- function(df, cs_path) {
   names(df)[names(df) == "spike_shuffle_results_b_o"] <- "shuffle_results_b_o"
   names(df)[names(df) == "spike_shuffle_results_nb_o"] <- "shuffle_results_nb_o"
   names(df)[names(df) == "spike_shuffle_results_p_o"] <- "shuffle_results_p_o"
-  df
-col}
+  return(df)
+}
 
 
 ## ----------------------------------------------------------##

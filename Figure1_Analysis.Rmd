@@ -74,7 +74,7 @@ spatial_firing$asr_b_o_rewarded_fit_r.squared
 Generate or load shuffled data.
 ```{r}
 # Make this smaller for testing.
-shuffles <- 1000
+shuffles <- 2
 
 # Uncomment the line below to load pre-saved shuffled data
 #spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
@@ -96,7 +96,11 @@ if (save_results == 1) {
 cs_path = "data_in/all_mice_concatenated_shuffle_data_rewarded.feather"
 
 shuffle_type="circular"
-if(shuffle_type=="circular") {spatial_firing <- load_circ_shuffles(spatial_firing, cs_path)}
+if(shuffle_type=="circular") {
+  spatial_firing <- load_circ_shuffles(spatial_firing, cs_path)
+  shuffles <- 1000 # this should be equivalent to the n_shuffles per cell in the .feather file
+}
+
 ```
 
 
