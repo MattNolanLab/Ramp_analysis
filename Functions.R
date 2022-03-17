@@ -110,6 +110,104 @@ compare_slopes <-
     }
   }
 
+
+#Calculates the difference between mean rate and predicted mean rate at the start of the homebound zone
+calc_predict_diff <- function(rates, fit)
+{
+  diff <- mean(as.double(rates[110:115])) - mean(as.double(fit[110:115]))
+}
+
+#make function to predict firing rate
+lm_predict <- function(df){
+  new.data <- data.frame(Position =df$Position)
+}
+
+# Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
+predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 110, predict_end = 115){
+  # check for NAs
+  if(all(is.na(df))) 
+    return(NA)
+  # Make track column
+  df <- tibble(Rates = unlist(df), Position=rep(1:200))
+  # fit
+  model <- lm(Rates ~ Position, data = filter(df, Position >= fit_start, Position <= fit_end))
+  # predict
+  homebound_prediction_pos <- tibble(Position = rep(1:200))
+  homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "prediction", level = 0.99) 
+  as.tibble(homebound_prediction)
+}
+
+
+#Test whether data lies outside of confidence intervals
+offset_test <- function(rates, lwr, upr){
+  # check for NAs
+  if(all(is.na(rates))) 
+    return(NA)
+  rates <- mean(as.double(rates[110:115]))
+  upr <- mean(as.double(upr[110:115]))
+  lwr <- mean(as.double(lwr[110:115]))
+  if(rates > upr) {
+    return("Pos")
+  }
+  
+  if (rates <= lwr) {
+    return("Neg")
+  }
+  return("None")
+  
+}
+
+
+#write function to mark cells based on groups
+mark_track_category <- function(outbound, homebound){
+  if( outbound == "Positive" & homebound == "Negative") {
+    return( "posneg" ) 
+  } else if( outbound == "Positive" & homebound == "Positive") {
+    return( "pospos" )
+  } else if( outbound == "Negative" & homebound == "Positive") {
+    return( "negpos" )
+  } else if( outbound == "Negative" & homebound == "Negative") {
+    return( "negneg" )
+  } else if( outbound == "Negative" & homebound == "Unclassified") {
+    return( "negnon" )
+  } else if( outbound == "Positive" & homebound == "Unclassified") {
+    return( "posnon" )
+  } else {
+    return("None")
+  }
+}
+
+
+# write function to mark cells based on groups
+mark_numeric_track_category <- function(outbound, homebound){
+  if( outbound == "Positive" & homebound == "Negative") {
+    return( as.numeric(2) ) 
+  } else if( outbound == "Positive" & homebound == "Positive") {
+    return( as.numeric(1) )
+  } else if( outbound == "Negative" & homebound == "Positive") {
+    return( as.numeric(5) )
+  } else if( outbound == "Negative" & homebound == "Negative") {
+    return( as.numeric(4) )
+  } else if( outbound == "Negative" & homebound == "Unclassified") {
+    return( as.numeric(6) )
+  } else if( outbound == "Positive" & homebound == "Unclassified") {
+    return( as.numeric(3) )
+  } else {
+    return(as.numeric(0))
+  }
+}
+
+#Function to classify neurons based on offset 
+mark_reset_group_predict <- function(offset){
+  if (is.na(offset) ) {
+    return( "None" )
+  } else if( offset == "None") {
+    return( "Continuous" )
+  } else if( ( offset == "Neg" ||  offset == "Pos")) {
+    return( "Reset" ) 
+  }
+}
+
 ## ----------------------------------------------------------##
 
 lm_helper <- function(df, bins){
