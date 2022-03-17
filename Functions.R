@@ -57,7 +57,7 @@ shuffle_rates <- function(df, startbin, endbin, shuffles = 10) {
                             rsquared=as.numeric(), 
                             pval=vector())
   names(df_modified) <- c("neuron", "slope", "rsquared", "pval")
-  x <- 1
+  x <- 0
   repeat {
     shuff_df <- tibble(Rates = sample(as.vector(unlist(df)),replace = TRUE, prob = NULL), Position = c(1:200))
     df_mod <- lm_tidy_helper(shuff_df, startbin, endbin)
