@@ -38,18 +38,21 @@ library(arrow)
 source("Functions.R")
 
 # Parameter to save figures. Set to 1 if you'd like to save them.
-save_figures = 0
+save_figures = 1
 
 # Parameter to save data snapshots as analysis proceeds. Set to 1 to save.
-save_results = 0
+save_results = 1
 
 # Type of shuffle to use
-# Change this to c"circular" to use circular shuffles of the data.
-shuffle_type <- "mean"
+# Change this to "circular" to use circular shuffles of the data. # requires shuffled.feather file
+# Change this to "mean" to use a space binned shuffled method
+shuffle_type <- "circular"
 # Load data
 # Alternative file names commented out
-# spatial_firing <- readRDS(file="data_in/PythonOutput_Concat.Rda") ## concatenated all cohorts prior to R analysis
-spatial_firing <- readRDS(file="data_in/SpatialFiring_with_1000_shuffles_of.Rda") ## concatenated all cohorts with shuffled ran
+spatial_firing <- readRDS(file="data_in/PythonOutput_Concat_final.Rda") ## concatenated all cohorts prior to R analysis
+#spatial_firing <- readRDS(file="data_in/SpatialFiring_with_1000_shuffles_of.Rda") ## concatenated all cohorts with shuffled ran
+#spatial_firing <- readRDS(file="SpatialFiring_with_Results.Rda") ## concatenated all cohorts with shuffled ran
+#spatial_firing <- readRDS(file="SpatialFiring_with_glmer.Rda")
 # To work on  a subset of data for testing
 # spatial_firing <-  slice_head(spatial_firing, n = 10)
 

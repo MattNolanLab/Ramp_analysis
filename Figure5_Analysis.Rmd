@@ -410,8 +410,8 @@ mean_SEM_plots_BvsNB <- function(df, group_b, group_p, x_start = -10, x_end = 70
  df$normalised_rates <- as.double(df$normalised_rates)
  df$normalised_rates_p <- as.double(df$normalised_rates_p)
  df$cue_group_o <- as.character(df$cue_group_o)
- numcells <- length(df$normalised_rates)/199
- df$Position <- rep(-29:169, times = numcells)
+ numcells <- length(df$normalised_rates)/200
+ df$Position <- rep(-30:169, times = numcells)
  
  df <- df %>%
    group_by(cue_group_o, Position) %>%
