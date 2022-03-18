@@ -72,7 +72,7 @@ spatial_firing$asr_b_o_rewarded_fit_r.squared
 Generate or load shuffled data.
 ```{r}
 # Make this smaller for testing.
-shuffles <- 2
+shuffles <- 1000
 
 # Uncomment the line below to load pre-saved shuffled data
 #spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
@@ -95,9 +95,26 @@ cs_path = "data_in/all_mice_concatenated_shuffle_data_rewarded.feather"
 
 shuffle_type="circular"
 if(shuffle_type=="circular") {
-  spatial_firing <- load_circ_shuffles(spatial_firing, cs_path)
+  spatial_firing_circ <- load_circ_shuffles(spatial_firing, cs_path)
   shuffles <- 1000 # this should be equivalent to the n_shuffles per cell in the .feather file
 }
+
+spatial_firing <- spatial_firing %>%
+  sjmisc::replace_columns(spatial_firing_circ) # Could replace this with select(-contains('col_name')) and then cbind.
+if(shuffle_type=="circular") {
+  spatial_firing_circ_2 <- local_circ_shuffles_2(spatial_firing, cs_path)
+  
+  spatial_firing <- spatial_firing %>%
+  select(-contains('shuffle_results_b_o')) %>%
+  select(-contains('shuffle_results_nb_o')) %>%
+  select(-contains('shuffle_results_pb_o')) %>%
+  mutate(shuffle_results_b_o = spatial_firing_circ_2$shuffle_results_b_o,
+         shuffle_results_nb_o = spatial_firing_circ_2$shuffled_results_nb_o,
+         shuffle_results_p_o = spatial_firing_circ_2$shuffled_results_p_o)
+  
+}
+#testing
+
 
 ```
 
@@ -344,6 +361,7 @@ spatial_firing$lm_group_p_h
 ### How much of the shuffled dataset is past criteria? 
 1. Extract shuffled slopes and rsquared values. 
 ```{r}
+shuffles = 1000
 shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), 
                        r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
                        pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
