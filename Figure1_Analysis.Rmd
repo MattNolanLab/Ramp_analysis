@@ -74,16 +74,30 @@ Generate or load shuffled data.
 # Make this smaller for testing.
 shuffles <- 1000
 
-# Uncomment the line below to load pre-saved shuffled data
-#spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
-
-# Check to see if the column shuffle_results exists. If it does then don't run again.
-if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
+# To load circular shuffle results
+if(shuffle_type=="circular") {
+  cs_path = "data_in/all_mice_concatenated_shuffle_data_rewarded.feather"
+  spatial_firing_circ <- local_circ_shuffles_2(spatial_firing, cs_path)
+  
   spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
-    mutate(shuffle_results_nb_o = pmap(list(Rates_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
-    mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
+  select(-contains('shuffle_results_b_o')) %>%
+  select(-contains('shuffle_results_nb_o')) %>%
+  select(-contains('shuffle_results_pb_o')) %>%
+  mutate(shuffle_results_b_o = spatial_firing_circ$shuffle_results_b_o,
+         shuffle_results_nb_o = spatial_firing_circ$shuffled_results_nb_o,
+         shuffle_results_p_o = spatial_firing_circ$shuffled_results_p_o)
+  
 }
+
+# Check to see if the column shuffle_results_b_o exists.
+# It will exist if shuffles have been pre-loaded or if circular shuffle results have been loaded.
+# If it doesn't exist then the mean firing rate as a function of position will be shuffled.
+# if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
+#   spatial_firing <- spatial_firing %>%
+#     mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
+#     mutate(shuffle_results_nb_o = pmap(list(Rates_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
+#     mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
+# }
 
 if (save_results == 1) {
   saveRDS(spatial_firing, "data_out/SpatialFiring_with_1000_shuffles_of.Rda")
@@ -91,29 +105,16 @@ if (save_results == 1) {
   saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
 }
 
-cs_path = "data_in/all_mice_concatenated_shuffle_data_rewarded.feather"
 
-shuffle_type="circular"
-if(shuffle_type=="circular") {
-  spatial_firing_circ <- load_circ_shuffles(spatial_firing, cs_path)
-  shuffles <- 1000 # this should be equivalent to the n_shuffles per cell in the .feather file
-}
 
-spatial_firing <- spatial_firing %>%
-  sjmisc::replace_columns(spatial_firing_circ) # Could replace this with select(-contains('col_name')) and then cbind.
-if(shuffle_type=="circular") {
-  spatial_firing_circ_2 <- local_circ_shuffles_2(spatial_firing, cs_path)
-  
-  spatial_firing <- spatial_firing %>%
-  select(-contains('shuffle_results_b_o')) %>%
-  select(-contains('shuffle_results_nb_o')) %>%
-  select(-contains('shuffle_results_pb_o')) %>%
-  mutate(shuffle_results_b_o = spatial_firing_circ_2$shuffle_results_b_o,
-         shuffle_results_nb_o = spatial_firing_circ_2$shuffled_results_nb_o,
-         shuffle_results_p_o = spatial_firing_circ_2$shuffled_results_p_o)
-  
-}
-#testing
+# shuffle_type="circular"
+# if(shuffle_type=="circular") {
+#   spatial_firing_circ <- load_circ_shuffles(spatial_firing, cs_path)
+#   shuffles <- 1000 # this should be equivalent to the n_shuffles per cell in the .feather file
+# }
+# 
+# spatial_firing <- spatial_firing %>%
+#   sjmisc::replace_columns(spatial_firing_circ) # Could replace this with select(-contains('col_name')) and then cbind.
 
 
 ```
@@ -360,13 +361,14 @@ spatial_firing$lm_group_p_h
 
 ### How much of the shuffled dataset is past criteria? 
 1. Extract shuffled slopes and rsquared values. 
+Rep shouldn't be interleaved. Use each rather than times? Needs checking carefully.
 ```{r}
 shuffles = 1000
 shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), 
                        r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
                        pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
-                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, times = shuffles), 
-                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = shuffles))
+                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, each = shuffles), 
+                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, each = shuffles))
 ```
 
 
@@ -391,7 +393,7 @@ shuff_slopes <- shuff_slopes %>%
 -calculate total number of shuffles (cells x 999)
 ```{r}
 (total_shuffles <- nrow(shuff_slopes))
-(shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" )))
+(shuff_ramps <- nrow(subset(shuff_slopes, shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" )))
 (shuff_ramps_percentage <- (shuff_ramps / total_shuffles)*100)
 ```
 
