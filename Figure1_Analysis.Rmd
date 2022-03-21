@@ -92,12 +92,13 @@ if(shuffle_type=="circular") {
 # Check to see if the column shuffle_results_b_o exists.
 # It will exist if shuffles have been pre-loaded or if circular shuffle results have been loaded.
 # If it doesn't exist then the mean firing rate as a function of position will be shuffled.
-# if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
-#   spatial_firing <- spatial_firing %>%
-#     mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
-#     mutate(shuffle_results_nb_o = pmap(list(Rates_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
-#     mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
-# }
+if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
+  spatial_firing <- spatial_firing %>%
+    mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_nb_o = pmap(list(Rates_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
+}
+
 
 if (save_results == 1) {
   saveRDS(spatial_firing, "data_out/SpatialFiring_with_1000_shuffles_of.Rda")
@@ -159,27 +160,21 @@ spatial_firing <- spatial_firing %>%
 
 We also want to correct the p values of the lm fits to the experimental data to account for multiple comparisons.
 
-1. put all pvalues into tibble then adjust using p.adjust from - package
+Put all pvalues into tibble, adjust for multiple comparisons and add to spatial_firing
 ```{r}
 p_vals_b <- tibble(pvals = spatial_firing$asr_b_o_rewarded_fit_p.value)
 adu_p_b <- tibble(adjust_pval_b_o = p.adjust(p_vals_b$pvals, "BH"))
-
-```
-
-
-2. bind new adjusted pvalues to dataframe
-```{r}
 spatial_firing <- cbind(spatial_firing, adu_p_b)
 ```
 
-3. do the same for non-beaconed trials
+Do the same for non-beaconed trials
 ```{r}
 p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_o_rewarded_fit_p.value)
 adu_p_nb <- tibble(adjust_pval_nb_o = p.adjust(p_vals_nb$pvals, "BH"))
 spatial_firing <- cbind(spatial_firing, adu_p_nb)
 ```
 
-4. do the same for probe trials 
+Do the same for probe trials 
 ```{r}
 p_vals_p <- tibble(pvals = spatial_firing$asr_p_o_rewarded_fit_p.value)
 adu_p_p <- tibble(adjust_pval_p_o = p.adjust(p_vals_p$pvals, "BH"))
