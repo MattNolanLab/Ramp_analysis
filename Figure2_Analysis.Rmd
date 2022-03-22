@@ -113,11 +113,20 @@ spatial_firing <- spatial_firing  %>%
 ```
 
 
+# Adjust p values for multiple comparisons
+```{r}
+spatial_firing <- spatial_firing %>%
+    mutate(o_mm_p_b_pos = p.adjust(o_mm_p_b_pos, "BH"),
+         o_mm_p_b_speed = p.adjust(o_mm_p_b_speed, "BH"),
+         o_mm_p_b_accel = p.adjust(o_mm_p_b_accel, "BH"))
+```
+
+
 
 
 ```{r}
 if (save_results == 1) {
-  saveRDS(spatial_firing, "SpatialFiring_with_glmer.Rda")
+  saveRDS(spatial_firing, "/data_out/SpatialFiring_with_glmer.Rda")
 }
 ```
 
@@ -209,20 +218,29 @@ Function to calculate standardized coefficients from the model fits
 ```{r}
 std_coef <- function(mm) {
   tryCatch({
-  mod <- stdCoef.merMod(mm) 
+  mod <- stdCoef.merMod(mm)
   mod_coefs <- tibble(pos = mod[2,1],
                       speed = mod[3,1],
                       accel = mod[4,1])
       },
     error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
-  
+
+```
+
+```{r}
+# std_coef <- function(mm) {
+#   mod <- stdCoef.merMod(mm) 
+#   mod_coefs <- tibble(pos = mod[2,1],
+#                       speed = mod[3,1],
+#                       accel = mod[4,1])
+# }
 ```
 
 
 3. Run on all cells
 ```{r, warning=FALSE}
-spatial_firing <- spatial_firing  %>%
+spatial_firing <- spatial_firing %>%
   mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
   #mutate(o_p_mod_coefs = map(o_mm_p, std_coef)) %>%
   unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal") #%>%
