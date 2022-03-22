@@ -228,15 +228,6 @@ std_coef <- function(mm) {
 
 ```
 
-```{r}
-# std_coef <- function(mm) {
-#   mod <- stdCoef.merMod(mm) 
-#   mod_coefs <- tibble(pos = mod[2,1],
-#                       speed = mod[3,1],
-#                       accel = mod[4,1])
-# }
-```
-
 
 3. Run on all cells
 ```{r, warning=FALSE}
@@ -245,6 +236,9 @@ spatial_firing <- spatial_firing %>%
   #mutate(o_p_mod_coefs = map(o_mm_p, std_coef)) %>%
   unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal") #%>%
   #unnest_wider(o_p_mod_coefs, names_sep = "_", names_repair = "universal")
+
+# check number of NAs
+sum(is.na(spatial_firing$o_b_mod_coefs_pos))
 ```
 
 Standardized coefficients are in:

@@ -133,7 +133,7 @@ predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 
   # predict
   homebound_prediction_pos <- tibble(Position = rep(1:200))
   homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "prediction", level = 0.99) 
-  as.tibble(homebound_prediction)
+  as_tibble(homebound_prediction)
 }
 
 
