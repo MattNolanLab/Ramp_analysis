@@ -207,77 +207,10 @@ mark_reset_group_predict <- function(offset){
 
 ## --------------------------------------------------------------------------------------------- ##
 # Load circular shuffled data from Python.
-# df_in is the main data frame and is loaded as a template.
-# The function returns a data frame ready to append to the main data frame.
-load_circ_shuffles <- function(df_in, cs_path) {
-  shuffled_df <- read_feather(cs_path)
-  
-  # I will put the results from Python here (copy of previous results over the existing ones)
-  df <- tibble(spike_shuffle_results_b_o = df_in$shuffle_results_b_o,
-               spike_shuffle_results_nb_o = df_in$shuffle_results_nb_o,
-               spike_shuffle_results_p_o = df_in$shuffle_results_p_o) # I did this because this 'nested' format is needed
-  df$row_names <- seq(1, nrow(df_in), by=1)
-  
-  
-  # get list of cells based on session id + cluster id
-  # add unique id for each cell to both data frames
-  shuffled_df$unique_cell_id <- paste(shuffled_df$session_id, shuffled_df$cluster_id)
-  df$unique_cell_id <- paste(df_in$session_id, df$cluster_id)
-  unique_cells = unique(shuffled_df[c("unique_cell_id")])
-  number_of_cells = nrow(unique_cells)
-  print('Number of cells in spike-level shuffle data:')
-  print(number_of_cells)
-  
-  # iterate on list of cells and change 'spike_shuffle_results_b_o' column
-  for(i in 1:nrow(unique_cells)) {
-    # these are the rows that correspond to the cell
-    cell_rows <- shuffled_df %>% filter(unique_cell_id == toString(unique_cells[i,]))
-    # get part of df that corresponds to shuffled data from the cell from outbound
-    shuffled_results_b <- cell_rows %>% select(beaconed_r2_ob, beaconed_slope_ob, beaconed_p_val_ob)
-    shuffled_results_nb <- cell_rows %>% select(non_beaconed_r2_ob, non_beaconed_slope_ob, non_beaconed_p_val_ob)
-    shuffled_results_p <- cell_rows %>% select(probe_r2_ob, probe_slope_ob, probe_p_val_ob)
-    
-    # rename the collumns in shuffled_results to "slope", "r.squared", "p.value"
-    names(shuffled_results_b)[names(shuffled_results_b) == "beaconed_r2_ob"] <- "r.squared"
-    names(shuffled_results_b)[names(shuffled_results_b) == "beaconed_slope_ob"] <- "slope"
-    names(shuffled_results_b)[names(shuffled_results_b) == "beaconed_p_val_ob"] <- "p.value"
-    names(shuffled_results_nb)[names(shuffled_results_nb) == "non_beaconed_r2_ob"] <- "r.squared"
-    names(shuffled_results_nb)[names(shuffled_results_nb) == "non_beaconed_slope_ob"] <- "slope"
-    names(shuffled_results_nb)[names(shuffled_results_nb) == "non_beaconed_p_val_ob"] <- "p.value"
-    names(shuffled_results_p)[names(shuffled_results_p) == "probe_r2_ob"] <- "r.squared"
-    names(shuffled_results_p)[names(shuffled_results_p) == "probe_slope_ob"] <- "slope"
-    names(shuffled_results_p)[names(shuffled_results_p) == "probe_p_val_ob"] <- "p.value"
-    
-    neuron_list <- seq(1, nrow(shuffled_results_b), by=1) # make list [1...1000]
-    shuffled_results_b$neuron=neuron_list  # add 'neuron' column with shuffle ids
-    shuffled_results_nb$neuron=neuron_list  # add 'neuron' column with shuffle ids
-    shuffled_results_p$neuron=neuron_list  # add 'neuron' column with shuffle ids
-    
-    # find cell in ramp data frame that we are updating the shuffled for
-    cell_index <- df[df$unique_cell_id==toString(unique_cells[i,]),]$row_names
-    # put spike shuffle results in R df
-    df$spike_shuffle_results_b_o[cell_index] <- list(shuffled_results_b)
-    df$spike_shuffle_results_nb_o[cell_index] <- list(shuffled_results_nb)
-    df$spike_shuffle_results_p_o[cell_index] <- list(shuffled_results_p)
-  }
-  
-  # Now I renamed the spike_shuffle_results_b_o, spike_shuffle_results_nb_o, spike_shuffle_results_p_o to
-  #                         shuffle_results_b_o,       shuffle_results_nb_o,       shuffle_results_p_o
-  # first drop the old columns
-  df <- df[,!grepl("^shuffle_results_b_o",names(df))]
-  df <- df[,!grepl("^shuffle_results_nb_o",names(df))]
-  df <- df[,!grepl("^shuffle_results_p_o",names(df))]
-  
-  # then rename the newly created columns
-  names(df)[names(df) == "spike_shuffle_results_b_o"] <- "shuffle_results_b_o"
-  names(df)[names(df) == "spike_shuffle_results_nb_o"] <- "shuffle_results_nb_o"
-  names(df)[names(df) == "spike_shuffle_results_p_o"] <- "shuffle_results_p_o"
-  return(df)
-}
 
 # this function will take load shuffles for a single trial type, e.g. beaconed outbound
 # The input dataframe is the 
-local_circ_shuffles_2 <- function(df_in, cs_path) {
+local_circ_shuffles <- function(df_in, cs_path) {
   shuffled_df <- read_feather(cs_path)
   
   
