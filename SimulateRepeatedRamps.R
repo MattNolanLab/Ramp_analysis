@@ -88,3 +88,4 @@ plot_grid(multi_ramps_jitter_low_plot,
           multi_ramps_jitter_high_plot,
           multi_ramps_reset_plot)
 
+ggsave("plots/shuffle_comparisons.jpg")
