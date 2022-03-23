@@ -114,7 +114,7 @@ compare_slopes <-
 # Function to normalize firing rates
 normalise_rates <- function(df){
   df <- tibble(Rates = unlist(df), Position = rep(1:200))
-  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)[,1]
   return(x)
 }
 
@@ -394,6 +394,57 @@ mark_neurons_sig <- function(pval){
   
 }
 
+
+# Function to join average firing rates from different trial types, normalize the rates and add indicator of the type of trial
+join_average_rates <- function(hit, run, try, session_id, cluster_id) {
+  if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
+    return(
+      df <- tibble(Rates = rep(NA, times=600), 
+                   Position = rep(NA, times=600),
+                   Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)))
+    )
+  }
+  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try)),
+               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)),
+               Position = c(rep(-30:169), rep(-30:169), rep(-30:169)))
+  df$Rates <- scale(df$Rates, center=TRUE, scale=TRUE)[,1]
+  return (df)
+}
+
+
+# Generic function to plot firing rate ± SEM as a function of position and colour coded according to trial outcome.
+# The function expects to receive the unnested mean firing rates for all neurons that are to be plotted.
+# Conditions for selection should be given before calling the function.
+# Column names of the input data frame should be 'Rates', 'Position' and 'Reward_indicator'.
+mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
+  df$Rates <- as.double(df$Rates)
+  
+  df <- df %>%
+    group_by(Position, Reward_indicator) %>%
+    dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
+                     se_b = std.error(Rates, na.rm = TRUE))
+  
+  ggplot(data=df) +
+    annotate("rect", xmin=-30, xmax=0, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=140, xmax=170, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=60, xmax=80, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+    geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
+                    fill=factor(Reward_indicator)), alpha=0.1) +
+    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
+    scale_fill_manual(values=c("black", "red", "blue")) +
+    scale_color_manual(values=c("black", "red", "blue")) +
+    #labs(y = "Mean firing rate (Hz)", x = "Location (cm)") +
+    labs(y = "Z-scored firing rate", x = "Location (cm)") +
+    #xlim(-30, 170) +
+    theme_classic() +
+    scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.title = element_blank(),
+          legend.position="none", 
+          text = element_text(size=14),
+          plot.margin = margin(21, 25, 5, 20))
+}
 
 
 
