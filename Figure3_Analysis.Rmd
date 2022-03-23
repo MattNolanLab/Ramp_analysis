@@ -165,8 +165,11 @@ _plots for conjunctive position encoding neurons (PA, PS, PSA)_
 Look at all position encoding neurons (P,PS, PA, PSA)
 ```{r}
 position_all_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-# Total number of cells (not neccessarily all used for plots as not all neurons have all outcomes)
+# Total number of cells (not necessarily all used for plots as not all neurons have all outcomes)
+# Next to do is to remove these neurons
 dim(position_all_neurons)[1]
+# Cells with data for all outcomes
+sum(sapply(position_all_neurons$avg_both_asr_b, anyNA))
 ```
 
 ```{r}
@@ -190,6 +193,8 @@ plit data based on conjunctive position encoding (PA, PS, PSA) (Figure 2) as we 
 conjunctive_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 # Total number of cells
 dim(conjunctive_neurons)[1]
+# Cells with data for all outcomes
+sum(sapply(conjunctive_neurons$avg_both_asr_b, anyNA))
 ```
 
 ```{r}
@@ -212,10 +217,13 @@ _plots for pure position encoding neurons (P)_
 Repeat above for just position neurons
 
 1. Split data based position encoding group (P) (Figure 2) as we are only interested in position neurons here
+
 ```{r}
 position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P")
 # Total number of cells
 dim(position_neurons)[1]
+# Cells with data for all outcomes
+sum(sapply(position_neurons$avg_both_asr_b, anyNA))
 ```
 
 ```{r}
@@ -240,8 +248,9 @@ _plots for speed encoding neurons (S) with POSITIVE or NEGATIVE slopes_
 Repeat above plots but for speed encoding neurons
 
 Split data based on speed encoding group (Figure 2) as we are only interested in these neurons here
+Need to make this selective for neurons with positive or negative slopes?
 ```{r}
-speed_neurons <- filter(spatial_firing, lm_group_b == "Positive", final_model_o_b == "S" | final_model_o_b == "SA")
+speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA")
 # Total number of cells
 dim(speed_neurons)[1]
 ```
