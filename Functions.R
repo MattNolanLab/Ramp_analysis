@@ -1,5 +1,6 @@
 ### This script contains functions which are called in the Analysis markdown code
 
+### Functions here are initially used in Figure 1 code
 
 ## Adds positions to a single column data frame that contains a neurons binned mean firing rate
 add_position <- function(df, session_id = "", cluster_id = "") {
@@ -8,7 +9,6 @@ add_position <- function(df, session_id = "", cluster_id = "") {
   #if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
   df
 }
-
 
 
 ## Fits a linear model to firing rate data contained in df, across the range from startbin to endbin.
@@ -110,7 +110,7 @@ compare_slopes <-
     }
   }
 
-#Calculates the difference between mean rate and predicted mean rate at the start of the homebound zone
+#C alculates the difference between mean rate and predicted mean rate at the start of the homebound zone
 calc_predict_diff <- function(rates, fit)
 {
   diff <- mean(as.double(rates[110:115])) - mean(as.double(fit[110:115]))
@@ -156,7 +156,7 @@ offset_test <- function(rates, lwr, upr){
   
 }
 
-#write function to mark cells based on groups
+# Write function to mark cells based on groups
 mark_track_category <- function(outbound, homebound){
   if( outbound == "Positive" & homebound == "Negative") {
     return( "posneg" ) 
@@ -194,7 +194,7 @@ mark_numeric_track_category <- function(outbound, homebound){
   }
 }
 
-#Function to classify neurons based on offset 
+# Function to classify neurons based on offset 
 mark_reset_group_predict <- function(offset){
   if (is.na(offset) ) {
     return( "None" )
@@ -269,6 +269,130 @@ local_circ_shuffles <- function(df_in, cs_path) {
 }
 
 
+
+## ----------------------------------------------------------##
+
+### Functions below here are initially used in Figure 3 code.
+
+
+# A function that extracts into a tibble data from spatial_firing$spikes_in_time_reward_hit/run/try
+extract_to_tibble <- function(df) {
+  df <-
+    tibble(
+      Rates = as.numeric(Re(df[[1]])),
+      Position = as.numeric(Re(df[[3]])),
+      Trials = as.numeric(Re(df[[4]]))
+    )
+  return (df)
+}
+
+
+
+# Function to join firing rates from different trial types and add indicator of the type of trial
+# The trial types are:
+# spatial_firing$spikes_in_time_reward_hit
+# spikes_in_time_reward_run
+# spikes_in_time_reward_try
+join_rates <- function(hit, run, try, session_id, cluster_id) {
+  if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
+    return(NA)
+  }
+  
+  hit_df <- extract_to_tibble(hit)
+  run_df <- extract_to_tibble(run)
+  try_df <- extract_to_tibble(try)
+  
+  df <- tibble(Rates = c(hit_df$Rates, 
+                         run_df$Rates,
+                         try_df$Rates), 
+               Reward_indicator = c(rep("Rewarded", times=nrow(hit_df)), 
+                                    rep("Run", times=nrow(run_df)), 
+                                    rep("Try", times=nrow(try_df))), 
+               Position = c(hit_df$Position, 
+                            run_df$Position, 
+                            try_df$Position), 
+               Trials = c(hit_df$Trials,
+                          run_df$Trials,
+                          try_df$Trials))
+  
+  return (df)
+}
+
+
+# Function to fit a linear mixed effect model that takes trial type (hit, try, run) into account
+# The car package is used to extract slope significance
+compare_models_slope_lm <- function(df, run,try){
+  tryCatch({
+    if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
+      return(NA)
+    }
+    if (length(df) == 1 | nrow(df) < 6)
+      return(NA)
+    
+    df <- df %>%
+      filter(Position >= 30, Position <= 90)
+    fit <- lme4::lmer(Rates ~ scale(Position) * Reward_indicator + (1+scale(Position) | Trials), data = df, na.action=na.omit)
+    modelAnova <- car::Anova(fit)
+    to_return <- modelAnova$"Pr(>Chisq)"[[3]]
+  },
+  error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Function to fit a general linear mixed effect model that takes trial type (hit, try, run) into account
+# The car package is used to extract slope significance
+compare_models_slope_glm <- function(df, run,try){
+  tryCatch({
+    if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
+      return(NA)
+    }
+    if (length(df) == 1 | nrow(df) < 6)
+      return(NA)
+    
+    df <- df %>%
+      filter(Position >= 30, Position <= 90)
+    fit <- lme4::glmer(formula = Rates ~ Position * Reward_indicator + (1 + Position | Trials), 
+                          data = df, 
+                          na.action = na.exclude,
+                          family = Gamma(link = "log"),
+                          start=list(fixef=coef(glm1)),
+                          control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+    
+    modelAnova <- car::Anova(fit)
+    to_return <- modelAnova$"Pr(>Chisq)"[[3]]
+  },
+  error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+
+# Function to classify neurons based on whether there is a significant effect of trial outcome
+mark_neurons_sig <- function(pval){
+  tryCatch({
+    if (is.na(pval)) {
+      return(NA)
+    }
+    if (pval == "NULL") {
+      return(NA)
+    }
+    if( pval < 0.01) {
+      return( "Significant" )
+    } else if( pval >= 0.01) {
+      return( "Not-Significant" )
+    } else {
+      return("None")
+    }
+  },
+  error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+  
+}
+
+
+
+# Function to normalize firing rates
+normalise_rates <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  return(x)
+}
 
 
 

@@ -8,6 +8,7 @@ roll <- function(x, n) {
 }
 
 n_shuffles <- 100
+save_figures <- 0
 
 # Choose a random number to shift the ramps buy
 random_start <- runif(1, 0, 100)
@@ -86,6 +87,10 @@ multi_ramps_reset_plot <- plot_multi(multi_ramps_reset)
 plot_grid(multi_ramps_jitter_low_plot,
           multi_ramps_jitter_moderate_plot,
           multi_ramps_jitter_high_plot,
-          multi_ramps_reset_plot)
+          multi_ramps_reset_plot,
+          labels = "AUTO")
 
-ggsave("plots/shuffle_comparisons.jpg")
+if (save_figures == 1) {
+  ggsave("plots/shuffle_comparisons.jpg")
+}
+

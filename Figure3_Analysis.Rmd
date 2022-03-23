@@ -28,52 +28,6 @@ rewarded trials
 
 First combine hit and miss trials together with an indicator of trial type (hit, try, run)
 
-First, function that extracts data into a tibble, saves space in the function below
-
-```{r}
-extract_to_tibble <- function(df) {
-  df <-
-  tibble(
-    Rates = as.numeric(Re(df[[1]])),
-    Position = as.numeric(Re(df[[3]])),
-    Trials = as.numeric(Re(df[[4]]))
-  )
-  return (df)
-}
-
-```
-
-Function to join firing rates from different trial types and add indicator of the type of trial
-```{r}
-
-join_rates <- function(hit, run, try, session_id, cluster_id) {
-  if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
-    return(NA)
-  }
-  
-  hit_df <- extract_to_tibble(hit)
-  run_df <- extract_to_tibble(run)
-  try_df <- extract_to_tibble(try)
- 
-  df <- tibble(Rates = c(hit_df$Rates, 
-                         run_df$Rates,
-                         try_df$Rates), 
-               Reward_indicator = c(rep("Rewarded", times=nrow(hit_df)), 
-                                    rep("Run", times=nrow(run_df)), 
-                                    rep("Try", times=nrow(try_df))), 
-               Position = c(hit_df$Position, 
-                            run_df$Position, 
-                            try_df$Position), 
-               Trials = c(hit_df$Trials,
-                          run_df$Trials,
-                          try_df$Trials))
-
-  return (df)
-}
-
-```
-
-
 1. Generate firing rate tibble for each cell
 ```{r}
 spatial_firing <- spatial_firing %>%
@@ -82,87 +36,37 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
-Function to run linear model that takes trial type (hit, try, run) into account and use the car package to extract slope significance
-```{r}
-compare_models_slope_lm <- function(df, run,try){
-  tryCatch({
-    if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
-      return(NA)
-    }
-    if (length(df) == 1 | nrow(df) < 6)
-      return(NA)
-    
-    df <- df %>%
-    filter(Position >= 30, Position <= 90)
-    fit <- lme4::lmer(Rates ~ scale(Position) * Reward_indicator + (1+scale(Position) | Trials), data = df, na.action=na.omit)
-    modelAnova <- car::Anova(fit)
-    to_return <- modelAnova$"Pr(>Chisq)"[[3]]
-    },
-   error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-}
-```
-
 2. Run linear model on all cells and extract pval
 To test just use the first two rows
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_lm))
+  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_glm))
 ```
 
 Now we can classify cells based on their significance in the above model
 
-First make function to classify neurons
-```{r}
-mark_neurons_sig <- function(pval){
-  tryCatch({
-    if (is.na(pval)) {
-      return(NA)
-    }
-    if (pval == "NULL") {
-      return(NA)
-    }
-    if( pval < 0.01) {
-      return( "Significant" )
-    } else if( pval >= 0.01) {
-      return( "Not-Significant" )
-    } else {
-      return("None")
-    }
-    },
-   error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 
-}
-```
-
-3. Make new column to identify whether cells are significant
+3. Make new column to identify whether cells firings rates are significantly related to trial outcome
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(reward_interaction_id = map(pval_slope, mark_neurons_sig))
+
+# Number of significant neurons
+length(which(spatial_firing$reward_interaction_id == "Significant"))
+
+# Number of non-significant neurons
+length(which(spatial_firing$reward_interaction_id == "Not-Significant"))
+
+# Other neurons
+length(which(spatial_firing$reward_interaction_id == "None"))
 ```
 
 
 ### ----------------------------------------------------------------------------- ###
 
-We also want to run a simple linear model for each trial type separately so we can extract the coefficients for each variable. 
+We also want to fit a simple linear model for each trial outcome separately so we can assess the slope and reward zone offset for each neuron.
 
-First, add position to each of the firing rates individually (before we put them all in one tibble, here we make a seperate one for each and add it back into the dataframe)
-
-
-Function to add position for individual trial type, returns NAs if those trials are not present 
-```{r}
-add_position <- function(df, session_id, cluster_id) {
-  if(all(is.na(df))){
-    print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))
-    df <- tibble(Rates = rep(NA, times=200), 
-                 Position = rep(NA, times=200))
-    return(df)
-    }
-  df <- tibble(Rates = unlist(df), Position = rep(1:200)) 
-  return(df)
-}
-```
-
-1. Run this on all animals for try and run through trials (we already have coefficients for rewarded data from Figure 2)
+1. Add position to data for try and run through trials (we already have coefficients for rewarded data from Figure 1). Function is the same as used in Figure 1.
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(asr_b_try = pmap(list(Avg_FiringRate_TryTrials, session_id, cluster_id), add_position),
@@ -170,7 +74,7 @@ spatial_firing <- spatial_firing %>%
          )
 ```
 
-2. run lm on all cells.
+2. Fit lm to data from all cells.
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
 ```{r}
 spatial_firing <- spatial_firing %>%
@@ -189,35 +93,20 @@ spatial_firing$asr_b_try_fit_slope
 spatial_firing$asr_b_try_fit_r.squared
 
 
-
-
 ### ----------------------------------------------------------------------------- ###
 
 ## Calculate offset for run and try trials
 
-We want to find out if within the position and speed groups - is their firing rate reset or continue across the reward region?
+We want to find out if within the position and speed groups, is their firing rate reset or ous across the reward region?
 
 To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
 
 First, normalise firing rates. 
-
-1. make function to load rates and normalise
-```{r}
-normalise_rates <- function(df){
-  df <- tibble(Rates = unlist(df), Position = rep(1:200))
-  x <- scale(df$Rates, center=TRUE, scale=TRUE)
-  return(x)
-}
-
-```
-
-2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(normalised_rates_try = map(Avg_FiringRate_TryTrials, normalise_rates), 
          normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates),
          normalised_rates_hit = map(Avg_FiringRate_HitTrials, normalise_rates))
-
 ```
 
 Then, predict firing rate in homebound region based on fit from real data in outbound region
