@@ -399,37 +399,12 @@ To do this, we will predict the firing rate on the homebound zone from the activ
 First, normalise firing rates. 
 
 
-1. make function to load rates and normalise
-```{r}
-normalise_rates <- function(df1, df2){
-  df <- c(df1, df2)
-  df <- tibble(Rates = unlist(df), Position = rep(1:400))
-  x <- scale(df$Rates, center=TRUE, scale=TRUE)
-  x <- x[1:200]
-  return(x)
-}
-```
 
-2. run on all cells
+
+1. Normalize rates for all cells. This is to facilitate comparison later.
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(
-    normalised_rates = map2(
-      Rates_averaged_rewarded_b,
-      Rates_averaged_rewarded_nb,
-      normalise_rates
-    ),
-    normalised_rates_nb = map2(
-      Rates_averaged_rewarded_nb,
-      Rates_averaged_rewarded_b,
-      normalise_rates
-    ),
-    normalised_rates_p = map2(
-      Rates_averaged_rewarded_p,
-      Rates_averaged_rewarded_b,
-      normalise_rates
-    )
-  )
+  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
 ```
 
 Then, predict firing rate in homebound region based on fit from real data in outbound region

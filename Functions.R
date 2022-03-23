@@ -110,6 +110,15 @@ compare_slopes <-
     }
   }
 
+
+# Function to normalize firing rates
+normalise_rates <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)
+  return(x)
+}
+
+
 #C alculates the difference between mean rate and predicted mean rate at the start of the homebound zone
 calc_predict_diff <- function(rates, fit)
 {
@@ -385,14 +394,6 @@ mark_neurons_sig <- function(pval){
   
 }
 
-
-
-# Function to normalize firing rates
-normalise_rates <- function(df){
-  df <- tibble(Rates = unlist(df), Position = rep(1:200))
-  x <- scale(df$Rates, center=TRUE, scale=TRUE)
-  return(x)
-}
 
 
 
