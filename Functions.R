@@ -412,13 +412,20 @@ join_average_rates <- function(hit, run, try, session_id, cluster_id) {
 }
 
 
+# Generic function to subset data ready for plotting with mean_SEM_plots_by_Outcome
+subset_for_plots <- function(df, outbound_class = "Positive", homebound_class = "Positive") {
+  df <- df %>%
+    filter(lm_group_b == outbound_class,
+           lm_group_b_h == homebound_class) %>%
+    select(avg_both_asr_b) %>%
+    unnest(c(avg_both_asr_b))
+}
+
 # Generic function to plot firing rate ± SEM as a function of position and colour coded according to trial outcome.
 # The function expects to receive the unnested mean firing rates for all neurons that are to be plotted.
 # Conditions for selection should be given before calling the function.
 # Column names of the input data frame should be 'Rates', 'Position' and 'Reward_indicator'.
 mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
-  df$Rates <- as.double(df$Rates)
-  
   df <- df %>%
     group_by(Position, Reward_indicator) %>%
     dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
@@ -446,7 +453,26 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
           plot.margin = margin(21, 25, 5, 20))
 }
 
-
+# Function to generate plots by trial outome for each class of ramping neurons
+all_plots_by_outome <- function(df) {
+  NegNeg_plot <- df %>%
+     subset_for_plots("Negative", "Negative") %>%
+     mean_SEM_plots_by_Outcome(-29,169)
+  
+  NegPos_plot <- df %>%
+    subset_for_plots("Negative", "Positive") %>%
+    mean_SEM_plots_by_Outcome(-29,169)
+  
+  PosPos_plot <- df %>%
+    subset_for_plots("Positive", "Positive") %>%
+    mean_SEM_plots_by_Outcome(-29,169)
+  
+  PosNeg_plot <- df %>%
+    subset_for_plots("Positive", "Negative") %>%
+    mean_SEM_plots_by_Outcome(-29,169)
+  
+  return(list(NegNeg_plot, NegPos_plot, PosPos_plot, PosNeg_plot))
+}
 
 ## ----------------------------------------------------------##
 

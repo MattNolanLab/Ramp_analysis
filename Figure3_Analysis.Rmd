@@ -162,78 +162,50 @@ spatial_firing <- spatial_firing %>%
 
 _plots for conjunctive position encoding neurons (PA, PS, PSA)_
 
-1. Split data based on conjunctive position encoding (PA, PS, PSA) (Figure 2) as we are only interested in these neurons here
-
+Look at all position encoding neurons (P,PS, PA, PSA)
 ```{r}
-position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+position_all_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+# Total number of cells (not neccessarily all used for plots as not all neurons have all outcomes)
+dim(position_all_neurons)[1]
 ```
 
-
-3. Subset data by group then average rates for plotting          **Negative Negative Reset**
 ```{r}
-(NegNegR_plot <- position_neurons %>%
-  filter(lm_group_b == "Negative",
-         lm_group_b_h == "Negative") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-29,169))
+position_all_neurons_plots <- all_plots_by_outome(position_all_neurons)
+plot_grid(position_all_neurons_plots[[1]],
+          position_all_neurons_plots[[2]],
+          position_all_neurons_plots[[3]],
+          position_all_neurons_plots[[4]])
 
 if (save_figures==1) {
- ggsave(file = "plots/TrialOutcome_NegNeg_allpositionBUTP.png", width = 3.6, height = 2.9) 
+ ggsave(file = "plots/TrialOutcome_NegNeg_position_all.png", plot = position_all_neurons_plots[[1]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_NegPos_position_all.png", plot = position_all_neurons_plots[[2]], width = 3.6, height = 2.9)
+  ggsave(file = "plots/TrialOutcome_PosPos_position_all.png", plot = position_all_neurons_plots[[3]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_PosNeg_position_all.png", plot = position_all_neurons_plots[[4]], width = 3.6, height = 2.9) 
 }
-
 ```
 
+plit data based on conjunctive position encoding (PA, PS, PSA) (Figure 2) as we are only interested in these neurons here
 
-5. Subset data by group then average rates for plotting          **Positive Positive Reset**
 ```{r}
-(PosPosR_plot <- position_neurons %>%
-  filter(lm_group_b == "Positive",
-         lm_group_b_h == "Positive") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
+conjunctive_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+# Total number of cells
+dim(conjunctive_neurons)[1]
+```
+
+```{r}
+conjunctive_neurons_plots <- all_plots_by_outome(conjunctive_neurons)
+plot_grid(conjunctive_neurons_plots[[1]],
+          conjunctive_neurons_plots[[2]],
+          conjunctive_neurons_plots[[3]],
+          conjunctive_neurons_plots[[4]])
 
 if (save_figures==1) {
-  ggsave(file = "plots/TrialOutcome_PosPos_allpositionBUTP.png", width = 3.6, height = 2.9)
+ ggsave(file = "plots/TrialOutcome_NegNeg_conjunctive.png", plot = conjunctive_neurons_plots[[1]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_NegPos_conjunctive.png", plot = conjunctive_neurons_plots[[2]], width = 3.6, height = 2.9)
+  ggsave(file = "plots/TrialOutcome_PosPos_conjunctive.png", plot = conjunctive_neurons_plots[[3]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_PosNeg_conjunctive.png", plot = conjunctive_neurons_plots[[4]], width = 3.6, height = 2.9) 
 }
-
 ```
-
-6. Subset data by group then average rates for plotting          **Positive Unclassified**
-```{r}
-(PosUC_plot <- position_neurons %>%
-  filter(lm_group_b == "Positive",
-         lm_group_b_h == "Negative") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
-
-
-if (save_figures==1) {
-  ggsave(file = "plots/TrialOutcome_PosNeg_allpositionBUTP.png", width = 3.6, height = 2.9)
-}
-
-```
-
-7. Subset data by group then average rates for plotting          **Positive Unclassified**
-```{r}
-(NegUC_plot <- position_neurons %>%
-  filter(lm_group_b == "Negative",
-         lm_group_b_h == "Positive") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
-
-
-
-if (save_figures==1) {
-  ggsave(file = "plots/TrialOutcome_NegPos_allpositionBUTP.png", width = 3.6, height = 2.9)
-}
-
-```
-
-
 
 _plots for pure position encoding neurons (P)_
 
@@ -242,201 +214,52 @@ Repeat above for just position neurons
 1. Split data based position encoding group (P) (Figure 2) as we are only interested in position neurons here
 ```{r}
 position_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "P")
+# Total number of cells
+dim(position_neurons)[1]
 ```
 
-
-3. Subset data by group then average rates for plotting          **Negative Negative**
 ```{r}
-(NegNegR_plot <- position_neurons %>%
-  filter(lm_group_b == "Negative",
-         lm_group_b_h == "Negative") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
+position_neurons_plots <- all_plots_by_outome(position_neurons)
+plot_grid(position_neurons_plots[[1]],
+          position_neurons_plots[[2]],
+          position_neurons_plots[[3]],
+          position_neurons_plots[[4]])
 
 if (save_figures==1) {
- ggsave(file = "plots/TrialOutcome_NegNeg_justposition.png", width = 3.6, height = 2.9) 
+ ggsave(file = "plots/TrialOutcome_NegNeg_justposition.png", plot = position_neurons_plots[[1]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_NegPos_justposition.png", plot = position_neurons_plots[[2]], width = 3.6, height = 2.9)
+  ggsave(file = "plots/TrialOutcome_PosPos_justposition.png", plot = position_neurons_plots[[3]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_PosNeg_justposition.png", plot = position_neurons_plots[[4]], width = 3.6, height = 2.9) 
 }
-
-```
-
-4. Subset data by group then average rates for plotting          **Positive Positive**
-```{r}
-(PosPosC_plot <- position_neurons %>%
-  filter(lm_group_b == "Positive",
-         lm_group_b_h == "Positive") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
-
-
-if (save_figures==1) {
-  ggsave(file = "plots/TrialOutcome_PosPos_justposition.png", width = 3.6, height = 2.9)
-}
-
-```
-
-
-6. Subset data by group then average rates for plotting          **Positive Negative**
-```{r}
-(PosUC_plot <- position_neurons %>%
-  filter(lm_group_b == "Positive",
-         lm_group_b_h == "Negative") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
-
-
-if (save_figures==1) {
-  ggsave(file = "plots/TrialOutcome_PosNeg_justposition.png", width = 3.6, height = 2.9)
-}
-
-```
-
-7. Subset data by group then average rates for plotting          **Negative Positive**
-```{r}
-(NegUC_plot <- position_neurons %>%
-  filter(lm_group_b == "Negative",
-         lm_group_b_h == "Positive") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
-
-
-
-if (save_figures==1) {
-  ggsave(file = "plots/TrialOutcome_NegPos_justposition.png", width = 3.6, height = 2.9)
-}
-
 ```
 
 
 
 
-_plots for pure speed encoding neurons (S) with POSITIVE or NEGATIVE slopes_
-
-
+_plots for speed encoding neurons (S) with POSITIVE or NEGATIVE slopes_
 Repeat above plots but for speed encoding neurons
 
-1. Split data based on speed encoding group (Figure 2) as we are only interested in these neurons here
+Split data based on speed encoding group (Figure 2) as we are only interested in these neurons here
 ```{r}
-speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA")
+speed_neurons <- filter(spatial_firing, lm_group_b == "Positive", final_model_o_b == "S" | final_model_o_b == "SA")
+# Total number of cells
+dim(speed_neurons)[1]
 ```
 
-2.seperate based on whether they have a positive or negative relationship with speed
 ```{r}
-speed_neurons_pospos <- filter(speed_neurons, lm_group_b == "Positive" & lm_group_b_h == "Positive")
-speed_neurons_negneg <- filter(speed_neurons, lm_group_b == "Negative" & lm_group_b_h == "Negative")
-speed_neurons_posneg <- filter(speed_neurons, lm_group_b == "Positive" & lm_group_b_h == "Negative")
-speed_neurons_negpos <- filter(speed_neurons, lm_group_b == "Negative" & lm_group_b_h == "Positive")
-
-```
-
-
-3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
-```{r}
-(Speed_Neg_plot <- speed_neurons_negneg %>%
-  #filter(o_b_mod_coefs_speed < 0) %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
+speed_neurons_plots <- all_plots_by_outome(speed_neurons)
+plot_grid(speed_neurons_plots[[1]],
+          speed_neurons_plots[[2]],
+          speed_neurons_plots[[3]],
+          speed_neurons_plots[[4]])
 
 if (save_figures==1) {
-  ggsave(file = "plots/TrialOutcome_NegNeg_SandSA.png", width = 3.6, height = 2.9)
-}
-
-```
-
-
-3. Subset data by group then average rates for plotting          **Positive coefficient with speed**
-```{r}
-(Speed_Pos_plot <- speed_neurons_negpos %>%
-  #filter(o_b_mod_coefs_speed > 0) %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
-
-if (save_figures==1) {
-  ggsave(file = "plots/TrialOutcome_NegPos_SandSA.png", width = 3.6, height = 2.9)
+ ggsave(file = "plots/TrialOutcome_NegNeg_speed.png", plot = speed_neurons_plots[[1]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_NegPos_speed.png", plot = speed_neurons_plots[[2]], width = 3.6, height = 2.9)
+  ggsave(file = "plots/TrialOutcome_PosPos_speed.png", plot = speed_neurons_plots[[3]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_PosNeg_speed.png", plot = speed_neurons_plots[[4]], width = 3.6, height = 2.9) 
 }
 ```
-
-
-3. Subset data by group then average rates for plotting          **Positive coefficient with speed**
-```{r}
-(Speed_Pos_plot <- speed_neurons_pospos %>%
-  filter(o_b_mod_coefs_speed < 0) %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
-
-if (save_figures==1) {
-  ggsave(file = "plots/TrialOutcome_PosPos_SandSA.png", width = 3.6, height = 2.9)
-}
-```
-
-
-
-3. Subset data by group then average rates for plotting          **Positive coefficient with speed**
-```{r}
-(Speed_Pos_plot <- speed_neurons_posneg %>%
-  #filter(o_b_mod_coefs_speed < 0) %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
-
-if (save_figures==1) {
-  ggsave(file = "plots/TrialOutcome_PosNeg_SandSA.png", width = 3.6, height = 2.9)
-}
-```
-
-_plots for all speed encoding encoding neurons (S, A, SA)_
-
-
-Repeat above plots but for speed encoding neurons, regardless of classification in Figure 2.
-
-1. Split data based on speed encoding group (Figure 2) as we are only interested in these neurons here
-```{r}
-all_speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA")
-```
-
-2.seperate based on whether they have a positive or negative relationship with speed
-```{r}
-all_speed_neurons_pos <- filter(all_speed_neurons, o_b_mod_coefs_speed > 0)
-all_speed_neurons_neg <- filter(all_speed_neurons, o_b_mod_coefs_speed < 0)
-```
-
-
-3. Subset data by group then average rates for plotting          **Negative coefficient with speed**
-```{r}
-(All_Speed_Neg_plot <- all_speed_neurons %>%
-  filter(o_b_mod_coefs_speed < 0) %>%
-  #filter(lm_group_b == "Positive") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
-
-if (save_figures==1) {
-  ggsave(file = "plots/negative_relationship_AllSpeed.png", width = 3.6, height = 2.9)
-}
-```
-
-
-3. Subset data by group then average rates for plotting          **positive coefficient with speed**
-```{r}
-(All_Speed_Pos_plot <- all_speed_neurons %>%
-  filter(o_b_mod_coefs_speed > 0) %>%
-  #filter(lm_group_b == "Negative") %>%
-  select(avg_both_asr_b) %>%
-  unnest(c(avg_both_asr_b)) %>%
-  mean_SEM_plots_by_Outcome(-30,170))
-
-if (save_figures==1) {
-  ggsave(file = "plots/positive_relationship_AllSpeed.png", width = 3.6, height = 2.9)
-}
-```
-
-
 
 
 
