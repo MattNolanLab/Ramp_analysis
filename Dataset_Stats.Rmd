@@ -78,6 +78,8 @@ trials_numbers <- spatial_firing  %>%
 
 # Mean
 mean(trials_numbers$max_trial_number)
+# SEM
+sqrt(var(trials_numbers$max_trial_number)/length(trials_numbers$max_trial_number))
 # Range
 range(trials_numbers$max_trial_number)
 ```

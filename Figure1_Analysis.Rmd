@@ -22,8 +22,6 @@ To set up, including loading packages and data, first run SetUp.Rmd.
 
 ### ----------------------------------------------------------------------------------------- ###
 
-### ----------------------------------------------------------------------------------------- ###
-
 ## Prepare data for fitting linear models
 
 Make a copy of the average firing rates for each cell that has position added.
@@ -74,12 +72,26 @@ spatial_firing$asr_b_o_rewarded_fit_r.squared
 Generate or load shuffled data.
 ```{r}
 # Make this smaller for testing.
-shuffles <- 2
+shuffles <- 1000
 
-# Uncomment the line below to load pre-saved shuffled data
-#spatial_firing <- readRDS(SpatialFiring_with_1000_shuffles.Rda)
+# To load circular shuffle results
+if(shuffle_type=="circular") {
+  cs_path = "data_in/all_mice_concatenated_shuffle_data_rewarded.feather"
+  spatial_firing_circ <- local_circ_shuffles(spatial_firing, cs_path)
+  
+  spatial_firing <- spatial_firing %>%
+  select(-contains('shuffle_results_b_o')) %>%
+  select(-contains('shuffle_results_nb_o')) %>%
+  select(-contains('shuffle_results_pb_o')) %>%
+  mutate(shuffle_results_b_o = spatial_firing_circ$shuffle_results_b_o,
+         shuffle_results_nb_o = spatial_firing_circ$shuffled_results_nb_o,
+         shuffle_results_p_o = spatial_firing_circ$shuffled_results_p_o)
+  
+}
 
-# Check to see if the column shuffle_results exists. If it does then don't run again.
+# Check to see if the column shuffle_results_b_o exists.
+# It will exist if shuffles have been pre-loaded or if circular shuffle results have been loaded.
+# If it doesn't exist then the mean firing rate as a function of position will be shuffled.
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
     mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
@@ -87,18 +99,11 @@ if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
     mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
 }
 
+
 if (save_results == 1) {
   saveRDS(spatial_firing, "data_out/SpatialFiring_with_1000_shuffles_of.Rda")
   # And use this to save a truncated version. Useful for testing code.
   saveRDS(slice_head(spatial_firing, n = 5), "SpatialFiring_with_1000_shuffles_trunc.Rda")
-}
-
-cs_path = "data_in/all_mice_concatenated_shuffle_data_rewarded.feather"
-
-shuffle_type="circular"
-if(shuffle_type=="circular") {
-  spatial_firing <- load_circ_shuffles(spatial_firing, cs_path)
-  shuffles <- 1000 # this should be equivalent to the n_shuffles per cell in the .feather file
 }
 
 ```
@@ -143,38 +148,19 @@ spatial_firing <- spatial_firing %>%
 
 We also want to correct the p values of the lm fits to the experimental data to account for multiple comparisons.
 
-1. put all pvalues into tibble then adjust using p.adjust from - package
+
 ```{r}
-p_vals_b <- tibble(pvals = spatial_firing$asr_b_o_rewarded_fit_p.value)
-adu_p_b <- tibble(adjust_pval_b_o = p.adjust(p_vals_b$pvals, "BH"))
-
-```
-
-
-2. bind new adjusted pvalues to dataframe
-```{r}
-spatial_firing <- cbind(spatial_firing, adu_p_b)
-```
-
-3. do the same for non-beaconed trials
-```{r}
-p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_o_rewarded_fit_p.value)
-adu_p_nb <- tibble(adjust_pval_nb_o = p.adjust(p_vals_nb$pvals, "BH"))
-spatial_firing <- cbind(spatial_firing, adu_p_nb)
-```
-
-4. do the same for probe trials 
-```{r}
-p_vals_p <- tibble(pvals = spatial_firing$asr_p_o_rewarded_fit_p.value)
-adu_p_p <- tibble(adjust_pval_p_o = p.adjust(p_vals_p$pvals, "BH"))
-spatial_firing <- cbind(spatial_firing, adu_p_p)
+spatial_firing <- spatial_firing %>%
+  mutate(adjust_pval_b_o = p.adjust(asr_b_o_rewarded_fit_p.value, "BH"),
+         adjust_pval_nb_o = p.adjust(asr_nb_o_rewarded_fit_p.value, "BH"),
+         adjust_pval_p_o = p.adjust(asr_p_o_rewarded_fit_p.value, "BH"))
 ```
 
 
 ### ----------------------------------------------------------------------------------------- ### 
 
 Now we want to classify neurons based on:
-1. Whether their slopes are outside the 5-95% range of the shufled data.
+1. Whether their slopes are outside the 5-95% range of the shuffled data.
 2. Whether the adjusted p-value of the linear model fit is <= 0.01.
 
 ```{r}
@@ -220,18 +206,15 @@ spatial_firing$lm_group_p
 
 ### ---------------------------------------------------------------------------- ### 
 
-### Classify neurons based on their ramp activity in the homebound region, similar to that done above. 
+### Classify neurons based on their ramp activity in the homebound region
 
-### ---------------------------------------------------------------------------- ### 
+We use a similar strategy as for the outbound track region.
 
+Because the homebound zone is the same length as the outbound zone, and as shuffling is across the full track length, we can use the shuffle results previously generated.
 
-# Run simple linear model to examine relationship between firing rate and position
+# Fit linear model to examine relationship between firing rate and position
 _note:for now we are only interested in the homebound region of the track (110 - 170 cm)_
 
-
-
-
-2. Fit lm to data from all cells.
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
 ```{r}
 spatial_firing <- spatial_firing %>%
@@ -261,43 +244,18 @@ spatial_firing$asr_b_h_rewarded_fit_r.squared
 ### ---------------------------------------------------------------------------- ### 
 
 
-## Identification of homebound ramp cells in dataset 
 
-Ramp like cells are identified by whether the coefficients of the linear model lie outside the 95% confidence intervals of the same result from 1000 shuffled datasets
+# Correct p-values from fits of the experimental data
 
-Beause the homebound zone is the same length as the outbound zone, and as shuffling is across the full track length, we can use the shuffle results previously generated.
-
-### classify neurons based on shuffle activity
-
-If outside the 95% of the shuffled dataset, a neuron is considered to have ramp like activity along the track. 
-
-First we want to correct the pvals of the lm, to account for multiple comparisons
-
-1. put all pvalues into tibble then adjust using p.adjust from - package
 ```{r}
-p_vals_b <- tibble(pvals = spatial_firing$asr_b_h_rewarded_fit_p.value)
-adu_p_b <- tibble(adjust_pval_b_h = p.adjust(p_vals_b$pvals, "BH"))
-
+spatial_firing <- spatial_firing %>%
+  mutate(adjust_pval_b_h = p.adjust(asr_b_h_rewarded_fit_p.value, "BH"),
+         adjust_pval_nb_h = p.adjust(asr_nb_h_rewarded_fit_p.value, "BH"),
+         adjust_pval_p_h = p.adjust(asr_p_h_rewarded_fit_p.value, "BH"))
 ```
 
-2. bind new adjusted pvalues to dataframe
-```{r}
-spatial_firing <- cbind(spatial_firing, adu_p_b)
-```
 
-3. do the same for non-beaconed trials
-```{r}
-p_vals_nb <- tibble(pvals = spatial_firing$asr_nb_h_rewarded_fit_p.value)
-adu_p_nb <- tibble(adjust_pval_nb_h = p.adjust(p_vals_nb$pvals, "BH"))
-spatial_firing <- cbind(spatial_firing, adu_p_nb)
-```
-
-3. do the same for probe trials 
-```{r}
-p_vals_p <- tibble(pvals = spatial_firing$asr_p_h_rewarded_fit_p.value)
-adu_p_p <- tibble(adjust_pval_p_h = p.adjust(p_vals_p$pvals, "BH"))
-spatial_firing <- cbind(spatial_firing, adu_p_p)
-```
+# Assign classifications to neurons based on homebound firing
 
 Now we want to classify neurons, taking the adjusted significance into account
 
@@ -348,31 +306,29 @@ spatial_firing$lm_group_p_h
 ### ----------------------------------------------------------------------------------------- ###
 ### How many neurons passed criteria in the linear model ? 
 
-1. get numbers of cells for each lm group (positive/negative/unclassified)
+1. Numbers of cells for which the classification above is positive or negative for segments of the track before (outbound) or after (homebound) the reward zone.
 ```{r}
-ramps <- nrow(subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive" | lm_group_b_h == "Negative" | lm_group_b_h == "Positive"))
-```
+(ramps_beaconed_o <- nrow(subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")))
 
-2. find and plot proportions for ramp types in dataset
-```{r}
-start <- nrow(subset(spatial_firing, lm_group_b == "Negative"))/nrow(spatial_firing)*100
-reward <- nrow(subset(spatial_firing, lm_group_b == "Positive"))/nrow(spatial_firing)*100
-nonslope <- nrow(subset(spatial_firing, lm_group_b == "Unclassified"))/nrow(spatial_firing)*100
-```
+(ramps_beaconed_h <- nrow(subset(spatial_firing, lm_group_b_h == "Negative" | lm_group_b_h == "Positive")))
 
+(ramps_beaconed_o_h <- nrow(subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive" | lm_group_b_h == "Negative" | lm_group_b_h == "Positive")))
+```
 
 ### How much of the shuffled dataset is past criteria? 
+
 1. Extract shuffled slopes and rsquared values. 
 ```{r}
+shuffles = 1000
 shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), 
                        r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
                        pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
-                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, times = shuffles), 
-                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = shuffles))
+                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, each = shuffles), 
+                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, each = shuffles))
 ```
 
 
-2. Classify shuffled cells based on shuffled distribution
+2. Classify activity of shuffled cells on the track segment before the reward zone.
 ```{r}
 shuff_slopes <- shuff_slopes %>%
   mutate(
@@ -392,23 +348,15 @@ shuff_slopes <- shuff_slopes %>%
 3. Calculate proportion of cells in the shuffled datasets that pass criteria
 -calculate total number of shuffles (cells x 999)
 ```{r}
-total_shuffles <- nrow(shuff_slopes)
-```
-
--calculate how many shuffled datasets have positive or negative slopes
-```{r}
-shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" ))
+(total_shuffles <- nrow(shuff_slopes))
+(shuff_ramps <- nrow(subset(shuff_slopes, shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" )))
+(shuff_ramps_percentage <- (shuff_ramps / total_shuffles)*100)
 ```
 
 -calculate how many shuffles are unclassified
 ```{r}
-non_shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" | shuff_lm_group_b == "NA" ))
-```
-
--calculate percentage shuffles that are not ramps
-```{r}
-non_shuff_ramps_percentage <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" | shuff_lm_group_b == "NA"))/nrow(shuff_slopes)*100
-
+(non_shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" | shuff_lm_group_b == "NA" )))
+(non_shuff_ramps_percentage <- (non_shuff_ramps / total_shuffles)*100)
 ```
 
 
@@ -424,22 +372,16 @@ i.e. posneg = positive in outbound, negative in homebound
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('track_category')) %>%
-  mutate(track_category = map2(lm_group_b, lm_group_b_h, mark_track_category))
+  mutate(track_category = map2(lm_group_b, lm_group_b_h, mark_track_category),
+         track_category_numeric = map2(lm_group_b, lm_group_b_h, mark_numeric_track_category))
 
 ```
 
-
-2. run on all cells
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(track_category_numeric = map2(lm_group_b, lm_group_b_h, mark_numeric_track_category))
-
-```
 
 
 1. How many ramps in total in the dataset?
 ```{r}
-ramps <- nrow(subset(spatial_firing, track_category_numeric != 0))
+(ramps <- nrow(subset(spatial_firing, track_category_numeric != 0)))
 ```
 
 
@@ -471,10 +413,23 @@ normalise_rates <- function(df1, df2){
 2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates = map2(Rates_averaged_rewarded_b, Rates_averaged_rewarded_nb,normalise_rates)) %>%
-  mutate(normalised_rates_nb = map2(Rates_averaged_rewarded_nb,Rates_averaged_rewarded_b, normalise_rates)) %>%
-  mutate(normalised_rates_p = map2(Rates_averaged_rewarded_p,Rates_averaged_rewarded_b, normalise_rates)) 
-
+  mutate(
+    normalised_rates = map2(
+      Rates_averaged_rewarded_b,
+      Rates_averaged_rewarded_nb,
+      normalise_rates
+    ),
+    normalised_rates_nb = map2(
+      Rates_averaged_rewarded_nb,
+      Rates_averaged_rewarded_b,
+      normalise_rates
+    ),
+    normalised_rates_p = map2(
+      Rates_averaged_rewarded_p,
+      Rates_averaged_rewarded_b,
+      normalise_rates
+    )
+  )
 ```
 
 Then, predict firing rate in homebound region based on fit from real data in outbound region
@@ -923,7 +878,7 @@ myheatmap<-pheatmap(wide_DF,cluster_cols = F, cluster_rows = F, annotation_row =
 
 ```
 
-Save the heatmap (bit of a nightmare here...)
+Save the heatmap
 ```{r}
 save_pheatmap_png <- function(x, filename, width=1300, height=2500, res = 250) {
   png(filename, width = width, height = height, res = res)

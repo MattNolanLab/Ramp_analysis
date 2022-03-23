@@ -77,20 +77,21 @@ We might also want to visualise the coefficients for the real and shuffled datas
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
-  coord_cartesian(xlim = c(-0.45,0.45)) +
-  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, alpha=1) +
-  ylab("Proportion") +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
-  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=16),
-        axis.text.y = element_text(size=16),
-        legend.title = element_blank(),
-        legend.position = "none",
-        text = element_text(size=16),
-        legend.text=element_text(size=16),
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+(exp_slopes_plot <- ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_slope, fill=factor(unlist(lm_group_b), level = level_order))) +
+    coord_cartesian(xlim = c(-0.45,0.45), ylim = c(0, 0.4)) +
+    geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01, alpha=1) +
+    labs(x = "Slope (Hz/cm)") +
+    ylab("Proportion") +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.title = element_blank(),
+          legend.position = "none",
+          text = element_text(size=16),
+          legend.text=element_text(size=16),
+          axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0))))
 if (save_figures == 1) {
   ggsave(file = "plots/Outbound_slope_histogram_update.png", width = 4, height = 2)
 }
@@ -148,8 +149,8 @@ shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope)
 shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), 
                        r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
                        pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
-                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, times = 1000), 
-                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, times = 1000))
+                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, each = 1000), 
+                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, each = 1000))
 ```
 
 2. Function to classify shuffled cells based on shuffled distribution
@@ -172,8 +173,8 @@ shuff_slopes <- shuff_slopes %>%
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=shuff_slopes, aes(x = slopes, fill=factor(unlist(shuff_lm_group_b), level = level_order))) +
-    coord_cartesian(xlim = c(-0.45,0.45)) +
+(shuffle_slopes_plot <- ggplot(data=shuff_slopes, aes(x = slopes, fill=factor(unlist(shuff_lm_group_b), level = level_order))) +
+    coord_cartesian(xlim = c(-0.45,0.45), ylim = c(0, 0.4)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
     labs(x = "Slope (Hz/cm)") +
     ylab("Proportion") +
@@ -186,7 +187,7 @@ ggplot(data=shuff_slopes, aes(x = slopes, fill=factor(unlist(shuff_lm_group_b), 
           legend.position = "none",
           text = element_text(size=16),
           legend.text=element_text(size=16),
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+          axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0))))
 if (save_figures == 1) {
   ggsave(file = "plots/Outbound_slope_histogram_shuffled.png", width = 4, height = 2)
 }
@@ -197,11 +198,11 @@ if (save_figures == 1) {
 ```{r}
 level_order <- c("Negative", "Positive", "Unclassified")
 
-ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + 
-  coord_cartesian(xlim = c(0,1), ylim = c(0,0.06)) +
+(exp_r2_plot <- ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(unlist(lm_group_b), level = level_order))) + 
+  coord_cartesian(xlim = c(0,1), ylim = c(0,0.12)) +
   geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
   ylab("Proportion") +
-  xlab(" ") +
+  xlab(expression(R^2)) +
   scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
   scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
   theme_classic() +
@@ -211,7 +212,8 @@ ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_r.squared, fill=factor(u
         legend.position = "none",
         text = element_text(size=16),
         legend.text=element_text(size=16),
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+        axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0))))
+
 if (save_figures == 1) {
   ggsave(file = "plots/Outbound_rsquared_histogram_update.png", width = 4, height = 2)
 }
@@ -219,8 +221,8 @@ if (save_figures == 1) {
 
 4. Same as above but for shuffled datasets
 ```{r}
-ggplot(data=shuff_slopes, aes(x = r2, fill=factor(unlist(shuff_lm_group_b)))) +
-    coord_cartesian(xlim = c(0,1)) +
+(shuffle_r2_plot <- ggplot(data=shuff_slopes, aes(x = r2, fill=factor(unlist(shuff_lm_group_b)))) +
+    coord_cartesian(xlim = c(0,1), ylim = c(0,0.12)) +
     geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.01) +
     xlab(expression(R^2)) +
     ylab("Proportion") +
@@ -233,16 +235,67 @@ ggplot(data=shuff_slopes, aes(x = r2, fill=factor(unlist(shuff_lm_group_b)))) +
           legend.title = element_blank(),
           text = element_text(size=16),
           legend.text=element_text(size=16),
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+          axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0))))
+
 if (save_figures == 1) {
   ggsave(file = "plots/Outbound_rsquared_histogram_shuffled.png", width = 4, height = 2)
 }
 ```
 
 
+Make a figure
+```{r}
+cowplot::plot_grid(exp_slopes_plot, shuffle_slopes_plot, exp_r2_plot, shuffle_r2_plot, labels = c("A", "B", "C", "D"), label_size = 16)
+ggsave(file = "plots/exp_vs_shuffle.jpg")
+```
 
 
+Look at p values too
+```{r}
+(exp_pval_plot <- ggplot(data=spatial_firing, aes(x= asr_b_o_rewarded_fit_p.value, fill=factor(unlist(lm_group_b), level = level_order))) + 
+  coord_cartesian(xlim = c(0,1), ylim = c(0,0.7)) +
+   geom_histogram(aes(y=..count../sum(..count..)),
+                   binwidth=0.005) +
+  ylab("Proportion") +
+  xlab(expression(p)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0))))
 
+```
+
+```{r}
+(shuffle_pval_plot <- ggplot(data=shuff_slopes, aes(x = pval, fill=factor(unlist(shuff_lm_group_b)))) +
+    coord_cartesian(xlim = c(0,1), ylim = c(0,0.7)) +
+    geom_histogram(aes(y=..count../sum(..count..)),
+                   binwidth=0.005) +
+    xlab(expression(p)) +
+    ylab("Proportion") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="none",
+          legend.title = element_blank(),
+          text = element_text(size=16),
+          legend.text=element_text(size=16),
+          axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0))))
+
+
+```
+
+```{r}
+cowplot::plot_grid(exp_pval_plot, shuffle_pval_plot, labels = c("A", "B"), label_size = 16)
+ggsave(file = "plots/exp_vs_shuffle_pvals.jpg")
+```
 
 ### ------------------------------------------------------------------------------------------------- ### 
 

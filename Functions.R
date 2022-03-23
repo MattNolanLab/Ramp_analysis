@@ -133,7 +133,7 @@ predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 
   # predict
   homebound_prediction_pos <- tibble(Position = rep(1:200))
   homebound_prediction <- predict(model, newdata = homebound_prediction_pos, interval = "prediction", level = 0.99) 
-  as.tibble(homebound_prediction)
+  as_tibble(homebound_prediction)
 }
 
 
@@ -205,73 +205,71 @@ mark_reset_group_predict <- function(offset){
   }
 }
 
+## --------------------------------------------------------------------------------------------- ##
 # Load circular shuffled data from Python.
-# df is the master data frame, e.g. spatial_firing.
-# The function returns a version of df with the resilts appended.
-load_circ_shuffles <- function(df, cs_path) {
+
+# this function will take load shuffles for a single trial type, e.g. beaconed outbound
+# The input dataframe is the 
+local_circ_shuffles <- function(df_in, cs_path) {
   shuffled_df <- read_feather(cs_path)
   
-  # I will put the results from Python here (copy of previous results over the existing ones)
-  df$spike_shuffle_results_b_o <- df$shuffle_results_b_o  # I did this because this 'nested' format is needed
-  df$spike_shuffle_results_nb_o <- df$shuffle_results_nb_o  # I did this because this 'nested' format is needed
-  df$spike_shuffle_results_p_o <- df$shuffle_results_p_o  # I did this because this 'nested' format is needed
-  df$row_names <- seq(1, nrow(df), by=1)
   
   # get list of cells based on session id + cluster id
   # add unique id for each cell to both data frames
   shuffled_df$unique_cell_id <- paste(shuffled_df$session_id, shuffled_df$cluster_id)
-  df$unique_cell_id <- paste(df$session_id, df$cluster_id)
   unique_cells = unique(shuffled_df[c("unique_cell_id")])
   number_of_cells = nrow(unique_cells)
   print('Number of cells in spike-level shuffle data:')
   print(number_of_cells)
   
-  # iterate on list of cells and change 'spike_shuffle_results_b_o' column
-  for(i in 1:nrow(unique_cells)) {
-    # these are the rows that correspond to the cell
-    cell_rows <- shuffled_df %>% filter(unique_cell_id == toString(unique_cells[i,]))
-    # get part of df that corresponds to shuffled data from the cell from outbound
-    shuffled_results_b <- cell_rows %>% select(beaconed_r2_ob, beaconed_slope_ob, beaconed_p_val_ob)
-    shuffled_results_nb <- cell_rows %>% select(non_beaconed_r2_ob, non_beaconed_slope_ob, non_beaconed_p_val_ob)
-    shuffled_results_p <- cell_rows %>% select(probe_r2_ob, probe_slope_ob, probe_p_val_ob)
-    
-    # rename the collumns in shuffled_results to "slope", "r.squared", "p.value"
-    names(shuffled_results_b)[names(shuffled_results_b) == "beaconed_r2_ob"] <- "r.squared"
-    names(shuffled_results_b)[names(shuffled_results_b) == "beaconed_slope_ob"] <- "slope"
-    names(shuffled_results_b)[names(shuffled_results_b) == "beaconed_p_val_ob"] <- "p.value"
-    names(shuffled_results_nb)[names(shuffled_results_nb) == "non_beaconed_r2_ob"] <- "r.squared"
-    names(shuffled_results_nb)[names(shuffled_results_nb) == "non_beaconed_slope_ob"] <- "slope"
-    names(shuffled_results_nb)[names(shuffled_results_nb) == "non_beaconed_p_val_ob"] <- "p.value"
-    names(shuffled_results_p)[names(shuffled_results_p) == "probe_r2_ob"] <- "r.squared"
-    names(shuffled_results_p)[names(shuffled_results_p) == "probe_slope_ob"] <- "slope"
-    names(shuffled_results_p)[names(shuffled_results_p) == "probe_p_val_ob"] <- "p.value"
-    
-    neuron_list <- seq(1, nrow(shuffled_results_b), by=1) # make list [1...1000]
-    shuffled_results_b$neuron=neuron_list  # add 'neuron' column with shuffle ids
-    shuffled_results_nb$neuron=neuron_list  # add 'neuron' column with shuffle ids
-    shuffled_results_p$neuron=neuron_list  # add 'neuron' column with shuffle ids
-    
-    # find cell in ramp data frame that we are updating the shuffled for
-    cell_index <- df[df$unique_cell_id==toString(unique_cells[i,]),]$row_names
-    # put spike shuffle results in R df
-    df$spike_shuffle_results_b_o[cell_index] <- list(shuffled_results_b)
-    df$spike_shuffle_results_nb_o[cell_index] <- list(shuffled_results_nb)
-    df$spike_shuffle_results_p_o[cell_index] <- list(shuffled_results_p)
+  # reformat shuffled data
+  shuffled_b <- shuffled_df %>%
+    select(unique_cell_id, shuffle_id, beaconed_r2_ob, beaconed_slope_ob, beaconed_p_val_ob) %>%
+    rename(neuron = "shuffle_id", slope = "beaconed_slope_ob", r.squared = "beaconed_r2_ob", p.value = "beaconed_p_val_ob") %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  shuffled_nb <- shuffled_df %>%
+    select(unique_cell_id, shuffle_id, non_beaconed_r2_ob, non_beaconed_slope_ob, non_beaconed_p_val_ob) %>%
+    rename(neuron = "shuffle_id", slope = "non_beaconed_slope_ob", r.squared = "non_beaconed_r2_ob", p.value = "non_beaconed_p_val_ob") %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  shuffled_p <- shuffled_df %>%
+    select(unique_cell_id, shuffle_id, probe_r2_ob, probe_slope_ob, probe_p_val_ob) %>%
+    rename(neuron = "shuffle_id", slope = "probe_slope_ob", r.squared = "probe_r2_ob", p.value = "probe_p_val_ob") %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  
+  
+  # Provides a reference for cell IDs in the experimental data
+  unique_cell_ids <- paste(df_in$session_id, df_in$cluster_id)
+  
+  # initialise
+  shuffled_results_b <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
+  shuffled_results_nb <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
+  shuffled_results_p <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
+  
+  # iterate on list of cells in the main datset
+  for(i in 2:length(unique_cell_ids)) {
+    # find the shuffled data that correspond to the current cell
+    shuffled_results_b <- rbind(shuffled_results_b,
+                                shuffled_b %>%filter(unique_cell_id == unique_cell_ids[i]))
+    shuffled_results_nb <- rbind(shuffled_results_nb,
+                                 shuffled_b %>% filter(unique_cell_id == unique_cell_ids[i]))
+    shuffled_results_p <- rbind(shuffled_results_p,
+                                shuffled_b %>% filter(unique_cell_id == unique_cell_ids[i]))
+ 
   }
   
-  # Now I renamed the spike_shuffle_results_b_o, spike_shuffle_results_nb_o, spike_shuffle_results_p_o to
-  #                         shuffle_results_b_o,       shuffle_results_nb_o,       shuffle_results_p_o
-  # first drop the old columns
-  df <- df[,!grepl("^shuffle_results_b_o",names(df))]
-  df <- df[,!grepl("^shuffle_results_nb_o",names(df))]
-  df <- df[,!grepl("^shuffle_results_p_o",names(df))]
+  df <- tibble(unique_cell_id = shuffled_results_b$unique_cell_id,
+               shuffle_results_b_o = shuffled_results_b$data,
+               shuffled_results_nb_o = shuffled_results_nb$data,
+               shuffled_results_p_o = shuffled_results_p$data)
   
-  # then rename the newly created columns
-  names(df)[names(df) == "spike_shuffle_results_b_o"] <- "shuffle_results_b_o"
-  names(df)[names(df) == "spike_shuffle_results_nb_o"] <- "shuffle_results_nb_o"
-  names(df)[names(df) == "spike_shuffle_results_p_o"] <- "shuffle_results_p_o"
   return(df)
 }
+
+
+
 
 
 ## ----------------------------------------------------------##
