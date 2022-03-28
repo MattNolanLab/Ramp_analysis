@@ -203,6 +203,16 @@ mark_numeric_track_category <- function(outbound, homebound){
   }
 }
 
+#Function to classify neurons based on offset 
+mark_reset_group_predict <- function(offset){
+  if (is.na(offset) ) {
+    return( "None" )
+  } else if( offset == "None") {
+    return( "Continuous" )
+  } else if( ( offset == "Neg" ||  offset == "Pos")) {
+    return( "Reset" ) 
+  }
+}
 
 # Plot histogram of distribution of firing rate offsets
 offset_ggplot <- function(df, colour_1 = "grey", colour_2 = "chartreuse3", colour_3 = "red") {
