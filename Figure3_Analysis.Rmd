@@ -36,11 +36,10 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
-2. Run linear model on all cells and extract pval
-To test just use the first two rows
+2. Fit linear model to all cells and extract pval
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_glm))
+  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_lm))
 ```
 
 Now we can classify cells based on their significance in the above model
@@ -131,8 +130,6 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
-### ----------------------------------------------------------------------------- ###
-
 
 ### ----------------------------------------------------------------------------------------- ###
 
@@ -193,7 +190,7 @@ if (save_figures==1) {
 }
 ```
 
-plit data based on conjunctive position encoding (PA, PS, PSA) (Figure 2) as we are only interested in these neurons here
+Split data based on conjunctive position encoding (PA, PS, PSA) (Figure 2) as we are only interested in these neurons here
 
 ```{r}
 conjunctive_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
@@ -321,24 +318,16 @@ outcomes_offsets_data <- tibble(session_id = rep(unlist(spatial_firing$unique_id
 
 ```
 
-2. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 1) and subset based on position encoding (Figure 2) and are ++ or -- in beaconed trials
+
+
+
+Onset data for position encoding encoding neurons (P, PA, PS, PSA)
 ```{r}
-df <- data %>%
-  filter(final_model_o_b == "P",
-  lm_group_b == "Positive" | lm_group_b == "Negative",
-  lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative" ) 
-  
-```
-
-
-
-Ohhset data for position encoding encoding neurons (P, PA, PS, PSA)
-```{r}
-outcomes_offsets_data_pospos <- data %>%
+outcomes_offsets_data_pospos <- outcomes_offsets_data %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
                 lm_group_b == "Positive" & lm_group_b_h == "Positive")
 
-outcomes_offsets_data_negneg <- data %>% filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+outcomes_offsets_data_negneg <- outcomes_offsets_data %>% filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
                 lm_group_b == "Negative" & lm_group_b_h == "Negative")
 ```
 
@@ -400,11 +389,11 @@ _plots for all speed encoding encoding neurons (S, A, SA)_
 
 1. extract only neurons that are subset based on speed encoding (S, SA, A) (Figure 3) and are ++ or -- in beaconed trials
 ```{r}
-outcomes_offsets_data_speedpos <- data %>%
+outcomes_offsets_data_speedpos <- outcomes_offsets_data %>%
   filter(final_model_o_b == "S" | final_model_o_b == "SA",
                 lm_group_b == "Positive" & lm_group_b_h == "Positive")
 
-outcomes_offsets_data_speedneg <- data %>% filter(final_model_o_b == "S" | final_model_o_b == "SA",
+outcomes_offsets_data_speedneg <- outcomes_offsets_data %>% filter(final_model_o_b == "S" | final_model_o_b == "SA",
                 lm_group_b == "Negative" & lm_group_b_h == "Negative")
 ```
 
