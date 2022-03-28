@@ -346,14 +346,13 @@ shuff_slopes <- shuff_slopes %>%
 
 
 3. Calculate proportion of cells in the shuffled datasets that pass criteria
--calculate total number of shuffles (cells x 999)
 ```{r}
 (total_shuffles <- nrow(shuff_slopes))
 (shuff_ramps <- nrow(subset(shuff_slopes, shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" )))
 (shuff_ramps_percentage <- (shuff_ramps / total_shuffles)*100)
 ```
 
--calculate how many shuffles are unclassified
+Calculate how many shuffles are unclassified
 ```{r}
 (non_shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" | shuff_lm_group_b == "NA" )))
 (non_shuff_ramps_percentage <- (non_shuff_ramps / total_shuffles)*100)
@@ -363,12 +362,17 @@ shuff_slopes <- shuff_slopes %>%
 ### ------------------------------------------------------------------------------------------ ### 
 
 
-Now, we can classify cells based on their activity in the outbound and homebound region
+Now, classify cells based on their activity in the outbound and homebound region
 
-i.e. pospos = positive in outbound, positive in homebound
-i.e. posneg = positive in outbound, negative in homebound
+Homebound   Outbound    Text label    Numeric label
+Positive    Positive    pospos        1
+Positive    Negative    posneg        2
+Positive    Unlcassified    posnon    3
+Negative    Negative    negneg        4
+Negative    Positive    negpos        5
+Negative    Unclassified    negnon    6
+Other                                 0
 
-2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('track_category')) %>%
@@ -379,7 +383,7 @@ spatial_firing <- spatial_firing %>%
 
 
 
-1. How many ramps in total in the dataset?
+1. How many non-other neurons in the dataset?
 ```{r}
 (ramps <- nrow(subset(spatial_firing, track_category_numeric != 0)))
 ```
@@ -391,50 +395,19 @@ spatial_firing <- spatial_firing %>%
 
 ### ------------------------------------------------------------------------------------------ ### 
 
-Now, we want to find out if within pospos and negneg groups - are their firing rate reset or continue across the reward region?
+Now, we want to find out if within pospos and negneg groups - does their firing rate reset across the reward region?
 
 To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
 
 
-First, normalise firing rates. 
-
-
-1. make function to load rates and normalise
-```{r}
-normalise_rates <- function(df1, df2){
-  df <- c(df1, df2)
-  df <- tibble(Rates = unlist(df), Position = rep(1:400))
-  x <- scale(df$Rates, center=TRUE, scale=TRUE)
-  x <- x[1:200]
-  return(x)
-}
-```
-
-2. run on all cells
+1. Normalize rates for all cells. This is to facilitate comparison later.
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(
-    normalised_rates = map2(
-      Rates_averaged_rewarded_b,
-      Rates_averaged_rewarded_nb,
-      normalise_rates
-    ),
-    normalised_rates_nb = map2(
-      Rates_averaged_rewarded_nb,
-      Rates_averaged_rewarded_b,
-      normalise_rates
-    ),
-    normalised_rates_p = map2(
-      Rates_averaged_rewarded_p,
-      Rates_averaged_rewarded_b,
-      normalise_rates
-    )
-  )
+  mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
 ```
 
-Then, predict firing rate in homebound region based on fit from real data in outbound region
-
-2. Run on all neurons
+2. Then, predict firing rate in homebound region based on fit from real data in outbound region.
+Run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_')) %>%
@@ -444,22 +417,14 @@ spatial_firing <- spatial_firing %>%
 spatial_firing <- spatial_firing %>%
   mutate(offset = pmap_chr(list(normalised_rates, predict_params_lwr, predict_params_upr), offset_test),
          predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff))
-
 ```
 
+predict_params_fit is the prediction for the firing rate after fitting.
+predict_params_upr and predict_params_lwr are the 99% confidence intervals of the prediction.
 
-### ------------------------------------------------------------------------------------------ ### 
+offset is either 'pos', 'neg' or 'none' depending on whether the difference between the predicted and actual firing rate is above, below or inside the intervals specified by predict_params_lwr and predict_params_upr.
 
-### ------------------------------------------------------------------------------------------ ### 
-
-Now, we can classify cells based on their predicted activity. 
-
-2. Run on all cells
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(reset_group = map(offset, mark_reset_group_predict))
-
-```
+predict_diff is the difference between the predicted and actual firing rates at the start of the track segment that follows the reward zone.
 
 
 
@@ -472,29 +437,11 @@ spatial_firing <- spatial_firing %>%
 - do only for neurons that have slopes in outbound zone
 - do this for both negative and positive slopes in the outbound zone
 
-1. extract neurons that are ++ or -- on beaconed trials
+Plot for neurons with positive slopes.
 ```{r}
-df_position_pi <- spatial_firing %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  #%>% 
-
-```
-
-4. Plot bar charts - positive neurons
-```{r}
-ggplot(data=subset(df_position_pi, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
-  coord_cartesian(xlim=c(-6,6)) +
-  geom_histogram(aes(y=..count..), alpha=0.5) +
-  scale_fill_manual(values=c(  "grey", "chartreuse3","chartreuse3")) +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  labs(y="Density", x="") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=13),
-        axis.text.y = element_text(size=13),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=13), 
-        legend.text=element_text(size=13), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+spatial_firing %>%
+  filter(lm_group_b == "Positive") %>%
+  offset_ggplot()
 
 if (save_figures == 1) {
   ggsave(file = "plots/PredictHomeboundMean_positive.png",width = 4, height = 2.5)
@@ -503,21 +450,10 @@ if (save_figures == 1) {
 
 5. Plot bar charts - Negative neurons
 ```{r}
+spatial_firing %>%
+  filter(lm_group_b == "Negative") %>%
+  offset_ggplot(colour_2 = "violetred2")
 
-ggplot(data=subset(df_position_pi,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
-  coord_cartesian(xlim=c(-5,5)) +
-  geom_histogram(aes(y=..count..), alpha=0.5) +
-  scale_fill_manual(values=c( "grey", "violetred2","violetred2")) +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  labs(y="Density", x="") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=13),
-        axis.text.y = element_text(size=13),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=13), 
-        legend.text=element_text(size=13), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
   ggsave(file = "plots/PredictHomeboundMean_negative.png",width = 4, height = 2.5)
@@ -627,38 +563,10 @@ df <- tibble(session_id = rep(spatial_firing$session_id, each=bin),
 ```
 
 
-Function to plot mean and SEM of firing rate as a function of position.
-```{r}
-mean_SEM_plots <- function(df, colour1 = "blue"){
-  cell_no <- ncol(df)
-  df <- df %>%
-    dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
-    mutate(Position = rep(-29.5:169.5))
 
-  ggplot(data=df) +
-  annotate("rect", xmin=-30, xmax=0, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
-  geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
-  geom_line(aes(y=mean_r, x=Position), color = colour1) +
-  theme_classic() +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  #annotate("text", x = 140, y=7, label = paste0("n = ", str(cell_no)), size=8) +
-  #geom_text(aes(x = 140, y= 6, label = paste0("n = ", str(cell_no))), vjust = "inward", hjust = "inward")
-  #scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
-  labs(y = "Z-scored firing rate", x = "Position") +
-  theme(axis.text.x = element_text(size=18),
-        axis.text.y = element_text(size=18),
-        legend.title = element_blank(),
-        text = element_text(size=18),
-        plot.margin = margin(21, 25, 5, 20))
-}
+Subset data by group then average rates for plotting
 
-```
-
-
-
-3. Subset data by group then average rates for plotting          **Negative Negative**
+**Negative Negative**
 ```{r}
 df_neg_neg <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
@@ -674,7 +582,7 @@ if (save_figures == 1) {
 
 
 
-3. Subset data by group then average rates for plotting          **Positive Positive **
+**Positive Positive **
 ```{r}
 df_pos_pos <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
@@ -690,7 +598,7 @@ if (save_figures == 1) {
 ```
 
 
-3. Subset data by group then average rates for plotting          **Positive Negative**
+**Positive Negative**
 ```{r}
 df_pos_neg <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
@@ -706,7 +614,7 @@ if (save_figures == 1) {
 
 
 
-3. Subset data by group then average rates for plotting          **Positive Negative**
+**Positive Negative**
 ```{r}
 df_neg_pos <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
@@ -721,7 +629,7 @@ if (save_figures == 1) {
 ```
 
 
-3. Subset data by group then average rates for plotting          **Positive Unclassified**
+**Positive Unclassified**
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Unclassified") %>%
@@ -735,7 +643,7 @@ if (save_figures == 1) {
 }
 ```
 
-3. Subset data by group then average rates for plotting          **Negative Unclassified**
+**Negative Unclassified**
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Unclassified") %>%
@@ -749,12 +657,7 @@ if (save_figures == 1) {
 ```
 # get numbers for the plots
 ```{r}
-num_pospos <-spatial_firing %>% filter(track_category_numeric == 1)
-num_posneg <-spatial_firing %>% filter(track_category_numeric == 2)
-num_posnon <-spatial_firing %>% filter(track_category_numeric == 3)
-num_negneg <-spatial_firing %>% filter(track_category_numeric == 4)
-num_negpos <-spatial_firing %>% filter(track_category_numeric == 5)
-num_negnon <-spatial_firing %>% filter(track_category_numeric == 6)
+table(unlist(spatial_firing$track_category_numeric))
 ```
 
 
@@ -808,10 +711,7 @@ start_ramps <- start_ramps %>%
 
 Add position to normalised rates for plotting
 ```{r}
-add_position <- function(df) {
-  df <- tibble(Rates = unlist(df), Position = rep(31:171))
-}
-
+# Might need to modify this so position covers range 31:171.
 start_ramps <- start_ramps %>%
   mutate(normalised_rates_o = map(normalised_rates_o, add_position)) 
 

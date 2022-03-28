@@ -1,5 +1,6 @@
 ### This script contains functions which are called in the Analysis markdown code
 
+### Functions here are initially used in Figure 1 code
 
 ## Adds positions to a single column data frame that contains a neurons binned mean firing rate
 add_position <- function(df, session_id = "", cluster_id = "") {
@@ -8,7 +9,6 @@ add_position <- function(df, session_id = "", cluster_id = "") {
   #if(all(is.na(df$Rates))){print(paste0("All NAs. Session: ", session_id, ". Cluster:", cluster_id))}
   df
 }
-
 
 
 ## Fits a linear model to firing rate data contained in df, across the range from startbin to endbin.
@@ -110,7 +110,16 @@ compare_slopes <-
     }
   }
 
-#Calculates the difference between mean rate and predicted mean rate at the start of the homebound zone
+
+# Function to normalize firing rates
+normalise_rates <- function(df){
+  df <- tibble(Rates = unlist(df), Position = rep(1:200))
+  x <- scale(df$Rates, center=TRUE, scale=TRUE)[,1]
+  return(x)
+}
+
+
+#C alculates the difference between mean rate and predicted mean rate at the start of the homebound zone
 calc_predict_diff <- function(rates, fit)
 {
   diff <- mean(as.double(rates[110:115])) - mean(as.double(fit[110:115]))
@@ -122,7 +131,7 @@ lm_predict <- function(df){
 }
 
 # Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
-predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 110, predict_end = 115){
+predict_homebound <- function(df, fit_start = 30, fit_end = 90){
   # check for NAs
   if(all(is.na(df))) 
     return(NA)
@@ -138,13 +147,13 @@ predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 
 
 
 #Test whether data lies outside of confidence intervals
-offset_test <- function(rates, lwr, upr){
+offset_test <- function(rates, lwr, upr, predict_start = 110, predict_end = 115){
   # check for NAs
   if(all(is.na(rates))) 
     return(NA)
-  rates <- mean(as.double(rates[110:115]))
-  upr <- mean(as.double(upr[110:115]))
-  lwr <- mean(as.double(lwr[110:115]))
+  rates <- mean(as.double(rates[predict_start:predict_end]))
+  upr <- mean(as.double(upr[predict_start:predict_end]))
+  lwr <- mean(as.double(lwr[predict_start:predict_end]))
   if(rates > upr) {
     return("Pos")
   }
@@ -156,7 +165,7 @@ offset_test <- function(rates, lwr, upr){
   
 }
 
-#write function to mark cells based on groups
+# Function to give a text label to cells based on groups
 mark_track_category <- function(outbound, homebound){
   if( outbound == "Positive" & homebound == "Negative") {
     return( "posneg" ) 
@@ -175,7 +184,7 @@ mark_track_category <- function(outbound, homebound){
   }
 }
 
-# write function to mark cells based on groups
+# Function to give a numeric label to cells based on groups
 mark_numeric_track_category <- function(outbound, homebound){
   if( outbound == "Positive" & homebound == "Negative") {
     return( as.numeric(2) ) 
@@ -194,15 +203,50 @@ mark_numeric_track_category <- function(outbound, homebound){
   }
 }
 
-#Function to classify neurons based on offset 
-mark_reset_group_predict <- function(offset){
-  if (is.na(offset) ) {
-    return( "None" )
-  } else if( offset == "None") {
-    return( "Continuous" )
-  } else if( ( offset == "Neg" ||  offset == "Pos")) {
-    return( "Reset" ) 
-  }
+
+# Plot histogram of distribution of firing rate offsets
+offset_ggplot <- function(df, colour_1 = "grey", colour_2 = "chartreuse3", colour_3 = "red") {
+  ggplot(data=subset(df), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+    coord_cartesian(xlim=c(-6,6)) +
+    geom_histogram(aes(y=..count..), alpha=0.5) +
+    scale_fill_manual(values=c(colour_1, colour_2, colour_3)) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+    labs(y="Density", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=13),
+          axis.text.y = element_text(size=13),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=13), 
+          legend.text=element_text(size=13), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+
+
+# Plot mean and SEM of firing rate as a function of position.
+mean_SEM_plots <- function(df, colour1 = "blue"){
+  cell_no <- ncol(df)
+  df <- df %>%
+    dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+    mutate(Position = rep(-29.5:169.5))
+  
+  ggplot(data=df) +
+    annotate("rect", xmin=-30, xmax=0, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=140, xmax=170, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=60, xmax=80, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+    geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
+    geom_line(aes(y=mean_r, x=Position), color = colour1) +
+    theme_classic() +
+    scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+    #annotate("text", x = 140, y=7, label = paste0("n = ", str(cell_no)), size=8) +
+    #geom_text(aes(x = 140, y= 6, label = paste0("n = ", str(cell_no))), vjust = "inward", hjust = "inward")
+    #scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
+    labs(y = "Z-scored firing rate", x = "Position") +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.title = element_blank(),
+          text = element_text(size=18),
+          plot.margin = margin(21, 25, 5, 20))
 }
 
 ## --------------------------------------------------------------------------------------------- ##
@@ -270,6 +314,227 @@ local_circ_shuffles <- function(df_in, cs_path) {
 
 
 
+## ----------------------------------------------------------##
+
+### Functions below here are initially used in Figure 3 code.
+
+
+# A function that extracts into a tibble data from spatial_firing$spikes_in_time_reward_hit/run/try
+extract_to_tibble <- function(df) {
+  df <-
+    tibble(
+      Rates = as.numeric(Re(df[[1]])),
+      Position = as.numeric(Re(df[[3]])),
+      Trials = as.numeric(Re(df[[4]]))
+    )
+  return (df)
+}
+
+
+
+# Function to join firing rates from different trial types and add indicator of the type of trial
+# The trial types are:
+# spatial_firing$spikes_in_time_reward_hit
+# spikes_in_time_reward_run
+# spikes_in_time_reward_try
+join_rates <- function(hit, run, try, session_id, cluster_id) {
+  if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
+    return(NA)
+  }
+  
+  hit_df <- extract_to_tibble(hit)
+  run_df <- extract_to_tibble(run)
+  try_df <- extract_to_tibble(try)
+  
+  df <- tibble(Rates = c(hit_df$Rates, 
+                         run_df$Rates,
+                         try_df$Rates), 
+               Reward_indicator = c(rep("Rewarded", times=nrow(hit_df)), 
+                                    rep("Run", times=nrow(run_df)), 
+                                    rep("Try", times=nrow(try_df))), 
+               Position = c(hit_df$Position, 
+                            run_df$Position, 
+                            try_df$Position), 
+               Trials = c(hit_df$Trials,
+                          run_df$Trials,
+                          try_df$Trials))
+  
+  return (df)
+}
+
+
+# Function to fit a linear mixed effect model that takes trial type (hit, try, run) into account
+# The car package is used to extract slope significance
+compare_models_slope_lm <- function(df, run,try){
+  tryCatch({
+    if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
+      return(NA)
+    }
+    if (length(df) == 1 | nrow(df) < 6)
+      return(NA)
+    
+    df <- df %>%
+      filter(Position >= 30, Position <= 90)
+    fit <- lme4::lmer(Rates ~ scale(Position) * Reward_indicator + (1+scale(Position) | Trials), data = df, na.action=na.omit)
+    modelAnova <- car::Anova(fit)
+    to_return <- modelAnova$"Pr(>Chisq)"[[3]]
+  },
+  error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Function to fit a general linear mixed effect model that takes trial type (hit, try, run) into account
+# The car package is used to extract slope significance
+compare_models_slope_glm <- function(df, run,try){
+  tryCatch({
+    if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
+      return(NA)
+    }
+    if (length(df) == 1 | nrow(df) < 6)
+      return(NA)
+    
+    df <- df %>%
+      filter(Position >= 30, Position <= 90)
+    fit <- lme4::glmer(formula = Rates ~ Position * Reward_indicator + (1 + Position | Trials), 
+                          data = df, 
+                          na.action = na.exclude,
+                          family = Gamma(link = "log"),
+                          start=list(fixef=coef(glm1)),
+                          control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+    
+    modelAnova <- car::Anova(fit)
+    to_return <- modelAnova$"Pr(>Chisq)"[[3]]
+  },
+  error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+
+# Function to classify neurons based on whether there is a significant effect of trial outcome
+mark_neurons_sig <- function(pval){
+  tryCatch({
+    if (is.na(pval)) {
+      return(NA)
+    }
+    if (pval == "NULL") {
+      return(NA)
+    }
+    if( pval < 0.01) {
+      return( "Significant" )
+    } else if( pval >= 0.01) {
+      return( "Not-Significant" )
+    } else {
+      return("None")
+    }
+  },
+  error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+  
+}
+
+
+# Function to join average firing rates from different trial types, normalize the rates and add indicator of the type of trial
+join_average_rates <- function(hit, run, try, session_id, cluster_id) {
+  if (any(is.na(hit)) | any(is.na(run)) | any(is.na(try))) { 
+    return(
+      df <- tibble(Rates = rep(NA, times=600), 
+                   Position = rep(NA, times=600),
+                   Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)))
+    )
+  }
+  df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try)),
+               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)),
+               Position = c(rep(-30:169), rep(-30:169), rep(-30:169)))
+  df$Rates <- scale(df$Rates, center=TRUE, scale=TRUE)[,1]
+  return (df)
+}
+
+
+# Generic function to subset data ready for plotting with mean_SEM_plots_by_Outcome
+# Note the unnest() is only carried out if there is data.
+subset_for_plots <- function(df, outbound_class = "Positive", homebound_class = "Positive") {
+  df <- df %>%
+    filter(lm_group_b == outbound_class,
+           lm_group_b_h == homebound_class) %>%
+    select(avg_both_asr_b) %>%
+    when(nrow(.) != 0 ~ unnest(., c(avg_both_asr_b))
+    )
+}
+
+# Generic function to plot firing rate ± SEM as a function of position and colour coded according to trial outcome.
+# The function expects to receive the unnested mean firing rates for all neurons that are to be plotted.
+# Conditions for selection should be given before calling the function.
+# Column names of the input data frame should be 'Rates', 'Position' and 'Reward_indicator'.
+mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
+  # Check for data
+  if(is.null(df) == TRUE) {return(
+    ggplot() + theme_void())
+    } 
+  # check for all NAs
+  if (sum(is.na(df$Rates)) == dim(df)[[1]]) {
+    return(ggplot() + theme_void())
+  }
+  # Carry on
+  df <- df %>%
+    group_by(Position, Reward_indicator) %>%
+    dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
+                     se_b = std.error(Rates, na.rm = TRUE))
+  
+  ggplot(data=df) +
+    annotate("rect", xmin=-30, xmax=0, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=140, xmax=170, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=60, xmax=80, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+    geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
+                    fill=factor(Reward_indicator)), alpha=0.1) +
+    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
+    scale_fill_manual(values=c("black", "red", "blue")) +
+    scale_color_manual(values=c("black", "red", "blue")) +
+    #labs(y = "Mean firing rate (Hz)", x = "Location (cm)") +
+    labs(y = "Z-scored firing rate", x = "Location (cm)") +
+    #xlim(-30, 170) +
+    theme_classic() +
+    scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=14),
+          legend.title = element_blank(),
+          legend.position="none", 
+          text = element_text(size=14),
+          plot.margin = margin(21, 25, 5, 20))
+}
+
+# Function to generate plots by trial outome for each class of ramping neurons
+# Also returns the number of neurons that contribute to each plot
+# Calculation of number of neurons without NAs is somewhat improvised
+# This could be modified by including neuron ID, etc.
+all_plots_by_outome <- function(df) {
+  
+  NegNegNeurons <- df %>%
+    subset_for_plots("Negative", "Negative")
+  NegNeg_plot <- NegNegNeurons %>%
+    mean_SEM_plots_by_Outcome(-29,169)
+  NegNeg_N <- sum(!is.na(NegNegNeurons$Rates))/600 # Relies on their being 200 x 3 location points
+  
+  NegPosNeurons <- df %>%
+    subset_for_plots("Negative", "Positive")
+  NegPos_plot <- NegPosNeurons %>%
+    mean_SEM_plots_by_Outcome(-29,169)
+  NegPos_N <- sum(!is.na(NegPosNeurons$Rates))/600 
+  
+  PosPosNeurons <- df %>%
+    subset_for_plots("Positive", "Positive")
+  PosPos_plot <- PosPosNeurons %>%
+    mean_SEM_plots_by_Outcome(-29,169)
+  PosPos_N <- sum(!is.na(PosPosNeurons$Rates))/600 
+  
+  PosNegNeurons <- df %>%
+    subset_for_plots("Positive", "Negative")
+  PosNeg_plot <- PosNegNeurons %>%
+    mean_SEM_plots_by_Outcome(-29,169)
+  PosNeg_N <- sum(!is.na(PosNegNeurons$Rates))/600 
+  
+  
+  return(list(list(NegNeg_plot, NegPos_plot, PosPos_plot, PosNeg_plot),
+              list(NegNeg_N, NegPos_N, PosPos_N, PosNeg_N)))
+}
+
+# sum(sapply(speed_neurons$avg_both_asr_b, anyNA))
 
 
 ## ----------------------------------------------------------##

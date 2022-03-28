@@ -33,6 +33,7 @@ library(agricolae) # post hoc Tukey test
 library(ggallin) # this is for the pseudolog10_trans function used in coeff plots in Figure2_Analysis
 library(car)
 library(arrow)
+library(cowplot)
 
 # Load functions used in later analyses.
 source("Functions.R")
