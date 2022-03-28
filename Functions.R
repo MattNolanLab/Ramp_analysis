@@ -204,6 +204,25 @@ mark_numeric_track_category <- function(outbound, homebound){
 }
 
 
+# Plot histogram of distribution of firing rate offsets
+offset_ggplot <- function(df, colour_1 = "grey", colour_2 = "chartreuse3", colour_3 = "red") {
+  ggplot(data=subset(df), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+    coord_cartesian(xlim=c(-6,6)) +
+    geom_histogram(aes(y=..count..), alpha=0.5) +
+    scale_fill_manual(values=c(colour_1, colour_2, colour_3)) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+    labs(y="Density", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=13),
+          axis.text.y = element_text(size=13),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=13), 
+          legend.text=element_text(size=13), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+
+
 ## --------------------------------------------------------------------------------------------- ##
 # Load circular shuffled data from Python.
 

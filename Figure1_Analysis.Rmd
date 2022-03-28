@@ -437,29 +437,11 @@ predict_diff is the difference between the predicted and actual firing rates at 
 - do only for neurons that have slopes in outbound zone
 - do this for both negative and positive slopes in the outbound zone
 
-1. extract neurons that are ++ or -- on beaconed trials
+Plot for neurons with positive slopes.
 ```{r}
-df_position_pi <- spatial_firing %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  #%>% 
-
-```
-
-4. Plot bar charts - positive neurons
-```{r}
-ggplot(data=subset(df_position_pi, lm_group_b == "Positive"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
-  coord_cartesian(xlim=c(-6,6)) +
-  geom_histogram(aes(y=..count..), alpha=0.5) +
-  scale_fill_manual(values=c(  "grey", "chartreuse3","chartreuse3")) +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  labs(y="Density", x="") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=13),
-        axis.text.y = element_text(size=13),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=13), 
-        legend.text=element_text(size=13), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+spatial_firing %>%
+  filter(lm_group_b == "Positive") %>%
+  offset_ggplot()
 
 if (save_figures == 1) {
   ggsave(file = "plots/PredictHomeboundMean_positive.png",width = 4, height = 2.5)
@@ -468,21 +450,10 @@ if (save_figures == 1) {
 
 5. Plot bar charts - Negative neurons
 ```{r}
+spatial_firing %>%
+  filter(lm_group_b == "Negative") %>%
+  offset_ggplot(colour_2 = "violetred2")
 
-ggplot(data=subset(df_position_pi,lm_group_b == "Negative"), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
-  coord_cartesian(xlim=c(-5,5)) +
-  geom_histogram(aes(y=..count..), alpha=0.5) +
-  scale_fill_manual(values=c( "grey", "violetred2","violetred2")) +
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
-  labs(y="Density", x="") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=13),
-        axis.text.y = element_text(size=13),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=13), 
-        legend.text=element_text(size=13), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 
 if (save_figures == 1) {
   ggsave(file = "plots/PredictHomeboundMean_negative.png",width = 4, height = 2.5)
