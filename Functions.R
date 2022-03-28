@@ -223,6 +223,32 @@ offset_ggplot <- function(df, colour_1 = "grey", colour_2 = "chartreuse3", colou
 }
 
 
+# Plot mean and SEM of firing rate as a function of position.
+mean_SEM_plots <- function(df, colour1 = "blue"){
+  cell_no <- ncol(df)
+  df <- df %>%
+    dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
+    mutate(Position = rep(-29.5:169.5))
+  
+  ggplot(data=df) +
+    annotate("rect", xmin=-30, xmax=0, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=140, xmax=170, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=60, xmax=80, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+    geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
+    geom_line(aes(y=mean_r, x=Position), color = colour1) +
+    theme_classic() +
+    scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+    #annotate("text", x = 140, y=7, label = paste0("n = ", str(cell_no)), size=8) +
+    #geom_text(aes(x = 140, y= 6, label = paste0("n = ", str(cell_no))), vjust = "inward", hjust = "inward")
+    #scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
+    labs(y = "Z-scored firing rate", x = "Position") +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.title = element_blank(),
+          text = element_text(size=18),
+          plot.margin = margin(21, 25, 5, 20))
+}
+
 ## --------------------------------------------------------------------------------------------- ##
 # Load circular shuffled data from Python.
 
