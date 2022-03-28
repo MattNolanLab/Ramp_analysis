@@ -537,6 +537,29 @@ all_plots_by_outome <- function(df) {
 # sum(sapply(speed_neurons$avg_both_asr_b, anyNA))
 
 
+
+# Function to make violin plots for offsets according to trial outcome
+offset_groups_violin_plot <- function(df, min_y = -3.5, max_y = 3.5) {
+  ggplot(data=df, aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
+    stat_summary(fun=mean, geom="point", shape=23, size=2) +
+    geom_point(alpha=0.3) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    scale_fill_manual(values=c("grey","red", "blue")) +
+    labs(y="Offset", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=15),
+          axis.text.y = element_text(size=15),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=15), 
+          legend.text=element_text(size=15), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+
+
+
 ## ----------------------------------------------------------##
 
 lm_helper <- function(df, bins){

@@ -302,9 +302,9 @@ if (save_figures==1) {
 - do this for both negative and positive slopes in the outbound zone
 
 
-1. First extract data into a tibble
+1. First extract offset data into a tibble, combining data from hit, run and try trials in a tidy format.
 ```{r}
-data <- tibble(session_id = rep(unlist(spatial_firing$unique_id), times=3), 
+outcomes_offsets_data <- tibble(session_id = rep(unlist(spatial_firing$unique_id), times=3), 
                     cluster_id = rep(spatial_firing$cluster_id, times=3), 
                     predict = c(as.numeric(spatial_firing$predict_diff),
                              as.numeric(spatial_firing$predict_diff_run),
@@ -324,279 +324,72 @@ data <- tibble(session_id = rep(unlist(spatial_firing$unique_id), times=3),
 2. extract only neurons that are positive or negative in the outbound zone (as determined by Figure 1) and subset based on position encoding (Figure 2) and are ++ or -- in beaconed trials
 ```{r}
 df <- data %>%
-  filter(final_model_o_b == "P") %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative" ) 
+  filter(final_model_o_b == "P",
+  lm_group_b == "Positive" | lm_group_b == "Negative",
+  lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative" ) 
   
 ```
 
-3. Write function to make violin plot, do this seperatly for positive and negative slope neurons as the axis limits are different for these groups.
+
+
+Ohhset data for position encoding encoding neurons (P, PA, PS, PSA)
 ```{r}
-standard_neg_violin_plot <- function(df) {
-  ggplot(data=df, aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
-  coord_cartesian(ylim=c(-3.5,5.5)) +
-  geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
-  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  geom_point(alpha=0.3) +
-  geom_hline(yintercept=0, linetype="dashed", color = "black") +
-  scale_fill_manual(values=c("grey","red", "blue")) +
-  labs(y="Offset", x="") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=15),
-        axis.text.y = element_text(size=15),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=15), 
-        legend.text=element_text(size=15), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-}
+outcomes_offsets_data_pospos <- data %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive")
 
-
-standard_pos_violin_plot <- function(df) {
-  ggplot(data=df, aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
-  coord_cartesian(ylim=c(-5,3)) +
-  geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
-  stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  geom_point(alpha=0.3) +
-  geom_hline(yintercept=0, linetype="dashed", color = "black") +
-  scale_fill_manual(values=c("grey","red", "blue")) +
-  labs(y="Offset", x="") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=15),
-        axis.text.y = element_text(size=15),
-        legend.position="bottom", 
-        legend.title = element_blank(),
-        text = element_text(size=15), 
-        legend.text=element_text(size=15), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-}
-
+outcomes_offsets_data_negneg <- data %>% filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative")
 ```
 
-_plots for just position encoding encoding neurons (P)_
 
-4. Select cells classified in Figure 1 as having positive or negative slopes and plot
+
+Make and save plots
 ```{r}
-data_pos <- df %>%
-  subset(lm_group_b == "Positive" & lm_group_b_h == "Positive")
-
-(pos_neg_coef_plot <- standard_pos_violin_plot(data_pos))
-if (save_figures == 1) {
-  ggsave(file = "plots/Violin_Predict_Positive_JustPosition.png",width = 3.2, height = 2.5)
-}
-
-data_pos <- df %>%
-  subset(lm_group_b == "Negative" & lm_group_b_h == "Negative")
-
-(pos_neg_coef_plot <- standard_neg_violin_plot(data_pos))
-if (save_figures == 1) {
-  ggsave(file = "plots/Violin_Predict_Negative_JustPosition.png",width = 3.2, height = 2.5)
-}
+outcomes_offsets_data_pospos %>%
+  offset_groups_violin_plot(-5, 3)
   
-```
 
-_run statistical tests_
-
-1. run anova to compare effect of trial type (hit, try, run) on offset values for ++ and -- neurons 
-```{r}
-data_pos <- df %>%
-  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") 
-
-one.way <- aov(predict ~ type, data = data_pos)
-summary(one.way)
-
-data_neg <- df %>%
-  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") 
-
-one.way <- aov(predict ~ type, data = data_neg)
-summary(one.way)
-```
-
-
-2. One-sample ttest to see whether offsets are above 0 _positive neurons_
-
-1. For run trials (not significant)
-```{r}
-data_pos_run <- data_pos %>%
-  filter(type == "Run") 
-
-res <- t.test(data_pos_run$predict, mu = 0)
-res 
-```
-
-1. For hit trials (significant)
-```{r}
-data_pos_hit <- data_pos %>%
-  filter(type == "Hit") 
-
-res <- t.test(data_pos_hit$predict, mu = 0)
-res 
-```
-
-1. For miss trials (not significant)
-```{r}
-data_pos_miss <- data_pos %>%
-  filter(type == "Try") 
-
-res <- t.test(data_pos_miss$predict, mu = 0)
-res 
-```
-
-
-
-One-sample ttest _negative_
-
-1. For run trials
-```{r}
-data_neg_run <- data_neg %>%
-  filter(type == "Run") 
-
-res <- t.test(data_neg_run$predict, mu = 0)
-res 
-```
-
-1. For hit trials
-```{r}
-data_neg_hit <- data_neg %>%
-  filter(type == "Hit") 
-
-res <- t.test(data_neg_hit$predict, mu = 0)
-res 
-```
-
-1. For miss trials
-```{r}
-data_neg_miss <- data_neg %>%
-  filter(type == "Try") 
-
-res <- t.test(data_neg_miss$predict, mu = 0)
-res 
-```
-
-
-
-
-_plots for all position encoding encoding neurons (P, PS, PA, PSA)_
-
-1. repeat plots above but for all position neurons (Figure 2) (P, PS, PA, PSA)
-```{r}
-df <- data %>%
-  filter(final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative" ) 
-  
-```
-
-2. Select cells classified in Figure 2 as having positive or negative slopes and plot
-```{r}
-data_pos <- df %>%
-  subset(lm_group_b == "Positive" & lm_group_b_h == "Positive")
-
-(pos_neg_coef_plot <- standard_pos_violin_plot(data_pos))
 if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_pos_AllPosition.png",width = 3.2, height = 2.5)
 }
 
-data_pos <- df %>%
-  subset(lm_group_b == "Negative" & lm_group_b_h == "Negative")
 
-(pos_neg_coef_plot <- standard_neg_violin_plot(data_pos))
+outcomes_offsets_data_negneg %>%
+  offset_groups_violin_plot(-3.5, 5.5)
+
 if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_neg_AllPosition.png",width = 3.2, height = 2.5)
 }
   
 ```
 
-2. run anova on data above
-```{r}
-data_pos <- df %>%
-  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") 
+_run statistical tests_
 
-one.way <- aov(predict ~ type, data = data_pos)
+Run anova to compare effect of trial type (hit, try, run) on offset values for ++ and -- neurons 
+```{r}
+
+one.way <- aov(predict ~ type, data = outcomes_offsets_data_pospos)
 summary(one.way)
 
-data_neg <- df %>%
-  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") 
-
-one.way <- aov(predict ~ type, data = data_neg)
+one.way <- aov(predict ~ type, data = outcomes_offsets_data_negneg)
 summary(one.way)
+
 ```
 
-
-
-
-
-2. One-sample ttest to see whether offsets are above 0 _positive neurons_
-
-1. For run trials (not significant)
+ One-sample ttest to see whether offsets differ from 0.
 ```{r}
-data_pos_run <- data_pos %>%
-  filter(type == "Run") 
-
-res <- t.test(data_pos_run$predict, mu = 0)
-res 
-```
-
-1. For hit trials (significant)
-```{r}
-data_pos_hit <- data_pos %>%
-  filter(type == "Hit") 
-
-res <- t.test(data_pos_hit$predict, mu = 0)
-res 
-```
-
-1. For miss trials (not significant)
-```{r}
-data_pos_miss <- data_pos %>%
-  filter(type == "Try") 
-
-res <- t.test(data_pos_miss$predict, mu = 0)
-res 
-```
-
-
-
-One-sample ttest _negative_
-
-1. For run trials
-```{r}
-data_neg_run <- data_neg %>%
-  filter(type == "Run") 
-
-res <- t.test(data_neg_run$predict, mu = 0)
-res 
-```
-
-1. For hit trials
-```{r}
-data_neg_hit <- data_neg %>%
-  filter(type == "Hit") 
-
-res <- t.test(data_neg_hit$predict, mu = 0)
-res 
-```
-
-1. For miss trials
-```{r}
-data_neg_miss <- data_neg %>%
-  filter(type == "Try") 
-
-res <- t.test(data_neg_miss$predict, mu = 0)
-res 
-```
-
-
-
-
-
-1. For run trials
-```{r}
-data_pos_run <- df %>%
-  filter(type == "Run") 
-
-res <- t.test(data_pos_run$predict, mu = 0)
-res 
+# Positive slope neurons
+outcomes_offsets_data_pospos %>%
+  group_by(type) %>%
+  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
+  unnest(cols = c(ttest))
+  
+# Negative slope neurons
+outcomes_offsets_data_negneg %>%
+  group_by(type) %>%
+  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
+  unnest(cols = c(ttest))
 ```
 
 
@@ -607,27 +400,28 @@ _plots for all speed encoding encoding neurons (S, A, SA)_
 
 1. extract only neurons that are subset based on speed encoding (S, SA, A) (Figure 3) and are ++ or -- in beaconed trials
 ```{r}
-df <- data %>%
-  filter(final_model_o_b == "S" | final_model_o_b == "SA" ) %>%
-  filter(track_category == "pospos" | track_category == "negneg") 
+outcomes_offsets_data_speedpos <- data %>%
+  filter(final_model_o_b == "S" | final_model_o_b == "SA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive")
 
+outcomes_offsets_data_speedneg <- data %>% filter(final_model_o_b == "S" | final_model_o_b == "SA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative")
 ```
 
 
 5. Select cells classified in Figure 2 as having positive or negative slopes and plot
 ```{r}
-data_pos <- df %>%
-  subset(lm_group_b == "Positive") 
+outcomes_offsets_data_speedpos %>%
+  offset_groups_violin_plot(-5, 3)
 
-(pos_neg_coef_plot <- standard_pos_violin_plot(data_pos))
 if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_pos_AllSpeed.png",width = 4, height = 2.5)
 }
 
-data_pos <- df %>%
-  subset(lm_group_b == "Negative")
 
-(pos_neg_coef_plot <- standard_neg_violin_plot(data_pos))
+outcomes_offsets_data_speedneg %>%
+  offset_groups_violin_plot(-3.5, 5.5)
+ 
 if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_neg_AllSpeed.png",width = 4, height = 2.5)
 }
@@ -636,16 +430,12 @@ if (save_figures == 1) {
 
 2. run anova on above data
 ```{r}
-data_pos <- df %>%
-  filter(lm_group_b == "Positive") 
-
-
-one.way <- lm(predict ~ type, data = data_pos)
-car::Anova(one.way)
+one.way <- aov(predict ~ type, data = outcomes_offsets_data_speedpos)
 summary(one.way)
 
-data_neg <- df %>%
-  filter(lm_group_b == "Negative") 
+one.way <- aov(predict ~ type, data = outcomes_offsets_data_speedneg)
+summary(one.way)
+
 
 
 #one.way <- lm(predict ~ type, data = data_neg)
@@ -660,65 +450,19 @@ data_neg <- df %>%
 
 2. One-sample ttest to see whether offsets are above 0 _positive neurons_
 
-1. For run trials (not significant)
 ```{r}
-data_pos_run <- data_pos %>%
-  filter(type == "Run") 
-
-res <- t.test(data_pos_run$predict, mu = 0)
-res 
+# Positive slope neurons
+outcomes_offsets_data_speedpos %>%
+  group_by(type) %>%
+  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
+  unnest(cols = c(ttest))
+  
+# Negative slope neurons
+outcomes_offsets_data_speedneg %>%
+  group_by(type) %>%
+  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
+  unnest(cols = c(ttest))
 ```
-
-1. For hit trials (significant)
-```{r}
-data_pos_hit <- data_pos %>%
-  filter(type == "Hit") 
-
-res <- t.test(data_pos_hit$predict, mu = 0)
-res 
-```
-
-1. For miss trials (not significant)
-```{r}
-data_pos_miss <- data_pos %>%
-  filter(type == "Try") 
-
-res <- t.test(data_pos_miss$predict, mu = 0)
-res 
-```
-
-
-
-One-sample ttest _negative_
-
-1. For run trials
-```{r}
-data_neg_run <- data_neg %>%
-  filter(type == "Run") 
-
-res <- t.test(data_neg_run$predict, mu = 0)
-res 
-```
-
-1. For hit trials
-```{r}
-data_neg_hit <- data_neg %>%
-  filter(type == "Hit") 
-
-res <- t.test(data_neg_hit$predict, mu = 0)
-res 
-```
-
-1. For miss trials
-```{r}
-data_neg_miss <- data_neg %>%
-  filter(type == "Try") 
-
-res <- t.test(data_neg_miss$predict, mu = 0)
-res 
-```
-
-
 
 
 
