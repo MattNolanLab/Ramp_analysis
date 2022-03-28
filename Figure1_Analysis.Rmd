@@ -417,6 +417,9 @@ spatial_firing <- spatial_firing %>%
 spatial_firing <- spatial_firing %>%
   mutate(offset = pmap_chr(list(normalised_rates, predict_params_lwr, predict_params_upr), offset_test),
          predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff))
+
+spatial_firing <- spatial_firing %>%
+  mutate(reset_group = map(offset, mark_reset_group_predict))
 ```
 
 predict_params_fit is the prediction for the firing rate after fitting.
