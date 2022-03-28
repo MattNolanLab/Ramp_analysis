@@ -165,7 +165,7 @@ offset_test <- function(rates, lwr, upr){
   
 }
 
-# Write function to mark cells based on groups
+# Function to give a text label to cells based on groups
 mark_track_category <- function(outbound, homebound){
   if( outbound == "Positive" & homebound == "Negative") {
     return( "posneg" ) 
@@ -184,7 +184,7 @@ mark_track_category <- function(outbound, homebound){
   }
 }
 
-# write function to mark cells based on groups
+# Function to give a numeric label to cells based on groups
 mark_numeric_track_category <- function(outbound, homebound){
   if( outbound == "Positive" & homebound == "Negative") {
     return( as.numeric(2) ) 

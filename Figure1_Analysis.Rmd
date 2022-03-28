@@ -346,14 +346,13 @@ shuff_slopes <- shuff_slopes %>%
 
 
 3. Calculate proportion of cells in the shuffled datasets that pass criteria
--calculate total number of shuffles (cells x 999)
 ```{r}
 (total_shuffles <- nrow(shuff_slopes))
 (shuff_ramps <- nrow(subset(shuff_slopes, shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" )))
 (shuff_ramps_percentage <- (shuff_ramps / total_shuffles)*100)
 ```
 
--calculate how many shuffles are unclassified
+Calculate how many shuffles are unclassified
 ```{r}
 (non_shuff_ramps <- nrow(subset(shuff_slopes,shuff_lm_group_b == "Unclassified" | shuff_lm_group_b == "NA" )))
 (non_shuff_ramps_percentage <- (non_shuff_ramps / total_shuffles)*100)
@@ -363,12 +362,17 @@ shuff_slopes <- shuff_slopes %>%
 ### ------------------------------------------------------------------------------------------ ### 
 
 
-Now, we can classify cells based on their activity in the outbound and homebound region
+Now, classify cells based on their activity in the outbound and homebound region
 
-i.e. pospos = positive in outbound, positive in homebound
-i.e. posneg = positive in outbound, negative in homebound
+Homebound   Outbound    Text label    Numeric label
+Positive    Positive    pospos        1
+Positive    Negative    posneg        2
+Positive    Unlcassified    posnon    3
+Negative    Negative    negneg        4
+Negative    Positive    negpos        5
+Negative    Unclassified    negnon    6
+Other                                 0
 
-2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('track_category')) %>%
@@ -379,7 +383,7 @@ spatial_firing <- spatial_firing %>%
 
 
 
-1. How many ramps in total in the dataset?
+1. How many non-other neurons in the dataset?
 ```{r}
 (ramps <- nrow(subset(spatial_firing, track_category_numeric != 0)))
 ```
@@ -391,14 +395,9 @@ spatial_firing <- spatial_firing %>%
 
 ### ------------------------------------------------------------------------------------------ ### 
 
-Now, we want to find out if within pospos and negneg groups - are their firing rate reset or continue across the reward region?
+Now, we want to find out if within pospos and negneg groups - does their firing rate reset across the reward region?
 
 To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
-
-
-First, normalise firing rates. 
-
-
 
 
 1. Normalize rates for all cells. This is to facilitate comparison later.
@@ -407,9 +406,8 @@ spatial_firing <- spatial_firing %>%
   mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
 ```
 
-Then, predict firing rate in homebound region based on fit from real data in outbound region
-
-2. Run on all neurons
+2. Then, predict firing rate in homebound region based on fit from real data in outbound region.
+Run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_')) %>%
@@ -419,11 +417,12 @@ spatial_firing <- spatial_firing %>%
 spatial_firing <- spatial_firing %>%
   mutate(offset = pmap_chr(list(normalised_rates, predict_params_lwr, predict_params_upr), offset_test),
          predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff))
-
 ```
 
+offset is either 'pos', 'neg' or 'none' depending on whether the difference between the predicted and actual firing rate is above, below or inside the intervals specified by predict_params_lwr and predict_params_upr.
 
-### ------------------------------------------------------------------------------------------ ### 
+predict_diff is the difference between the predicted and actual firing rates at the start of the track segment that follows the reward zone.
+
 
 ### ------------------------------------------------------------------------------------------ ### 
 
