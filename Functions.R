@@ -413,12 +413,14 @@ join_average_rates <- function(hit, run, try, session_id, cluster_id) {
 
 
 # Generic function to subset data ready for plotting with mean_SEM_plots_by_Outcome
+# Note the unnest() is only carried out if there is data.
 subset_for_plots <- function(df, outbound_class = "Positive", homebound_class = "Positive") {
   df <- df %>%
     filter(lm_group_b == outbound_class,
            lm_group_b_h == homebound_class) %>%
     select(avg_both_asr_b) %>%
-    unnest(c(avg_both_asr_b))
+    when(nrow(.) != 0 ~ unnest(., c(avg_both_asr_b))
+    )
 }
 
 # Generic function to plot firing rate ± SEM as a function of position and colour coded according to trial outcome.
@@ -426,6 +428,15 @@ subset_for_plots <- function(df, outbound_class = "Positive", homebound_class = 
 # Conditions for selection should be given before calling the function.
 # Column names of the input data frame should be 'Rates', 'Position' and 'Reward_indicator'.
 mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
+  # Check for data
+  if(is.null(df) == TRUE) {return(
+    ggplot() + theme_void())
+    } 
+  # check for all NAs
+  if (sum(is.na(df$Rates)) == dim(df)[[1]]) {
+    return(ggplot() + theme_void())
+  }
+  # Carry on
   df <- df %>%
     group_by(Position, Reward_indicator) %>%
     dplyr::summarise(mean_b = mean(Rates, na.rm = TRUE),
@@ -454,25 +465,42 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
 }
 
 # Function to generate plots by trial outome for each class of ramping neurons
+# Also returns the number of neurons that contribute to each plot
+# Calculation of number of neurons without NAs is somewhat improvised
+# This could be modified by including neuron ID, etc.
 all_plots_by_outome <- function(df) {
-  NegNeg_plot <- df %>%
-     subset_for_plots("Negative", "Negative") %>%
-     mean_SEM_plots_by_Outcome(-29,169)
   
-  NegPos_plot <- df %>%
-    subset_for_plots("Negative", "Positive") %>%
+  NegNegNeurons <- df %>%
+    subset_for_plots("Negative", "Negative")
+  NegNeg_plot <- NegNegNeurons %>%
     mean_SEM_plots_by_Outcome(-29,169)
+  NegNeg_N <- sum(!is.na(NegNegNeurons$Rates))/600 # Relies on their being 200 x 3 location points
   
-  PosPos_plot <- df %>%
-    subset_for_plots("Positive", "Positive") %>%
+  NegPosNeurons <- df %>%
+    subset_for_plots("Negative", "Positive")
+  NegPos_plot <- NegPosNeurons %>%
     mean_SEM_plots_by_Outcome(-29,169)
+  NegPos_N <- sum(!is.na(NegPosNeurons$Rates))/600 
   
-  PosNeg_plot <- df %>%
-    subset_for_plots("Positive", "Negative") %>%
+  PosPosNeurons <- df %>%
+    subset_for_plots("Positive", "Positive")
+  PosPos_plot <- PosPosNeurons %>%
     mean_SEM_plots_by_Outcome(-29,169)
+  PosPos_N <- sum(!is.na(PosPosNeurons$Rates))/600 
   
-  return(list(NegNeg_plot, NegPos_plot, PosPos_plot, PosNeg_plot))
+  PosNegNeurons <- df %>%
+    subset_for_plots("Positive", "Negative")
+  PosNeg_plot <- PosNegNeurons %>%
+    mean_SEM_plots_by_Outcome(-29,169)
+  PosNeg_N <- sum(!is.na(PosNegNeurons$Rates))/600 
+  
+  
+  return(list(list(NegNeg_plot, NegPos_plot, PosPos_plot, PosNeg_plot),
+              list(NegNeg_N, NegPos_N, PosPos_N, PosNeg_N)))
 }
+
+# sum(sapply(speed_neurons$avg_both_asr_b, anyNA))
+
 
 ## ----------------------------------------------------------##
 

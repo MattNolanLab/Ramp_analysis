@@ -783,10 +783,7 @@ start_ramps <- start_ramps %>%
 
 Add position to normalised rates for plotting
 ```{r}
-add_position <- function(df) {
-  df <- tibble(Rates = unlist(df), Position = rep(31:171))
-}
-
+# Might need to modify this so position covers range 31:171.
 start_ramps <- start_ramps %>%
   mutate(normalised_rates_o = map(normalised_rates_o, add_position)) 
 

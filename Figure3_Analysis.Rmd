@@ -174,16 +174,22 @@ sum(sapply(position_all_neurons$avg_both_asr_b, anyNA))
 
 ```{r}
 position_all_neurons_plots <- all_plots_by_outome(position_all_neurons)
-plot_grid(position_all_neurons_plots[[1]],
-          position_all_neurons_plots[[2]],
-          position_all_neurons_plots[[3]],
-          position_all_neurons_plots[[4]])
+plot_grid(position_all_neurons_plots[[1]][[1]],
+          position_all_neurons_plots[[1]][[2]],
+          position_all_neurons_plots[[1]][[3]],
+          position_all_neurons_plots[[1]][[4]])
+
+as_vector(position_all_neurons_plots[[2]])
 
 if (save_figures==1) {
- ggsave(file = "plots/TrialOutcome_NegNeg_position_all.png", plot = position_all_neurons_plots[[1]], width = 3.6, height = 2.9) 
-  ggsave(file = "plots/TrialOutcome_NegPos_position_all.png", plot = position_all_neurons_plots[[2]], width = 3.6, height = 2.9)
-  ggsave(file = "plots/TrialOutcome_PosPos_position_all.png", plot = position_all_neurons_plots[[3]], width = 3.6, height = 2.9) 
-  ggsave(file = "plots/TrialOutcome_PosNeg_position_all.png", plot = position_all_neurons_plots[[4]], width = 3.6, height = 2.9) 
+ ggsave(file = "plots/TrialOutcome_NegNeg_position_all.png",
+        plot = position_all_neurons_plots[[1]][[1]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_NegPos_position_all.png",
+         plot = position_all_neurons_plots[[1]][[2]], width = 3.6, height = 2.9)
+  ggsave(file = "plots/TrialOutcome_PosPos_position_all.png",
+         plot = position_all_neurons_plots[[1]][[3]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_PosNeg_position_all.png",
+         plot = position_all_neurons_plots[[1]][[4]], width = 3.6, height = 2.9) 
 }
 ```
 
@@ -199,16 +205,22 @@ sum(sapply(conjunctive_neurons$avg_both_asr_b, anyNA))
 
 ```{r}
 conjunctive_neurons_plots <- all_plots_by_outome(conjunctive_neurons)
-plot_grid(conjunctive_neurons_plots[[1]],
-          conjunctive_neurons_plots[[2]],
-          conjunctive_neurons_plots[[3]],
-          conjunctive_neurons_plots[[4]])
+plot_grid(conjunctive_neurons_plots[[1]][[1]],
+          conjunctive_neurons_plots[[1]][[2]],
+          conjunctive_neurons_plots[[1]][[3]],
+          conjunctive_neurons_plots[[1]][[4]])
+
+as_vector(conjunctive_neurons_plots[[2]])
 
 if (save_figures==1) {
- ggsave(file = "plots/TrialOutcome_NegNeg_conjunctive.png", plot = conjunctive_neurons_plots[[1]], width = 3.6, height = 2.9) 
-  ggsave(file = "plots/TrialOutcome_NegPos_conjunctive.png", plot = conjunctive_neurons_plots[[2]], width = 3.6, height = 2.9)
-  ggsave(file = "plots/TrialOutcome_PosPos_conjunctive.png", plot = conjunctive_neurons_plots[[3]], width = 3.6, height = 2.9) 
-  ggsave(file = "plots/TrialOutcome_PosNeg_conjunctive.png", plot = conjunctive_neurons_plots[[4]], width = 3.6, height = 2.9) 
+ ggsave(file = "plots/TrialOutcome_NegNeg_conjunctive.png",
+        plot = conjunctive_neurons_plots[[1]][[1]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_NegPos_conjunctive.png",
+         plot = conjunctive_neurons_plots[[1]][[2]], width = 3.6, height = 2.9)
+  ggsave(file = "plots/TrialOutcome_PosPos_conjunctive.png",
+         plot = conjunctive_neurons_plots[[1]][[3]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_PosNeg_conjunctive.png",
+         plot = conjunctive_neurons_plots[[1]][[4]], width = 3.6, height = 2.9) 
 }
 ```
 
@@ -228,16 +240,22 @@ sum(sapply(position_neurons$avg_both_asr_b, anyNA))
 
 ```{r}
 position_neurons_plots <- all_plots_by_outome(position_neurons)
-plot_grid(position_neurons_plots[[1]],
-          position_neurons_plots[[2]],
-          position_neurons_plots[[3]],
-          position_neurons_plots[[4]])
+plot_grid(position_neurons_plots[[1]][[1]],
+          position_neurons_plots[[1]][[2]],
+          position_neurons_plots[[1]][[3]],
+          position_neurons_plots[[1]][[4]])
+
+as_vector(position_neurons_plots[[2]])
 
 if (save_figures==1) {
- ggsave(file = "plots/TrialOutcome_NegNeg_justposition.png", plot = position_neurons_plots[[1]], width = 3.6, height = 2.9) 
-  ggsave(file = "plots/TrialOutcome_NegPos_justposition.png", plot = position_neurons_plots[[2]], width = 3.6, height = 2.9)
-  ggsave(file = "plots/TrialOutcome_PosPos_justposition.png", plot = position_neurons_plots[[3]], width = 3.6, height = 2.9) 
-  ggsave(file = "plots/TrialOutcome_PosNeg_justposition.png", plot = position_neurons_plots[[4]], width = 3.6, height = 2.9) 
+ ggsave(file = "plots/TrialOutcome_NegNeg_justposition.png",
+        plot = position_neurons_plots[[1]][[1]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_NegPos_justposition.png",
+         plot = position_neurons_plots[[1]][[2]], width = 3.6, height = 2.9)
+  ggsave(file = "plots/TrialOutcome_PosPos_justposition.png",
+         plot = position_neurons_plots[[1]][[3]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_PosNeg_justposition.png",
+         plot = position_neurons_plots[[1]][[4]], width = 3.6, height = 2.9) 
 }
 ```
 
@@ -250,23 +268,27 @@ Repeat above plots but for speed encoding neurons
 Split data based on speed encoding group (Figure 2) as we are only interested in these neurons here
 Need to make this selective for neurons with positive or negative slopes?
 ```{r}
-speed_neurons <- filter(spatial_firing, final_model_o_b == "S" | final_model_o_b == "SA")
+speed_neurons <- filter(spatial_firing, lm_group_b == "Negative", final_model_o_b == "S" | final_model_o_b == "SA")
 # Total number of cells
 dim(speed_neurons)[1]
+# Cells with data for all outcomes
+sum(sapply(speed_neurons$avg_both_asr_b, anyNA))
 ```
 
 ```{r}
 speed_neurons_plots <- all_plots_by_outome(speed_neurons)
-plot_grid(speed_neurons_plots[[1]],
-          speed_neurons_plots[[2]],
-          speed_neurons_plots[[3]],
-          speed_neurons_plots[[4]])
+plot_grid(speed_neurons_plots[[1]][[1]],
+          speed_neurons_plots[[1]][[2]],
+          speed_neurons_plots[[1]][[3]],
+          speed_neurons_plots[[1]][[4]])
+
+as_vector(speed_neurons_plots[[2]])
 
 if (save_figures==1) {
- ggsave(file = "plots/TrialOutcome_NegNeg_speed.png", plot = speed_neurons_plots[[1]], width = 3.6, height = 2.9) 
-  ggsave(file = "plots/TrialOutcome_NegPos_speed.png", plot = speed_neurons_plots[[2]], width = 3.6, height = 2.9)
-  ggsave(file = "plots/TrialOutcome_PosPos_speed.png", plot = speed_neurons_plots[[3]], width = 3.6, height = 2.9) 
-  ggsave(file = "plots/TrialOutcome_PosNeg_speed.png", plot = speed_neurons_plots[[4]], width = 3.6, height = 2.9) 
+ ggsave(file = "plots/TrialOutcome_NegNeg_speed.png", plot = speed_neurons_plots[[1]][[1]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_NegPos_speed.png", plot = speed_neurons_plots[[1]][[2]], width = 3.6, height = 2.9)
+  ggsave(file = "plots/TrialOutcome_PosPos_speed.png", plot = speed_neurons_plots[[1]][[3]], width = 3.6, height = 2.9) 
+  ggsave(file = "plots/TrialOutcome_PosNeg_speed.png", plot = speed_neurons_plots[[1]][[4]], width = 3.6, height = 2.9) 
 }
 ```
 
