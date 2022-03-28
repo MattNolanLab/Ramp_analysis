@@ -419,21 +419,12 @@ spatial_firing <- spatial_firing %>%
          predict_diff = map2_dbl(normalised_rates, predict_params_fit, calc_predict_diff))
 ```
 
+predict_params_fit is the prediction for the firing rate after fitting.
+predict_params_upr and predict_params_lwr are the 99% confidence intervals of the prediction.
+
 offset is either 'pos', 'neg' or 'none' depending on whether the difference between the predicted and actual firing rate is above, below or inside the intervals specified by predict_params_lwr and predict_params_upr.
 
 predict_diff is the difference between the predicted and actual firing rates at the start of the track segment that follows the reward zone.
-
-
-### ------------------------------------------------------------------------------------------ ### 
-
-Now, we can classify cells based on their predicted activity. 
-
-2. Run on all cells
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(reset_group = map(offset, mark_reset_group_predict))
-
-```
 
 
 

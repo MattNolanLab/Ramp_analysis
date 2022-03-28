@@ -131,7 +131,7 @@ lm_predict <- function(df){
 }
 
 # Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
-predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 110, predict_end = 115){
+predict_homebound <- function(df, fit_start = 30, fit_end = 90){
   # check for NAs
   if(all(is.na(df))) 
     return(NA)
@@ -147,13 +147,13 @@ predict_homebound <- function(df, fit_start = 30, fit_end = 90, predict_start = 
 
 
 #Test whether data lies outside of confidence intervals
-offset_test <- function(rates, lwr, upr){
+offset_test <- function(rates, lwr, upr, predict_start = 110, predict_end = 115){
   # check for NAs
   if(all(is.na(rates))) 
     return(NA)
-  rates <- mean(as.double(rates[110:115]))
-  upr <- mean(as.double(upr[110:115]))
-  lwr <- mean(as.double(lwr[110:115]))
+  rates <- mean(as.double(rates[predict_start:predict_end]))
+  upr <- mean(as.double(upr[predict_start:predict_end]))
+  lwr <- mean(as.double(lwr[predict_start:predict_end]))
   if(rates > upr) {
     return("Pos")
   }
@@ -203,16 +203,6 @@ mark_numeric_track_category <- function(outbound, homebound){
   }
 }
 
-# Function to classify neurons based on offset 
-mark_reset_group_predict <- function(offset){
-  if (is.na(offset) ) {
-    return( "None" )
-  } else if( offset == "None") {
-    return( "Continuous" )
-  } else if( ( offset == "Neg" ||  offset == "Pos")) {
-    return( "Reset" ) 
-  }
-}
 
 ## --------------------------------------------------------------------------------------------- ##
 # Load circular shuffled data from Python.
