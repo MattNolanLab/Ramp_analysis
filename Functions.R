@@ -323,6 +323,83 @@ local_circ_shuffles <- function(df_in, cs_path) {
 }
 
 
+## ----------------------------------------------------------##
+
+### Functions below here are initially used in Figure 2 code.
+
+# Function to fit general linear mixed effect models
+# The goal here is to evaluate influences of position, speed and acceleration on firing rate.
+mm_fit <- function(df, TT = 0) {
+  if (length(df) == 1){
+    return(NA)}
+  df <-
+    tibble(
+      Rates = as.numeric(df[[1]]),
+      Position = as.numeric(df[[2]]),
+      Acceleration = as.numeric(df[[4]]),
+      Speed = as.numeric(df[[3]]),
+      Trials = as.factor(df[[5]]), 
+      Types = as.factor(df[[6]])
+    )
+  # subset by position, speed, types (beaconed/probe) and remove rates < 0.01 as model does not like this
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == TT & Rates > 0.01) %>%
+    select(-Types) 
+  
+  #scale varibles, do not center or values go below 0 which does not work for this gamma model
+  df$Acceleration <- scale(df$Acceleration, center=FALSE, scale=TRUE)
+  df$Rates <- scale(df$Rates, center=FALSE, scale=TRUE)
+  df$Speed <- scale(df$Speed, center=FALSE, scale=TRUE)
+  df$Position <- scale(df$Position, center=FALSE, scale=TRUE)
+  
+  if (length(df) == 1 | nrow(df) < 20) {
+    return(NA)
+  }
+  glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = Gamma(link = "log"), data = df)
+  
+  df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
+                        data = df, 
+                        na.action = na.exclude,
+                        family = Gamma(link = "log"),
+                        start=list(fixef=coef(glm1)),
+                        control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+}
+
+
+
+# Function to extract P values for each coefficient from the model
+mm_function <- function(mm, session_id) {
+  if (is.na(mm)) {
+    return(tibble(pos = NA, speed = NA, accel = NA))
+  }
+  print(session_id)
+  modelAnova <- car::Anova(mm)
+  return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
+                          speed = modelAnova$"Pr(>Chisq)"[[2]],
+                          accel = modelAnova$"Pr(>Chisq)"[[3]])
+}
+
+
+# Helper function for extracting P values for each coefficient from the model
+mm_pvalues <- function(mm, session_id) {
+  tryCatch({
+    mm_function(mm, session_id)
+  },
+  error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+
+
+# Helper function to link to general linear mixed model fit
+mm_fit_function <- function(mm, TT) {
+  tryCatch({
+    mm_fit(mm,TT)
+  },
+  error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+
+
 
 ## ----------------------------------------------------------##
 
@@ -375,7 +452,7 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
 
 # Function to fit a linear mixed effect model that takes trial type (hit, try, run) into account
 # The car package is used to extract slope significance
-compare_models_slope_lm <- function(df, run,try){
+compare_models_slope_lm <- function(df, run, try){
   tryCatch({
     if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
       return(NA)
@@ -384,7 +461,8 @@ compare_models_slope_lm <- function(df, run,try){
       return(NA)
     
     df <- df %>%
-      filter(Position >= 30, Position <= 90)
+      filter(Position >= 30, Position <= 90) %>%
+      mutate(Rates = scale(Rates)) # This doesn't seem to make any substantial difference
     fit <- lme4::lmer(Rates ~ scale(Position) * Reward_indicator + (1+scale(Position) | Trials), data = df, na.action=na.omit)
     modelAnova <- car::Anova(fit)
     to_return <- modelAnova$"Pr(>Chisq)"[[3]]
@@ -401,6 +479,7 @@ compare_models_slope_glm <- function(df, run,try){
     }
     if (length(df) == 1 | nrow(df) < 6)
       return(NA)
+    glm1 <- glm(Rates ~ Position * Reward_indicator, family = Gamma(link = "log"), data = df)
     
     df <- df %>%
       filter(Position >= 30, Position <= 90)
@@ -571,6 +650,9 @@ offset_groups_violin_plot <- function(df, min_y = -3.5, max_y = 3.5) {
 
 
 ## ----------------------------------------------------------##
+## ----------------------------------------------------------##
+
+# Older functions. Not clear if they are used. Delete?!
 
 lm_helper <- function(df, bins){
   if(all(is.na(df))) 

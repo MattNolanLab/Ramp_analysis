@@ -37,15 +37,18 @@ spatial_firing <- spatial_firing %>%
 
 
 2. Fit linear model to all cells and extract pval
+Can this work with glm?
+Perhaps only try fitting models with large numbers of each type of trial outcome.
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_lm))
+  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_glm))
 ```
 
 Now we can classify cells based on their significance in the above model
 
 
-3. Make new column to identify whether cells firings rates are significantly related to trial outcome
+3. Make new column to identify whether cells firings rates are significantly related to trial outcome.
+The numbers here are for all neurons that contain all three trial outcomes.
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(reward_interaction_id = map(pval_slope, mark_neurons_sig))

@@ -20,88 +20,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Fit general linear mixed effect models (GLMER) using LME4 package to evaluate contributions of speed, acceleration and position to firing rate
 
-Function to fit mixed effect models
-```{r}
-mm_fit <- function(df, TT = 0) {
-  if (length(df) == 1){
-    return(NA)}
-  df <-
-    tibble(
-      Rates = as.numeric(df[[1]]),
-      Position = as.numeric(df[[2]]),
-      Acceleration = as.numeric(df[[4]]),
-      Speed = as.numeric(df[[3]]),
-      Trials = as.factor(df[[5]]), 
-      Types = as.factor(df[[6]])
-    )
-  # subset by position, speed, types (beaconed/probe) and remove rates < 0.01 as model does not like this
-  df <- df %>%
-    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == TT & Rates > 0.01) %>%
-    select(-Types) 
-
-  #scale varibles, do not center or values go below 0 which does not work for this gamma model
-  df$Acceleration <- scale(df$Acceleration, center=FALSE, scale=TRUE)
-  df$Rates <- scale(df$Rates, center=FALSE, scale=TRUE)
-  df$Speed <- scale(df$Speed, center=FALSE, scale=TRUE)
-  df$Position <- scale(df$Position, center=FALSE, scale=TRUE)
-  
-  if (length(df) == 1 | nrow(df) < 20) {
-    return(NA)
-  }
-  glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = Gamma(link = "log"), data = df)
-
-  df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
-                        data = df, 
-                        na.action = na.exclude,
-                        family = Gamma(link = "log"),
-                        start=list(fixef=coef(glm1)),
-                        control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-}
-```
-
-
-Function to extract P values for each coefficient from the model
-```{r}
-mm_function <- function(mm, session_id) {
-  if (is.na(mm)) {
-    return(tibble(pos = NA, speed = NA, accel = NA))
-  }
-    print(session_id)
-    modelAnova <- car::Anova(mm)
-    return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
-                  speed = modelAnova$"Pr(>Chisq)"[[2]],
-                  accel = modelAnova$"Pr(>Chisq)"[[3]])
-}
-```
-
-Function to extract P values for each coefficient from the model
-```{r}
-
-mm_pvalues <- function(mm, session_id) {
-  tryCatch({
-      mm_function(mm,session_id)
-      },
-    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-}
-   
-```
-
-
-Function to extract P values for each coefficient from the model
-```{r}
-
-mm_fit_function <- function(mm, TT) {
-  tryCatch({
-      mm_fit(mm,TT)
-      },
-    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-}
-   
-```
-
-2. Run on all cells.
 Note here, there may be some overfitting with the mixed effect model. This is likely because some  coefficients likely do not vary with position. However, we can't address this by tailoring the model to each cell as we want to treat each cell the same way. The standardized coefficients should still be interpretable.
 See discussion in ?isSingular and here: https://stats.stackexchange.com/questions/378939/dealing-with-singular-fit-in-mixed-models
+
+spatial_firing$spikes_in_time is a list column. Each row corresponds to a single cell and contains a list of 6 data frames. These correspond to firing rate, position, acceleration, speed, trial number and trial type. The data cover a full behavioral session. Trial types are beaconed (0), non-beaconed and probe.
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing  %>%
   mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit_function),
@@ -133,13 +55,10 @@ if (save_results == 1) {
 ### ----------------------------------------------------------------------------------------- ###
 
 
-## Select best model 
-
-1. Write function to categorise neurons based on significant model coefficients
+## Categorise neurons based on significant model coefficients
 ```{r}
 
-model_comparison <- function(null_pos, null_speed, null_accel){
-  pval <- 0.01
+coef_comparison <- function(null_pos, null_speed, null_accel, pval = 0.01){
   if( is.na(null_pos) & is.na(null_accel)) {
     return( "None" )
   
@@ -172,11 +91,10 @@ model_comparison <- function(null_pos, null_speed, null_accel){
 ```
 
 
-2. Run on all cells in dataframe
+the idea here it to categorise each neuron according to whether it has coefficients for P, S or A that are 'signficant' at a threshold of 0.01.
 ```{r}
 spatial_firing <- spatial_firing  %>%
-    mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel), model_comparison))
-           #final_model_o_p  = pmap(list(o_pos_p, o_speed_p, o_accel_p), model_comparison))
+    mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel, 0.01), coef_comparison))
 
 ```
 
