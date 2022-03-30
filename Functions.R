@@ -465,6 +465,28 @@ make_coeffs_table <- function(df) {
 }
 
 
+# Function for plotting standardised coefficients
+standard_plot <- function(df) {
+  level_order <- c("P", "S", "A")
+  ggplot(data=df, aes(x = factor(coef_type), y = as.numeric(coef))) +
+    geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
+    stat_summary(fun=mean, geom="point", shape=23, size=2) +
+    geom_jitter(alpha=0.05) +
+    scale_fill_manual(values=c("firebrick1","gold","dodgerblue2")) +
+    labs(y = "std coef", x="\n model parameter") +
+    scale_y_continuous(trans=pseudolog10_trans) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+}
+
+
+
 ## ----------------------------------------------------------##
 
 ### Functions below here are initially used in Figure 3 code.
