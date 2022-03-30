@@ -32,6 +32,9 @@ spatial_firing <- spatial_firing  %>%
          #o_mm_p_p = map(o_mm_p, session_id, mm_pvalues)) %>% 
   unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal")
   #unnest_wider(o_mm_p_p, names_sep = "_", names_repair = "universal")
+
+# number with fits / NAs
+table(is.na(spatial_firing$o_mm_p_b_pos))
 ```
 
 
@@ -56,98 +59,18 @@ if (save_results == 1) {
 
 
 ## Categorise neurons based on significant model coefficients
-```{r}
 
-coef_comparison <- function(null_pos, null_speed, null_accel, pval = 0.01){
-  if( is.na(null_pos) & is.na(null_accel)) {
-    return( "None" )
-  
-  } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
-    return( "P" )
-    
-  } else if( null_pos > pval & null_accel > pval & null_speed < pval) {
-    return( "S" ) 
-    
-  } else if( null_pos > pval & null_accel < pval & null_speed > pval) {
-    return( "A" )
-    
-  } else if( null_pos < pval & null_accel > pval & null_speed < pval) {
-    return("PS")
-    
-  } else if( null_pos < pval & null_accel < pval & null_speed > pval) {
-    return( "PA" )
-        
-  } else if( null_pos > pval & null_accel < pval & null_speed < pval) {
-    return("SA")
-
-  } else if( null_pos < pval & null_accel < pval & null_speed < pval) {
-    return("PSA")
-    
-  } else {
-    return("None")
-  }
-}
-
-```
-
-
-the idea here it to categorise each neuron according to whether it has coefficients for P, S or A that are 'signficant' at a threshold of 0.01.
+The idea here is to categorise each neuron according to whether it has coefficients for P, S or A that are 'signficant' at a threshold of 0.01.
 ```{r}
 spatial_firing <- spatial_firing  %>%
     mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel, 0.01), coef_comparison))
-
 ```
 
-### ----------------------------------------------------------------------------------------- ###
-
-position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
-1. extract position cells
-```{r}
-ramp_cells <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-
-position_cells <- subset(ramp_cells, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-
-```
-
-
-### ----------------------------------------------------------------------------------------- ###
 
 ## Calculate standardized coefficients for position, speed and acceleration in LMER model
 
-
-1. Load functions to calculate and extract standardised coefficients for each variable in the lmer
-```{r}
-#1. Function to calculate standardized coefficients for a LMER
-#https://stackoverflow.com/questions/25142901/standardized-coefficients-for-lmer-model 
-
-stdCoef.merMod <- function(object) {
-  sdy <- sd(getME(object,"y"))
-  sdx <- apply(getME(object,"X"), 2, sd)
-  sc <- fixef(object)*sdx/sdy
-  se.fixef <- coef(summary(object))[,"Std. Error"]
-  se <- se.fixef*sdx/sdy
-  return(data.frame(stdcoef=sc, stdse=se))
-}
-```
-
-1. calculate and extract standardized coefficients for position, speed and acceleration
-
-Function to calculate standardized coefficients from the model fits
-```{r}
-std_coef <- function(mm) {
-  tryCatch({
-  mod <- stdCoef.merMod(mm)
-  mod_coefs <- tibble(pos = mod[2,1],
-                      speed = mod[3,1],
-                      accel = mod[4,1])
-      },
-    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-}
-
-```
-
-
-3. Run on all cells
+Call functions to calculate and extract standardised coefficients for position, speed and acceleration
+Run on all cells
 ```{r, warning=FALSE}
 spatial_firing <- spatial_firing %>%
   mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
@@ -527,6 +450,16 @@ if (save_figures == 1) {
 
 Statistical analyses to compare coefficients for position, speed and acceleration.
 
+position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
+1. extract position cells
+```{r}
+ramp_cells <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
+
+position_cells <- subset(ramp_cells, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
+
+```
+
+  
 1. Take only 
 ```{r}
 position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")

@@ -399,6 +399,61 @@ mm_fit_function <- function(mm, TT) {
 }
 
 
+## Categorize neurons based on significant model coefficients
+coef_comparison <- function(null_pos, null_speed, null_accel, pval = 0.01){
+  if(is.na(null_pos)) {
+    return( "NAs" )
+    
+  } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
+    return( "P" )
+    
+  } else if( null_pos > pval & null_accel > pval & null_speed < pval) {
+    return( "S" ) 
+    
+  } else if( null_pos > pval & null_accel < pval & null_speed > pval) {
+    return( "A" )
+    
+  } else if( null_pos < pval & null_accel > pval & null_speed < pval) {
+    return("PS")
+    
+  } else if( null_pos < pval & null_accel < pval & null_speed > pval) {
+    return( "PA" )
+    
+  } else if( null_pos > pval & null_accel < pval & null_speed < pval) {
+    return("SA")
+    
+  } else if( null_pos < pval & null_accel < pval & null_speed < pval) {
+    return("PSA")
+    
+  } else {
+    return("None")
+  }
+}
+
+
+# Function to calculate standardized coefficients for a LMER
+#https://stackoverflow.com/questions/25142901/standardized-coefficients-for-lmer-model 
+stdCoef.merMod <- function(object) {
+  sdy <- sd(getME(object,"y"))
+  sdx <- apply(getME(object,"X"), 2, sd)
+  sc <- fixef(object)*sdx/sdy
+  se.fixef <- coef(summary(object))[,"Std. Error"]
+  se <- se.fixef*sdx/sdy
+  return(data.frame(stdcoef=sc, stdse=se))
+}
+
+# Helperfunction to calculate standardized coefficients from the model fits
+std_coef <- function(mm) {
+  tryCatch({
+  mod <- stdCoef.merMod(mm)
+  mod_coefs <- tibble(pos = mod[2,1],
+                      speed = mod[3,1],
+                      accel = mod[4,1])
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+
 
 
 ## ----------------------------------------------------------##
