@@ -453,7 +453,16 @@ std_coef <- function(mm) {
     error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
 
-
+# Extracts counts for numbers of neurons sorted according to the classification from the GLMER fit
+make_coeffs_table <- function(df) {
+  df <- df %>%
+    unlist() %>%
+    table() %>%
+    as_tibble() %>%
+    mutate(perc = (n / sum(n)) * 100)
+  colnames(df) <- c("ramp_id", "num", "perc")
+  df
+}
 
 
 ## ----------------------------------------------------------##
