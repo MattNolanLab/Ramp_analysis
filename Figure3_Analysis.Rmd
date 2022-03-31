@@ -37,8 +37,8 @@ spatial_firing <- spatial_firing %>%
 
 
 2. Fit linear model to all cells and extract pval
-Can this work with glm?
-Perhaps only try fitting models with large numbers of each type of trial outcome.
+Fitting uses a generalised linear mixed effect model with a Tweedie resonse distribution.
+Similar results are obtained using a linear mixed effect model (use the function compare_models_slope_glm instead).
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_glm))

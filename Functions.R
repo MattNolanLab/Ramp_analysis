@@ -561,20 +561,19 @@ compare_models_slope_lm <- function(df, run, try){
 compare_models_slope_glm <- function(df, run,try){
   tryCatch({
     if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
-      return(NA)
+      return("Contains NAs")
     }
     if (length(df) == 1 | nrow(df) < 6)
-      return(NA)
-    glm1 <- glm(Rates ~ Position * Reward_indicator, family = Gamma(link = "log"), data = df)
+      return("Too small")
+    
     
     df <- df %>%
       filter(Position >= 30, Position <= 90)
-    fit <- lme4::glmer(formula = Rates ~ Position * Reward_indicator + (1 + Position | Trials), 
-                          data = df, 
-                          na.action = na.exclude,
-                          family = Gamma(link = "log"),
-                          start=list(fixef=coef(glm1)),
-                          control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+    
+    fit <- glmmTMB(formula = Rates ~ Position * Reward_indicator + (1 + Position | Trials), 
+                       data = df, 
+                       na.action = na.exclude,
+                       family = tweedie(link = "log"))
     
     modelAnova <- car::Anova(fit)
     to_return <- modelAnova$"Pr(>Chisq)"[[3]]
