@@ -323,6 +323,169 @@ local_circ_shuffles <- function(df_in, cs_path) {
 }
 
 
+## ----------------------------------------------------------##
+
+### Functions below here are initially used in Figure 2 code.
+
+# Function to fit general linear mixed effect models
+# The goal here is to evaluate influences of position, speed and acceleration on firing rate.
+mm_fit <- function(df, TT = 0) {
+  if (length(df) == 1){
+    return(NA)}
+  df <-
+    tibble(
+      Rates = as.numeric(df[[1]]),
+      Position = as.numeric(df[[2]]),
+      Acceleration = as.numeric(df[[4]]),
+      Speed = as.numeric(df[[3]]),
+      Trials = as.factor(df[[5]]), 
+      Types = as.factor(df[[6]])
+    )
+  # subset by position, speed, types (beaconed/probe) and remove rates < 0.01 as model does not like this
+  df <- df %>%
+    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == TT & Rates > 0.01) %>%
+    select(-Types) 
+  
+  #scale varibles, do not center or values go below 0 which does not work for this gamma model
+  df$Acceleration <- scale(df$Acceleration, center=FALSE, scale=TRUE)
+  df$Rates <- scale(df$Rates, center=FALSE, scale=TRUE)
+  df$Speed <- scale(df$Speed, center=FALSE, scale=TRUE)
+  df$Position <- scale(df$Position, center=FALSE, scale=TRUE)
+  
+  if (length(df) == 1 | nrow(df) < 20) {
+    return(NA)
+  }
+  glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = Gamma(link = "log"), data = df)
+  
+  df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
+                        data = df, 
+                        na.action = na.exclude,
+                        family = Gamma(link = "log"),
+                        start=list(fixef=coef(glm1)),
+                        control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+}
+
+
+
+# Function to extract P values for each coefficient from the model
+mm_function <- function(mm, session_id) {
+  if (is.na(mm)) {
+    return(tibble(pos = NA, speed = NA, accel = NA))
+  }
+  print(session_id)
+  modelAnova <- car::Anova(mm)
+  return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
+                          speed = modelAnova$"Pr(>Chisq)"[[2]],
+                          accel = modelAnova$"Pr(>Chisq)"[[3]])
+}
+
+
+# Helper function for extracting P values for each coefficient from the model
+mm_pvalues <- function(mm, session_id) {
+  tryCatch({
+    mm_function(mm, session_id)
+  },
+  error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+
+
+# Helper function to link to general linear mixed model fit
+mm_fit_function <- function(mm, TT) {
+  tryCatch({
+    mm_fit(mm,TT)
+  },
+  error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+
+## Categorize neurons based on significant model coefficients
+coef_comparison <- function(null_pos, null_speed, null_accel, pval = 0.01){
+  if(is.na(null_pos)) {
+    return( "NAs" )
+    
+  } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
+    return( "P" )
+    
+  } else if( null_pos > pval & null_accel > pval & null_speed < pval) {
+    return( "S" ) 
+    
+  } else if( null_pos > pval & null_accel < pval & null_speed > pval) {
+    return( "A" )
+    
+  } else if( null_pos < pval & null_accel > pval & null_speed < pval) {
+    return("PS")
+    
+  } else if( null_pos < pval & null_accel < pval & null_speed > pval) {
+    return( "PA" )
+    
+  } else if( null_pos > pval & null_accel < pval & null_speed < pval) {
+    return("SA")
+    
+  } else if( null_pos < pval & null_accel < pval & null_speed < pval) {
+    return("PSA")
+    
+  } else {
+    return("None")
+  }
+}
+
+
+# Function to calculate standardized coefficients for a LMER
+#https://stackoverflow.com/questions/25142901/standardized-coefficients-for-lmer-model 
+stdCoef.merMod <- function(object) {
+  sdy <- sd(getME(object,"y"))
+  sdx <- apply(getME(object,"X"), 2, sd)
+  sc <- fixef(object)*sdx/sdy
+  se.fixef <- coef(summary(object))[,"Std. Error"]
+  se <- se.fixef*sdx/sdy
+  return(data.frame(stdcoef=sc, stdse=se))
+}
+
+# Helperfunction to calculate standardized coefficients from the model fits
+std_coef <- function(mm) {
+  tryCatch({
+  mod <- stdCoef.merMod(mm)
+  mod_coefs <- tibble(pos = mod[2,1],
+                      speed = mod[3,1],
+                      accel = mod[4,1])
+      },
+    error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+}
+
+# Extracts counts for numbers of neurons sorted according to the classification from the GLMER fit
+make_coeffs_table <- function(df) {
+  df <- df %>%
+    unlist() %>%
+    table() %>%
+    as_tibble() %>%
+    mutate(perc = (n / sum(n)) * 100)
+  colnames(df) <- c("ramp_id", "num", "perc")
+  df
+}
+
+
+# Function for plotting standardised coefficients
+standard_plot <- function(df) {
+  level_order <- c("P", "S", "A")
+  ggplot(data=df, aes(x = factor(coef_type), y = as.numeric(coef))) +
+    geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
+    stat_summary(fun=mean, geom="point", shape=23, size=2) +
+    geom_jitter(alpha=0.05) +
+    scale_fill_manual(values=c("firebrick1","gold","dodgerblue2")) +
+    labs(y = "std coef", x="\n model parameter") +
+    scale_y_continuous(trans=pseudolog10_trans) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=14),
+          axis.text.y = element_text(size=12),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=12), 
+          legend.text=element_text(size=12), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+}
+
+
 
 ## ----------------------------------------------------------##
 
@@ -375,7 +538,7 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
 
 # Function to fit a linear mixed effect model that takes trial type (hit, try, run) into account
 # The car package is used to extract slope significance
-compare_models_slope_lm <- function(df, run,try){
+compare_models_slope_lm <- function(df, run, try){
   tryCatch({
     if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
       return(NA)
@@ -384,7 +547,8 @@ compare_models_slope_lm <- function(df, run,try){
       return(NA)
     
     df <- df %>%
-      filter(Position >= 30, Position <= 90)
+      filter(Position >= 30, Position <= 90) %>%
+      mutate(Rates = scale(Rates)) # This doesn't seem to make any substantial difference
     fit <- lme4::lmer(Rates ~ scale(Position) * Reward_indicator + (1+scale(Position) | Trials), data = df, na.action=na.omit)
     modelAnova <- car::Anova(fit)
     to_return <- modelAnova$"Pr(>Chisq)"[[3]]
@@ -401,6 +565,7 @@ compare_models_slope_glm <- function(df, run,try){
     }
     if (length(df) == 1 | nrow(df) < 6)
       return(NA)
+    glm1 <- glm(Rates ~ Position * Reward_indicator, family = Gamma(link = "log"), data = df)
     
     df <- df %>%
       filter(Position >= 30, Position <= 90)
@@ -547,7 +712,33 @@ all_plots_by_outome <- function(df) {
 # sum(sapply(speed_neurons$avg_both_asr_b, anyNA))
 
 
+
+# Function to make violin plots for offsets according to trial outcome
+offset_groups_violin_plot <- function(df, min_y = -3.5, max_y = 3.5) {
+  ggplot(data=df, aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
+    stat_summary(fun=mean, geom="point", shape=23, size=2) +
+    geom_point(alpha=0.3) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    scale_fill_manual(values=c("grey","red", "blue")) +
+    labs(y="Offset", x="") +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=15),
+          axis.text.y = element_text(size=15),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=15), 
+          legend.text=element_text(size=15), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+}
+
+
+
 ## ----------------------------------------------------------##
+## ----------------------------------------------------------##
+
+# Older functions. Not clear if they are used. Delete?!
 
 lm_helper <- function(df, bins){
   if(all(is.na(df))) 
