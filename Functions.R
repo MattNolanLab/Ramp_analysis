@@ -541,10 +541,10 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
 compare_models_slope_lm <- function(df, run, try){
   tryCatch({
     if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
-      return(NA)
+      return("Contains NAs")
     }
     if (length(df) == 1 | nrow(df) < 6)
-      return(NA)
+      return("Too small")
     
     df <- df %>%
       filter(Position >= 30, Position <= 90) %>%
@@ -565,7 +565,6 @@ compare_models_slope_glm <- function(df, run,try){
     }
     if (length(df) == 1 | nrow(df) < 6)
       return("Too small")
-    
     
     df <- df %>%
       filter(Position >= 30, Position <= 90)

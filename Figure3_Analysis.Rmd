@@ -24,44 +24,41 @@ rewarded trials
 
 ### --------------------------------------------------------------------------------------- ###
 
+Analysis to test whether trial outcome has a significant effect on firing rate slope. This isn't does't directly test the core hypotheses, as we know some neurons have speed / acceleration modulated firing, so we make it optional.
 
-
-First combine hit and miss trials together with an indicator of trial type (hit, try, run)
-
-1. Generate firing rate tibble for each cell
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward, spikes_in_time_run, spikes_in_time_try, session_id, cluster_id), join_rates))
-
-```
-
+1. First combine hit and miss trials together with an indicator of trial type (hit, try, run). Uses join_rates.
 
 2. Fit linear model to all cells and extract pval
-Fitting uses a generalised linear mixed effect model with a Tweedie resonse distribution.
-Similar results are obtained using a linear mixed effect model (use the function compare_models_slope_glm instead).
+Fitting uses a generalised linear mixed effect model with a Tweedie resonse distribution (compare_models_slope_glm).
+Similar results are obtained using a linear mixed effect model (use the function compare_models_slope_lm instead).
+* Warning *
+The model fitting here takes a long time.
+
+3. Then classify cells based on the significance of the interaction between trial outcome and position in the above model (mark_neurons_sig). 
 ```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_glm))
+test_outcomes <= 0
+
+if (test_outcomes == 1) {
+  spatial_firing <- spatial_firing %>%
+    mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward, spikes_in_time_run, spikes_in_time_try, session_id, cluster_id), join_rates),
+           pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_glm),
+           reward_interaction_id = map(pval_slope, mark_neurons_sig))
+  
+  # Number of significant neurons
+  length(which(spatial_firing$reward_interaction_id == "Significant"))
+  
+  # Number of non-significant neurons
+  length(which(spatial_firing$reward_interaction_id == "Not-Significant"))
+  
+  # Other neurons
+  length(which(spatial_firing$reward_interaction_id == "None"))
+  
+}
+
 ```
 
-Now we can classify cells based on their significance in the above model
 
 
-3. Make new column to identify whether cells firings rates are significantly related to trial outcome.
-The numbers here are for all neurons that contain all three trial outcomes.
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(reward_interaction_id = map(pval_slope, mark_neurons_sig))
-
-# Number of significant neurons
-length(which(spatial_firing$reward_interaction_id == "Significant"))
-
-# Number of non-significant neurons
-length(which(spatial_firing$reward_interaction_id == "Not-Significant"))
-
-# Other neurons
-length(which(spatial_firing$reward_interaction_id == "None"))
-```
 
 
 ### ----------------------------------------------------------------------------- ###
