@@ -34,6 +34,7 @@ library(ggallin) # this is for the pseudolog10_trans function used in coeff plot
 library(car)
 library(arrow)
 library(cowplot)
+library(glmmTMB)
 
 # Load functions used in later analyses.
 source("Functions.R")

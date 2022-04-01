@@ -329,6 +329,10 @@ local_circ_shuffles <- function(df_in, cs_path) {
 
 # Function to fit general linear mixed effect models
 # The goal here is to evaluate influences of position, speed and acceleration on firing rate.
+# This is set up with family = poisson as the data binned in time are counts.
+# For use with smoothed data would need to change this to gamma (which won't work where there are zeros)
+# Or consider using Tweedie family implemented in the glmBB package.
+# Note also that we get similar results using linear mixed effect models so GLMER while more 'correct' may not be necessary.
 mm_fit <- function(df, TT = 0) {
   if (length(df) == 1){
     return(NA)}
@@ -355,12 +359,12 @@ mm_fit <- function(df, TT = 0) {
   if (length(df) == 1 | nrow(df) < 20) {
     return(NA)
   }
-  glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = Gamma(link = "log"), data = df)
+  glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = poisson(link = "log"), data = df)
   
   df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
                         data = df, 
                         na.action = na.exclude,
-                        family = Gamma(link = "log"),
+                        family = poisson(link = "log"),
                         start=list(fixef=coef(glm1)),
                         control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 }
@@ -541,10 +545,10 @@ join_rates <- function(hit, run, try, session_id, cluster_id) {
 compare_models_slope_lm <- function(df, run, try){
   tryCatch({
     if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
-      return(NA)
+      return("Contains NAs")
     }
     if (length(df) == 1 | nrow(df) < 6)
-      return(NA)
+      return("Too small")
     
     df <- df %>%
       filter(Position >= 30, Position <= 90) %>%
@@ -557,24 +561,30 @@ compare_models_slope_lm <- function(df, run, try){
 }
 
 # Function to fit a general linear mixed effect model that takes trial type (hit, try, run) into account
+# This is set up with family = poisson as the data binned in time are counts.
+# For use with smoothed data would need to change this to gamma (which won't work where there are zeros)
+# Or consider using Tweedie family implemented in the glmBB package.
+# Note also that we get similar results using linear mixed effect models so GLMER while more 'correct' may not be necessary.
 # The car package is used to extract slope significance
 compare_models_slope_glm <- function(df, run,try){
   tryCatch({
     if (any(is.na(run)) | any(is.na(try)) | any(is.na(df))) { 
-      return(NA)
+      return("Contains NAs")
     }
     if (length(df) == 1 | nrow(df) < 6)
-      return(NA)
-    glm1 <- glm(Rates ~ Position * Reward_indicator, family = Gamma(link = "log"), data = df)
+      return("Too small")
     
     df <- df %>%
       filter(Position >= 30, Position <= 90)
+    
+    glm1 <- glm(Rates ~ Position * Reward_Indicator , family = poisson(link = "log"), data = df)
+    
     fit <- lme4::glmer(formula = Rates ~ Position * Reward_indicator + (1 + Position | Trials), 
-                          data = df, 
-                          na.action = na.exclude,
-                          family = Gamma(link = "log"),
-                          start=list(fixef=coef(glm1)),
-                          control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+                       data = df, 
+                       na.action = na.exclude,
+                       family = poisson(link = "log"),
+                       start=list(fixef=coef(glm1)),
+                       control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
     
     modelAnova <- car::Anova(fit)
     to_return <- modelAnova$"Pr(>Chisq)"[[3]]
