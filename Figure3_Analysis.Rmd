@@ -29,7 +29,7 @@ Analysis to test whether trial outcome has a significant effect on firing rate s
 1. First combine hit and miss trials together with an indicator of trial type (hit, try, run). Uses join_rates.
 
 2. Fit linear model to all cells and extract pval
-Fitting uses a generalised linear mixed effect model with a Tweedie resonse distribution (compare_models_slope_glm).
+Fitting uses a generalised linear mixed effect model with a Tweedie response distribution (compare_models_slope_glm).
 Similar results are obtained using a linear mixed effect model (use the function compare_models_slope_lm instead).
 * Warning *
 The model fitting here takes a long time.
