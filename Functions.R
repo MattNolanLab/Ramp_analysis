@@ -359,16 +359,20 @@ mm_fit <- function(df, TT = 0) {
   if (length(df) == 1 | nrow(df) < 20) {
     return(NA)
   }
-  glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = poisson(link = "log"), data = df)
+  # glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = poisson(link = "log"), data = df)
   
   df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
                         data = df, 
                         na.action = na.exclude,
                         family = poisson(link = "log"),
-                        start=list(fixef=coef(glm1)),
-                        control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+                        nAGQ=0,
+                        control=lme4::glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 }
 
+# removed start=list(fixef=coef(glm1)) and commented out glm fit.
+# replaced with nAGQ=0
+# removed control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5))
+# or  control=glmerControl(optimizer = "nloptwrap",optCtrl=list(maxfun=2e5))
 
 
 # Function to extract P values for each coefficient from the model
