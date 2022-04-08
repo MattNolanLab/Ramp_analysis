@@ -363,21 +363,22 @@ mm_fit <- function(df, TT = 0) {
   if (length(df) == 1 | nrow(df) < 20) {
     return(NA)
   }
+  
   # return NA if variables contain any NAs after scaling (very possible if cell doesn't spike on rewarded trials)
   if (sum(is.na(as.matrix(df))) > 0) {
     return(NA)
-  }
-  
+
   #glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = poisson(link = "log"), data = df)
   df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
                         data = df,
                         na.action = na.exclude,
                         family = poisson(link = "log"),
-                        control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+                        control=lme4::glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 }
-#nAGQ = 0
-#family = poisson(link = "log"),
-#start=list(fixef=coef(glm1)),
+  
+# removed start=list(fixef=coef(glm1)) and commented out glm fit
+# removed control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5))
+# or control=glmerControl(optimizer = "nloptwrap",optCtrl=list(maxfun=2e5))
 
 # Function to extract P values for each coefficient from the model
 mm_function <- function(mm, session_id) {

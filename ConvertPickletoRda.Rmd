@@ -19,13 +19,14 @@ Aim: We want to load dataframes from python output which are in pickled format, 
 
 
 First we need to set up the python environment. This is so we can call a python script from R that loads the pickled dataframes and sends it back to the R workspace. 
-The python environment needs to be >v.3 as 2.7 (system python) doesnt have Pandas package which is needed to open dataframes
+The python environment needs to be >v.3 as 2.7 (system python) doesn't have Pandas package which is needed to open dataframes
 
+To find the path in Linux use 'type -a python3' in the terminal.
 ```{r}
 
 require(reticulate) # package that allows R to call python code
-Sys.setenv(RETICULATE_PYTHON = "C:\\Users\\44756\\AppData\\Local\\Programs\\Python\\Python310\\python.exe") 
-
+#Sys.setenv(RETICULATE_PYTHON = "C:\\Users\\44756\\AppData\\Local\\Programs\\Python\\Python310\\python.exe") 
+Sys.setenv(RETICULATE_PYTHON = "/usr/bin/python3") 
 ```
 
 

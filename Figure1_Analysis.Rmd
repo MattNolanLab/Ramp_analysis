@@ -32,14 +32,14 @@ Rates_averaged_rewarded_nb = non-beaconed and probe trials
 Rates_averaged_rewarded_p = probe trials only
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(asr_b_rewarded = pmap(list(Rates_averaged_rewarded_b, session_id, cluster_id), add_position),
-         asr_nb_rewarded = pmap(list(Rates_averaged_rewarded_nb, session_id, cluster_id), add_position),
-         asr_p_rewarded = pmap(list(Rates_averaged_rewarded_p, session_id, cluster_id), add_position)
+  mutate(asr_b_rewarded = future_pmap(list(Rates_averaged_rewarded_b, session_id, cluster_id), add_position),
+         asr_nb_rewarded = future_pmap(list(Rates_averaged_rewarded_nb, session_id, cluster_id), add_position),
+         asr_p_rewarded = future_pmap(list(Rates_averaged_rewarded_p, session_id, cluster_id), add_position)
          )
 ```
 
 
-### ----------------------------------------------------------------------------------------- ###
+### -----------------------------------    ------------------------------------------------------ ###
 
 # Fit linear models to examine relationship between firing rate and position
 
@@ -48,18 +48,50 @@ spatial_firing <- spatial_firing %>%
 
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider). The function lm_tidy_helper fits the linear model and then returns data extracted from the model fit using glance and tidy tools.
 ```{r}
+# spatial_firing <- spatial_firing %>%
+#   mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_tidy_helper),
+#          asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_tidy_helper),
+#          asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_tidy_helper))
+# m is a matrix
+# r.squared, pos = 1
+# p.value, pos = 2
+# intercept, pos = 3
+# slope, pos = 4
+
+# Send asr_b_o_rewarded_fit
+fit_vals <- function(m) {
+  vals <- mapply(function(x) x[[1]], m)
+  df <- tibble(r.squared = vals[c(TRUE, rep(FALSE, 3))],
+               p.value = vals[c(FALSE, TRUE, rep(FALSE, 2))],
+               intercept = vals[c(rep(FALSE, 2), TRUE, FALSE)],
+               slope = vals[c(rep(FALSE, 3), TRUE)])
+}
+
 spatial_firing <- spatial_firing %>%
   select(-contains('asr_b_o_rewarded_fit_')) %>%
   select(-contains('asr_nb_o_rewarded_fit_')) %>%
-  select(-contains('asr_p_o_rewarded_fit_')) %>%
-  mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_tidy_helper),
-         asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_tidy_helper),
-         asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_tidy_helper)) %>%
-  unnest_wider(asr_b_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_nb_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  select(-contains('asr_p_o_rewarded_fit_')) 
+   
+spatial_firing$asr_b_o_rewarded_fit <-
+  mapply(lm_tidy_helper, spatial_firing$asr_b_rewarded, 30, 90) %>%
+  fit_vals()
+spatial_firing$asr_nb_o_rewarded_fit <-
+  mapply(lm_tidy_helper, spatial_firing$asr_nb_rewarded, 30, 90) %>%
+  fit_vals()
+spatial_firing$asr_p_o_rewarded_fit <-
+  mapply(lm_tidy_helper, spatial_firing$asr_p_rewarded, 30, 90) %>%
+  fit_vals()
+
+spatial_firing <- spatial_firing %>%
+  unnest_wider(asr_b_o_rewarded_fit, names_sep = "_", names_repair = "universal")
+spatial_firing <- spatial_firing %>%
+  unnest_wider(asr_nb_o_rewarded_fit, names_sep = "_", names_repair = "universal")
+spatial_firing <- spatial_firing %>%
   unnest_wider(asr_p_o_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
 
+
+  
 Linear model results are stored in:
 spatial_firing$asr_b_o_rewarded_fit_slope
 spatial_firing$asr_b_o_rewarded_fit_intercept
@@ -94,9 +126,9 @@ if(shuffle_type=="circular") {
 # If it doesn't exist then the mean firing rate as a function of position will be shuffled.
 if(!"shuffle_results_b_o" %in% colnames(spatial_firing)) {
   spatial_firing <- spatial_firing %>%
-    mutate(shuffle_results_b_o = pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
-    mutate(shuffle_results_nb_o = pmap(list(Rates_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
-    mutate(shuffle_results_p_o = pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
+    mutate(shuffle_results_b_o = future_pmap(list(Rates_averaged_rewarded_b, 30, 90, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_nb_o = future_pmap(list(Rates_averaged_rewarded_nb, 30, 90, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_p_o = future_pmap(list(Rates_averaged_rewarded_p, 30, 90, shuffles), shuffle_rates))
 }
 
 
@@ -118,17 +150,21 @@ if (save_results == 1) {
 First, extract the 5 % and 95 % quantiles of 1000 shuffles for each neuron.
 ```{r}
 spatial_firing <- spatial_firing %>%
-  select(-contains('shuffle_min_slope_')) %>%
-  select(-contains('shuffle_max_slope_')) %>%
-  mutate(shuffle_min_slope_b_o = map2_dbl(shuffle_results_b_o, 0.05, extract_quantile_shuffle_slopes),
-         shuffle_max_slope_b_o = map2_dbl(shuffle_results_b_o, 0.95, extract_quantile_shuffle_slopes),
-         shuffle_min_slope_nb_o = map2_dbl(shuffle_results_nb_o, 0.05, extract_quantile_shuffle_slopes),
-         shuffle_max_slope_nb_o = map2_dbl(shuffle_results_nb_o, 0.95, extract_quantile_shuffle_slopes),
-         shuffle_min_slope_p_o = map2_dbl(shuffle_results_p_o, 0.05, extract_quantile_shuffle_slopes),
-         shuffle_max_slope_p_o = map2_dbl(shuffle_results_p_o, 0.95, extract_quantile_shuffle_slopes))
+
+  mutate(shuffle_min_slope_b_o = future_map2_dbl(shuffle_results_b_o, 0.05, extract_quantile_shuffle_slopes),
+         shuffle_max_slope_b_o = future_map2_dbl(shuffle_results_b_o, 0.95, extract_quantile_shuffle_slopes),
+         shuffle_min_slope_nb_o = future_map2_dbl(shuffle_results_nb_o, 0.05, extract_quantile_shuffle_slopes),
+         shuffle_max_slope_nb_o = future_map2_dbl(shuffle_results_nb_o, 0.95, extract_quantile_shuffle_slopes),
+         shuffle_min_slope_p_o = future_map2_dbl(shuffle_results_p_o, 0.05, extract_quantile_shuffle_slopes),
+         shuffle_max_slope_p_o = future_map2_dbl(shuffle_results_p_o, 0.95, extract_quantile_shuffle_slopes))
 ```
 
 
+removed:
+  select(-contains('shuffle_min_slope_')) %>%
+  select(-contains('shuffle_max_slope_')) %>%
+  
+  
 We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
 
 1. Extract shuffle results (slopes and r2 for each shuffle)
@@ -136,15 +172,18 @@ We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neu
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
+  unnest_wider(shuffle_results_b_o, names_sep = "_", names_repair = "universal")
+spatial_firing <- spatial_firing %>%
+  unnest_wider(shuffle_results_nb_o, names_sep = "_", names_repair = "universal")
+spatial_firing <- spatial_firing %>%
+  unnest_wider(shuffle_results_p_o, names_sep = "_", names_repair = "universal")
+```
+
+removed:
   select(-contains('shuffle_results_b_o_')) %>%
   select(-contains('shuffle_results_nb_o_')) %>%
   select(-contains('shuffle_results_p_o_')) %>%
   select(-contains('adjust_pval_')) %>%
-  unnest_wider(shuffle_results_b_o, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(shuffle_results_nb_o, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(shuffle_results_p_o, names_sep = "_", names_repair = "universal")
-```
-
 
 We also want to correct the p values of the lm fits to the experimental data to account for multiple comparisons.
 
