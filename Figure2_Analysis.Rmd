@@ -50,7 +50,10 @@ for (i in 1:nrow(spatial_firing)) {
   df<-bind_rows(df, spatial_firing_i)
 }
 spatial_firing <- df
+rm(df)
 
+#
+spatial_firing <- readRDS(file="data_in/SpatialFiring_with_Results.Rda")
 
 # number with fits / NAs
 table(is.na(spatial_firing$o_mm_p_b_pos))

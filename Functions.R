@@ -352,7 +352,7 @@ mm_fit <- function(df, TT = 0) {
     subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == TT) %>%
     select(-Types) 
   
-  #scale varibles, do not center or values go below 0 which does not work for this gamma model
+  #scale variables, do not center or values go below 0 which does not work for this gamma model
   df$Acceleration <- scale(df$Acceleration, center=FALSE, scale=TRUE)
   df$Rates <- scale(df$Rates, center=FALSE, scale=TRUE)
   df$Speed <- scale(df$Speed, center=FALSE, scale=TRUE)
@@ -374,6 +374,7 @@ mm_fit <- function(df, TT = 0) {
                         na.action = na.exclude,
                         family = poisson(link = "log"),
                         control=lme4::glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
+  }
 }
   
 # removed start=list(fixef=coef(glm1)) and commented out glm fit

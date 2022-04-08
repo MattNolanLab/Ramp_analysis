@@ -36,7 +36,7 @@ The model fitting here takes a long time.
 
 3. Then classify cells based on the significance of the interaction between trial outcome and position in the above model (mark_neurons_sig). 
 ```{r}
-test_outcomes <= 0
+test_outcomes = 0
 
 if (test_outcomes == 1) {
   spatial_firing <- spatial_firing %>%
@@ -460,20 +460,18 @@ outcomes_offsets_data_speedneg %>%
 
 ## Figure 3 statistical analysis
 
-Find proportion & numbers of neurons that are significant/non-significiant
+Find proportion & numbers of neurons that are significant/non-significant
 
 ```{r}
+if (test_outcomes == 1) {
 ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
 ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & reward_interaction_id != "NA")
-```
 
-```{r}
 sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ramps_with_enough_trials)*100
 nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps_with_enough_trials)*100
-```
 
-```{r}
 sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
 nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))
+}
 ```
 

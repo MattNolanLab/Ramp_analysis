@@ -118,7 +118,8 @@ if(shuffle_type=="circular") {
   mutate(shuffle_results_b_o = spatial_firing_circ$shuffle_results_b_o,
          shuffle_results_nb_o = spatial_firing_circ$shuffled_results_nb_o,
          shuffle_results_p_o = spatial_firing_circ$shuffled_results_p_o)
-  
+  # Remove unused frame
+  rm(spatial_firing_circ)
 }
 
 # Check to see if the column shuffle_results_b_o exists.
@@ -415,7 +416,7 @@ Other                                 0
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('track_category')) %>%
-  mutate(track_category = map2(lm_group_b, lm_group_b_h, mark_track_category),
+  mutate(track_category = future_map2(lm_group_b, lm_group_b_h, mark_track_category),
          track_category_numeric = map2(lm_group_b, lm_group_b_h, mark_numeric_track_category))
 
 ```
@@ -512,20 +513,12 @@ if (save_figures == 1) {
 
 1. Here we subset neurons based on positive, negative or unclassified in the linear model and either reset or contiuous firing. 
 ```{r}
-position_neurons_reset <- spatial_firing  %>% 
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
-  filter(reset_group == "Reset")
-
-position_neurons_continuous <- spatial_firing  %>% 
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
-  filter(reset_group == "Continuous")
-
-position_neurons_all <- spatial_firing  %>% 
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
-
-unclassified_neurons <- spatial_firing  %>% 
-  filter(lm_group_b == "Unclassified") 
-
+position_neurons_all <- spatial_firing %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  select(asr_b_o_rewarded_fit_slope,
+         asr_b_h_rewarded_fit_slope,
+         track_category,
+         lm_group_b)
 ```
 
 2. Plot scatter plot
@@ -544,7 +537,7 @@ ggplot() +
                aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
-    geom_point(data=unclassified_neurons,
+    geom_point(data=spatial_firing %>% filter(lm_group_b == "Unclassified"),
                aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), shape=4, alpha=0.8) +     
@@ -761,7 +754,8 @@ start_ramps <- start_ramps %>%
 
 Extract columns (normalised rates) for plotting into a tibble
 ```{r}
-concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o))
+concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o),
+                              cols = c(normalised_rates_o))
 ```
 
 Now the firing rates have been normalised and the data in the right format we want to make annotations for the heatmap
@@ -852,12 +846,7 @@ spatial_firing <- spatial_firing %>%
 
 ```{r}
 position_neurons_all <- spatial_firing  %>% 
-  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
-
-unclassified_neurons_all <- spatial_firing  %>% 
-  #filter(final_model_o_b != "P" & final_model_o_b != "PS" & final_model_o_b != "PA" & final_model_o_b != "PSA")  %>% 
-  filter(lm_group_b == "Unclassified") 
 
 ```
 
@@ -890,7 +879,7 @@ if (save_figures == 1) {
 ```{r}
 
 ggplot() + 
-    geom_point(data=unclassified_neurons_all,
+    geom_point(data=spatial_firing  %>% filter(lm_group_b == "Unclassified"),
                aes(x = as.numeric(unlist(mean_firing_rate)), 
                    y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
                    color="grey32"), alpha=0.8) +
@@ -919,12 +908,7 @@ if (save_figures == 1) {
 
 ```{r}
 position_neurons_all <- spatial_firing  %>% 
-  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
-
-unclassified_neurons_all <- spatial_firing  %>% 
-  #filter(final_model_o_b != "P" & final_model_o_b != "PS" & final_model_o_b != "PA" & final_model_o_b != "PSA")  %>% 
-  filter(lm_group_b == "Unclassified") 
 
 ```
 
@@ -960,11 +944,11 @@ if (save_figures == 1) {
 ```{r}
 
 ggplot() + 
-    geom_point(data=unclassified_neurons_all,
+    geom_point(data=spatial_firing  %>% filter(lm_group_b == "Unclassified"),
                aes(x = as.numeric(unlist(mean_firing_rate)), 
                    y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
                    color=factor(unlist(lm_group_b))), alpha=0.8) +
-    geom_point(data=subset(position_neurons_all, lm_group_b == "Positive"),
+    geom_point(data=subset(spatial_firing  %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative", lm_group_b == "Positive")),
                aes(x = as.numeric(unlist(mean_firing_rate)), 
                    y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
                    color=factor(unlist(lm_group_b))), alpha=0.8) +
