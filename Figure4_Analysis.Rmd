@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ### ------------------------------------------------------------------------------------------ ### 
 
 
-## Script aims to determine if ramp activity resets or is continuous across the reward zone in PROBE trials 
+## Script aims to evaluate the dependence of firing rates on the reward zone cues and to evaluate properties of neurons with similar firing rate trajectories in the presence and absence of these cues.
 
 
 ### ------------------------------------------------------------------------------------------ ### 
@@ -23,143 +23,87 @@ First, classify neurons based on their slope activity in the outbound and homebo
 i.e. pospos = positive in outbound, positive in homebound
 i.e. posneg = positive in outbound, negative in homebound
 
-1. To mark cells based on cue_groups use function 'mark_track_category' defined in Figure 5.
+.
 
-2. run on all cells
 ```{r}
+# Use function 'mark_track_category' previously used in Figure 1
 spatial_firing <- spatial_firing %>%
   mutate(track_category_p = map2(lm_group_p, lm_group_p_h, mark_track_category))
 
-```
+# Find predicted rates after the reward zone based on rates before the reward zone
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates_p = map(Rates_averaged_rewarded_p, normalise_rates))
 
-
-### ------------------------------------------------------------------------------------------ ### 
-
-Now, we want to find out if within pospos and negneg cue_groups - is their firing rate reset or continue across the reward region?
-
-To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
-
-First, predict firing rate in homebound region based on fit from real data in outbound region
-
-Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
-
-2. Run on all neurons
-```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_p_')) %>%
   mutate(predict_params_p = map(normalised_rates_p, predict_homebound)) %>%
-  unnest_wider(predict_params_p, names_sep = "_", names_repair = "universal")
+  unnest_wider(predict_params_p,
+               names_sep = "_",
+               names_repair = "universal")
 
 spatial_firing <- spatial_firing %>%
-  mutate(offset_p = pmap_chr(list(normalised_rates_p, predict_params_p_lwr, predict_params_p_upr), offset_test),
-         predict_diff_p = map2_dbl(normalised_rates_p, predict_params_p_fit, calc_predict_diff))
+  mutate(
+    offset_p = pmap_chr(
+      list(
+        normalised_rates_p,
+        predict_params_p_lwr,
+        predict_params_p_upr
+      ),
+      offset_test
+    ),
+    predict_diff_p = map2_dbl(normalised_rates_p, predict_params_p_fit, calc_predict_diff)
+  )
 
-```
+# Classify cells based on their predicted activity using function 'mark_reset_group_predict' defined in Figure 1.
 
-
-Now, we can classify cells based on their predicted activity. 
-
-1. Function to classify neurons based on offset (Matt code that does it based on prediction)
-
-Use function 'mark_reset_group_predict' defined in Figure 1.
-
-2. Run on all cells
-```{r}
-#spatial_firing <- spatial_firing %>%
-#  mutate(reset_group_p = map(offset_p, mark_reset_group_predict))
+spatial_firing <- spatial_firing %>%
+  mutate(reset_group_p = map(offset_p, mark_reset_group_predict))
 
 ```
 
 
 ### ------------------------------------------------------------------------------------------ ### 
 
-## Seperate 
+Does the firing rate slope before or after the reward zone differ between beaconed and probe trials?
 
+Subset spatial firing to contain only cells that have probe trial data and where the number of trials in the session  is >= 60.
 ```{r}
-spatial_firing_high  <- subset(spatial_firing, max_trial_number >= 60 )
+sum_unlist <- function(df) {sum(unlist(df), na.rm=TRUE)}
+spatial_firing_probe_only <-
+  subset(spatial_firing, max_trial_number >= 60) %>%
+  mutate(asr_p_sum = map_dbl(Rates_averaged_rewarded_p, sum_unlist)) %>%
+  subset(asr_p_sum != 0) %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
 ```
 
+We ask first for all neurons that on beaconed trials have are classified with positive or negative slopes on the track segment before the reward zone.
 
-1. Write function to add position
+
+Plot scatter of slopes after the reward zone on beaconed & probe
 ```{r}
-add_position <- function(df, session_id, cluster_id) {
-  sum = sum(unlist(df), na.rm=TRUE)
-  return(sum)
+b_vs_p_o_slope_plot(spatial_firing_probe_only)
+
+if (save_figures == 1) {
+ ggsave(file = "plots/slope_comparison_outbound.png", width = 4, height = 4) 
 }
-```
-
-2. Run on dataframe : Average trials with reward
-
-input columns: 
-Rates_averaged_rewarded_b = beaconed trials
-Rates_averaged_rewarded_nb = non-beaconed and probe trials
-Rates_averaged_rewarded_p = probe trials only
-```{r}
-spatial_firing_high <- spatial_firing_high %>%
-  mutate(asr_p_sum = pmap(list(Rates_averaged_rewarded_p, session_id, cluster_id), add_position))
-```
-
-```{r}
-spatial_firing_probeonly <- subset(spatial_firing_high, asr_p_sum != 0 )
-```
 
 
-### ----------------------------------------------------------------------------------------------- ###
-
-### ------------------------------------------------------------------------------------------ ### 
-
-
-## plot outbound and homebound slopes for each neuron - seperated by whether they reset or are continuous 
-1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 2) and reset activity in probe trials
-```{r}
-slope_df <- spatial_firing_probeonly  %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>% 
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") 
-  
-```
-
-
-2. Plot scatter of slopes on beaconed&probe
-```{r}
-ggplot() + 
-    geom_point(data=subset(slope_df, track_category == "pospos" | track_category == "negneg"),
-               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
-                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
-                   color=factor(unlist(lm_group_b))), alpha=0.8) +
-    geom_point(data=subset(slope_df, track_category == "posneg" | track_category == "negpos"),
-               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
-                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
-                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
-    geom_point(data=subset(slope_df, track_category == "posnon" | track_category == "negnon"),
-               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
-                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
-                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) + 
-    geom_smooth(data=subset(slope_df, track_category != "None"),aes(x=asr_b_h_rewarded_fit_slope, y=asr_p_h_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
-    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    xlab("Beaconed slope") +
-    ylab("Probe slope") +
-    theme_classic() +
-    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
-    theme(axis.text.x = element_text(size=17),
-          axis.text.y = element_text(size=17),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=16), 
-          legend.text=element_text(size=16), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+b_vs_p_h_slope_plot(spatial_firing_probe_only)
 
 if (save_figures == 1) {
  ggsave(file = "plots/slope_comparison_homebound.png", width = 4, height = 4) 
 }
 ```
+
+
 Calculate r2 and p value for liner correlation of the above data
 ```{r}
-pi_data_for_regression <- spatial_firing_high  %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
-  select(asr_b_h_rewarded_fit_slope, asr_p_h_rewarded_fit_slope)
+model <- lm(asr_b_o_rewarded_fit_slope ~ asr_p_o_rewarded_fit_slope, data = spatial_firing_probe_only)
+summary(model)
+# get the model parameters
+params <- select(glance(model), r.squared, p.value)
 
-model <- lm(asr_b_h_rewarded_fit_slope ~ asr_p_h_rewarded_fit_slope, data = pi_data_for_regression)
+model <- lm(asr_b_h_rewarded_fit_slope ~ asr_p_h_rewarded_fit_slope, data = spatial_firing_probe_only)
 summary(model)
 # get the model parameters
 params <- select(glance(model), r.squared, p.value)
@@ -168,98 +112,41 @@ params <- select(glance(model), r.squared, p.value)
 
 
 
-2. Plot scatter of slopes on beaconed&probe
+We ask the same question foucssing on positional neurons (P, PA, PS, PSA) that on beaconed trials have are classified with positive or negative slopes on the track segment before the reward zone.
 ```{r}
-ggplot() + 
-    geom_point(data=subset(slope_df, track_category == "pospos" | track_category == "negneg"),
-               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
-                   y = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), 
-                   color=factor(unlist(lm_group_b))), alpha=0.8) +
-    geom_point(data=subset(slope_df, track_category == "posneg" | track_category == "negpos"),
-               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
-                   y = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), 
-                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
-    geom_point(data=subset(slope_df, track_category == "posnon" | track_category == "negnon"),
-               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
-                   y = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), 
-                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
-    geom_smooth(data=subset(slope_df, track_category != "None"),aes(x=asr_b_o_rewarded_fit_slope, y=asr_p_o_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
-    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    xlab("Beaconed slope") +
-    ylab("Probe slope") +
-    theme_classic() +
-    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
-    theme(axis.text.x = element_text(size=17),
-          axis.text.y = element_text(size=17),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=16), 
-          legend.text=element_text(size=16), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-
-if (save_figures == 1) {
- ggsave(file = "plots/slope_comparison_probe_outbound.png", width = 4, height = 4) 
-}
-```
-
-```{r}
-pi_data_for_regression <- spatial_firing_high  %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
-  select(asr_b_o_rewarded_fit_slope, asr_p_o_rewarded_fit_slope)
-
-model <- lm(asr_b_o_rewarded_fit_slope ~ asr_p_o_rewarded_fit_slope, data = pi_data_for_regression)
-summary(model)
-# get the model parameters
-params <- select(glance(model), r.squared, p.value)
-
-```
-
-1. Subset neurons for positive or negative slope in the outbound zone, position encoding (Figure 3) and reset activity in probe trials and ++ or -- on beaconed trials
-```{r}
-offset_df <- spatial_firing_high  %>%
+spatial_firing_probe_only %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(track_category == "pospos" | track_category == "negneg")
-
-```
-
-2. Plot scatter of offset on beacconed&probe
-```{r}
-ggplot() + 
-    geom_point(data=offset_df,aes(x = as.numeric(predict_diff), y = as.numeric(predict_diff_p), color=factor(unlist(track_category))),alpha=0.8) +
-    coord_cartesian(ylim = c(-2.5,2.5), xlim = c(-3.5,5)) +
-    geom_smooth(data=offset_df,aes(x=predict_diff, y=predict_diff_p), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
-    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
-    xlab("Beaconed offset") +
-    ylab("Probe offset") +
-    theme_classic() +
-    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
-    theme(axis.text.x = element_text(size=17),
-          axis.text.y = element_text(size=17),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=16), 
-          legend.text=element_text(size=16), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+  b_vs_p_o_slope_plot()
 
 if (save_figures == 1) {
- ggsave(file = "plots/offset_comparison.png", width = 4, height = 4) 
+ ggsave(file = "plots/slope_comparison_outbound.png", width = 4, height = 4) 
+}
+
+
+spatial_firing_probe_only %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  b_vs_p_h_slope_plot()
+
+if (save_figures == 1) {
+ ggsave(file = "plots/slope_comparison_homebound.png", width = 4, height = 4) 
 }
 ```
 
+
+
 Calculate r2 and p value for liner correlation of the above data
 ```{r}
-pi_data_for_offset_regression <- spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(track_category == "pospos" | track_category == "negneg") %>% 
-  select(predict_diff, predict_diff_p)
-
-model <- lm(predict_diff ~ predict_diff_p, data = pi_data_for_offset_regression)
+model <- lm(asr_b_o_rewarded_fit_slope ~ asr_p_o_rewarded_fit_slope, data = spatial_firing_probe_only %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") )
 summary(model)
 # get the model parameters
-params_offset <- select(glance(model), r.squared, p.value)
+params <- select(glance(model), r.squared, p.value)
+
+model <- lm(asr_b_h_rewarded_fit_slope ~ asr_p_h_rewarded_fit_slope, data = spatial_firing_probe_only %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") )
+summary(model)
+# get the model parameters
+params <- select(glance(model), r.squared, p.value)
 ```
 
 
@@ -1061,7 +948,7 @@ if (save_results == 1) {
 
 df <-  
   tibble(average_stops = unlist(spatial_firing$average_stops), 
-            average_stops_p = c(as.numeric(unlist(spatial_firing$average_stops_p)), rep(0, times=199)))
+            average_stops_p = unlist(spatial_firing$average_stops_p))
 
 
 ```

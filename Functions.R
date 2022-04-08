@@ -753,6 +753,73 @@ offset_groups_violin_plot <- function(df, min_y = -3.5, max_y = 3.5) {
           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
 }
 
+# -------------------------------------------------------------------------------- #
+
+# Functions below here are initially in Figure 4 code.
+
+
+# To plot firing rate slopes after the reward zone on beaconed vs probe trials
+b_vs_p_h_slope_plot <- function(df){
+  ggplot() + 
+    geom_point(data=subset(df, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_point(data=subset(df, track_category == "posneg" | track_category == "negpos"),
+               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_point(data=subset(df, track_category == "posnon" | track_category == "negnon"),
+               aes(x = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_h_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) + 
+    geom_smooth(data=subset(df, track_category != "None"),aes(x=asr_b_h_rewarded_fit_slope, y=asr_p_h_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Beaconed slope") +
+    ylab("Probe slope") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    theme(axis.text.x = element_text(size=17),
+          axis.text.y = element_text(size=17),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+}
+
+
+# To plot firing rate slopes before the reward zone on beaconed vs probe trials
+b_vs_p_o_slope_plot <- function(df){
+  ggplot() + 
+    geom_point(data=subset(df, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_point(data=subset(df, track_category == "posneg" | track_category == "negpos"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_point(data=subset(df, track_category == "posnon" | track_category == "negnon"),
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(asr_p_o_rewarded_fit_slope)), 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) + 
+    geom_smooth(data=subset(df, track_category != "None"),aes(x=asr_b_o_rewarded_fit_slope, y=asr_p_o_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Beaconed slope") +
+    ylab("Probe slope") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    theme(axis.text.x = element_text(size=17),
+          axis.text.y = element_text(size=17),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+}
+
+
 
 
 ## ----------------------------------------------------------##
