@@ -76,7 +76,7 @@ shuffles <- 1000
 
 # To load circular shuffle results
 if(shuffle_type=="circular") {
-  cs_path = "data_in/all_mice_concatenated_shuffle_data_rewarded.feather"
+  cs_path = "data_in/all_mice_concatenated_shuffle_data_rewarded_unsmoothened.feather"
   spatial_firing_circ <- local_circ_shuffles(spatial_firing, cs_path)
   
   spatial_firing <- spatial_firing %>%

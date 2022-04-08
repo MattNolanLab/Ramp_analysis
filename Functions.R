@@ -345,9 +345,11 @@ mm_fit <- function(df, TT = 0) {
       Trials = as.factor(df[[5]]), 
       Types = as.factor(df[[6]])
     )
+  print(nrow(df))
+  
   # subset by position, speed, types (beaconed/probe) and remove rates < 0.01 as model does not like this
   df <- df %>%
-    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == TT & Rates > 0.01) %>%
+    subset(Position >= 30 & Position <= 90 & Speed >= 3 & Types == TT) %>%
     select(-Types) 
   
   #scale varibles, do not center or values go below 0 which does not work for this gamma model
@@ -356,27 +358,33 @@ mm_fit <- function(df, TT = 0) {
   df$Speed <- scale(df$Speed, center=FALSE, scale=TRUE)
   df$Position <- scale(df$Position, center=FALSE, scale=TRUE)
   
+
+  
   if (length(df) == 1 | nrow(df) < 20) {
     return(NA)
   }
-  glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = poisson(link = "log"), data = df)
+  # return NA if variables contain any NAs after scaling (very possible if cell doesn't spike on rewarded trials)
+  if (sum(is.na(as.matrix(df))) > 0) {
+    return(NA)
+  }
   
+  #glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = poisson(link = "log"), data = df)
   df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
-                        data = df, 
+                        data = df,
                         na.action = na.exclude,
                         family = poisson(link = "log"),
-                        start=list(fixef=coef(glm1)),
                         control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
 }
-
-
+#nAGQ = 0
+#family = poisson(link = "log"),
+#start=list(fixef=coef(glm1)),
 
 # Function to extract P values for each coefficient from the model
 mm_function <- function(mm, session_id) {
   if (is.na(mm)) {
     return(tibble(pos = NA, speed = NA, accel = NA))
   }
-  print(session_id)
+  #print(session_id)
   modelAnova <- car::Anova(mm)
   return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
                           speed = modelAnova$"Pr(>Chisq)"[[2]],
