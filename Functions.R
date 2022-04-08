@@ -234,12 +234,12 @@ offset_ggplot <- function(df, colour_1 = "grey", colour_2 = "chartreuse3", colou
 
 
 # Plot mean and SEM of firing rate as a function of position.
+mean_SEM_plots_prep <- function(df) {
+  df <- df %>% dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                                sem_r = std.error(Rates, na.rm = TRUE))
+}
+
 mean_SEM_plots <- function(df, colour1 = "blue"){
-  cell_no <- ncol(df)
-  df <- df %>%
-    dplyr::summarise(mean_r = mean(Rates), sem_r = std.error(Rates)) %>%
-    mutate(Position = rep(-29.5:169.5))
-  
   ggplot(data=df) +
     annotate("rect", xmin=-30, xmax=0, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
     annotate("rect", xmin=140, xmax=170, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
@@ -248,9 +248,6 @@ mean_SEM_plots <- function(df, colour1 = "blue"){
     geom_line(aes(y=mean_r, x=Position), color = colour1) +
     theme_classic() +
     scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-    #annotate("text", x = 140, y=7, label = paste0("n = ", str(cell_no)), size=8) +
-    #geom_text(aes(x = 140, y= 6, label = paste0("n = ", str(cell_no))), vjust = "inward", hjust = "inward")
-    #scale_y_continuous(breaks=seq(5,50,10), expand = c(0, 0)) +
     labs(y = "Z-scored firing rate", x = "Position") +
     theme(axis.text.x = element_text(size=18),
           axis.text.y = element_text(size=18),
@@ -820,7 +817,50 @@ b_vs_p_o_slope_plot <- function(df){
 }
 
 
+# Helper function to format data for mean_SEM_plots_comp
+extract_cols_for_plot <- function(df, bin = 200){
+  df <- tibble(Position = rep(1:bin, times=nrow(df)), 
+               Rates = unlist(df$normalised_rates),
+               Rates_c = unlist(df$normalised_rates_p),
+               Outbound_beaconed_b = rep(df$lm_group_b, each=bin), 
+               Homebound_beaconed_b = rep(df$lm_group_b_h, each=bin), 
+               Outbound_beaconed_p = rep(df$lm_group_p, each=bin), 
+               Homebound_beaconed_p = rep(df$lm_group_p_h, each=bin)) 
+}
 
+
+# Function to add extra trace in Rates_c to a mean_SEM_plot.
+# The function mean_SEM_plots was first used in Figure 1.
+# The colimns mean and sem generate a blue line, with mean_c and sem_c generating a black line.
+
+mean_SEM_plots_comp_prep <- function(df) {
+  df <- df %>% dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
+                                sem_r = std.error(Rates, na.rm = TRUE),
+                                mean_c = mean(Rates_c, na.rm = TRUE),
+                                sem_c = std.error(Rates_c, na.rm = TRUE))
+}
+
+mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "blue"){
+  plot <- mean_SEM_plots(df, colour1)
+  
+  plot +
+    geom_ribbon(aes(x=Position, y=mean_c, ymin = mean_c - sem_c, ymax = mean_c + sem_c), fill = colour2, alpha=0.2) +
+    geom_line(aes(y=mean_c, x=Position), color = colour2) 
+}
+
+
+# OB_b, HB_b, OB_p, HB_p are strings that define the slope for each track segment and trial type 
+plot_beaconed_vs_probe <- function(df, OB_b, HB_b, OB_p, HB_p) {
+  df  %>%
+    extract_cols_for_plot() %>%
+    filter(Outbound_beaconed_b == OB_b &
+             Homebound_beaconed_b == HB_b) %>%
+    filter(Outbound_beaconed_p == OB_p &
+             Homebound_beaconed_p == HB_p) %>%
+    group_by(Position) %>%
+    mean_SEM_plots_comp_prep() %>%
+    mean_SEM_plots_comp()
+}
 
 ## ----------------------------------------------------------##
 ## ----------------------------------------------------------##

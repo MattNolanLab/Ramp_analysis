@@ -605,9 +605,9 @@ Subset data by group then average rates for plotting
 ```{r}
 df_neg_neg <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
-  group_by(Position)
-  
-mean_SEM_plots(df_neg_neg, colour1 = "black")
+  group_by(Position) %>% 
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
 if (save_figures == 1) {
  ggsave(file = "plots/negneg_mean_Hz.png",  width = 3.6, height = 2.9) 
@@ -621,10 +621,9 @@ if (save_figures == 1) {
 ```{r}
 df_pos_pos <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
-  group_by(Position) 
-
-  
-mean_SEM_plots(df_pos_pos, colour1 = "black")
+  group_by(Position) %>%
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
 
 if (save_figures == 1) {
@@ -637,10 +636,10 @@ if (save_figures == 1) {
 ```{r}
 df_pos_neg <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
-  group_by(Position)
+  group_by(Position) %>%
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
-
-mean_SEM_plots(df_pos_neg, colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/posneg_mean.png", width = 3.6, height = 2.9)
@@ -653,10 +652,10 @@ if (save_figures == 1) {
 ```{r}
 df_neg_pos <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
-  group_by(Position)
+  group_by(Position) %>%
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
-
-mean_SEM_plots(df_neg_pos, colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/negpos_mean.png", width = 3.6, height = 2.9)
@@ -668,10 +667,9 @@ if (save_figures == 1) {
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Unclassified") %>%
-  group_by(Position)
-
-
-mean_SEM_plots(df_pos_pi, colour1 = "black")
+  group_by(Position) %>%
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/posnon_mean.png", width = 3.6, height = 2.9)
@@ -682,9 +680,9 @@ if (save_figures == 1) {
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Unclassified") %>%
-  group_by(Position) 
-
-mean_SEM_plots(df_pos_pi, colour1 = "black")
+  group_by(Position)  %>%
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/negnon_mean.png", width = 3.6, height = 2.9)
