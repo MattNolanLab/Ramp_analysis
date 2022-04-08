@@ -25,18 +25,36 @@ See discussion in ?isSingular and here: https://stats.stackexchange.com/question
 
 spatial_firing$spikes_in_time is a list column. Each row corresponds to a single cell and contains a list of 6 data frames. These correspond to firing rate, position, acceleration, speed, trial number and trial type. The data cover a full behavioral session. Trial types are beaconed (0), non-beaconed and probe.
 ```{r, warning=FALSE}
-spatial_firing <- spatial_firing  %>%
-  mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit_function),
-         #o_mm_p = map2(spikes_in_time, 1, mm_fit_function),
-         o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues)) %>% 
-         #o_mm_p_p = map(o_mm_p, session_id, mm_pvalues)) %>% 
-  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal")
-  #unnest_wider(o_mm_p_p, names_sep = "_", names_repair = "universal")
+#spatial_firing <- spatial_firing  %>%
+#  mutate(o_mm_b = map2(spikes_in_time, 0, mm_fit_function),
+#         #o_mm_p = map2(spikes_in_time, 1, mm_fit_function),
+#         o_mm_p_b = map2(o_mm_b, session_id, mm_pvalues)) %>% 
+#         #o_mm_p_p = map(o_mm_p, session_id, mm_pvalues)) %>% 
+#  unnest_wider(o_mm_p_b, names_sep = "_", names_repair = "universal")
+#  #unnest_wider(o_mm_p_p, names_sep = "_", names_repair = "universal")
+
+df<-data.frame()
+for (i in 1:nrow(spatial_firing)) {
+  print(as.character(i))
+  spatial_firing_i = spatial_firing[i,]
+  o_mm_b <- mm_fit_function(spatial_firing_i$spikes_in_time[[1]], 0)
+  o_mm_p_b <- mm_pvalues(o_mm_b, spatial_firing_i$session_id[1])
+  o_b_mod_coefs <- std_coef(o_mm_b)
+  
+  spatial_firing_i$o_b_mod_coefs_pos[1] <- as.double(o_b_mod_coefs[1])
+  spatial_firing_i$o_b_mod_coefs_speed[1] <- as.double(o_b_mod_coefs[2])
+  spatial_firing_i$o_b_mod_coefs_accel[1] <- as.double(o_b_mod_coefs[3])
+  spatial_firing_i$o_mm_p_b_pos[1] <- as.double(o_mm_p_b[1])
+  spatial_firing_i$o_mm_p_b_speed[1] <- as.double(o_mm_p_b[2])
+  spatial_firing_i$o_mm_p_b_accel[1] <- as.double(o_mm_p_b[3])
+  df<-bind_rows(df, spatial_firing_i)
+}
+spatial_firing <- df
+
 
 # number with fits / NAs
 table(is.na(spatial_firing$o_mm_p_b_pos))
 ```
-
 
 # Adjust p values for multiple comparisons
 ```{r}
@@ -51,7 +69,7 @@ spatial_firing <- spatial_firing %>%
 
 ```{r}
 if (save_results == 1) {
-  saveRDS(spatial_firing, "/data_out/SpatialFiring_with_glmer.Rda")
+  saveRDS(spatial_firing, "data_out/SpatialFiring_with_glmer.Rda")
 }
 ```
 
@@ -72,14 +90,14 @@ spatial_firing <- spatial_firing  %>%
 Call functions to calculate and extract standardised coefficients for position, speed and acceleration
 Run on all cells
 ```{r, warning=FALSE}
-spatial_firing <- spatial_firing %>%
-  mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
-  #mutate(o_p_mod_coefs = map(o_mm_p, std_coef)) %>%
-  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal") #%>%
-  #unnest_wider(o_p_mod_coefs, names_sep = "_", names_repair = "universal")
-
-# check number of NAs
-sum(is.na(spatial_firing$o_b_mod_coefs_pos))
+#spatial_firing <- spatial_firing %>%
+#  mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
+#  #mutate(o_p_mod_coefs = map(o_mm_p, std_coef)) %>%
+#  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal") #%>%
+#  #unnest_wider(o_p_mod_coefs, names_sep = "_", names_repair = "universal")
+#
+## check number of NAs
+#sum(is.na(spatial_firing$o_b_mod_coefs_pos))
 ```
 
 Standardized coefficients are in:
