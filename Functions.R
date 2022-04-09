@@ -118,6 +118,11 @@ normalise_rates <- function(df){
   return(x)
 }
 
+normalise_smooth_rates <- function(df){
+  df <- tibble(Rates_smoothed = unlist(df), Position = rep(1:200))
+  x <- scale(df$Rates_smoothed, center=TRUE, scale=TRUE)[,1]
+  return(x)
+}
 
 #C alculates the difference between mean rate and predicted mean rate at the start of the homebound zone
 calc_predict_diff <- function(rates, fit)
