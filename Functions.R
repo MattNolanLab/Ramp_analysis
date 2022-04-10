@@ -742,7 +742,7 @@ offset_groups_violin_plot <- function(df, min_y = -3.5, max_y = 3.5) {
     coord_cartesian(ylim=c(min_y,max_y)) +
     geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
     stat_summary(fun=mean, geom="point", shape=23, size=2) +
-    geom_point(alpha=0.3) +
+    geom_jitter(alpha=0.05) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     scale_fill_manual(values=c("grey","red", "blue")) +
     labs(y="Offset", x="") +
