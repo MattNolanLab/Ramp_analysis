@@ -118,6 +118,11 @@ normalise_rates <- function(df){
   return(x)
 }
 
+normalise_smooth_rates <- function(df){
+  df <- tibble(Rates_smoothed = unlist(df), Position = rep(1:200))
+  x <- scale(df$Rates_smoothed, center=TRUE, scale=TRUE)[,1]
+  return(x)
+}
 
 #C alculates the difference between mean rate and predicted mean rate at the start of the homebound zone
 calc_predict_diff <- function(rates, fit)
@@ -738,7 +743,7 @@ offset_groups_violin_plot <- function(df, min_y = -3.5, max_y = 3.5) {
     coord_cartesian(ylim=c(min_y,max_y)) +
     geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
     stat_summary(fun=mean, geom="point", shape=23, size=2) +
-    geom_point(alpha=0.3) +
+    geom_jitter(alpha=0.05) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     scale_fill_manual(values=c("grey","red", "blue")) +
     labs(y="Offset", x="") +

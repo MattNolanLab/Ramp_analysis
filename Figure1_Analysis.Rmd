@@ -443,6 +443,10 @@ To do this, we will predict the firing rate on the homebound zone from the activ
 ```{r}
 spatial_firing <- spatial_firing %>%
   mutate(normalised_rates = map(Rates_averaged_rewarded_b, normalise_rates))
+
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates_smoothed = map(Rates_averaged_rewarded_smoothed_b, normalise_smooth_rates))
+
 ```
 
 2. Then, predict firing rate in homebound region based on fit from real data in outbound region.
@@ -598,7 +602,7 @@ bin = 200
 df <- tibble(session_id = rep(spatial_firing$session_id, each=bin),
              cluster = rep(as.character(spatial_firing$cluster_id), each=bin),
              Position = rep(1:bin, times=nrow(spatial_firing)), 
-             Rates = unlist(spatial_firing$normalised_rates), 
+             Rates = unlist(spatial_firing$normalised_rates_smoothed), 
              Outbound_beaconed = rep(spatial_firing$lm_group_b, each=bin), 
              Homebound_beaconed = rep(spatial_firing$lm_group_b_h, each=bin))
 
