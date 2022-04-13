@@ -70,7 +70,7 @@ Subset spatial firing to contain only cells that have probe trial data and where
 ```{r}
 sum_unlist <- function(df) {sum(unlist(df), na.rm=TRUE)}
 spatial_firing_probe_only <-
-  subset(spatial_firing, max_trial_number >= 60) %>%
+  subset(spatial_firing, max_trial_number >= 30) %>%
   mutate(asr_p_sum = map_dbl(Rates_averaged_rewarded_p, sum_unlist)) %>%
   subset(asr_p_sum != 0) %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
@@ -159,8 +159,21 @@ params <- select(glance(model), r.squared, p.value)
 
 
 ```{r}
-# Function to make family of plots comparing beaconed and probe trials
+# How many cells are in each group?
+table(
+  mapply(
+    paste,
+    spatial_firing_probe_only$lm_group_b,
+    spatial_firing_probe_only$lm_group_b_h
+  ),
+  mapply(
+    paste,
+    spatial_firing_probe_only$lm_group_p,
+    spatial_firing_probe_only$lm_group_p_h
+  )
+)
 
+# Function to make family of plots comparing beaconed and probe trials
 comp_beacon_probe_rate_plots <- function(df){
   a <- df %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative", "Negative")
   
@@ -173,171 +186,20 @@ comp_beacon_probe_rate_plots <- function(df){
   return(list(a, b, b, d))
 }
 
-beacon_vs_probe_rbeates <- comp_beacon_probe_rate_plots(spatial_firing_probe_only)
+
+(ci_plots <- comp_beacon_probe_rate_plots(spatial_firing_probe_only))
+
 
 b <- spatial_firing_probe_only %>% plot_beaconed_vs_probe("Negative", "Negative", "Unclassified", "Unclassified")
 
-c <- spatial_firing_probe_only %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative", "Negative")
 
 if (save_figures == 1) {
   ggsave(file = "plots/Negneg_probe_JustB.png",width = 3.6, height = 2.9)
 }
 
-
-spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Negative", "Unclassified", "Negative")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_probe_outboundchange.png",width = 3.6, height = 2.9)
-}
-
-
-spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative", "Unclassified")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_probe_homeboundchange.png",width = 3.6, height = 2.9)
-}
-
-# -/- on beaconed and probe trials
-spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative", "Negative")
-
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_probe_BandP.png", width = 3.6, height = 2.9)
-}
 ```
 
 
-
-
-```{r}
-# -/+ on probe trials
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Negative", "Unclassified", "Unclassified")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/PosNeg_probe_JustB.png", width = 3.6, height = 2.9)
-}
-
-
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Negative", "Unclassified", "Negative")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/PosNeg_probe_outboundchange.png", width = 3.6, height = 2.9)
-}
-
-
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Negative", "Positive", "Unclassified")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/PosNeg_probe_homeboundchange.png", width = 3.6, height = 2.9)
-}
-
-
-# -/+ on beaconed and probe trials
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Negative", "Positive", "Negative")
-
-
-if (save_figures == 1) {
-  ggsave(file = "plots/PosNeg_probe_BandP.png",  width = 3.6, height = 2.9)
-}
-
-```
-
-
-
-
-
-```{r}
-# +/+ on probe trials
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Positive", "Unclassified", "Unclassified")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_probe_JustB.png", width = 3.6, height = 2.9) 
-}
-
-
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Positive", "Unclassified", "Positive")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_probe_outboundchange.png", width = 3.6, height = 2.9) 
-}
-
-
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Positive", "Positive", "Unclassified")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_probe_homeboundchange.png", width = 3.6, height = 2.9) 
-}
-
-#+/+ on beaconed and probe trials
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Positive", "Positive", "Positive")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_probe_BandP.png",  width = 3.6, height = 2.9) 
-}
-
-```
-
-
-
-```{r}
-# +/- on probe trials
-spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Positive", "Unclassified", "Unclassified")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/NegPos_probe_JustP.png", width = 3.6, height = 2.9)
-}
-
-
-spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Positive", "Unclassified", "Positive")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/NegPos_probe_outboundchange.png", width = 3.6, height = 2.9)
-}
-
-
-
-spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Positive", "Negative", "Unclassified")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/NegPos_probe_homeboundchange.png", width = 3.6, height = 2.9)
-}
-
-
-# +/- on beaconed and probe trials
-spatial_firing_high %>% plot_beaconed_vs_probe("Negative", "Positive", "Negative", "Positive")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/NegPos_probe_BandP.png",  width = 3.6, height = 2.9)
-}
-```
-
-
-```{r}
-# +/UC on probe trials
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Unclassified", "Positive", "Unclassified")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/posnon_probe_BandP.png",  width = 3.6, height = 2.9)
-}
-
-# +/UC on probe trials
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Unclassified", "Unclassified", "Unclassified")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/posnon_probe_JustB.png",  width = 3.6, height = 2.9)
-}
-```
-
-
-
-```{r}
-# -/UC on probe trials
-spatial_firing_high %>% plot_beaconed_vs_probe("Positive", "Negative", "Negative", "Unclassified")
-
-if (save_figures == 1) {
-  ggsave(file = "plots/negnon_probe_JustP.png",  width = 3.6, height = 2.9)
-}
-```
 
 
 This should now be in Figure 5. Check Figure 5 and then delete.
