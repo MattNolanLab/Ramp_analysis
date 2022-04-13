@@ -752,7 +752,7 @@ normalise_rates_outbound <- function(df){
 }
 
 start_ramps <- start_ramps %>%
-  mutate(normalised_rates_o = map(Rates_averaged_rewarded_b, normalise_rates_outbound))
+  mutate(normalised_rates_o = map(Rates_averaged_rewarded_smoothed_b, normalise_rates_outbound))
 ```
 
 Add position to normalised rates for plotting

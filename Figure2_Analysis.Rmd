@@ -188,9 +188,9 @@ spatial_firing <- spatial_firing  %>%
 
 2. take only columns we need for the rest of the analysis
 ```{r}
-spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b, lm_group_nb, lm_group_p) %>%
   unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b)) %>%
+    final_model_o_b, lm_group_b, lm_group_nb, lm_group_p)) %>%
   as.tibble()
 spatial_firing_save$o_b_mod_coefs_pos <- as.numeric(spatial_firing_save$o_b_mod_coefs_pos)
 spatial_firing_save$o_b_mod_coefs_speed <- as.numeric(spatial_firing_save$o_b_mod_coefs_speed)
@@ -222,9 +222,7 @@ data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), time
 
 _Plot coefficients for all cells_
 
-
-
-5. Split by positive slope _all cells_
+5a. Split by positive slope _all cells_
 ```{r}
 
 (pos_coef_plot <- data_coef %>%
@@ -232,53 +230,75 @@ _Plot coefficients for all cells_
     standard_plot())
 
 if (save_figures == 1) {
-   ggsave(file = "plots/CoefficientValues_positivecells.png", width = 3, height = 2.5)
+   ggsave(file = "plots/CoefficientValues_positivecells.png", width = 2.5, height = 2.5)
 }
 ```
 
-5. Split by negative slope _all cells_
+5b. Split by negative slope _all cells_
 ```{r}
 (neg_coef_plot <- data_coef %>%
   subset(lm_result == "Negative" ) %>%
     standard_plot())
 
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_negativecells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_negativecells.png", width = 2.5, height = 2.5)
 }
 ```
 
-_Plot coefficients for all cells_
+_Plot coefficients for conjunctive position cells_
 
-5. Split by positive slope _PS cells_
+5c. Split by positive slope _PS cells_
 ```{r}
 (pos_PS_coef_plot <- data_coef %>%
+  subset(group == "PS") %>%
+  subset(lm_result == "Positive" ) %>%
+    standard_plot())
+
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_PositivePScells.png", width = 2.5, height = 2.5)
+}
+```
+
+5d. Split by negative slope _PS cells_
+```{r}
+(neg_PS_coef_plot <- data_coef %>%
+  subset(group == "PS") %>%
+  subset(lm_result == "Negative" ) %>%
+  standard_plot())
+
+if (save_figures == 1) {
+  ggsave(file = "plots/CoefficientValues_NegativePScells.png", width = 2.5, height = 2.5)
+}
+```
+
+
+5e. Split by positive slope _PSA cells_
+```{r}
+(pos_PSA_coef_plot <- data_coef %>%
   subset(group == "PSA") %>%
   subset(lm_result == "Positive" ) %>%
     standard_plot())
 
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositivePSAcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_PositivePSAcells.png", width = 2.5, height = 2.5)
 }
 ```
 
-6. Split by negative slope
+5f. Split by negative slope _PSA cells_
 ```{r}
-data_coef_neg_PS <- data_coef %>%
+(neg_PSA_coef_plot <- data_coef %>%
   subset(group == "PSA") %>%
-  subset(lm_result == "Negative" )
+  subset(lm_result == "Negative" ) %>%
+  standard_plot())
 
-(neg_PS_coef_plot <- standard_plot(data_coef_neg_PS))
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativePSAcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_NegativePSAcells.png", width = 2.5, height = 2.5)
 }
 ```
-
 
 _Plot coefficients for just position cells_
 
-
-6a. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position only.
-
+5g. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position only. _P cells_
 ```{r}
 (pos_P_coef_plot <- data_coef %>%
   subset(group == "P") %>%
@@ -286,14 +306,12 @@ _Plot coefficients for just position cells_
   standard_plot())
 
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 2.5, height = 2.5)
 }
 ```
 
 
-
-6b. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position only.
-
+5h. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position only. _P cells_
 ```{r}
 (neg_P_coef_plot <-  data_coef %>%
   subset(group == "P") %>%
@@ -301,15 +319,13 @@ if (save_figures == 1) {
     standard_plot())
 
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 2.5, height = 2.5)
 }
 ```
 
 
-_Plot coefficients for just position cells_
-
-
-6a. Plot coefficients for cells classified in Figure 1 as having a positive slope and in Figure 2 as having significant fit coefficients for position only.
+_Plot coefficients for just speed cells_
+5i. Plot coefficients for cells classified in Figure 1 as having a positive slope and in Figure 2 as having significant fit coefficients for position only. _SA cells_
 
 ```{r}
 (pos_SA_coef_plot <- data_coef %>%
@@ -318,12 +334,12 @@ _Plot coefficients for just position cells_
     standard_plot())
 
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositiveSAcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_PositiveSAcells.png", width = 2.5, height = 2.5)
 }
 ```
 
 
-6b. Plot coefficients for cells classified in Figure 1 as having a negative slope and in Figure 2 as having significant fit coefficients for position only.
+5j. Plot coefficients for cells classified in Figure 1 as having a negative slope and in Figure 2 as having significant fit coefficients for position only. _SA cells_
 
 ```{r}
 (neg_SA_coef_plot <- data_coef %>%
@@ -332,12 +348,12 @@ if (save_figures == 1) {
     standard_plot())
 
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativeSAcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_NegativeSAcells.png", width = 2.5, height = 2.5)
 }
 ```
 
 
-6c. Plot coefficients for cells classified in Figure 1 as being unclassified but that have 'significant' positional coefficients in the mixed effect model.
+5k. Plot coefficients for cells classified in Figure 1 as being unclassified but that have 'significant' positional coefficients in the mixed effect model.
 
 ```{r}
 (UC_PSA_coef_plot <- data_coef %>%
@@ -345,7 +361,7 @@ if (save_figures == 1) {
   subset(lm_result == "Unclassified") %>%
     standard_plot())
 if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_UCPSAcells.png", width = 3, height = 2.5)
+  ggsave(file = "plots/CoefficientValues_UCPSAcells.png", width = 2.5, height = 2.5)
 }
 ```
 

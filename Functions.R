@@ -372,7 +372,8 @@ mm_fit <- function(df, TT = 0) {
   # return NA if variables contain any NAs after scaling (very possible if cell doesn't spike on rewarded trials)
   if (sum(is.na(as.matrix(df))) > 0) {
     return(NA)
-
+  }
+  
   #glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = poisson(link = "log"), data = df)
   df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
                         data = df,
@@ -420,7 +421,7 @@ mm_fit_function <- function(mm, TT) {
 ## Categorize neurons based on significant model coefficients
 coef_comparison <- function(null_pos, null_speed, null_accel, pval = 0.01){
   if(is.na(null_pos)) {
-    return( "NAs" )
+    return("None")
     
   } else if( null_pos < pval & null_accel > pval & null_speed > pval) {
     return( "P" )
@@ -490,6 +491,7 @@ standard_plot <- function(df) {
     geom_violin(aes(x = factor(coef_type), y = as.numeric(coef), fill=factor(coef_type, level=level_order)), alpha=0.7) +
     stat_summary(fun=mean, geom="point", shape=23, size=2) +
     geom_jitter(alpha=0.05) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
     scale_fill_manual(values=c("firebrick1","gold","dodgerblue2")) +
     labs(y = "std coef", x="\n model parameter") +
     scale_y_continuous(trans=pseudolog10_trans) +
@@ -1204,4 +1206,3 @@ mean_function <- function(all_ramp_df, meanvar=meanvar){
     group_by(ramp_id) %>% 
     summarise(meanvar = mean(meanvar))
 }
-
