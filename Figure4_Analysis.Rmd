@@ -159,20 +159,6 @@ params <- select(glance(model), r.squared, p.value)
 
 
 ```{r}
-# How many cells are in each group?
-table(
-  mapply(
-    paste,
-    spatial_firing_probe_only$lm_group_b,
-    spatial_firing_probe_only$lm_group_b_h
-  ),
-  mapply(
-    paste,
-    spatial_firing_probe_only$lm_group_p,
-    spatial_firing_probe_only$lm_group_p_h
-  )
-)
-
 # Function to make family of plots comparing beaconed and probe trials
 comp_beacon_probe_rate_plots <- function(df){
   a <- df %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative", "Negative")
@@ -200,210 +186,63 @@ if (save_figures == 1) {
 ```
 
 
-
-
-This should now be in Figure 5. Check Figure 5 and then delete.
-```{r}
-# -/- on beaconed but not probe trials
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_b == "Negative" & Homebound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_p == "Negative" | Homebound_beaconed_p == "Unclassified") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:170)) %>%
-  mean_SEM_plots_comp()
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Negneg_probe_negUNonProbe.png",  width = 3.6, height = 2.9)
-}
-
-# -/- on beaconed but not probe trials
-spatial_firing_high  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
-  extract_cols_for_plot() %>%
-  filter(Outbound_beaconed_b == "Positive" | Outbound_beaconed_b == "Negative") %>%
-  filter(Outbound_beaconed_b == "Positive" & Homebound_beaconed_b == "Positive") %>%
-  filter(Outbound_beaconed_p == "Positive" | Homebound_beaconed_p == "Unclassified") %>%
-  group_by(Position) %>%
-  dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
-                   sem_r = std.error(Rates, na.rm = TRUE),
-                   mean_c = mean(Rates_c, na.rm = TRUE),
-                   sem_c = std.error(Rates_c, na.rm = TRUE)) %>%
-  mutate(Position = rep(-29:170)) %>%
-  mean_SEM_plots_comp()
-
-
-
-if (save_figures == 1) {
-  ggsave(file = "plots/Pospos_reset_probe_negUNonProbe.png",  width = 3.6, height = 2.9)
-}
-
-```
-
-
 ### ------------------------------------------------------------------------------------------------------------------- ###
 
 We want to know about whether the slope classification of neurons on beaconed trials is maintained on probe trials.
 
-We first ask this question for all neurons whose classification is independent of the reward zone cue.
-
-1. Split by position neurons (Figure 2)
+## Calculate numbers of neurons with given outbound and homebound classifications on beaconed and probe trials.
 ```{r}
-position_cells <- subset(spatial_firing_high , final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-2. Select cells that have slopes on both the beaconed and non-beaconed (Figure 1)
-```{r}
-pi_data <- subset(spatial_firing_high, lm_group_b == "Positive" | lm_group_b == "Negative")
-```
-
-The groups we want to consider are +/+(O), +/+(C), +/-, -/-(O), -/-(C) and -/+. In addition for probe trials there will be a group 'other' for activity that is no longer in one of these categories.
-
-3. Split by linear model result (figure 1) in outbound and homebound region for beaconed trials
-```{r}
-pospos <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
-posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
-negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
-negneg <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative")
-posnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
-negnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
-
-#pospos <-subset(pi_data, track_category == "pospos")
-#posneg <-subset(pi_data, track_category == "posneg")
-#negpos <-subset(pi_data, track_category == "negpos")
-#negneg <-subset(pi_data, track_category == "negneg")
-#posnon <-subset(pi_data, track_category == "posnon")
-#negnon <-subset(pi_data, track_category == "negnon")
-
-
-```
-
-# test
-```{r}
-x <- (nrow(pospos) + nrow(negneg) + nrow(posneg) + (nrow(negpos) +nrow(posnon) + nrow(negnon)))
-```
-
-3. Split by linear model result (figure 5) in outbound and homebound region for beaconed trials
-```{r}
-# Beaconed: pospos
-# stays the same
-pospos_pospos <-nrow(subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-# homebound changes
-pospos_posneg <-nrow(subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-pospos_posnon <-nrow(subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-
-# outbound changes
-pospos_negpos <-nrow(subset(pospos, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-pospos_negnon <-nrow(subset(pospos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-pospos_negneg <-nrow(subset(pospos, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-
-# Beaconed: posneg
-posneg_posneg <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-
-posneg_posnon <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-posneg_pospos <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-posneg_negpos <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-posneg_negnon <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-posneg_negneg <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-
-# Beaconed: negneg
-# stays the same
-negneg_negneg <-nrow(subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-# homebound changes
-negneg_negpos <-nrow(subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-negneg_negnon <-nrow(subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-
-# outbound changes
-negneg_posneg <-nrow(subset(negneg, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negneg_posnon <-nrow(subset(negneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negneg_pospos <-nrow(subset(negneg, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-
-# Beaconed: negpos
-# stays the same
-negpos_negpos <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-
-# homebound changes
-negpos_negnon <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negpos_negneg <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-# Outbound changes
-negpos_posneg <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negpos_posnon <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negpos_pospos <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-
-# Beaconed: posnon
-posnon_posneg <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-
-posnon_posnon <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-posnon_pospos <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-posnon_negpos <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-posnon_negnon <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-posnon_negneg <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-# Beaconed: negnon
-# stays the same
-negnon_negpos <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-
-# homebound changes
-negnon_negnon <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negnon_negneg <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-# Outbound changes
-negnon_posneg <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negnon_posnon <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negnon_pospos <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
+# How many cells are in each group?
+(b_vs_p_nos <- table(
+  mapply(
+    paste,
+    spatial_firing_probe_only$lm_group_b,
+    spatial_firing_probe_only$lm_group_b_h
+  ),
+  mapply(
+    paste,
+    spatial_firing_probe_only$lm_group_p,
+    spatial_firing_probe_only$lm_group_p_h
+  )
+))
 
 ```
 
 
-
+Prepare data to make a Sankey plot
 ```{r}
 
 data_long <-
   tibble(
     value = c(
     
-      posneg_pospos,
-      posneg_posneg,
-      posneg_negpos,
-      posneg_posnon,
-      posneg_negnon,
-      posneg_negneg,
+      b_vs_p_nos['Positive Negative','Positive Positive'],
+      b_vs_p_nos['Positive Negative','Positive Negative'],
+      b_vs_p_nos['Positive Negative','Negative Positive'],
+      b_vs_p_nos['Positive Negative','Positive Unclassified'],
+      b_vs_p_nos['Positive Negative','Negative Unclassified'],
+      b_vs_p_nos['Positive Negative','Negative Negative'],
       
-      pospos_pospos,
-      pospos_posneg,
-      pospos_negpos,
-      pospos_posnon,
-      pospos_negnon,
-      pospos_negneg,
+      b_vs_p_nos['Positive Positive','Positive Positive'],
+      b_vs_p_nos['Positive Positive','Positive Negative'],
+      b_vs_p_nos['Positive Positive','Negative Positive'],
+      b_vs_p_nos['Positive Positive','Positive Unclassified'],
+      b_vs_p_nos['Positive Positive','Negative Unclassified'],
+      b_vs_p_nos['Positive Positive','Negative Negative'],
       
-      negpos_pospos,
-      negpos_posneg,
-      negpos_negpos,
-      negpos_posnon,
-      negpos_negnon,
-      negpos_negneg,
+      b_vs_p_nos['Negative Positive','Positive Positive'],
+      b_vs_p_nos['Negative Positive','Positive Negative'],
+      b_vs_p_nos['Negative Positive','Negative Positive'],
+      b_vs_p_nos['Negative Positive','Positive Unclassified'],
+      b_vs_p_nos['Negative Positive','Negative Unclassified'],
+      b_vs_p_nos['Negative Positive','Negative Negative'],
       
-      negneg_pospos,
-      negneg_posneg,
-      negneg_negpos,
-      negneg_posnon,
-      negneg_negnon,
-      negneg_negneg
+      b_vs_p_nos['Negative Negative','Positive Positive'],
+      b_vs_p_nos['Negative Negative','Positive Negative'],
+      b_vs_p_nos['Negative Negative','Negative Positive'],
+      b_vs_p_nos['Negative Negative','Positive Unclassified'],
+      b_vs_p_nos['Negative Negative','Negative Unclassified'],
+      b_vs_p_nos['Negative Negative','Negative Negative']
     ),
     
     source = c(
@@ -497,60 +336,6 @@ if (save_figures == 1) {
 ```
 
 
-
-
-
-### ------------------------------------------------------------------------------------------ ### 
-
-## Calculate number of neurons that areset/switch/continuous across outbound and homebound
-
-1. First, select cells that are position encoding (figure 2)
-```{r}
-pi_data <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
-```{r}
-pospos <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
-posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
-negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
-negneg <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative")
-posnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
-negnon <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Unclassified")
-nonpos <-subset(pi_data, lm_group_b == "Unclassified" & lm_group_b_h == "Positive")
-nonneg <-subset(pi_data, lm_group_b == "Unclassified" & lm_group_b_h == "Negative")
-
-```
-
-```{r}
-total_cells <- (nrow(pospos) + nrow(negneg) + nrow(posneg) + nrow(negpos) + nrow(posnon) + nrow(negnon) + nrow(nonpos) + nrow(nonneg))
-```
-
-5. for +- and -+ groups as classified on beaconed trials, how many are the same on probe?
-```{r}
-posneg_same_probe <-subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative")
-negpos_same_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive")
-
-negneg_same_probe <-subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Negative")
-pospos_same_probe <-subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Positive")
-
-posnon_same_probe <-subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified")
-negnon_same_probe <-subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified")
-
-nonpos_same_probe <-subset(nonpos, lm_group_p == "Unclassified" & lm_group_p_h == "Positive")
-nonneg_same_probe <-subset(nonneg, lm_group_p == "Unclassified" & lm_group_p_h == "Negative")
-
-```
-
-```{r}
-total_cells_same_on_probe <- (nrow(pospos_same_probe) + nrow(negneg_same_probe) +
-                                nrow(posnon_same_probe) + nrow(negnon_same_probe) +
-                                nrow(nonpos_same_probe) + nrow(nonneg_same_probe) +
-                                nrow(posneg_same_probe) + nrow(negpos_same_probe))
-```
-
-
-
 ### ------------------------------------------------------------------------------------------ ### 
 
 ## Plot coefficients for Figure 4I
@@ -588,135 +373,6 @@ if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_NegativeAllPositioncells.png", width = 3, height = 2.5)
 }
 ```
-
-
-
-
-
-
-
-
-
-
-### ------------------------------------------------------------------------------------------ ### 
-
-## Calculate number of neurons that areset/switch/continuous across outbound and homebound
-
-
-3. For this group of neurons, find numbers of cells that fit different patterns of outbound/homebound slope
-```{r}
-pospos <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
-posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
-negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
-negneg <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative")
-posnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
-negnon <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Unclassified")
-nonpos <-subset(pi_data, lm_group_b == "Unclassified" & lm_group_b_h == "Positive")
-nonneg <-subset(pi_data, lm_group_b == "Unclassified" & lm_group_b_h == "Negative")
-
-```
-
-4. for +- and -+ groups as classified on beaconed trials, how many are the same on probe?
-```{r}
-posneg_same_probe <-subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative")
-negpos_same_probe <-subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive")
-
-negneg_same_probe <-subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Negative")
-pospos_same_probe <-subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Positive")
-
-posnon_same_probe <-subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified")
-negnon_same_probe <-subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified")
-
-nonpos_same_probe <-subset(nonpos, lm_group_p == "Unclassified" & lm_group_p_h == "Positive")
-nonneg_same_probe <-subset(nonneg, lm_group_p == "Unclassified" & lm_group_p_h == "Negative")
-
-all_same_data <- bind_rows(posneg_same_probe, negpos_same_probe, negneg_same_probe, pospos_same_probe, posnon_same_probe, negnon_same_probe, nonpos_same_probe, nonneg_same_probe)
-```
-
-
-```{r}
-posneg_diff_probe <-subset(posneg, lm_group_p != "Positive" | lm_group_p_h != "Negative")
-negpos_diff_probe <-subset(negpos, lm_group_p != "Negative" | lm_group_p_h != "Positive")
-
-negneg_diff_probe <-subset(negneg, lm_group_p != "Negative" | lm_group_p_h != "Negative")
-pospos_diff_probe <-subset(pospos, lm_group_p != "Positive" | lm_group_p_h != "Positive")
-
-posnon_diff_probe <-subset(posnon, lm_group_p != "Positive" | lm_group_p_h != "Unclassified")
-negnon_diff_probe <-subset(negnon, lm_group_p != "Negative" | lm_group_p_h != "Unclassified")
-
-all_diff_data <-  bind_rows(posneg_diff_probe, negpos_diff_probe, negneg_diff_probe, pospos_diff_probe, posnon_diff_probe, negnon_diff_probe)
-
-
-```
-
-```{r}
-col1 <- rep("same", times = nrow(all_same_data))
-all_same_data <- cbind(all_same_data, col1)
-
-col1 <- rep("diff", times = nrow(all_diff_data))
-all_diff_data <- cbind(all_diff_data, col1)
-
-```
-
-```{r}
-all_data <- bind_rows(all_same_data, all_diff_data)
-```
-
-```{r}
-data <- all_data  %>%
-  select(Mouse, cohort, session_id, col1) %>%
-  dplyr::group_by(Mouse, cohort, col1, .drop=FALSE) %>%
-  dplyr::summarise(n = n()) %>%
-  dplyr::mutate(proportion = round(n / sum(n)*100, 2)) 
-
-data <- data  %>%
-  select(Mouse, cohort, col1, n, proportion) %>%
-  dplyr::group_by(col1, .drop=FALSE) %>%
-  dplyr::summarise(mean = mean(proportion), sd = std.error(proportion))
-
-
-```
-
-```{r}
-spatial_firing_save <- select(spatial_firing,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number', 'spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'lm_group_b', 'lm_group_nb', 'lm_group_p', 'final_model_o_b', 'lm_group_b_h', 'lm_group_nb_h', 'lm_group_p_h'))
-```
-
-```{r}
-if (save_results == 1) {
-  saveRDS(spatial_firing, "SpatialFiring_with_1000_shuffles.Rda")
-}
-```
-
-
-
-```{r}
-spatial_firing_save <- select(spatial_firing,c('session_id', 'cluster_id', 'Mouse', 'Day', 'Day_numeric',  'cohort', 'number_of_rewards', 'max_trial_number', 'spikes_in_time', 'Rates_averaged_rewarded_b', 'Rates_averaged_rewarded_nb', 'Rates_averaged_rewarded_p', 'lm_group_b', 'lm_group_nb', 'lm_group_p', 'final_model_o_b', 'lm_group_b_h', 'lm_group_nb_h', 'lm_group_p_h', 'asr_b_o_rewarded_fit_slope', 'asr_b_o_rewarded_fit_r.squared', 'asr_b_h_rewarded_fit_slope', 'asr_b_h_rewarded_fit_r.squared', 'asr_p_o_rewarded_fit_slope', 'asr_p_o_rewarded_fit_r.squared', 'asr_p_h_rewarded_fit_slope', 'asr_p_h_rewarded_fit_r.squared'))
-```
-
-## Save to csv file _this is for matching to plots from python_
-```{r}
-spatial_firing_save <- tibble(session_id = spatial_firing_save$session_id,
-                              cluster_id = spatial_firing_save$cluster_id,
-                              lm_group_b =  as.character(spatial_firing_save$lm_group_b),
-                              lm_group_nb =  as.character(spatial_firing_save$lm_group_nb),
-                              lm_group_p =  as.character(spatial_firing_save$lm_group_p),
-                              final_model_o_b =  as.character(spatial_firing_save$final_model_o_b),
-                              lm_group_b_h =  as.character(spatial_firing_save$lm_group_b_h),
-                              lm_group_nb_h =  as.character(spatial_firing_save$lm_group_nb_h),
-                              lm_group_p_h =  as.character(spatial_firing_save$lm_group_p_h),
-                              r_squared_outbound_b =  spatial_firing_save$asr_b_o_rewarded_fit_r.squared,
-                              slope_outbound_b =  spatial_firing_save$asr_b_o_rewarded_fit_slope,
-                              r_squared_homebound_b =  spatial_firing_save$asr_b_h_rewarded_fit_r.squared,
-                              slope_homebound_b =  spatial_firing_save$asr_b_h_rewarded_fit_slope,                                                    r_squared_outbound_p =  spatial_firing_save$asr_p_o_rewarded_fit_r.squared,
-                              slope_outbound_p =  spatial_firing_save$asr_p_o_rewarded_fit_slope,
-                              r_squared_homebound_p =  spatial_firing_save$asr_p_h_rewarded_fit_r.squared,
-                              slope_homebound_p =  spatial_firing_save$asr_p_h_rewarded_fit_slope         )
-
-if (save_results == 1) {
-  write.table(spatial_firing_save, "data_out/AllMice_LinearModelResults.txt", quote=FALSE, sep="\t")
-}
-```
-
 
 
 
