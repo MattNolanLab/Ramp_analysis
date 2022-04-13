@@ -83,8 +83,6 @@ colnames(spatial_firing)
 
 
 options(max.print = 30)
-
-spatial_firing_All <- spatial_firing
 ```
 
 
