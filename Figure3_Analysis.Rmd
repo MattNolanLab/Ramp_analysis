@@ -145,9 +145,9 @@ First combine hit and miss trials together with an indicator of trial type (hit,
 1. Generate firing tibble for each cell containing firing rates for all three trial outcomes. The rates for each outcome are combined in to a single data frame in tidy format and then normalized.
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(avg_both_asr_b = pmap(list(Avg_FiringRate_HitTrials,
-                                    Avg_FiringRate_RunTrials,
-                                    Avg_FiringRate_TryTrials,
+  mutate(avg_both_asr_b = pmap(list(Avg_FiringRate_HitTrials_smoothed,
+                                    Avg_FiringRate_RunTrials_smoothed,
+                                    Avg_FiringRate_TryTrials_smoothed,
                                     session_id,
                                     cluster_id),
                                join_average_rates))
