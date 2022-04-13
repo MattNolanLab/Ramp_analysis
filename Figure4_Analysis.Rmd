@@ -159,7 +159,25 @@ params <- select(glance(model), r.squared, p.value)
 
 
 ```{r}
+# Function to make family of plots comparing beaconed and probe trials
+
+comp_beacon_probe_rate_plots <- function(df){
+  a <- df %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative", "Negative")
+  
+  b <- df %>% plot_beaconed_vs_probe("Negative", "Positive", "Negative", "Positive")
+  
+  c <- df %>% plot_beaconed_vs_probe("Positive", "Positive", "Positive", "Positive")
+  
+  d <- df %>% plot_beaconed_vs_probe("Positive", "Negative", "Positive", "Negative")
+  
+  return(list(a, b, b, d))
+}
+
+beacon_vs_probe_rbeates <- comp_beacon_probe_rate_plots(spatial_firing_probe_only)
+
 b <- spatial_firing_probe_only %>% plot_beaconed_vs_probe("Negative", "Negative", "Unclassified", "Unclassified")
+
+c <- spatial_firing_probe_only %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative", "Negative")
 
 if (save_figures == 1) {
   ggsave(file = "plots/Negneg_probe_JustB.png",width = 3.6, height = 2.9)
