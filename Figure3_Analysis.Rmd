@@ -319,18 +319,16 @@ outcomes_offsets_data <- tibble(session_id = rep(unlist(spatial_firing$unique_id
 ```
 
 
-
-
 Onset data for position encoding encoding neurons (P, PA, PS, PSA)
 ```{r}
 outcomes_offsets_data_pospos <- outcomes_offsets_data %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
                 lm_group_b == "Positive" & lm_group_b_h == "Positive")
 
-outcomes_offsets_data_negneg <- outcomes_offsets_data %>% filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+outcomes_offsets_data_negneg <- outcomes_offsets_data %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
                 lm_group_b == "Negative" & lm_group_b_h == "Negative")
 ```
-
 
 
 Make and save plots
@@ -340,7 +338,7 @@ outcomes_offsets_data_pospos %>%
   
 
 if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_pos_AllPosition.png",width = 3.2, height = 2.5)
+  ggsave(file = "plots/PredictProbe_pos_AllPosition.png",width = 3.2, height = 3)
 }
 
 
@@ -348,13 +346,12 @@ outcomes_offsets_data_negneg %>%
   offset_groups_violin_plot(-3.5, 5.5)
 
 if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_neg_AllPosition.png",width = 3.2, height = 2.5)
+  ggsave(file = "plots/PredictProbe_neg_AllPosition.png",width = 3.2, height = 3)
 }
   
 ```
 
 _run statistical tests_
-
 Run anova to compare effect of trial type (hit, try, run) on offset values for ++ and -- neurons 
 ```{r}
 
@@ -381,50 +378,105 @@ outcomes_offsets_data_negneg %>%
   unnest(cols = c(ttest))
 ```
 
-
-
-
-
-_plots for all speed encoding encoding neurons (S, A, SA)_
-
-1. extract only neurons that are subset based on speed encoding (S, SA, A) (Figure 3) and are ++ or -- in beaconed trials
+_plots for conjunctive position encoding encoding neurons (PA, PSA, PS)_
+1. extract only neurons that are subset based on speed encoding(PA, PSA, PS) (Figure 3) and are ++ or -- in beaconed trials
 ```{r}
-outcomes_offsets_data_speedpos <- outcomes_offsets_data %>%
-  filter(final_model_o_b == "S" | final_model_o_b == "SA",
+outcomes_offsets_data_pospos <- outcomes_offsets_data %>%
+  filter(final_model_o_b == "PA" | final_model_o_b == "PSA" | final_model_o_b == "PS",
                 lm_group_b == "Positive" & lm_group_b_h == "Positive")
 
-outcomes_offsets_data_speedneg <- outcomes_offsets_data %>% filter(final_model_o_b == "S" | final_model_o_b == "SA",
+outcomes_offsets_data_negneg <- outcomes_offsets_data %>%
+  filter(final_model_o_b == "PA" | final_model_o_b == "PSA" | final_model_o_b == "PS",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative")
+```
+
+
+2. Select cells classified in Figure 2 as having positive or negative slopes and plot
+```{r}
+outcomes_offsets_data_pospos %>%
+  offset_groups_violin_plot(-5, 3)
+
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictProbe_pos_conjunctivePosition.png",width = 4, height = 3)
+}
+
+
+outcomes_offsets_data_negneg %>%
+  offset_groups_violin_plot(-3.5, 5.5)
+ 
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictProbe_neg_conjunctivePosition.png",width = 4, height = 3)
+}
+  
+```
+
+3. run anova on above data
+```{r}
+one.way <- aov(predict ~ type, data = outcomes_offsets_data_pospos)
+summary(one.way)
+
+one.way <- aov(predict ~ type, data = outcomes_offsets_data_negneg)
+summary(one.way)
+```
+
+
+4. One-sample ttest to see whether offsets are above 0
+
+```{r}
+# Positive slope neurons
+outcomes_offsets_data_pospos %>%
+  group_by(type) %>%
+  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
+  unnest(cols = c(ttest))
+  
+# Negative slope neurons
+outcomes_offsets_data_negneg %>%
+  group_by(type) %>%
+  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
+  unnest(cols = c(ttest))
+```
+
+
+_plots for all Position only encoding encoding neurons (P)_
+1. extract only neurons that are subset based on speed encoding (P) (Figure 3) and are ++ or -- in beaconed trials
+```{r}
+outcomes_offsets_data_pospos <- outcomes_offsets_data %>%
+  filter(final_model_o_b == "P",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive")
+
+outcomes_offsets_data_negneg <- outcomes_offsets_data %>% 
+  filter(final_model_o_b == "P",
                 lm_group_b == "Negative" & lm_group_b_h == "Negative")
 ```
 
 
 5. Select cells classified in Figure 2 as having positive or negative slopes and plot
 ```{r}
-outcomes_offsets_data_speedpos %>%
+outcomes_offsets_data_pospos %>%
   offset_groups_violin_plot(-5, 3)
 
 if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_pos_AllSpeed.png",width = 4, height = 2.5)
+  ggsave(file = "plots/PredictProbe_pos_onlyPosition.png",width = 4, height = 3)
 }
 
 
-outcomes_offsets_data_speedneg %>%
+outcomes_offsets_data_negneg %>%
   offset_groups_violin_plot(-3.5, 5.5)
  
 if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_neg_AllSpeed.png",width = 4, height = 2.5)
+  ggsave(file = "plots/PredictProbe_neg_onlyPosition.png",width = 4, height = 3)
 }
   
 ```
 
+
 2. run anova on above data
 ```{r}
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_speedpos)
+one.way <- aov(predict ~ type, data = outcomes_offsets_data_pospos)
 summary(one.way)
 
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_speedneg)
+one.way <- aov(predict ~ type, data = outcomes_offsets_data_negneg)
 summary(one.way)
-
 
 
 #one.way <- lm(predict ~ type, data = data_neg)
@@ -436,9 +488,60 @@ summary(one.way)
 ```
 
 
+2. One-sample ttest to see whether offsets are above 0
 
-2. One-sample ttest to see whether offsets are above 0 _positive neurons_
+```{r}
+# Positive slope neurons
+outcomes_offsets_data_pospos %>%
+  group_by(type) %>%
+  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
+  unnest(cols = c(ttest))
+  
+# Negative slope neurons
+outcomes_offsets_data_negneg %>%
+  group_by(type) %>%
+  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
+  unnest(cols = c(ttest))
+```
 
+_plots for all speed encoding encoding neurons (S, SA)_
+1. extract only neurons that are subset based on speed encoding (S, SA) (Figure 3) and are ++ or -- in beaconed trials
+```{r}
+outcomes_offsets_data_speedpos <- outcomes_offsets_data %>%
+  filter(final_model_o_b == "S" | final_model_o_b == "SA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive")
+outcomes_offsets_data_speedneg <- outcomes_offsets_data %>% 
+  filter(final_model_o_b == "S" | final_model_o_b == "SA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative")
+```
+
+
+5. Select cells classified in Figure 2 as having positive or negative slopes and plot
+```{r}
+outcomes_offsets_data_speedpos %>%
+  offset_groups_violin_plot(-5, 3)
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictProbe_pos_AllSpeed.png",width = 4, height = 3)
+}
+outcomes_offsets_data_speedneg %>%
+  offset_groups_violin_plot(-3.5, 5.5)
+ 
+if (save_figures == 1) {
+  ggsave(file = "plots/PredictProbe_neg_AllSpeed.png",width = 4, height = 3)
+}
+  
+```
+
+2. run anova on above data
+```{r}
+one.way <- aov(predict ~ type, data = outcomes_offsets_data_speedpos)
+summary(one.way)
+one.way <- aov(predict ~ type, data = outcomes_offsets_data_speedneg)
+summary(one.way)
+```
+
+
+2. One-sample ttest to see whether offsets are above 0
 ```{r}
 # Positive slope neurons
 outcomes_offsets_data_speedpos %>%
@@ -452,7 +555,6 @@ outcomes_offsets_data_speedneg %>%
   summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
   unnest(cols = c(ttest))
 ```
-
 
 
 ### ----------------------------------------------------------------------------- ###
