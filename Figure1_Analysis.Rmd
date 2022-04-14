@@ -48,10 +48,10 @@ spatial_firing <- spatial_firing %>%
 
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider). The function lm_tidy_helper fits the linear model and then returns data extracted from the model fit using glance and tidy tools.
 ```{r}
-# spatial_firing <- spatial_firing %>%
-#   mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_tidy_helper),
-#          asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_tidy_helper),
-#          asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_tidy_helper))
+spatial_firing <- spatial_firing %>%
+  mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_tidy_helper),
+         asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_tidy_helper),
+         asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_tidy_helper))
 # m is a matrix
 # r.squared, pos = 1
 # p.value, pos = 2
@@ -59,34 +59,32 @@ Removes any previously generated results (select), fits the data (mutate) and th
 # slope, pos = 4
 
 # Send asr_b_o_rewarded_fit
-fit_vals <- function(m) {
-  vals <- mapply(function(x) x[[1]], m)
-  df <- tibble(r.squared = vals[c(TRUE, rep(FALSE, 3))],
-               p.value = vals[c(FALSE, TRUE, rep(FALSE, 2))],
-               intercept = vals[c(rep(FALSE, 2), TRUE, FALSE)],
-               slope = vals[c(rep(FALSE, 3), TRUE)])
-}
+# fit_vals <- function(m) {
+#   vals <- mapply(function(x) x[[1]], m)
+#   df <- tibble(r.squared = vals[c(TRUE, rep(FALSE, 3))],
+#                p.value = vals[c(FALSE, TRUE, rep(FALSE, 2))],
+#                intercept = vals[c(rep(FALSE, 2), TRUE, FALSE)],
+#                slope = vals[c(rep(FALSE, 3), TRUE)])
+# }
+# 
+# spatial_firing <- spatial_firing %>%
+#   select(-contains('asr_b_o_rewarded_fit_')) %>%
+#   select(-contains('asr_nb_o_rewarded_fit_')) %>%
+#   select(-contains('asr_p_o_rewarded_fit_')) 
+#    
+# spatial_firing$asr_b_o_rewarded_fit <-
+#   mapply(lm_tidy_helper, spatial_firing$asr_b_rewarded, 30, 90) %>%
+#   fit_vals()
+# spatial_firing$asr_nb_o_rewarded_fit <-
+#   mapply(lm_tidy_helper, spatial_firing$asr_nb_rewarded, 30, 90) %>%
+#   fit_vals()
+# spatial_firing$asr_p_o_rewarded_fit <-
+#   mapply(lm_tidy_helper, spatial_firing$asr_p_rewarded, 30, 90) %>%
+#   fit_vals()
 
 spatial_firing <- spatial_firing %>%
-  select(-contains('asr_b_o_rewarded_fit_')) %>%
-  select(-contains('asr_nb_o_rewarded_fit_')) %>%
-  select(-contains('asr_p_o_rewarded_fit_')) 
-   
-spatial_firing$asr_b_o_rewarded_fit <-
-  mapply(lm_tidy_helper, spatial_firing$asr_b_rewarded, 30, 90) %>%
-  fit_vals()
-spatial_firing$asr_nb_o_rewarded_fit <-
-  mapply(lm_tidy_helper, spatial_firing$asr_nb_rewarded, 30, 90) %>%
-  fit_vals()
-spatial_firing$asr_p_o_rewarded_fit <-
-  mapply(lm_tidy_helper, spatial_firing$asr_p_rewarded, 30, 90) %>%
-  fit_vals()
-
-spatial_firing <- spatial_firing %>%
-  unnest_wider(asr_b_o_rewarded_fit, names_sep = "_", names_repair = "universal")
-spatial_firing <- spatial_firing %>%
-  unnest_wider(asr_nb_o_rewarded_fit, names_sep = "_", names_repair = "universal")
-spatial_firing <- spatial_firing %>%
+  unnest_wider(asr_b_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_nb_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_p_o_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
 
@@ -118,7 +116,8 @@ if(shuffle_type=="circular") {
   mutate(shuffle_results_b_o = spatial_firing_circ$shuffle_results_b_o,
          shuffle_results_nb_o = spatial_firing_circ$shuffled_results_nb_o,
          shuffle_results_p_o = spatial_firing_circ$shuffled_results_p_o)
-  
+  # Remove unused frame
+  rm(spatial_firing_circ)
 }
 
 # Check to see if the column shuffle_results_b_o exists.
@@ -257,15 +256,6 @@ _note:for now we are only interested in the homebound region of the track (110 -
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
 ```{r}
 spatial_firing <- spatial_firing %>%
-  select(-contains('asr_b_h_rewarded_fit_')) %>%
-  select(-contains('asr_b_h_rewarded_fit_')) %>%
-  select(-contains('asr_b_h_rewarded_fit_')) %>%
-  select(-contains('asr_nb_h_rewarded_fit_')) %>%
-  select(-contains('asr_nb_h_rewarded_fit_')) %>%
-  select(-contains('asr_nb_h_rewarded_fit_')) %>%
-  select(-contains('asr_p_h_rewarded_fit_')) %>%
-  select(-contains('asr_p_h_rewarded_fit_')) %>%
-  select(-contains('asr_p_h_rewarded_fit_')) %>%
   mutate(asr_b_h_rewarded_fit = pmap(list(asr_b_rewarded, 110, 170), lm_tidy_helper),
          asr_nb_h_rewarded_fit = pmap(list(asr_nb_rewarded, 110, 170), lm_tidy_helper),
          asr_p_h_rewarded_fit = pmap(list(asr_p_rewarded, 110, 170), lm_tidy_helper)) %>%
@@ -273,7 +263,18 @@ spatial_firing <- spatial_firing %>%
   unnest_wider(asr_nb_h_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_p_h_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
-
+Removed:
+  select(-contains('asr_b_h_rewarded_fit_')) %>%
+  select(-contains('asr_b_h_rewarded_fit_')) %>%
+  select(-contains('asr_b_h_rewarded_fit_')) %>%
+  select(-contains('asr_nb_h_rewarded_fit_')) %>%
+  select(-contains('asr_nb_h_rewarded_fit_')) %>%
+  select(-contains('asr_nb_h_rewarded_fit_')) %>%
+  select(-contains('asr_p_h_rewarded_fit_')) %>%
+  select(-contains('asr_p_h_rewarded_fit_')) %>%
+  select(-contains('asr_p_h_rewarded_fit_')) %>%
+  
+  
 Linear model results are stored in:
 spatial_firing$asr_b_h_rewarded_fit_pval
 spatial_firing$asr_b_h_rewarded_fit_slope
@@ -415,7 +416,7 @@ Other                                 0
 ```{r}
 spatial_firing <- spatial_firing %>%
   select(-contains('track_category')) %>%
-  mutate(track_category = map2(lm_group_b, lm_group_b_h, mark_track_category),
+  mutate(track_category = future_map2(lm_group_b, lm_group_b_h, mark_track_category),
          track_category_numeric = map2(lm_group_b, lm_group_b_h, mark_numeric_track_category))
 
 ```
@@ -516,20 +517,12 @@ if (save_figures == 1) {
 
 1. Here we subset neurons based on positive, negative or unclassified in the linear model and either reset or contiuous firing. 
 ```{r}
-position_neurons_reset <- spatial_firing  %>% 
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
-  filter(reset_group == "Reset")
-
-position_neurons_continuous <- spatial_firing  %>% 
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
-  filter(reset_group == "Continuous")
-
-position_neurons_all <- spatial_firing  %>% 
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
-
-unclassified_neurons <- spatial_firing  %>% 
-  filter(lm_group_b == "Unclassified") 
-
+position_neurons_all <- spatial_firing %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+  select(asr_b_o_rewarded_fit_slope,
+         asr_b_h_rewarded_fit_slope,
+         track_category,
+         lm_group_b)
 ```
 
 2. Plot scatter plot
@@ -548,7 +541,7 @@ ggplot() +
                aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
-    geom_point(data=unclassified_neurons,
+    geom_point(data=spatial_firing %>% filter(lm_group_b == "Unclassified"),
                aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
                    y = as.numeric(unlist(asr_b_h_rewarded_fit_slope)), 
                    color=factor(unlist(lm_group_b))), shape=4, alpha=0.8) +     
@@ -616,9 +609,9 @@ Subset data by group then average rates for plotting
 ```{r}
 df_neg_neg <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
-  group_by(Position)
-  
-mean_SEM_plots(df_neg_neg, colour1 = "black")
+  group_by(Position) %>% 
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
 if (save_figures == 1) {
  ggsave(file = "plots/negneg_mean_Hz.png",  width = 3.6, height = 2.9) 
@@ -632,10 +625,9 @@ if (save_figures == 1) {
 ```{r}
 df_pos_pos <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
-  group_by(Position) 
-
-  
-mean_SEM_plots(df_pos_pos, colour1 = "black")
+  group_by(Position) %>%
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
 
 if (save_figures == 1) {
@@ -648,10 +640,10 @@ if (save_figures == 1) {
 ```{r}
 df_pos_neg <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
-  group_by(Position)
+  group_by(Position) %>%
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
-
-mean_SEM_plots(df_pos_neg, colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/posneg_mean.png", width = 3.6, height = 2.9)
@@ -664,10 +656,10 @@ if (save_figures == 1) {
 ```{r}
 df_neg_pos <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
-  group_by(Position)
+  group_by(Position) %>%
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
-
-mean_SEM_plots(df_neg_pos, colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/negpos_mean.png", width = 3.6, height = 2.9)
@@ -679,10 +671,9 @@ if (save_figures == 1) {
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Unclassified") %>%
-  group_by(Position)
-
-
-mean_SEM_plots(df_pos_pi, colour1 = "black")
+  group_by(Position) %>%
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/posnon_mean.png", width = 3.6, height = 2.9)
@@ -693,9 +684,9 @@ if (save_figures == 1) {
 ```{r}
 df_pos_pi <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Unclassified") %>%
-  group_by(Position) 
-
-mean_SEM_plots(df_pos_pi, colour1 = "black")
+  group_by(Position)  %>%
+  mean_SEM_plots_prep %>%
+  mean_SEM_plots(colour1 = "black")
 
 if (save_figures == 1) {
   ggsave(file = "plots/negnon_mean.png", width = 3.6, height = 2.9)
@@ -715,10 +706,9 @@ table(unlist(spatial_firing$track_category_numeric))
 First, reorder the dataframe with ramps according to slope.
 _For start ramps, steepest slope should be negative - thus will have the highest cluster id_
 ```{r}
-
 pospos <-spatial_firing %>% filter(track_category_numeric == 1)
 posneg <-spatial_firing %>% filter(track_category_numeric == 2)
-posnon <-spatial_firing %>% filter(track_category_numeric == 3, mean_firing_rate > 1)
+posnon <-spatial_firing %>% filter(track_category_numeric == 3)
 negneg <-spatial_firing %>% filter(track_category_numeric == 4)
 negpos <-spatial_firing %>% filter(track_category_numeric == 5)
 negnon <-spatial_firing %>% filter(track_category_numeric == 6)
@@ -765,7 +755,8 @@ start_ramps <- start_ramps %>%
 
 Extract columns (normalised rates) for plotting into a tibble
 ```{r}
-concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o))
+concat_firing_start <- unnest(select(start_ramps, new_cluster_id, normalised_rates_o),
+                              cols = c(normalised_rates_o))
 ```
 
 Now the firing rates have been normalised and the data in the right format we want to make annotations for the heatmap
@@ -856,12 +847,7 @@ spatial_firing <- spatial_firing %>%
 
 ```{r}
 position_neurons_all <- spatial_firing  %>% 
-  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
-
-unclassified_neurons_all <- spatial_firing  %>% 
-  #filter(final_model_o_b != "P" & final_model_o_b != "PS" & final_model_o_b != "PA" & final_model_o_b != "PSA")  %>% 
-  filter(lm_group_b == "Unclassified") 
 
 ```
 
@@ -894,7 +880,7 @@ if (save_figures == 1) {
 ```{r}
 
 ggplot() + 
-    geom_point(data=unclassified_neurons_all,
+    geom_point(data=spatial_firing  %>% filter(lm_group_b == "Unclassified"),
                aes(x = as.numeric(unlist(mean_firing_rate)), 
                    y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
                    color="grey32"), alpha=0.8) +
@@ -923,12 +909,7 @@ if (save_figures == 1) {
 
 ```{r}
 position_neurons_all <- spatial_firing  %>% 
-  #filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")  %>% 
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
-
-unclassified_neurons_all <- spatial_firing  %>% 
-  #filter(final_model_o_b != "P" & final_model_o_b != "PS" & final_model_o_b != "PA" & final_model_o_b != "PSA")  %>% 
-  filter(lm_group_b == "Unclassified") 
 
 ```
 
@@ -964,11 +945,11 @@ if (save_figures == 1) {
 ```{r}
 
 ggplot() + 
-    geom_point(data=unclassified_neurons_all,
+    geom_point(data=spatial_firing  %>% filter(lm_group_b == "Unclassified"),
                aes(x = as.numeric(unlist(mean_firing_rate)), 
                    y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
                    color=factor(unlist(lm_group_b))), alpha=0.8) +
-    geom_point(data=subset(position_neurons_all, lm_group_b == "Positive"),
+    geom_point(data=subset(spatial_firing  %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative", lm_group_b == "Positive")),
                aes(x = as.numeric(unlist(mean_firing_rate)), 
                    y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
                    color=factor(unlist(lm_group_b))), alpha=0.8) +
@@ -998,7 +979,7 @@ if (save_figures == 1) {
 3. find mean number of rewarded trials and std of rewarded trials
 
 ```{r}
-df <- spatial_firing %>%
+df %>%
   select(Day, Mouse, cohort, max_trial_number, number_of_rewards) %>%
   distinct() %>%
   dplyr::summarise(mean_r = mean(as.numeric(number_of_rewards), na.rm =TRUE), sem_r = std.error(as.numeric(number_of_rewards))) 

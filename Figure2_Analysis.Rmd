@@ -50,6 +50,12 @@ for (i in 1:nrow(spatial_firing)) {
   df<-bind_rows(df, spatial_firing_i)
 }
 spatial_firing <- df
+rm(df)
+
+load_sf = 0
+if (load_sf==1) {
+  spatial_firing <- readRDS(file="data_in/SpatialFiring_with_Results.Rda")
+}
 
 
 # number with fits / NAs

@@ -42,10 +42,10 @@ future::plan(multisession)
 source("Functions.R")
 
 # Parameter to save figures. Set to 1 if you'd like to save them.
-save_figures = 1
+save_figures = 0
 
 # Parameter to save data snapshots as analysis proceeds. Set to 1 to save.
-save_results = 1
+save_results = 0
 
 # Type of shuffle to use
 # Change this to "circular" to use circular shuffles of the data. # requires shuffled.feather file
