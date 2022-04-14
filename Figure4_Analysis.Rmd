@@ -59,14 +59,16 @@ spatial_firing <- spatial_firing %>%
 spatial_firing <- spatial_firing %>%
   mutate(reset_group_p = map(offset_p, mark_reset_group_predict))
 
+table(spatial_firing$offset_p, useNA = "always")
 ```
+
 
 
 ### ------------------------------------------------------------------------------------------ ### 
 
 Does the firing rate slope before or after the reward zone differ between beaconed and probe trials?
 
-Subset spatial firing to contain only cells that have probe trial data and where the number of trials in the session  is >= 60.
+Subset spatial firing to contain only cells that have probe trial data and where the number of trials in the session  is >= 30.
 ```{r}
 sum_unlist <- function(df) {sum(unlist(df), na.rm=TRUE)}
 spatial_firing_probe_only <-
@@ -150,6 +152,17 @@ params <- select(glance(model), r.squared, p.value)
 ```
 
 
+Now compare offsets on beaconed vs probe trials
+```{r}
+b_vs_p_offset_plot(spatial_firing_probe_only)
+
+spatial_firing_probe_only %>% filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  b_vs_p_offset_plot()
+```
+
+
+
+
 
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
 
@@ -160,23 +173,34 @@ params <- select(glance(model), r.squared, p.value)
 
 ```{r}
 # Function to make family of plots comparing beaconed and probe trials
+comp_beacon_probe_rate_plots_all <- function(df){
+  a <- df %>% plot_beaconed_vs_probe_all("Negative", "Negative", "Negative", "Negative")
+  
+  b <- df %>% plot_beaconed_vs_probe_all("Negative", "Positive", "Negative", "Positive")
+  
+  c <- df %>% plot_beaconed_vs_probe_all("Positive", "Positive", "Positive", "Positive")
+  
+  d <- df %>% plot_beaconed_vs_probe_all("Positive", "Negative", "Positive", "Negative")
+  
+  return(list(a, b, c, d))
+}
+
 comp_beacon_probe_rate_plots <- function(df){
-  a <- df %>% plot_beaconed_vs_probe("Negative", "Negative", "Negative", "Negative")
+  a <- df %>% plot_beaconed_vs_probe("Negative", "Negative")
   
-  b <- df %>% plot_beaconed_vs_probe("Negative", "Positive", "Negative", "Positive")
+  b <- df %>% plot_beaconed_vs_probe("Negative", "Positive")
   
-  c <- df %>% plot_beaconed_vs_probe("Positive", "Positive", "Positive", "Positive")
+  c <- df %>% plot_beaconed_vs_probe("Positive", "Positive")
   
-  d <- df %>% plot_beaconed_vs_probe("Positive", "Negative", "Positive", "Negative")
+  d <- df %>% plot_beaconed_vs_probe("Positive", "Negative")
   
-  return(list(a, b, b, d))
+  return(list(a, b, c, d))
 }
 
 
 (ci_plots <- comp_beacon_probe_rate_plots(spatial_firing_probe_only))
 
-
-b <- spatial_firing_probe_only %>% plot_beaconed_vs_probe("Negative", "Negative", "Unclassified", "Unclassified")
+(ci_all_plots <- comp_beacon_probe_rate_plots_all(spatial_firing_probe_only))
 
 
 if (save_figures == 1) {

@@ -822,6 +822,38 @@ b_vs_p_o_slope_plot <- function(df){
 }
 
 
+# To plot firing rate slopes before the reward zone on beaconed vs probe trials
+b_vs_p_offset_plot <- function(df){
+  ggplot() + 
+    geom_point(data=subset(df, track_category == "pospos" | track_category == "negneg"),
+               aes(x = predict_diff, 
+                   y = predict_diff_p, 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_point(data=subset(df, track_category == "posneg" | track_category == "negpos"),
+               aes(x = predict_diff, 
+                   y = predict_diff_p, 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_point(data=subset(df, track_category == "posnon" | track_category == "negnon"),
+               aes(x = predict_diff, 
+                   y = predict_diff_p, 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) + 
+    geom_smooth(data=subset(df, track_category != "None"),aes(x=asr_b_o_rewarded_fit_slope, y=asr_p_o_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Beaconed offset") +
+    ylab("Probe offset") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    theme(axis.text.x = element_text(size=17),
+          axis.text.y = element_text(size=17),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=16), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+}
+
+
+
 # Helper function to format data for mean_SEM_plots_comp
 extract_cols_for_plot <- function(df, bin = 200){
   df <- tibble(Position = rep(1:bin, times=nrow(df)), 
@@ -855,7 +887,7 @@ mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "blue"){
 
 
 # OB_b, HB_b, OB_p, HB_p are strings that define the slope for each track segment and trial type 
-plot_beaconed_vs_probe <- function(df, OB_b, HB_b, OB_p, HB_p) {
+plot_beaconed_vs_probe_all <- function(df, OB_b, HB_b, OB_p, HB_p) {
   df  %>%
     extract_cols_for_plot() %>%
     filter(Outbound_beaconed_b == OB_b &
@@ -867,6 +899,15 @@ plot_beaconed_vs_probe <- function(df, OB_b, HB_b, OB_p, HB_p) {
     mean_SEM_plots_comp()
 }
 
+plot_beaconed_vs_probe <- function(df, OB_b, HB_b) {
+  df  %>%
+    extract_cols_for_plot() %>%
+    filter(Outbound_beaconed_b == OB_b &
+             Homebound_beaconed_b == HB_b) %>%
+    group_by(Position) %>%
+    mean_SEM_plots_comp_prep() %>%
+    mean_SEM_plots_comp()
+}
 ## ----------------------------------------------------------##
 ## ----------------------------------------------------------##
 
