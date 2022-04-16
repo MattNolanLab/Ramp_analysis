@@ -158,6 +158,11 @@ b_vs_p_offset_plot(spatial_firing_probe_only)
 
 spatial_firing_probe_only %>% filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
   b_vs_p_offset_plot()
+
+spatial_firing_probe_only %>%
+  filter(final_model_o_b == "P") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  b_vs_p_offset_plot()
 ```
 
 
@@ -199,6 +204,8 @@ comp_beacon_probe_rate_plots <- function(df){
 
 
 (ci_plots <- comp_beacon_probe_rate_plots(spatial_firing_probe_only))
+
+spatial_firing_probe_only %>% filter(final_model_o_b == "P") %>% comp_beacon_probe_rate_plots
 
 (ci_all_plots <- comp_beacon_probe_rate_plots_all(spatial_firing_probe_only))
 
@@ -425,7 +432,7 @@ df <- df %>%
   mutate(Position = rep(-30:169, times = nrow(spatial_firing))) %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(as.numeric(average_stops), na.rm =TRUE), sem_r = std.error(as.numeric(average_stops)), 
-                   mean_nb = mean(as.numeric(average_stops_p), na.rm =TRUE), sem_nb = std.error(as.numeric(average_stops_p))) 
+                   mean_p = mean(as.numeric(average_stops_p), na.rm =TRUE), sem_p = std.error(as.numeric(average_stops_p))) 
 
 ```
 
@@ -436,7 +443,7 @@ ggplot(data=df) +
   annotate("rect", xmin=140, xmax=170, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
   annotate("rect", xmin=60, xmax=80, ymin=0,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
   geom_line(aes(y=mean_r, x=Position), color = "Black") +
-  geom_line(aes(y=mean_nb, x=Position), color = "Blue") +
+  geom_line(aes(y=mean_p, x=Position), color = "Blue") +
   scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
   labs(y = "Stops (cm)", x = "Location (cm)") +
   theme_classic() +

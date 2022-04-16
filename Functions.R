@@ -377,7 +377,6 @@ mm_fit <- function(df, TT = 0) {
                         na.action = na.exclude,
                         family = poisson(link = "log"),
                         control=lme4::glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-  }
 }
   
 # removed start=list(fixef=coef(glm1)) and commented out glm fit
