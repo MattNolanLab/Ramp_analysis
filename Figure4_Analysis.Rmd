@@ -180,8 +180,6 @@ spatial_firing_probe_only %>%
 ```
 
 
-
-
 Does the distribution mean differ from zero?
 
 
