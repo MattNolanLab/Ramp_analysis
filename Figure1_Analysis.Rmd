@@ -564,6 +564,12 @@ if (save_figures == 1) {
  ggsave(file = "plots/slope_comparison_reset.png", width = 4, height = 4) 
 }
 ```
+The same plot for shuffled data.
+```{r}
+
+```
+
+
 
 
 ### ------------------------------------------------------------------------------------------ ### 
@@ -979,7 +985,7 @@ if (save_figures == 1) {
 3. find mean number of rewarded trials and std of rewarded trials
 
 ```{r}
-df %>%
+spatial_firing %>%
   select(Day, Mouse, cohort, max_trial_number, number_of_rewards) %>%
   distinct() %>%
   dplyr::summarise(mean_r = mean(as.numeric(number_of_rewards), na.rm =TRUE), sem_r = std.error(as.numeric(number_of_rewards))) 
