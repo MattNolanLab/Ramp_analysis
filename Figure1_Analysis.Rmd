@@ -524,10 +524,24 @@ spatial_firing %>%
   t.test(mu = 0)
 ```
 
-Or consider dependence between observations from the same animal
+Or consider after averaging data from the same mouse. This seems overly conservative but useful to look at.
 ```{r}
+spatial_firing %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  group_by(Mouse) %>%
+  summarise(m_p_d = mean(predict_diff)) %>%
+  select(m_p_d) %>%
+  t.test(mu = 0)
 
+spatial_firing %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  group_by(Mouse) %>%
+  summarise(m_p_d = mean(predict_diff)) %>%
+  select(m_p_d) %>%
+  t.test(mu = 0)
 ```
+as.integer(factor(spatial_firing$session_id, levels = unique(spatial_firing$session_id)))
+
 
 
 
