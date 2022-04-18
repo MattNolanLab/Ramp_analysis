@@ -302,7 +302,6 @@ Now we want to classify neurons, taking the adjusted significance into account
 Uses the function compare_slopes from above.
 
 ```{r}
-
 spatial_firing <- spatial_firing %>%
   mutate(
     lm_group_b_h = pmap(
@@ -524,7 +523,7 @@ spatial_firing %>%
   t.test(mu = 0)
 ```
 
-Or consider after averaging data from the same mouse. This seems overly conservative but useful to look at.
+Or consider after averaging data from the same mouse. This seems overly conservative as neurons are sampled independently but nevertheless useful to look at.
 ```{r}
 spatial_firing %>%
   filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%

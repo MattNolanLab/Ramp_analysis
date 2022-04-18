@@ -168,6 +168,19 @@ spatial_firing_probe_only %>%
 
 Plot distribution of offsets on probe trials.
 ```{r}
+# All position types
+spatial_firing_probe_only %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  offset_ggplot(diff_colname = "predict_diff_p", group_colname = "reset_group_p", colour_2 = "violetred2")
+
+spatial_firing_probe_only %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  offset_ggplot(diff_colname = "predict_diff_p", group_colname = "reset_group_p", colour_2 = "violetred2")
+
+
+# Pure position
 spatial_firing_probe_only %>%
   filter(final_model_o_b == "P") %>%
   filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
@@ -181,6 +194,34 @@ spatial_firing_probe_only %>%
 
 
 Does the distribution mean differ from zero?
+
+Treat each observation as independent and use a t-test
+```{r}
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  select(predict_diff_p) %>%
+  t.test(mu = 0)
+
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  select(predict_diff_p) %>%
+  t.test(mu = 0)
+  
+  
+spatial_firing %>%
+  filter(final_model_o_b == "P") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  select(predict_diff_p) %>%
+  t.test(mu = 0)
+
+spatial_firing %>%
+  filter(final_model_o_b == "P") %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  select(predict_diff_p) %>%
+  t.test(mu = 0)
+```
 
 
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
