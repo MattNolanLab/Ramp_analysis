@@ -220,8 +220,8 @@ mark_reset_group_predict <- function(offset){
 }
 
 # Plot histogram of distribution of firing rate offsets
-offset_ggplot <- function(df, colour_1 = "grey", colour_2 = "chartreuse3", colour_3 = "red") {
-  ggplot(data=subset(df), aes(x = unlist(predict_diff), fill=as.factor(unlist(reset_group)))) +
+offset_ggplot <- function(df, diff_colname = "predict_diff", group_colname = "reset_group", colour_1 = "grey", colour_2 = "chartreuse3", colour_3 = "red") {
+  ggplot(data=df, aes(x = unlist(.data[[diff_colname]]), fill=as.factor(unlist(.data[[group_colname]])))) +
     coord_cartesian(xlim=c(-6,6)) +
     geom_histogram(aes(y=..count..), alpha=0.5) +
     scale_fill_manual(values=c(colour_1, colour_2, colour_3)) +
@@ -377,7 +377,6 @@ mm_fit <- function(df, TT = 0) {
                         na.action = na.exclude,
                         family = poisson(link = "log"),
                         control=lme4::glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-  }
 }
   
 # removed start=list(fixef=coef(glm1)) and commented out glm fit
@@ -839,7 +838,7 @@ b_vs_p_offset_plot <- function(df){
                aes(x = predict_diff, 
                    y = predict_diff_p, 
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) + 
-    geom_smooth(data=subset(df, track_category != "None"),aes(x=asr_b_o_rewarded_fit_slope, y=asr_p_o_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
+    geom_smooth(data=subset(df, track_category != "None"),aes(x=predict_diff, y=predict_diff_p), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     xlab("Beaconed offset") +
     ylab("Probe offset") +
