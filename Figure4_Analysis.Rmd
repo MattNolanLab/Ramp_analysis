@@ -32,7 +32,10 @@ spatial_firing <- spatial_firing %>%
 
 # Find predicted rates after the reward zone based on rates before the reward zone
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_p = map(Rates_averaged_rewarded_p, normalise_rates))
+  mutate(normalised_rates_p = map(Rates_averaged_p, normalise_rates))
+
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates_p_smoothed = map(Rates_averaged_smoothed_p, normalise_rates))
 
 spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_p_')) %>%
@@ -73,7 +76,7 @@ Subset spatial firing to contain only cells that have probe trial data and where
 sum_unlist <- function(df) {sum(unlist(df), na.rm=TRUE)}
 spatial_firing_probe_only <-
   subset(spatial_firing, max_trial_number >= 30) %>%
-  mutate(asr_p_sum = map_dbl(Rates_averaged_rewarded_p, sum_unlist)) %>%
+  mutate(asr_p_sum = map_dbl(Rates_averaged_p, sum_unlist)) %>%
   subset(asr_p_sum != 0) %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
 ```

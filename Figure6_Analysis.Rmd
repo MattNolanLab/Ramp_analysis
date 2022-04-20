@@ -972,10 +972,6 @@ df <- position_data %>%
 ```{r}
 
 ggplot() + 
-    geom_jitter(data=position_data,
-               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-                   y = as.numeric(unlist(spike_width)), 
-                   color=factor(unlist(lm_group_b)))) +
     geom_jitter(data=subset(position_data, track_category == "pospos" | track_category == "negneg"),
                aes(x = as.numeric(unlist(mean_firing_rate_of)), 
                    y = as.numeric(unlist(spike_width)), 
