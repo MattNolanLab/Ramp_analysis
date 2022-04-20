@@ -377,7 +377,8 @@ mm_fit <- function(df, TT = 0) {
                         na.action = na.exclude,
                         family = poisson(link = "log"),
                         control=lme4::glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
-}
+  }
+
   
 # removed start=list(fixef=coef(glm1)) and commented out glm fit
 # removed control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5))
@@ -857,9 +858,9 @@ b_vs_p_offset_plot <- function(df){
 
 # Helper function to format data for mean_SEM_plots_comp
 extract_cols_for_plot <- function(df, bin = 200){
-  df <- tibble(Position = rep(1:bin, times=nrow(df)), 
-               Rates = unlist(df$normalised_rates),
-               Rates_c = unlist(df$normalised_rates_p),
+  df <- tibble(Position = rep(-29.5:(-29.5+199), times=nrow(df)), 
+               Rates = unlist(df$normalised_rates_smoothed),
+               Rates_c = unlist(df$normalised_rates_p_smoothed),
                Outbound_beaconed_b = rep(df$lm_group_b, each=bin), 
                Homebound_beaconed_b = rep(df$lm_group_b_h, each=bin), 
                Outbound_beaconed_p = rep(df$lm_group_p, each=bin), 
