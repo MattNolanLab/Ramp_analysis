@@ -227,6 +227,25 @@ spatial_firing %>%
 ```
 
 
+Does the change in slope between beaconed and probe trials predict the change in offset? E.g. If a neuron's slope is stable then is it's offset? We might expect this for recall of a positional memory.
+```{r}
+# Look only at P group
+spatial_firing %>%
+  filter(final_model_o_b == "P") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  ggplot(aes(x = asr_p_o_rewarded_fit_slope, y = predict_diff_p)) +
+  geom_point()
+
+
+spatial_firing %>%
+  filter(final_model_o_b == "P") %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  ggplot(aes(x = asr_p_o_rewarded_fit_slope, y = predict_diff_p)) +
+  geom_point()
+```
+
+
+
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
 
 
@@ -273,6 +292,33 @@ if (save_figures == 1) {
 }
 
 ```
+
+
+What is the distribution of firing rate profiles of previously positional ramping neurons?
+To look at distributions in the data superimpose mean firing rate as a function of positon for each neuron in each group and colour code according to the offset, slope or change in slope / offset.
+```{r}
+comp_plot <- function(df, plot_column = "Rates_averaged_rewarded_smoothed_p", group1 = "Positive", group2 = "Positive") {
+  df$plot_column <- df[[plot_column]]
+  df %>% filter(lm_group_b == group1 & lm_group_b_h == group2) %>%
+    select(unique_id, plot_column) %>%
+    mutate(Rates = map(plot_column, unlist)) %>%
+    unnest(c(unique_id, Rates)) %>%
+    mutate(Pos = rep(1:200, length(unique(unique_id)))) %>%
+    ggplot(aes(x = Pos, y = Rates, colour = unique_id)) +
+    geom_line()
+}
+
+(arp_P <- spatial_firing_probe_only %>% filter(final_model_o_b == "P") %>%
+  comp_plot("Rates_averaged_rewarded_smoothed_p", "Positive", "Positive"))
+
+(arp_N <- spatial_firing_probe_only %>% filter(final_model_o_b == "P") %>%
+  comp_plot("Rates_averaged_rewarded_smoothed_p", "Negative", "Negative"))
+
+arp_P+facet_wrap(~unique_id)
+
+arp_N+facet_wrap(~unique_id)
+```
+
 
 
 ### ------------------------------------------------------------------------------------------------------------------- ###
