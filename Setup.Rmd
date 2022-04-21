@@ -53,8 +53,8 @@ save_results = 1
 shuffle_type <- "circular"
 # Load data
 # Alternative file names commented out
-spatial_firing <- readRDS(file="data_in/PythonOutput_Concat_final.Rda") ## concatenated all cohorts prior to R analysis
-# spatial_firing <- readRDS(file="data_in/PythonOutput_Concat_final.Rda")
+# spatial_firing <- readRDS(file="data_in/PythonOutput_Concat_final.Rda") ## concatenated all cohorts prior to R analysis
+spatial_firing <- readRDS(file="data_in/PythonOutput_Concat_final.Rda")
 # spatial_firing <- readRDS(file="data_in/PythonOutput_Concat_final_unsmoothened.Rda")
 # spatial_firing <- readRDS(file="data_in/SpatialFiring_with_1000_shuffles_of.Rda") ## concatenated all cohorts with shuffled ran
 #spatial_firing <- readRDS(file="SpatialFiring_with_Results.Rda") ## concatenated all cohorts with shuffled ran
