@@ -297,26 +297,32 @@ if (save_figures == 1) {
 What is the distribution of firing rate profiles of previously positional ramping neurons?
 To look at distributions in the data superimpose mean firing rate as a function of positon for each neuron in each group and colour code according to the offset, slope or change in slope / offset.
 ```{r}
-comp_plot <- function(df, plot_column = "Rates_averaged_rewarded_smoothed_p", group1 = "Positive", group2 = "Positive") {
-  df$plot_column <- df[[plot_column]]
+comp_plot <- function(df, plot_column_1 = "Rates_averaged_rewarded_smoothed_b", plot_column_2 = "Rates_averaged_rewarded_smoothed_p", group1 = "Positive", group2 = "Positive") {
+  df$pc_1 <- df[[plot_column_1]]
+  df$pc_2 <- df[[plot_column_2]]
   df %>% filter(lm_group_b == group1 & lm_group_b_h == group2) %>%
-    select(unique_id, plot_column) %>%
-    mutate(Rates = map(plot_column, unlist)) %>%
-    unnest(c(unique_id, Rates)) %>%
-    mutate(Pos = rep(1:200, length(unique(unique_id)))) %>%
-    ggplot(aes(x = Pos, y = Rates, colour = unique_id)) +
-    geom_line()
+    select(unique_id, pc_1, pc_2) %>%
+    mutate(Rates_1 = map(pc_1, unlist),
+           Rates_2 = map(pc_2, unlist)) %>%
+    unnest(c(unique_id, Rates_1, Rates_2)) %>%
+    mutate(Pos = rep(-30:169, length(unique(unique_id)))) %>%
+    ggplot() +
+    geom_line(aes(x = Pos, y = Rates_1), colour = "blue")+
+    geom_line(aes(x = Pos, y = Rates_2), colour = "red") +
+    facet_wrap(~unique_id, scales = "free")
 }
 
-(arp_P <- spatial_firing_probe_only %>% filter(final_model_o_b == "P") %>%
-  comp_plot("Rates_averaged_rewarded_smoothed_p", "Positive", "Positive"))
+arp_P <- spatial_firing_probe_only %>%
+    filter(final_model_o_b == "P") %>%
+  comp_plot("Rates_averaged_rewarded_smoothed_b", "Rates_averaged_rewarded_smoothed_p", "Positive", "Positive")
 
-(arp_N <- spatial_firing_probe_only %>% filter(final_model_o_b == "P") %>%
-  comp_plot("Rates_averaged_rewarded_smoothed_p", "Negative", "Negative"))
+arp_N <- spatial_firing_probe_only %>%
+    filter(final_model_o_b == "P") %>%
+  comp_plot("Rates_averaged_rewarded_smoothed_b","Rates_averaged_rewarded_smoothed_p", "Negative", "Negative")
 
-arp_P+facet_wrap(~unique_id)
+add_track(arp_P)
+add_track(arp_N)
 
-arp_N+facet_wrap(~unique_id)
 ```
 
 
@@ -519,46 +525,54 @@ if (save_figures == 1) {
 
 ### Calculate average stop histogram for all mice, sessions and plot
 
-
-1. Subset data by group         
+        
 ```{r}
-
-df <-  
-  tibble(average_stops = unlist(spatial_firing$average_stops), 
-            average_stops_p = unlist(spatial_firing$average_stops_p))
-
-
-```
-
-2. Average rates
-```{r}
-df <- df %>%
-  mutate(Position = rep(-30:169, times = nrow(spatial_firing))) %>%
+df <- spatial_firing_probe_only %>%
+  select(average_stops, average_stops_p, session_id) %>%
+  distinct %>%
+  mutate(average_stops = map(average_stops, unlist), 
+         average_stops_p = map(average_stops_p, unlist)) %>%
+  unnest(c(session_id, average_stops, average_stops_p)) %>%
+  mutate(Position = rep(-30:169, length(unique(session_id)))) %>%
   group_by(Position) %>%
   dplyr::summarise(mean_r = mean(as.numeric(average_stops), na.rm =TRUE), sem_r = std.error(as.numeric(average_stops)), 
                    mean_p = mean(as.numeric(average_stops_p), na.rm =TRUE), sem_p = std.error(as.numeric(average_stops_p))) 
 
-```
-
-3. Plot
-```{r}
-ggplot(data=df) +
-  annotate("rect", xmin=-30, xmax=0, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=140, xmax=170, ymin=0,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=80, ymin=0,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+bp <- ggplot(data=df) +
   geom_line(aes(y=mean_r, x=Position), color = "Black") +
-  geom_line(aes(y=mean_p, x=Position), color = "Blue") +
-  scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-  labs(y = "Stops (cm)", x = "Location (cm)") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=18),
-      axis.text.y = element_text(size=18),
-      legend.title = element_blank(),
-      text = element_text(size=18),
-      plot.margin = margin(21, 25, 5, 20))
-if (save_figures == 1) {
-  ggsave(file = "plots/stops_mean.png", width = 3.6, height = 2.9)
-}
+  geom_line(aes(y=mean_p, x=Position), color = "Blue")
+
+(add_track(bp))
+
+
 ```
 
+```{r}
+stops_plot <-
+  function(df, cn1 = "average_stops", cn2 = "average_stops_p") {
+    df$cn1 <- df[[cn1]]
+    df$cn2 <- df[[cn2]]
+    df %>% select(session_id, cn1, cn2) %>%
+      distinct() %>%
+      mutate(Stops1 = map(cn1, unlist),
+             Stops2 = map(cn2, unlist)) %>%
+      unnest(c(session_id, Stops1, Stops2)) %>%
+      mutate(Pos = rep(1:200, length(unique(session_id)))) %>%
+      ggplot() +
+      geom_line(aes(x = Pos, y = Stops1), colour = "Red") +
+      geom_line(aes(x = Pos, y = Stops2), colour = "Blue") +
+      facet_wrap(vars(session_id), ncol = 5, scales = "free_y")
+}
+
+(pl_p <- spatial_firing_probe_only %>% filter(final_model_o_b == "P") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  stops_plot(cn1 = "average_stops", cn2 = "average_stops_p"))
+  
+(pl_n <- spatial_firing_probe_only %>% filter(final_model_o_b == "P") %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  stops_plot(cn1 = "average_stops", cn2 = "average_stops_p"))
+  
+  
+
+```
 
