@@ -75,7 +75,7 @@ Subset spatial firing to contain only cells that have probe trial data and where
 ```{r}
 sum_unlist <- function(df) {sum(unlist(df), na.rm=TRUE)}
 spatial_firing_probe_only <-
-  subset(spatial_firing, max_trial_number >= 30) %>%
+  subset(spatial_firing, max_trial_number >= 120) %>%
   mutate(asr_p_sum = map_dbl(Rates_averaged_p, sum_unlist)) %>%
   subset(asr_p_sum != 0) %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
