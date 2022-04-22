@@ -302,7 +302,6 @@ Now we want to classify neurons, taking the adjusted significance into account
 Uses the function compare_slopes from above.
 
 ```{r}
-
 spatial_firing <- spatial_firing %>%
   mutate(
     lm_group_b_h = pmap(
@@ -484,10 +483,10 @@ predict_diff is the difference between the predicted and actual firing rates at 
 - do only for neurons that have slopes in outbound zone
 - do this for both negative and positive slopes in the outbound zone
 
-Plot for neurons with positive slopes.
+Plot for neurons classified as ++
 ```{r}
 spatial_firing %>%
-  filter(lm_group_b == "Positive") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
   offset_ggplot()
 
 if (save_figures == 1) {
@@ -495,10 +494,10 @@ if (save_figures == 1) {
 }
 ```
 
-5. Plot bar charts - Negative neurons
+Plot neurons classified as --
 ```{r}
 spatial_firing %>%
-  filter(lm_group_b == "Negative") %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
   offset_ggplot(colour_2 = "violetred2")
 
 
@@ -509,11 +508,47 @@ if (save_figures == 1) {
 
 
 
+Do the means of the distributions differ from zero?
+
+Treat each observation as independent and use a t-test
+```{r}
+spatial_firing %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  select(predict_diff) %>%
+  t.test(mu = 0)
+
+spatial_firing %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  select(predict_diff) %>%
+  t.test(mu = 0)
+```
+
+Or consider after averaging data from the same mouse. This seems overly conservative as neurons are sampled independently but nevertheless useful to look at.
+```{r}
+spatial_firing %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  group_by(Mouse) %>%
+  summarise(m_p_d = mean(predict_diff)) %>%
+  select(m_p_d) %>%
+  t.test(mu = 0)
+
+spatial_firing %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  group_by(Mouse) %>%
+  summarise(m_p_d = mean(predict_diff)) %>%
+  select(m_p_d) %>%
+  t.test(mu = 0)
+```
+as.integer(factor(spatial_firing$session_id, levels = unique(spatial_firing$session_id)))
+
+
+
+
 
 ### ------------------------------------------------------------------------------------------ ### 
 
 
-## now plot scatter of slopes for outbound and slopes for homebound with neurons marked accordng to whether they are reset or continuous
+## now plot scatter of slopes on track segements before and after the reward zone.
 
 1. Here we subset neurons based on positive, negative or unclassified in the linear model and either reset or contiuous firing. 
 ```{r}
@@ -564,6 +599,12 @@ if (save_figures == 1) {
  ggsave(file = "plots/slope_comparison_reset.png", width = 4, height = 4) 
 }
 ```
+The same plot for shuffled data.
+```{r}
+
+```
+
+
 
 
 ### ------------------------------------------------------------------------------------------ ### 
@@ -591,10 +632,10 @@ outbound homebound  reset
 
 1. make tibble with average firing rates and classifications : 
 ```{r}
-bin = 200
+
 df <- tibble(session_id = rep(spatial_firing$session_id, each=bin),
              cluster = rep(as.character(spatial_firing$cluster_id), each=bin),
-             Position = rep(1:bin, times=nrow(spatial_firing)), 
+             Position = rep(-30:169, times=nrow(spatial_firing)), 
              Rates = unlist(spatial_firing$normalised_rates_smoothed), 
              Outbound_beaconed = rep(spatial_firing$lm_group_b, each=bin), 
              Homebound_beaconed = rep(spatial_firing$lm_group_b_h, each=bin))
@@ -607,11 +648,11 @@ Subset data by group then average rates for plotting
 
 **Negative Negative**
 ```{r}
-df_neg_neg <- df %>%
+(plot_neg_neg <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Negative") %>%
   group_by(Position) %>% 
   mean_SEM_plots_prep %>%
-  mean_SEM_plots(colour1 = "black")
+  mean_SEM_plots(colour1 = "black"))
 
 if (save_figures == 1) {
  ggsave(file = "plots/negneg_mean_Hz.png",  width = 3.6, height = 2.9) 
@@ -623,11 +664,11 @@ if (save_figures == 1) {
 
 **Positive Positive **
 ```{r}
-df_pos_pos <- df %>%
+(plot_pos_pos <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Positive") %>%
   group_by(Position) %>%
   mean_SEM_plots_prep %>%
-  mean_SEM_plots(colour1 = "black")
+  mean_SEM_plots(colour1 = "black"))
 
 
 if (save_figures == 1) {
@@ -638,11 +679,11 @@ if (save_figures == 1) {
 
 **Positive Negative**
 ```{r}
-df_pos_neg <- df %>%
+(plot_pos_neg <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Negative") %>%
   group_by(Position) %>%
   mean_SEM_plots_prep %>%
-  mean_SEM_plots(colour1 = "black")
+  mean_SEM_plots(colour1 = "black"))
 
 
 if (save_figures == 1) {
@@ -652,13 +693,13 @@ if (save_figures == 1) {
 
 
 
-**Positive Negative**
+**Negative Positive**
 ```{r}
-df_neg_pos <- df %>%
+(plot_neg_pos <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Positive") %>%
   group_by(Position) %>%
   mean_SEM_plots_prep %>%
-  mean_SEM_plots(colour1 = "black")
+  mean_SEM_plots(colour1 = "black"))
 
 
 if (save_figures == 1) {
@@ -669,11 +710,11 @@ if (save_figures == 1) {
 
 **Positive Unclassified**
 ```{r}
-df_pos_pi <- df %>%
+(plot_pos_uc <- df %>%
   subset(Outbound_beaconed == "Positive" & Homebound_beaconed == "Unclassified") %>%
   group_by(Position) %>%
   mean_SEM_plots_prep %>%
-  mean_SEM_plots(colour1 = "black")
+  mean_SEM_plots(colour1 = "black"))
 
 if (save_figures == 1) {
   ggsave(file = "plots/posnon_mean.png", width = 3.6, height = 2.9)
@@ -682,11 +723,11 @@ if (save_figures == 1) {
 
 **Negative Unclassified**
 ```{r}
-df_pos_pi <- df %>%
+(plot_neg_uc <- df %>%
   subset(Outbound_beaconed == "Negative" & Homebound_beaconed == "Unclassified") %>%
   group_by(Position)  %>%
   mean_SEM_plots_prep %>%
-  mean_SEM_plots(colour1 = "black")
+  mean_SEM_plots(colour1 = "black"))
 
 if (save_figures == 1) {
   ggsave(file = "plots/negnon_mean.png", width = 3.6, height = 2.9)
@@ -979,7 +1020,7 @@ if (save_figures == 1) {
 3. find mean number of rewarded trials and std of rewarded trials
 
 ```{r}
-df %>%
+spatial_firing %>%
   select(Day, Mouse, cohort, max_trial_number, number_of_rewards) %>%
   distinct() %>%
   dplyr::summarise(mean_r = mean(as.numeric(number_of_rewards), na.rm =TRUE), sem_r = std.error(as.numeric(number_of_rewards))) 
