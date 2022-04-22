@@ -136,12 +136,100 @@ if (save_figures == 1) {
 }
 ```
 
-same as above but for shuffled datasets
-
-1. extract shuffled values into tibble _each 1000 shuffled datasets are nested for each neuron_
+## extract the home bound classifations for the shuffled data
 ```{r}
-shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared))
+local_circ_shuffles_hb <- function(df_in, cs_path) {
+  shuffled_df <- read_feather(cs_path)
+  
+  
+  # get list of cells based on session id + cluster id
+  # add unique id for each cell to both data frames
+  shuffled_df$unique_cell_id <- paste(shuffled_df$session_id, shuffled_df$cluster_id)
+  unique_cells = unique(shuffled_df[c("unique_cell_id")])
+  number_of_cells = nrow(unique_cells)
+  print('Number of cells in spike-level shuffle data:')
+  print(number_of_cells)
+  
+  # reformat shuffled data
+  shuffled_b <- shuffled_df %>%
+    select(unique_cell_id, shuffle_id, beaconed_r2_hb, beaconed_slope_hb, beaconed_p_val_hb) %>%
+    rename(neuron = "shuffle_id", slope = "beaconed_slope_hb", r.squared = "beaconed_r2_hb", p.value = "beaconed_p_val_hb") %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  shuffled_nb <- shuffled_df %>%
+    select(unique_cell_id, shuffle_id, non_beaconed_r2_hb, non_beaconed_slope_hb, non_beaconed_p_val_hb) %>%
+    rename(neuron = "shuffle_id", slope = "non_beaconed_slope_hb", r.squared = "non_beaconed_r2_hb", p.value = "non_beaconed_p_val_hb") %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  shuffled_p <- shuffled_df %>%
+    select(unique_cell_id, shuffle_id, probe_r2_hb, probe_slope_hb, probe_p_val_hb) %>%
+    rename(neuron = "shuffle_id", slope = "probe_slope_hb", r.squared = "probe_r2_hb", p.value = "probe_p_val_hb") %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  
+  
+  # Provides a reference for cell IDs in the experimental data
+  unique_cell_ids <- paste(df_in$session_id, df_in$cluster_id)
+  
+  # initialise
+  shuffled_results_b <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
+  shuffled_results_nb <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
+  shuffled_results_p <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
+  
+  # iterate on list of cells in the main datset
+  for(i in 2:length(unique_cell_ids)) {
+    # find the shuffled data that correspond to the current cell
+    shuffled_results_b <- rbind(shuffled_results_b,
+                                shuffled_b %>%filter(unique_cell_id == unique_cell_ids[i]))
+    shuffled_results_nb <- rbind(shuffled_results_nb,
+                                 shuffled_b %>% filter(unique_cell_id == unique_cell_ids[i]))
+    shuffled_results_p <- rbind(shuffled_results_p,
+                                shuffled_b %>% filter(unique_cell_id == unique_cell_ids[i]))
+ 
+  }
+  
+  df <- tibble(unique_cell_id = shuffled_results_b$unique_cell_id,
+               shuffle_results_b_h = shuffled_results_b$data,
+               shuffled_results_nb_h = shuffled_results_nb$data,
+               shuffled_results_p_h = shuffled_results_p$data)
+  
+  return(df)
+}
+
 ```
+
+```{r}
+# To load circular shuffle results
+if(shuffle_type=="circular") {
+  cs_path = "data_in/all_mice_concatenated_shuffle_data_rewarded_unsmoothened.feather"
+  spatial_firing_circ <- local_circ_shuffles_hb(spatial_firing, cs_path)
+  
+  spatial_firing <- spatial_firing %>%
+  select(-contains('shuffle_results_b_h')) %>%
+  select(-contains('shuffle_results_nb_h')) %>%
+  select(-contains('shuffle_results_pb_h')) %>%
+  mutate(shuffle_results_b_h = spatial_firing_circ$shuffle_results_b_h,
+         shuffle_results_nb_h = spatial_firing_circ$shuffled_results_nb_h,
+         shuffle_results_p_h = spatial_firing_circ$shuffled_results_p_h)
+  # Remove unused frame
+  rm(spatial_firing_circ)
+}
+
+# Check to see if the column shuffle_results_b_o exists.
+# It will exist if shuffles have been pre-loaded or if circular shuffle results have been loaded.
+# If it doesn't exist then the mean firing rate as a function of position will be shuffled.
+if(!"shuffle_results_b_h" %in% colnames(spatial_firing)) {
+  spatial_firing <- spatial_firing %>%
+    mutate(shuffle_results_b_h = future_pmap(list(Rates_averaged_rewarded_b, 110, 170, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_nb_h = future_pmap(list(Rates_averaged_rewarded_nb, 110, 170, shuffles), shuffle_rates)) %>%
+    mutate(shuffle_results_p_h = future_pmap(list(Rates_averaged_rewarded_p, 110, 170, shuffles), shuffle_rates))
+}
+```
+```{r}
+spatial_firing <- spatial_firing %>%
+  unnest_wider(shuffle_results_b_h, names_sep = "_", names_repair = "universal")
+```
+
 
 ### How much of the shuffled dataset is past criteria? 
 1. Extract shuffled slopes and rsquared values. 
@@ -150,24 +238,74 @@ shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope)
                        r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
                        pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
                        min_slope = rep(spatial_firing$shuffle_min_slope_b_o, each = 1000), 
-                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, each = 1000))
+                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, each = 1000),
+                       
+                       slopes_h = unlist(spatial_firing$shuffle_results_b_h_slope), 
+                       r2_h = unlist(spatial_firing$shuffle_results_b_h_r.squared), 
+                       pval_h = unlist(spatial_firing$shuffle_results_b_h_p.value))
+#shuff_slopes <- head(shuff_slopes, n =1000)         
 ```
 
 2. Function to classify shuffled cells based on shuffled distribution
 ```{r}
 shuff_slopes <- shuff_slopes %>%
-  mutate(
-    shuff_lm_group_b = pmap(
-      list(
-        min_slope,
-        max_slope,
-        slopes,
-        pval
-      ),
-      compare_slopes
-    )
-  )
+  mutate(shuff_lm_group_b = pmap(list(min_slope,max_slope,slopes,pval),compare_slopes))
+
+shuff_slopes <- shuff_slopes %>%
+  mutate(shuff_lm_group_b_h = pmap(list(min_slope,max_slope,slopes_h,pval_h),compare_slopes))
+
+shuff_slopes <- shuff_slopes %>%
+  select(-contains('track_category')) %>%
+  mutate(track_category = future_map2(shuff_lm_group_b, shuff_lm_group_b_h, mark_track_category),
+         track_category_numeric = map2(shuff_lm_group_b, shuff_lm_group_b_h, mark_numeric_track_category))
 ```
+
+2. Plot pre reward vs post reward slope for shuffled dataset
+```{r}
+position_shuff_slopes <- shuff_slopes %>% 
+  filter(shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative") %>%
+  select(slopes, slopes_h,track_category, shuff_lm_group_b)
+
+
+ggplot() + 
+    geom_point(data=subset(position_shuff_slopes, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(slopes)), 
+                   y = as.numeric(unlist(slopes_h)), 
+                   color=factor(unlist(shuff_lm_group_b))), alpha=0.8) +
+    geom_point(data=subset(position_shuff_slopes, track_category == "posneg" | track_category == "negpos"),
+               aes(x = as.numeric(unlist(slopes)), 
+                   y = as.numeric(unlist(slopes_h)), 
+                   color=factor(unlist(shuff_lm_group_b))), shape=2, alpha=0.8) +
+    geom_point(data=subset(position_shuff_slopes, track_category == "posnon" | track_category == "negnon"),
+               aes(x = as.numeric(unlist(slopes)), 
+                   y = as.numeric(unlist(slopes_h)), 
+                   color=factor(unlist(shuff_lm_group_b))), shape=3, alpha=0.8) +  
+  
+    geom_point(data=shuff_slopes %>% filter(shuff_lm_group_b == "Unclassified"),
+               aes(x = as.numeric(unlist(slopes)), 
+                   y = as.numeric(unlist(slopes_h)), 
+                   color=factor(unlist(shuff_lm_group_b))), shape=4, alpha=0.8) +     
+    coord_cartesian(ylim = c(-.2,.2), xlim = c(-.2,.2)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
+    xlab("Pre-reward slope") +
+    ylab("Post-reward slope") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey81")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/shuffle_slope_comparison_reset.png", width = 4, height = 4) 
+}
+
+```
+
 
 2. Plot histogram of slopes
 ```{r}
