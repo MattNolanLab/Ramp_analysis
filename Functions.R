@@ -219,6 +219,8 @@ mark_reset_group_predict <- function(offset){
   }
 }
 
+
+
 # Plot histogram of distribution of firing rate offsets
 offset_ggplot <- function(df, diff_colname = "predict_diff", group_colname = "reset_group", colour_1 = "grey", colour_2 = "chartreuse3", colour_3 = "red") {
   ggplot(data=df, aes(x = unlist(.data[[diff_colname]]), fill=as.factor(unlist(.data[[group_colname]])))) +
@@ -239,26 +241,32 @@ offset_ggplot <- function(df, diff_colname = "predict_diff", group_colname = "re
 
 
 # Plot mean and SEM of firing rate as a function of position.
+add_track <- function(gg, xlab = "Location (cm)", ylab = "Stops (cm)") {
+  gg +
+    annotate("rect", xmin=-30, xmax=0, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=140, xmax=170, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=60, xmax=80, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+    scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+    labs(y = ylab, x = xlab) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.title = element_blank(),
+          text = element_text(size=18),
+          plot.margin = margin(21, 25, 5, 20))
+}
+
+
 mean_SEM_plots_prep <- function(df) {
   df <- df %>% dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
                                 sem_r = std.error(Rates, na.rm = TRUE))
 }
 
 mean_SEM_plots <- function(df, colour1 = "blue"){
-  ggplot(data=df) +
-    annotate("rect", xmin=-30, xmax=0, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
-    annotate("rect", xmin=140, xmax=170, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
-    annotate("rect", xmin=60, xmax=80, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  gg <- ggplot(data=df) +
     geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
-    geom_line(aes(y=mean_r, x=Position), color = colour1) +
-    theme_classic() +
-    scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-    labs(y = "Z-scored firing rate", x = "Position") +
-    theme(axis.text.x = element_text(size=18),
-          axis.text.y = element_text(size=18),
-          legend.title = element_blank(),
-          text = element_text(size=18),
-          plot.margin = margin(21, 25, 5, 20))
+    geom_line(aes(y=mean_r, x=Position), color = colour1)
+  add_track(gg, xlab = "Position", ylab = "Z-scored firing rate")
 }
 
 ## --------------------------------------------------------------------------------------------- ##
