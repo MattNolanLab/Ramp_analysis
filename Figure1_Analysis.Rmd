@@ -645,9 +645,10 @@ if (save_figures == 1) {
  ggsave(file = "plots/slope_comparison_reset.png", width = 4, height = 4) 
 }
 ```
-The same plot for shuffled data.
+Corresponding plot for shuffled data from one neuron (plotting all of the shuffled data this way gives too many points to be meaningful).
 ```{r}
-
+plot(spatial_firing$shuffle_results_b_o_slope[[1]],
+     spatial_firing$shuffle_results_b_h_slope[[1]])
 ```
 
 
