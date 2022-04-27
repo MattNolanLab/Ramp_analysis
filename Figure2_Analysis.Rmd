@@ -92,32 +92,13 @@ if (load_sf==1) {
 
 ## Categorise neurons based on significant model coefficients
 
-The idea here is to categorise each neuron according to whether it has coefficients for P, S or A that are 'signficant' at a threshold of 0.01.
+The idea here is to categorise each neuron according to whether it has coefficients for P, S or A that are 'significant' at a threshold of 0.01.
 ```{r}
 spatial_firing <- spatial_firing  %>%
     mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel, 0.01), coef_comparison))
 ```
 
 
-## Calculate standardized coefficients for position, speed and acceleration in GLMER model
-
-Call functions to calculate and extract standardised coefficients for position, speed and acceleration
-Run on all cells
-```{r, warning=FALSE}
-#spatial_firing <- spatial_firing %>%
-#  mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
-#  #mutate(o_p_mod_coefs = map(o_mm_p, std_coef)) %>%
-#  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal") #%>%
-#  #unnest_wider(o_p_mod_coefs, names_sep = "_", names_repair = "universal")
-#
-## check number of NAs
-#sum(is.na(spatial_firing$o_b_mod_coefs_pos))
-```
-
-Standardized coefficients are in:
-spatial_firing$o_b_mod_coefs_pos
-spatial_firing$o_b_mod_coefs_speed
-spatial_firing$o_b_mod_coefs_accel
 
 
 1. make unique id for each neuron (session_id + cluster_id)
@@ -129,11 +110,23 @@ spatial_firing <- spatial_firing  %>%
 
 ### Plot model selection results performed in Figure1_Analysis.Rmd
 
+Standardized coefficients are in (see above):
+spatial_firing$o_b_mod_coefs_pos
+spatial_firing$o_b_mod_coefs_speed
+spatial_firing$o_b_mod_coefs_accel
+
 First organise the data.
 ```{r}
-# Distributions of fit categories for all neurons
-(all_neurons_groups <- spatial_firing$final_model_o_b %>%
-  make_coeffs_table())
+# Distributions of fit categories for all neurons with ramping activity before the reward zone
+(all_neurons_groups <- spatial_firing %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+   select(final_model_o_b) %>%
+   make_coeffs_table())
+
+# All neurons in the group
+sum(all_neurons_groups$num)
+# Positional neurons
+sum(all_neurons_groups[grep("P", all_neurons_groups$ramp_id),]$num)
 
 # For positive slope neurons
 pos_neurons_groups <- spatial_firing %>%
@@ -205,7 +198,7 @@ spatial_firing <- spatial_firing  %>%
 spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b, lm_group_nb, lm_group_p) %>%
   unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
     final_model_o_b, lm_group_b, lm_group_nb, lm_group_p)) %>%
-  as.tibble()
+  as_tibble()
 spatial_firing_save$o_b_mod_coefs_pos <- as.numeric(spatial_firing_save$o_b_mod_coefs_pos)
 spatial_firing_save$o_b_mod_coefs_speed <- as.numeric(spatial_firing_save$o_b_mod_coefs_speed)
 spatial_firing_save$o_b_mod_coefs_accel <- as.numeric(spatial_firing_save$o_b_mod_coefs_accel)
@@ -387,76 +380,29 @@ if (save_figures == 1) {
 Statistical analyses to compare coefficients for position, speed and acceleration.
 
 position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
-1. extract position cells
+
+1. Reorganize data
 ```{r}
-ramp_cells <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-
-position_cells <- subset(ramp_cells, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-
-```
-
-  
-1. Take only 
-```{r}
-position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-```{r}
-pos_position_cells <- subset(spatial_firing, lm_group_b == "Positive")
-neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
-
-```
-
-2. take only columns we need for the rest of the analysis
-```{r}
-spatial_firing_save_p <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+spatial_firing_coefs <- spatial_firing %>% 
+  select(session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
   unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
     final_model_o_b, lm_group_b)) %>%
-  as.tibble()
+  as.tibble() %>%
+  gather("coef_type", "coef", o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, factor_key = TRUE) %>%
+  mutate(coef_type = sub("o_b_mod_coefs_pos", "P", coef_type),
+         coef_type = sub("o_b_mod_coefs_speed", "S", coef_type),
+         coef_type = sub("o_b_mod_coefs_accel", "A", coef_type)) %>%
+  rename(group = "final_model_o_b")
 
-spatial_firing_save_n <- select(neg_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
-  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b)) %>%
-  as.tibble()
 ```
 
-1. put data into a tibble for plotting
-```{r}
-
-data_coef_p <- tibble(session_id = rep(unlist(spatial_firing_save_p$unique_id), times=3),
-                    cluster_id = rep(spatial_firing_save_p$cluster_id, times=3),
-
-                    coef = c(as.character(spatial_firing_save_p$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save_p$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save_p$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save_p$final_model_o_b),
-                              as.character(spatial_firing_save_p$final_model_o_b),
-                              as.character(spatial_firing_save_p$final_model_o_b)),
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save_p)),
-                    lm_result = rep(as.character(spatial_firing_save_p$lm_group_b), times=3))
-
-data_coef_n <- tibble(session_id = rep(unlist(spatial_firing_save_n$unique_id), times=3),
-                    cluster_id = rep(spatial_firing_save_n$cluster_id, times=3),
-                    coef = c(as.character(spatial_firing_save_n$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save_n$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save_n$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save_n$final_model_o_b),
-                              as.character(spatial_firing_save_n$final_model_o_b),
-                              as.character(spatial_firing_save_n$final_model_o_b)),
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save_n)),
-                    lm_result = rep(as.character(spatial_firing_save_n$lm_group_b), times=3))
-```
 
 2. run anova
 ```{r}
-one.way_p <- aov(coef ~ coef_type, data = data_coef_p)
-
+one.way_p <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive"))
 summary(one.way_p)
 
-one.way_n <- aov(coef ~ coef_type, data = data_coef_n)
-
+one.way_n <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative"))
 summary(one.way_n)
 ```
 
