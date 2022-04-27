@@ -220,6 +220,12 @@ _Plot coefficients for all cells_
 if (save_figures == 1) {
    ggsave(file = "plots/CoefficientValues_positivecells.png", width = 2.5, height = 2.5)
 }
+
+one.way_p <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive"))
+summary(one.way_p)
+
+tukey.test_p <- TukeyHSD(one.way_p)
+tukey.test_p$coef_type
 ```
 
 5b. Split by negative slope _all cells_
@@ -231,6 +237,12 @@ if (save_figures == 1) {
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_negativecells.png", width = 2.5, height = 2.5)
 }
+
+one.way_n <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative"))
+summary(one.way_n)
+
+tukey.test_n <- TukeyHSD(one.way_n)
+tukey.test_n$coef_type
 ```
 
 _Plot coefficients for conjunctive position cells_
@@ -244,6 +256,12 @@ _Plot coefficients for conjunctive position cells_
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_PositivePScells.png", width = 2.5, height = 2.5)
 }
+
+one.way_p_ps <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive", group == "PS"))
+summary(one.way_p_ps)
+
+tukey.test_n <- TukeyHSD(one.way_p_ps)
+tukey.test_n$coef_type
 ```
 
 5d. Split by negative slope _PS cells_
@@ -255,6 +273,12 @@ if (save_figures == 1) {
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_NegativePScells.png", width = 2.5, height = 2.5)
 }
+
+one.way_n_ps <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative", group == "PS"))
+summary(one.way_n_ps)
+
+tukey.test_n <- TukeyHSD(one.way_n_ps)
+tukey.test_n$coef_type
 ```
 
 
@@ -267,6 +291,12 @@ if (save_figures == 1) {
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_PositivePSAcells.png", width = 2.5, height = 2.5)
 }
+
+one.way_p_psa <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive", group == "PSA"))
+summary(one.way_p_psa)
+
+tukey.test_p_psa <- TukeyHSD(one.way_p_psa)
+tukey.test_p_psa$coef_type
 ```
 
 5f. Split by negative slope _PSA cells_
@@ -278,6 +308,12 @@ if (save_figures == 1) {
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_NegativePSAcells.png", width = 2.5, height = 2.5)
 }
+
+one.way_n_psa <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative", group == "PSA"))
+summary(one.way_n_psa)
+
+tukey.test_n_psa <- TukeyHSD(one.way_n_psa)
+tukey.test_n_psa$coef_type
 ```
 
 _Plot coefficients for just position cells_
@@ -291,6 +327,12 @@ _Plot coefficients for just position cells_
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 2.5, height = 2.5)
 }
+
+one.way_p_p <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive", group == "P"))
+summary(one.way_p_p)
+
+tukey.test_p_p <- TukeyHSD(one.way_p_p)
+tukey.test_p_p$coef_type
 ```
 
 
@@ -303,6 +345,12 @@ if (save_figures == 1) {
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 2.5, height = 2.5)
 }
+
+one.way_n_p <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative", group == "P"))
+summary(one.way_n_p)
+
+tukey.test_n_p <- TukeyHSD(one.way_n_p)
+tukey.test_n_p$coef_type
 ```
 
 
@@ -347,34 +395,6 @@ if (save_figures == 1) {
 ```
 
 
-
-
-###----------------------------------------------------------------------------###
-
-Statistical analyses to compare coefficients for position, speed and acceleration.
-
-position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
-
-
-
-
-2. run anova
-```{r}
-one.way_p <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive"))
-summary(one.way_p)
-
-one.way_n <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative"))
-summary(one.way_n)
-```
-
-3. Post hoc Tukey's test
-```{r}
-tukey.test_p <- TukeyHSD(one.way_p)
-tukey.test_p$coef_type
-
-tukey.test_n <- TukeyHSD(one.way_n)
-tukey.test_n$coef_type
-```
 
 
 
