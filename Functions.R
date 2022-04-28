@@ -219,6 +219,8 @@ mark_reset_group_predict <- function(offset){
   }
 }
 
+
+
 # Plot histogram of distribution of firing rate offsets
 offset_ggplot <- function(df, diff_colname = "predict_diff", group_colname = "reset_group", colour_1 = "grey", colour_2 = "chartreuse3", colour_3 = "red") {
   ggplot(data=df, aes(x = unlist(.data[[diff_colname]]), fill=as.factor(unlist(.data[[group_colname]])))) +
@@ -239,26 +241,32 @@ offset_ggplot <- function(df, diff_colname = "predict_diff", group_colname = "re
 
 
 # Plot mean and SEM of firing rate as a function of position.
+add_track <- function(gg, xlab = "Location (cm)", ylab = "Stops (cm)") {
+  gg +
+    annotate("rect", xmin=-30, xmax=0, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=140, xmax=170, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=60, xmax=80, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+    scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+    labs(y = ylab, x = xlab) +
+    theme_classic() +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.title = element_blank(),
+          text = element_text(size=18),
+          plot.margin = margin(21, 25, 5, 20))
+}
+
+
 mean_SEM_plots_prep <- function(df) {
   df <- df %>% dplyr::summarise(mean_r = mean(Rates, na.rm = TRUE),
                                 sem_r = std.error(Rates, na.rm = TRUE))
 }
 
 mean_SEM_plots <- function(df, colour1 = "blue"){
-  ggplot(data=df) +
-    annotate("rect", xmin=-30, xmax=0, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
-    annotate("rect", xmin=140, xmax=170, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
-    annotate("rect", xmin=60, xmax=80, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+  gg <- ggplot(data=df) +
     geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
-    geom_line(aes(y=mean_r, x=Position), color = colour1) +
-    theme_classic() +
-    scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-    labs(y = "Z-scored firing rate", x = "Position") +
-    theme(axis.text.x = element_text(size=18),
-          axis.text.y = element_text(size=18),
-          legend.title = element_blank(),
-          text = element_text(size=18),
-          plot.margin = margin(21, 25, 5, 20))
+    geom_line(aes(y=mean_r, x=Position), color = colour1)
+  add_track(gg, xlab = "Position", ylab = "Z-scored firing rate")
 }
 
 ## --------------------------------------------------------------------------------------------- ##
@@ -269,7 +277,6 @@ mean_SEM_plots <- function(df, colour1 = "blue"){
 local_circ_shuffles <- function(df_in, cs_path) {
   shuffled_df <- read_feather(cs_path)
   
-  
   # get list of cells based on session id + cluster id
   # add unique id for each cell to both data frames
   shuffled_df$unique_cell_id <- paste(shuffled_df$session_id, shuffled_df$cluster_id)
@@ -278,48 +285,58 @@ local_circ_shuffles <- function(df_in, cs_path) {
   print('Number of cells in spike-level shuffle data:')
   print(number_of_cells)
   
+  # Provides a reference for cell IDs in the experimental data
+  unique_cell_ids <- paste(df_in$session_id, df_in$cluster_id)
+  
+  shuffled_df <- shuffled_df %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  
+  # select shuffled data that matches the experimental data
+  shuffled_df_select <- shuffled_df[shuffled_df$unique_cell_id %in% unique_cell_ids, ]
+
+  shuffled_df_select <- unnest(shuffled_df_select, cols = c(data))
+  
   # reformat shuffled data
-  shuffled_b <- shuffled_df %>%
+  shuffled_b <- shuffled_df_select %>%
     select(unique_cell_id, shuffle_id, beaconed_r2_ob, beaconed_slope_ob, beaconed_p_val_ob) %>%
     rename(neuron = "shuffle_id", slope = "beaconed_slope_ob", r.squared = "beaconed_r2_ob", p.value = "beaconed_p_val_ob") %>%
     group_by(unique_cell_id) %>%
     nest()
-  shuffled_nb <- shuffled_df %>%
+  shuffled_nb <- shuffled_df_select %>%
     select(unique_cell_id, shuffle_id, non_beaconed_r2_ob, non_beaconed_slope_ob, non_beaconed_p_val_ob) %>%
     rename(neuron = "shuffle_id", slope = "non_beaconed_slope_ob", r.squared = "non_beaconed_r2_ob", p.value = "non_beaconed_p_val_ob") %>%
     group_by(unique_cell_id) %>%
     nest()
-  shuffled_p <- shuffled_df %>%
+  shuffled_p <- shuffled_df_select %>%
     select(unique_cell_id, shuffle_id, probe_r2_ob, probe_slope_ob, probe_p_val_ob) %>%
     rename(neuron = "shuffle_id", slope = "probe_slope_ob", r.squared = "probe_r2_ob", p.value = "probe_p_val_ob") %>%
     group_by(unique_cell_id) %>%
     nest()
+  shuffled_b_h <- shuffled_df_select %>%
+    select(unique_cell_id, shuffle_id, beaconed_r2_hb, beaconed_slope_hb, beaconed_p_val_hb) %>%
+    rename(neuron = "shuffle_id", slope = "beaconed_slope_hb", r.squared = "beaconed_r2_hb", p.value = "beaconed_p_val_hb") %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  shuffled_nb_h <- shuffled_df_select %>%
+    select(unique_cell_id, shuffle_id, non_beaconed_r2_hb, non_beaconed_slope_hb, non_beaconed_p_val_hb) %>%
+    rename(neuron = "shuffle_id", slope = "non_beaconed_slope_hb", r.squared = "non_beaconed_r2_hb", p.value = "non_beaconed_p_val_hb") %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  shuffled_p_h <- shuffled_df_select %>%
+    select(unique_cell_id, shuffle_id, probe_r2_hb, probe_slope_hb, probe_p_val_hb) %>%
+    rename(neuron = "shuffle_id", slope = "probe_slope_hb", r.squared = "probe_r2_hb", p.value = "probe_p_val_hb") %>%
+    group_by(unique_cell_id) %>%
+    nest()
   
   
-  # Provides a reference for cell IDs in the experimental data
-  unique_cell_ids <- paste(df_in$session_id, df_in$cluster_id)
-  
-  # initialise
-  shuffled_results_b <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
-  shuffled_results_nb <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
-  shuffled_results_p <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
-  
-  # iterate on list of cells in the main datset
-  for(i in 2:length(unique_cell_ids)) {
-    # find the shuffled data that correspond to the current cell
-    shuffled_results_b <- rbind(shuffled_results_b,
-                                shuffled_b %>%filter(unique_cell_id == unique_cell_ids[i]))
-    shuffled_results_nb <- rbind(shuffled_results_nb,
-                                 shuffled_b %>% filter(unique_cell_id == unique_cell_ids[i]))
-    shuffled_results_p <- rbind(shuffled_results_p,
-                                shuffled_b %>% filter(unique_cell_id == unique_cell_ids[i]))
- 
-  }
-  
-  df <- tibble(unique_cell_id = shuffled_results_b$unique_cell_id,
-               shuffle_results_b_o = shuffled_results_b$data,
-               shuffled_results_nb_o = shuffled_results_nb$data,
-               shuffled_results_p_o = shuffled_results_p$data)
+  df <- tibble(unique_cell_id = shuffled_b$unique_cell_id,
+               shuffle_results_b_o = shuffled_b$data,
+               shuffled_results_nb_o = shuffled_nb$data,
+               shuffled_results_p_o = shuffled_p$data,
+               shuffle_results_b_h = shuffled_b_h$data,
+               shuffled_results_nb_h = shuffled_nb_h$data,
+               shuffled_results_p_h = shuffled_p_h$data)
   
   return(df)
 }
