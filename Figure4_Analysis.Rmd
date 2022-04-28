@@ -32,10 +32,10 @@ spatial_firing <- spatial_firing %>%
 
 # Find predicted rates after the reward zone based on rates before the reward zone
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_p = map(Rates_averaged_p, normalise_rates))
+  mutate(normalised_rates_p = map(Rates_averaged_rewarded_p, normalise_rates))
 
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_p_smoothed = map(Rates_averaged_smoothed_p, normalise_rates))
+  mutate(normalised_rates_p_smoothed = map(Rates_averaged_rewarded_smoothed_p, normalise_rates))
 
 spatial_firing <- spatial_firing %>%
   select(-contains('predict_params_p_')) %>%
@@ -260,12 +260,20 @@ comp_beacon_probe_rate_plots <- function(df){
   return(list(a, b, c, d))
 }
 
+# all neurons negative and positive
+#(ci_plots <- comp_beacon_probe_rate_plots(spatial_firing_probe_only))
 
-(ci_plots <- comp_beacon_probe_rate_plots(spatial_firing_probe_only))
 
+# all P cells (neg and pos)
+spatial_firing_probe_only %>% filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% comp_beacon_probe_rate_plots
+
+# only P cells (neg and pos)
 spatial_firing_probe_only %>% filter(final_model_o_b == "P") %>% comp_beacon_probe_rate_plots
 
-(ci_all_plots <- comp_beacon_probe_rate_plots_all(spatial_firing_probe_only))
+#conjunctive P cells (neg and pos) 
+spatial_firing_probe_only %>% filter(final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% comp_beacon_probe_rate_plots
+
+#(ci_all_plots <- comp_beacon_probe_rate_plots_all(spatial_firing_probe_only))
 
 
 if (save_figures == 1) {
@@ -515,4 +523,16 @@ if (save_figures == 1) {
 }
 ```
 
+```{r}
+spatial_firing_probe_positional <-
+  subset(spatial_firing_probe_only, max_trial_number >= 30) %>%
+  mutate(asr_p_sum = map_dbl(Rates_averaged_p, sum_unlist)) %>%
+  subset(asr_p_sum != 0) %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 
+spatial_firing_probe_positional <- select(spatial_firing_probe_positional, session_id, cluster_id, unique_id, final_model_o_b, lm_group_b, lm_group_nb, lm_group_p) %>%
+  unnest(cols = c(unique_id,final_model_o_b, lm_group_b, lm_group_nb, lm_group_p)) %>%
+  as.tibble()
+spatial_firing_probe_positional$cluster_id <- as.numeric(spatial_firing_probe_positional$cluster_id)
+write.table(spatial_firing_probe_positional, "data_out/positional_cells_with_probe_data.csv", quote=FALSE, sep="\t")
+```

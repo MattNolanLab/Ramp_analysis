@@ -632,7 +632,7 @@ outbound homebound  reset
 
 1. make tibble with average firing rates and classifications : 
 ```{r}
-
+bin <- 200
 df <- tibble(session_id = rep(spatial_firing$session_id, each=bin),
              cluster = rep(as.character(spatial_firing$cluster_id), each=bin),
              Position = rep(-30:169, times=nrow(spatial_firing)), 

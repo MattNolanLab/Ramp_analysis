@@ -194,9 +194,9 @@ spatial_firing <- spatial_firing  %>%
 
 2. take only columns we need for the rest of the analysis
 ```{r}
-spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b, lm_group_nb, lm_group_p) %>%
+spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b, lm_group_nb, lm_group_p, lm_group_b_h, lm_group_nb_h, lm_group_p_h, asr_b_o_rewarded_fit_r.squared, asr_b_o_rewarded_fit_p.value, asr_b_o_rewarded_fit_intercept, asr_b_o_rewarded_fit_slope, asr_nb_o_rewarded_fit_r.squared, asr_nb_o_rewarded_fit_p.value, asr_nb_o_rewarded_fit_intercept, asr_nb_o_rewarded_fit_slope, asr_p_o_rewarded_fit_r.squared, asr_p_o_rewarded_fit_p.value, asr_p_o_rewarded_fit_intercept, asr_p_o_rewarded_fit_slope, asr_b_h_rewarded_fit_r.squared, asr_b_h_rewarded_fit_p.value, asr_b_h_rewarded_fit_intercept, asr_b_h_rewarded_fit_slope, asr_nb_h_rewarded_fit_r.squared, asr_nb_h_rewarded_fit_p.value, asr_nb_h_rewarded_fit_intercept, asr_nb_h_rewarded_fit_slope, asr_p_h_rewarded_fit_r.squared, asr_p_h_rewarded_fit_p.value, asr_p_h_rewarded_fit_intercept, asr_p_h_rewarded_fit_slope) %>%
   unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b, lm_group_nb, lm_group_p)) %>%
+    final_model_o_b, lm_group_b, lm_group_nb, lm_group_p, lm_group_b_h, lm_group_nb_h, lm_group_p_h)) %>%
   as.tibble()
 spatial_firing_save$o_b_mod_coefs_pos <- as.numeric(spatial_firing_save$o_b_mod_coefs_pos)
 spatial_firing_save$o_b_mod_coefs_speed <- as.numeric(spatial_firing_save$o_b_mod_coefs_speed)
