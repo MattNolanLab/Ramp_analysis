@@ -205,6 +205,20 @@ spatial_firing_coefs <- spatial_firing %>%
          coef_type = sub("o_b_mod_coefs_speed", "S", coef_type),
          coef_type = sub("o_b_mod_coefs_accel", "A", coef_type)) %>%
   rename(group = "final_model_o_b")
+  
+spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b, lm_group_nb, lm_group_p, lm_group_b_h, lm_group_nb_h, lm_group_p_h, asr_b_o_rewarded_fit_r.squared, asr_b_o_rewarded_fit_p.value, asr_b_o_rewarded_fit_intercept, asr_b_o_rewarded_fit_slope, asr_nb_o_rewarded_fit_r.squared, asr_nb_o_rewarded_fit_p.value, asr_nb_o_rewarded_fit_intercept, asr_nb_o_rewarded_fit_slope, asr_p_o_rewarded_fit_r.squared, asr_p_o_rewarded_fit_p.value, asr_p_o_rewarded_fit_intercept, asr_p_o_rewarded_fit_slope, asr_b_h_rewarded_fit_r.squared, asr_b_h_rewarded_fit_p.value, asr_b_h_rewarded_fit_intercept, asr_b_h_rewarded_fit_slope, asr_nb_h_rewarded_fit_r.squared, asr_nb_h_rewarded_fit_p.value, asr_nb_h_rewarded_fit_intercept, asr_nb_h_rewarded_fit_slope, asr_p_h_rewarded_fit_r.squared, asr_p_h_rewarded_fit_p.value, asr_p_h_rewarded_fit_intercept, asr_p_h_rewarded_fit_slope) %>%
+  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
+    final_model_o_b, lm_group_b, lm_group_nb, lm_group_p, lm_group_b_h, lm_group_nb_h, lm_group_p_h)) %>%
+  as.tibble()
+spatial_firing_save$o_b_mod_coefs_pos <- as.numeric(spatial_firing_save$o_b_mod_coefs_pos)
+spatial_firing_save$o_b_mod_coefs_speed <- as.numeric(spatial_firing_save$o_b_mod_coefs_speed)
+spatial_firing_save$o_b_mod_coefs_accel <- as.numeric(spatial_firing_save$o_b_mod_coefs_accel)
+spatial_firing_save$cluster_id <- as.numeric(spatial_firing_save$cluster_id)
+```
+
+3. save to csv file _this is for matching the coefficient values to plots of instantaneous rates from python_
+```{r}
+write.table(spatial_firing_save, "data_out/all_results_coefficients.csv", quote=FALSE, sep="\t")
 
 ```
 
