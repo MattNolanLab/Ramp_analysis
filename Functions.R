@@ -277,7 +277,6 @@ mean_SEM_plots <- function(df, colour1 = "blue"){
 local_circ_shuffles <- function(df_in, cs_path) {
   shuffled_df <- read_feather(cs_path)
   
-  
   # get list of cells based on session id + cluster id
   # add unique id for each cell to both data frames
   shuffled_df$unique_cell_id <- paste(shuffled_df$session_id, shuffled_df$cluster_id)
@@ -286,48 +285,58 @@ local_circ_shuffles <- function(df_in, cs_path) {
   print('Number of cells in spike-level shuffle data:')
   print(number_of_cells)
   
+  # Provides a reference for cell IDs in the experimental data
+  unique_cell_ids <- paste(df_in$session_id, df_in$cluster_id)
+  
+  shuffled_df <- shuffled_df %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  
+  # select shuffled data that matches the experimental data
+  shuffled_df_select <- shuffled_df[shuffled_df$unique_cell_id %in% unique_cell_ids, ]
+
+  shuffled_df_select <- unnest(shuffled_df_select, cols = c(data))
+  
   # reformat shuffled data
-  shuffled_b <- shuffled_df %>%
+  shuffled_b <- shuffled_df_select %>%
     select(unique_cell_id, shuffle_id, beaconed_r2_ob, beaconed_slope_ob, beaconed_p_val_ob) %>%
     rename(neuron = "shuffle_id", slope = "beaconed_slope_ob", r.squared = "beaconed_r2_ob", p.value = "beaconed_p_val_ob") %>%
     group_by(unique_cell_id) %>%
     nest()
-  shuffled_nb <- shuffled_df %>%
+  shuffled_nb <- shuffled_df_select %>%
     select(unique_cell_id, shuffle_id, non_beaconed_r2_ob, non_beaconed_slope_ob, non_beaconed_p_val_ob) %>%
     rename(neuron = "shuffle_id", slope = "non_beaconed_slope_ob", r.squared = "non_beaconed_r2_ob", p.value = "non_beaconed_p_val_ob") %>%
     group_by(unique_cell_id) %>%
     nest()
-  shuffled_p <- shuffled_df %>%
+  shuffled_p <- shuffled_df_select %>%
     select(unique_cell_id, shuffle_id, probe_r2_ob, probe_slope_ob, probe_p_val_ob) %>%
     rename(neuron = "shuffle_id", slope = "probe_slope_ob", r.squared = "probe_r2_ob", p.value = "probe_p_val_ob") %>%
     group_by(unique_cell_id) %>%
     nest()
+  shuffled_b_h <- shuffled_df_select %>%
+    select(unique_cell_id, shuffle_id, beaconed_r2_hb, beaconed_slope_hb, beaconed_p_val_hb) %>%
+    rename(neuron = "shuffle_id", slope = "beaconed_slope_hb", r.squared = "beaconed_r2_hb", p.value = "beaconed_p_val_hb") %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  shuffled_nb_h <- shuffled_df_select %>%
+    select(unique_cell_id, shuffle_id, non_beaconed_r2_hb, non_beaconed_slope_hb, non_beaconed_p_val_hb) %>%
+    rename(neuron = "shuffle_id", slope = "non_beaconed_slope_hb", r.squared = "non_beaconed_r2_hb", p.value = "non_beaconed_p_val_hb") %>%
+    group_by(unique_cell_id) %>%
+    nest()
+  shuffled_p_h <- shuffled_df_select %>%
+    select(unique_cell_id, shuffle_id, probe_r2_hb, probe_slope_hb, probe_p_val_hb) %>%
+    rename(neuron = "shuffle_id", slope = "probe_slope_hb", r.squared = "probe_r2_hb", p.value = "probe_p_val_hb") %>%
+    group_by(unique_cell_id) %>%
+    nest()
   
   
-  # Provides a reference for cell IDs in the experimental data
-  unique_cell_ids <- paste(df_in$session_id, df_in$cluster_id)
-  
-  # initialise
-  shuffled_results_b <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
-  shuffled_results_nb <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
-  shuffled_results_p <- shuffled_b %>% filter(unique_cell_id == unique_cell_ids[1])
-  
-  # iterate on list of cells in the main datset
-  for(i in 2:length(unique_cell_ids)) {
-    # find the shuffled data that correspond to the current cell
-    shuffled_results_b <- rbind(shuffled_results_b,
-                                shuffled_b %>%filter(unique_cell_id == unique_cell_ids[i]))
-    shuffled_results_nb <- rbind(shuffled_results_nb,
-                                 shuffled_b %>% filter(unique_cell_id == unique_cell_ids[i]))
-    shuffled_results_p <- rbind(shuffled_results_p,
-                                shuffled_b %>% filter(unique_cell_id == unique_cell_ids[i]))
- 
-  }
-  
-  df <- tibble(unique_cell_id = shuffled_results_b$unique_cell_id,
-               shuffle_results_b_o = shuffled_results_b$data,
-               shuffled_results_nb_o = shuffled_results_nb$data,
-               shuffled_results_p_o = shuffled_results_p$data)
+  df <- tibble(unique_cell_id = shuffled_b$unique_cell_id,
+               shuffle_results_b_o = shuffled_b$data,
+               shuffled_results_nb_o = shuffled_nb$data,
+               shuffled_results_p_o = shuffled_p$data,
+               shuffle_results_b_h = shuffled_b_h$data,
+               shuffled_results_nb_h = shuffled_nb_h$data,
+               shuffled_results_p_h = shuffled_p_h$data)
   
   return(df)
 }

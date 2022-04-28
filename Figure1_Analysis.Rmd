@@ -115,7 +115,10 @@ if(shuffle_type=="circular") {
   select(-contains('shuffle_results_pb_o')) %>%
   mutate(shuffle_results_b_o = spatial_firing_circ$shuffle_results_b_o,
          shuffle_results_nb_o = spatial_firing_circ$shuffled_results_nb_o,
-         shuffle_results_p_o = spatial_firing_circ$shuffled_results_p_o)
+         shuffle_results_p_o = spatial_firing_circ$shuffled_results_p_o,
+         shuffle_results_b_h = spatial_firing_circ$shuffle_results_b_h,
+         shuffle_results_nb_h = spatial_firing_circ$shuffled_results_nb_h,
+         shuffle_results_p_h = spatial_firing_circ$shuffled_results_p_h)
   # Remove unused frame
   rm(spatial_firing_circ)
 }
@@ -155,7 +158,13 @@ spatial_firing <- spatial_firing %>%
          shuffle_min_slope_nb_o = future_map2_dbl(shuffle_results_nb_o, 0.05, extract_quantile_shuffle_slopes),
          shuffle_max_slope_nb_o = future_map2_dbl(shuffle_results_nb_o, 0.95, extract_quantile_shuffle_slopes),
          shuffle_min_slope_p_o = future_map2_dbl(shuffle_results_p_o, 0.05, extract_quantile_shuffle_slopes),
-         shuffle_max_slope_p_o = future_map2_dbl(shuffle_results_p_o, 0.95, extract_quantile_shuffle_slopes))
+         shuffle_max_slope_p_o = future_map2_dbl(shuffle_results_p_o, 0.95, extract_quantile_shuffle_slopes),
+         shuffle_min_slope_b_h = future_map2_dbl(shuffle_results_b_h, 0.05, extract_quantile_shuffle_slopes),
+         shuffle_max_slope_b_h = future_map2_dbl(shuffle_results_b_h, 0.95, extract_quantile_shuffle_slopes),
+         shuffle_min_slope_nb_h = future_map2_dbl(shuffle_results_nb_h, 0.05, extract_quantile_shuffle_slopes),
+         shuffle_max_slope_nb_h = future_map2_dbl(shuffle_results_nb_h, 0.95, extract_quantile_shuffle_slopes),
+         shuffle_min_slope_p_h = future_map2_dbl(shuffle_results_p_h, 0.05, extract_quantile_shuffle_slopes),
+         shuffle_max_slope_p_h = future_map2_dbl(shuffle_results_p_h, 0.95, extract_quantile_shuffle_slopes))
 ```
 
 
@@ -171,11 +180,14 @@ We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neu
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
-  unnest_wider(shuffle_results_b_o, names_sep = "_", names_repair = "universal")
-spatial_firing <- spatial_firing %>%
-  unnest_wider(shuffle_results_nb_o, names_sep = "_", names_repair = "universal")
-spatial_firing <- spatial_firing %>%
+  unnest_wider(shuffle_results_b_o, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(shuffle_results_nb_o, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(shuffle_results_p_o, names_sep = "_", names_repair = "universal")
+
+spatial_firing <- spatial_firing %>%
+  unnest_wider(shuffle_results_b_h, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(shuffle_results_nb_h, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(shuffle_results_p_h, names_sep = "_", names_repair = "universal")
 ```
 
 removed:
@@ -352,6 +364,27 @@ spatial_firing$lm_group_p_h
 (ramps_beaconed_h <- nrow(subset(spatial_firing, lm_group_b_h == "Negative" | lm_group_b_h == "Positive")))
 
 (ramps_beaconed_o_h <- nrow(subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive" | lm_group_b_h == "Negative" | lm_group_b_h == "Positive")))
+
+ramps_beaconed_o_h/nrow(spatial_firing)
+
+# Calculate by mouse (:a quick hack, there are better ways to do this)
+ramps_mice_n <- spatial_firing %>%
+  subset((lm_group_b == "Negative" | lm_group_b == "Positive" | lm_group_b_h == "Negative" | lm_group_b_h == "Positive")) %>%
+  count(Mouse, cohort) %>%
+  select(n)
+mice_n <- spatial_firing %>% count(Mouse, cohort) %>%
+  select(n)
+ramps_by_mouse = tibble(ramps = ramps_mice_n$n, mice = mice_n$n) %>%
+  mutate(percent = 100 * ramps / mice)
+
+# Mean
+mean(ramps_by_mouse$percent)
+# SEM
+sd(ramps_by_mouse$percent)/sqrt(length(ramps_by_mouse))
+
+# min and max
+min(ramps_by_mouse$percent)
+max(ramps_by_mouse$percent)
 ```
 
 ### How much of the shuffled dataset is past criteria? 
@@ -359,36 +392,49 @@ spatial_firing$lm_group_p_h
 1. Extract shuffled slopes and rsquared values. 
 ```{r}
 shuffles = 1000
-shuff_slopes <- tibble(slopes = unlist(spatial_firing$shuffle_results_b_o_slope), 
-                       r2 = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
-                       pval = unlist(spatial_firing$shuffle_results_b_o_p.value), 
-                       min_slope = rep(spatial_firing$shuffle_min_slope_b_o, each = shuffles), 
-                       max_slope = rep(spatial_firing$shuffle_max_slope_b_o, each = shuffles))
+shuff_slopes <- tibble(slopes_o = unlist(spatial_firing$shuffle_results_b_o_slope), 
+                       r2_o = unlist(spatial_firing$shuffle_results_b_o_r.squared), 
+                       pval_o = unlist(spatial_firing$shuffle_results_b_o_p.value), 
+                       min_slope_o = rep(spatial_firing$shuffle_min_slope_b_o, each = shuffles), 
+                       max_slope_o = rep(spatial_firing$shuffle_max_slope_b_o, each = shuffles),
+                       slopes_h = unlist(spatial_firing$shuffle_results_b_h_slope), 
+                       r2_h = unlist(spatial_firing$shuffle_results_b_h_r.squared), 
+                       pval_h = unlist(spatial_firing$shuffle_results_b_h_p.value), 
+                       min_slope_h = rep(spatial_firing$shuffle_min_slope_b_h, each = shuffles), 
+                       max_slope_h = rep(spatial_firing$shuffle_max_slope_b_h, each = shuffles))
 ```
 
 
-2. Classify activity of shuffled cells on the track segment before the reward zone.
+2. Classify activity of shuffled cells on the track segment before and after the reward zone.
 ```{r}
 shuff_slopes <- shuff_slopes %>%
   mutate(
     shuff_lm_group_b = pmap(
-      list(
-        min_slope,
-        max_slope,
-        slopes,
-        pval
-      ),
+      list(min_slope_o,
+           max_slope_o,
+           slopes_o,
+           pval_o),
+      compare_slopes
+    ),
+    shuff_lm_group_b_h = pmap(
+      list(min_slope_h,
+           max_slope_h,
+           slopes_h,
+           pval_h),
       compare_slopes
     )
   )
 ```
 
 
+
 3. Calculate proportion of cells in the shuffled datasets that pass criteria
 ```{r}
 (total_shuffles <- nrow(shuff_slopes))
-(shuff_ramps <- nrow(subset(shuff_slopes, shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" )))
-(shuff_ramps_percentage <- (shuff_ramps / total_shuffles)*100)
+(shuff_ramps_o <- nrow(subset(shuff_slopes, shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" )))
+(shuff_ramps_h <- nrow(subset(shuff_slopes, shuff_lm_group_b_h == "Positive" | shuff_lm_group_b_h == "Negative" )))
+(shuff_ramps_o_h <- nrow(subset(shuff_slopes, shuff_lm_group_b == "Positive" | shuff_lm_group_b == "Negative" | shuff_lm_group_b_h == "Positive" | shuff_lm_group_b_h == "Negative" )))
+(shuff_ramps_percentage <- (shuff_ramps_o_h / total_shuffles)*100)
 ```
 
 Calculate how many shuffles are unclassified
@@ -550,7 +596,7 @@ as.integer(factor(spatial_firing$session_id, levels = unique(spatial_firing$sess
 
 ## now plot scatter of slopes on track segements before and after the reward zone.
 
-1. Here we subset neurons based on positive, negative or unclassified in the linear model and either reset or contiuous firing. 
+1. Here we subset neurons based on positive, negative or unclassified in the linear model and either reset or continuous firing. 
 ```{r}
 position_neurons_all <- spatial_firing %>% 
   filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
@@ -599,9 +645,10 @@ if (save_figures == 1) {
  ggsave(file = "plots/slope_comparison_reset.png", width = 4, height = 4) 
 }
 ```
-The same plot for shuffled data.
+Corresponding plot for shuffled data from one neuron (plotting all of the shuffled data this way gives too many points to be meaningful).
 ```{r}
-
+plot(spatial_firing$shuffle_results_b_o_slope[[1]],
+     spatial_firing$shuffle_results_b_h_slope[[1]])
 ```
 
 

@@ -50,7 +50,7 @@ for (i in 1:nrow(spatial_firing)) {
   df<-bind_rows(df, spatial_firing_i)
 }
 spatial_firing <- df
-rm(df)
+rm(df, spatial_firing_i)
 
 load_sf = 0
 if (load_sf==1) {
@@ -92,32 +92,13 @@ if (load_sf==1) {
 
 ## Categorise neurons based on significant model coefficients
 
-The idea here is to categorise each neuron according to whether it has coefficients for P, S or A that are 'signficant' at a threshold of 0.01.
+The idea here is to categorise each neuron according to whether it has coefficients for P, S or A that are 'significant' at a threshold of 0.01.
 ```{r}
 spatial_firing <- spatial_firing  %>%
     mutate(final_model_o_b  = pmap(list(o_mm_p_b_pos, o_mm_p_b_speed, o_mm_p_b_accel, 0.01), coef_comparison))
 ```
 
 
-## Calculate standardized coefficients for position, speed and acceleration in GLMER model
-
-Call functions to calculate and extract standardised coefficients for position, speed and acceleration
-Run on all cells
-```{r, warning=FALSE}
-#spatial_firing <- spatial_firing %>%
-#  mutate(o_b_mod_coefs = map(o_mm_b, std_coef)) %>%
-#  #mutate(o_p_mod_coefs = map(o_mm_p, std_coef)) %>%
-#  unnest_wider(o_b_mod_coefs, names_sep = "_", names_repair = "universal") #%>%
-#  #unnest_wider(o_p_mod_coefs, names_sep = "_", names_repair = "universal")
-#
-## check number of NAs
-#sum(is.na(spatial_firing$o_b_mod_coefs_pos))
-```
-
-Standardized coefficients are in:
-spatial_firing$o_b_mod_coefs_pos
-spatial_firing$o_b_mod_coefs_speed
-spatial_firing$o_b_mod_coefs_accel
 
 
 1. make unique id for each neuron (session_id + cluster_id)
@@ -129,11 +110,23 @@ spatial_firing <- spatial_firing  %>%
 
 ### Plot model selection results performed in Figure1_Analysis.Rmd
 
+Standardized coefficients are in (see above):
+spatial_firing$o_b_mod_coefs_pos
+spatial_firing$o_b_mod_coefs_speed
+spatial_firing$o_b_mod_coefs_accel
+
 First organise the data.
 ```{r}
-# Distributions of fit categories for all neurons
-(all_neurons_groups <- spatial_firing$final_model_o_b %>%
-  make_coeffs_table())
+# Distributions of fit categories for all neurons with ramping activity before the reward zone
+(all_neurons_groups <- spatial_firing %>% 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+   select(final_model_o_b) %>%
+   make_coeffs_table())
+
+# All neurons in the group
+sum(all_neurons_groups$num)
+# Positional neurons
+sum(all_neurons_groups[grep("P", all_neurons_groups$ramp_id),]$num)
 
 # For positive slope neurons
 pos_neurons_groups <- spatial_firing %>%
@@ -192,7 +185,7 @@ if (save_figures == 1) {
 ### plot distribution of coefficients for all cells
 _split by positive and negative sloping neurons_
 
-1. make unique id for each neuron (session_id + cluster_id)
+make unique id for each neuron (session_id + cluster_id)
 ```{r}
 # run on all cells
 spatial_firing <- spatial_firing  %>%
@@ -200,38 +193,19 @@ spatial_firing <- spatial_firing  %>%
 
 ```
 
-2. take only columns we need for the rest of the analysis
+1. Reorganize data
 ```{r}
-spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b, lm_group_nb, lm_group_p) %>%
+spatial_firing_coefs <- spatial_firing %>% 
+  select(session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
   unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b, lm_group_nb, lm_group_p)) %>%
-  as.tibble()
-spatial_firing_save$o_b_mod_coefs_pos <- as.numeric(spatial_firing_save$o_b_mod_coefs_pos)
-spatial_firing_save$o_b_mod_coefs_speed <- as.numeric(spatial_firing_save$o_b_mod_coefs_speed)
-spatial_firing_save$o_b_mod_coefs_accel <- as.numeric(spatial_firing_save$o_b_mod_coefs_accel)
-spatial_firing_save$cluster_id <- as.numeric(spatial_firing_save$cluster_id)
+    final_model_o_b, lm_group_b)) %>%
+  as.tibble() %>%
+  gather("coef_type", "coef", o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, factor_key = TRUE) %>%
+  mutate(coef_type = sub("o_b_mod_coefs_pos", "P", coef_type),
+         coef_type = sub("o_b_mod_coefs_speed", "S", coef_type),
+         coef_type = sub("o_b_mod_coefs_accel", "A", coef_type)) %>%
+  rename(group = "final_model_o_b")
 
-```
-
-3. save to csv file _this is for matching the coefficient values to plots of instantaneous rates from python_
-```{r}
-write.table(spatial_firing_save, "data_out/all_results_coefficients.csv", quote=FALSE, sep="\t")
-
-```
-
-4. put data into a tibble for plotting
-```{r}
-data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
-                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
-                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save$final_model_o_b),
-                              as.character(spatial_firing_save$final_model_o_b),
-                              as.character(spatial_firing_save$final_model_o_b)), 
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save)),
-                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
 ```
 
 _Plot coefficients for all cells_
@@ -239,102 +213,144 @@ _Plot coefficients for all cells_
 5a. Split by positive slope _all cells_
 ```{r}
 
-(pos_coef_plot <- data_coef %>%
-  subset(lm_result == "Positive" ) %>%
-    standard_plot())
+(pos_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Positive") %>%
+  standard_plot())
 
 if (save_figures == 1) {
    ggsave(file = "plots/CoefficientValues_positivecells.png", width = 2.5, height = 2.5)
 }
+
+one.way_p <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive"))
+summary(one.way_p)
+
+tukey.test_p <- TukeyHSD(one.way_p)
+tukey.test_p$coef_type
 ```
 
 5b. Split by negative slope _all cells_
 ```{r}
-(neg_coef_plot <- data_coef %>%
-  subset(lm_result == "Negative" ) %>%
+(neg_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Negative" ) %>%
     standard_plot())
 
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_negativecells.png", width = 2.5, height = 2.5)
 }
+
+one.way_n <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative"))
+summary(one.way_n)
+
+tukey.test_n <- TukeyHSD(one.way_n)
+tukey.test_n$coef_type
 ```
 
 _Plot coefficients for conjunctive position cells_
 
 5c. Split by positive slope _PS cells_
 ```{r}
-(pos_PS_coef_plot <- data_coef %>%
-  subset(group == "PS") %>%
-  subset(lm_result == "Positive" ) %>%
+(pos_PS_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Positive", group == "PS") %>%
     standard_plot())
 
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_PositivePScells.png", width = 2.5, height = 2.5)
 }
+
+one.way_p_ps <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive", group == "PS"))
+summary(one.way_p_ps)
+
+tukey.test_n <- TukeyHSD(one.way_p_ps)
+tukey.test_n$coef_type
 ```
 
 5d. Split by negative slope _PS cells_
 ```{r}
-(neg_PS_coef_plot <- data_coef %>%
-  subset(group == "PS") %>%
-  subset(lm_result == "Negative" ) %>%
-  standard_plot())
+(neg_PS_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Negative", group == "PS") %>%
+    standard_plot())
 
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_NegativePScells.png", width = 2.5, height = 2.5)
 }
+
+one.way_n_ps <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative", group == "PS"))
+summary(one.way_n_ps)
+
+tukey.test_n <- TukeyHSD(one.way_n_ps)
+tukey.test_n$coef_type
 ```
 
 
 5e. Split by positive slope _PSA cells_
 ```{r}
-(pos_PSA_coef_plot <- data_coef %>%
-  subset(group == "PSA") %>%
-  subset(lm_result == "Positive" ) %>%
+(pos_PSA_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Positive", group == "PSA") %>%
     standard_plot())
 
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_PositivePSAcells.png", width = 2.5, height = 2.5)
 }
+
+one.way_p_psa <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive", group == "PSA"))
+summary(one.way_p_psa)
+
+tukey.test_p_psa <- TukeyHSD(one.way_p_psa)
+tukey.test_p_psa$coef_type
 ```
 
 5f. Split by negative slope _PSA cells_
 ```{r}
-(neg_PSA_coef_plot <- data_coef %>%
-  subset(group == "PSA") %>%
-  subset(lm_result == "Negative" ) %>%
-  standard_plot())
+(neg_PSA_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Negative", group == "PSA") %>%
+    standard_plot())
 
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_NegativePSAcells.png", width = 2.5, height = 2.5)
 }
+
+one.way_n_psa <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative", group == "PSA"))
+summary(one.way_n_psa)
+
+tukey.test_n_psa <- TukeyHSD(one.way_n_psa)
+tukey.test_n_psa$coef_type
 ```
 
 _Plot coefficients for just position cells_
 
 5g. Plot coefficients for cells classified in Figure 2 as having a positive slope and in Figure 3 as having significant fit coefficients for position only. _P cells_
 ```{r}
-(pos_P_coef_plot <- data_coef %>%
-  subset(group == "P") %>%
-  subset(lm_result == "Positive") %>%
-  standard_plot())
+(pos_P_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Positive", group == "P") %>%
+    standard_plot())
 
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_PositivePcells.png", width = 2.5, height = 2.5)
 }
+
+one.way_p_p <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive", group == "P"))
+summary(one.way_p_p)
+
+tukey.test_p_p <- TukeyHSD(one.way_p_p)
+tukey.test_p_p$coef_type
 ```
 
 
 5h. Plot coefficients for cells classified in Figure 2 as having a negative slope and in Figure 3 as having significant fit coefficients for position only. _P cells_
 ```{r}
-(neg_P_coef_plot <-  data_coef %>%
-  subset(group == "P") %>%
-  subset(lm_result == "Negative") %>%
+(neg_P_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Negative", group == "P") %>%
     standard_plot())
 
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_NegativePcells.png", width = 2.5, height = 2.5)
 }
+
+one.way_n_p <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative", group == "P"))
+summary(one.way_n_p)
+
+tukey.test_n_p <- TukeyHSD(one.way_n_p)
+tukey.test_n_p$coef_type
 ```
 
 
@@ -342,9 +358,8 @@ _Plot coefficients for just speed cells_
 5i. Plot coefficients for cells classified in Figure 1 as having a positive slope and in Figure 2 as having significant fit coefficients for position only. _SA cells_
 
 ```{r}
-(pos_SA_coef_plot <- data_coef %>%
-  subset(group == "SA") %>%
-  subset(lm_result == "Positive") %>%
+(pos_SA_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Positive", group == "SA") %>%
     standard_plot())
 
 if (save_figures == 1) {
@@ -356,9 +371,8 @@ if (save_figures == 1) {
 5j. Plot coefficients for cells classified in Figure 1 as having a negative slope and in Figure 2 as having significant fit coefficients for position only. _SA cells_
 
 ```{r}
-(neg_SA_coef_plot <- data_coef %>%
-  subset(group == "SA") %>%
-  subset(lm_result == "Negative") %>%
+(neg_SA_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Negative", group == "SA") %>%
     standard_plot())
 
 if (save_figures == 1) {
@@ -370,104 +384,17 @@ if (save_figures == 1) {
 5k. Plot coefficients for cells classified in Figure 1 as being unclassified but that have 'significant' positional coefficients in the mixed effect model.
 
 ```{r}
-(UC_PSA_coef_plot <- data_coef %>%
-  subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
-  subset(lm_result == "Unclassified") %>%
+(UC_PSA_coef_plot <- spatial_firing_coefs %>%
+  filter(lm_group_b == "Unclassified", group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
     standard_plot())
+
+
 if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_UCPSAcells.png", width = 2.5, height = 2.5)
 }
 ```
 
 
-
-
-###----------------------------------------------------------------------------###
-
-Statistical analyses to compare coefficients for position, speed and acceleration.
-
-position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
-1. extract position cells
-```{r}
-ramp_cells <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-
-position_cells <- subset(ramp_cells, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-
-```
-
-  
-1. Take only 
-```{r}
-position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-```{r}
-pos_position_cells <- subset(spatial_firing, lm_group_b == "Positive")
-neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
-
-```
-
-2. take only columns we need for the rest of the analysis
-```{r}
-spatial_firing_save_p <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
-  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b)) %>%
-  as.tibble()
-
-spatial_firing_save_n <- select(neg_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
-  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b)) %>%
-  as.tibble()
-```
-
-1. put data into a tibble for plotting
-```{r}
-
-data_coef_p <- tibble(session_id = rep(unlist(spatial_firing_save_p$unique_id), times=3),
-                    cluster_id = rep(spatial_firing_save_p$cluster_id, times=3),
-
-                    coef = c(as.character(spatial_firing_save_p$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save_p$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save_p$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save_p$final_model_o_b),
-                              as.character(spatial_firing_save_p$final_model_o_b),
-                              as.character(spatial_firing_save_p$final_model_o_b)),
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save_p)),
-                    lm_result = rep(as.character(spatial_firing_save_p$lm_group_b), times=3))
-
-data_coef_n <- tibble(session_id = rep(unlist(spatial_firing_save_n$unique_id), times=3),
-                    cluster_id = rep(spatial_firing_save_n$cluster_id, times=3),
-                    coef = c(as.character(spatial_firing_save_n$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save_n$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save_n$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save_n$final_model_o_b),
-                              as.character(spatial_firing_save_n$final_model_o_b),
-                              as.character(spatial_firing_save_n$final_model_o_b)),
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save_n)),
-                    lm_result = rep(as.character(spatial_firing_save_n$lm_group_b), times=3))
-```
-
-2. run anova
-```{r}
-one.way_p <- aov(coef ~ coef_type, data = data_coef_p)
-
-summary(one.way_p)
-
-one.way_n <- aov(coef ~ coef_type, data = data_coef_n)
-
-summary(one.way_n)
-```
-
-3. Post hoc Tukey's test
-```{r}
-tukey.test_p <- TukeyHSD(one.way_p)
-tukey.test_p$coef_type
-
-tukey.test_n <- TukeyHSD(one.way_n)
-tukey.test_n$coef_type
-```
 
 
 
