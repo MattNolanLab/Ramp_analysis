@@ -752,7 +752,25 @@ all_plots_by_outome <- function(df) {
 
 # sum(sapply(speed_neurons$avg_both_asr_b, anyNA))
 
-
+# Function to plot slopes as a function of trial outcome
+slopes_by_outcome <- function(df){
+  df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, asr_b_o_rewarded_fit_slope, asr_b_try_fit_slope, asr_b_run_fit_slope) %>%
+    rename(Hit = asr_b_o_rewarded_fit_slope,
+           Try = asr_b_try_fit_slope,
+           Run = asr_b_run_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", ) %>%
+    ggplot(aes(x = fct_relevel(Outcome, "Hit", "Try", "Run"), y = Slope)) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Outcome, "Hit", "Try", "Run"))) +
+    labs(x = "Outcome", y = "Slope") +
+    scale_fill_manual(values=c("grey","red", "blue")) +
+    theme_classic() +
+    theme(text = element_text(size=20),
+          legend.position = "none")
+}
 
 # Function to make violin plots for offsets according to trial outcome
 offset_groups_violin_plot <- function(df, min_y = -3.5, max_y = 3.5) {

@@ -254,18 +254,14 @@ spatial_firing[!sapply(spatial_firing$Avg_FiringRate_TryTrials, anyNA)
 ## Compare slopes before the reward zone as a function of trial outcome.
 ⎄ 
 ```{r}
-spatial_firing[!(sapply(spatial_firing$Avg_FiringRate_TryTrials, anyNA) | sapply(spatial_firing$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
-  filter(lm_group_b == "Positive", final_model_o_b == "P") %>%
-  select(unique_id, asr_b_o_rewarded_fit_slope, asr_b_try_fit_slope, asr_b_run_fit_slope) %>%
-  rename(Hit = asr_b_o_rewarded_fit_slope,
-         Try = asr_b_try_fit_slope,
-         Run = asr_b_run_fit_slope) %>%
-  mutate(unique_id = unlist(unique_id)) %>%
-  pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", ) %>%
-  ggplot(aes(x = fct_relevel(Outcome, "Hit", "Try", "Run"), y = Slope, group = unique_id)) +
-  geom_point() +
-  geom_line() +
-  theme_classic()
+spatial_firing %>%
+  filter(lm_group_b == "Positive", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PSA" | final_model_o_b == "PA") %>%
+  slopes_by_outcome()
+
+spatial_firing %>%
+  filter(lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PSA" | final_model_o_b == "PA") %>%
+  slopes_by_outcome()
+
 ```
 
 
