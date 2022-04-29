@@ -264,6 +264,29 @@ spatial_firing %>%
 
 ```
 
+```{r}
+one.way <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  slopes_by_outcome_aov
+summary(one.way)
+
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  slopes_by_outcome_t
+  
+one.way <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  slopes_by_outcome_aov
+summary(one.way)
+
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  slopes_by_outcome_t
+```
 
 
 
@@ -318,84 +341,53 @@ spatial_firing <- spatial_firing %>%
 - do this for both negative and positive slopes in the outbound zone
 
 
-1. First extract offset data into a tibble, combining data from hit, run and try trials in a tidy format.
-```{r}
-outcomes_offsets_data <- tibble(session_id = rep(unlist(spatial_firing$unique_id), times=3), 
-                    cluster_id = rep(spatial_firing$cluster_id, times=3), 
-                    predict = c(as.numeric(spatial_firing$predict_diff_hit),
-                             as.numeric(spatial_firing$predict_diff_run),
-                             as.numeric(spatial_firing$predict_diff_try)),
-                    coef = c(as.numeric(spatial_firing$o_b_mod_coefs_speed),
-                             as.numeric(spatial_firing$o_b_mod_coefs_speed),
-                             as.numeric(spatial_firing$o_b_mod_coefs_speed)),
-                    type = rep(c("Hit", "Run", "Try"),
-                                    each = nrow(spatial_firing)),
-                    track_category = rep(as.character(spatial_firing$track_category), times=3),
-                    final_model_o_b = rep(as.character(spatial_firing$final_model_o_b), times=3),
-                    lm_group_b = rep(as.character(spatial_firing$lm_group_b), times=3),
-                    lm_group_b_h = rep(as.character(spatial_firing$lm_group_b_h), times=3))
-
-```
-
-
-Onset data for position encoding encoding neurons (P, PA, PS, PSA)
-```{r}
-outcomes_offsets_data_pospos <- outcomes_offsets_data %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
-                lm_group_b == "Positive" & lm_group_b_h == "Positive")
-
-outcomes_offsets_data_negneg <- outcomes_offsets_data %>% 
-  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
-                lm_group_b == "Negative" & lm_group_b_h == "Negative")
-```
-
 
 Make and save plots
 ```{r}
-outcomes_offsets_data_pospos %>%
-  offset_groups_violin_plot(-5, 3)
-  
+spatial_firing %>% filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                          lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  offsets_by_outcome(-4, 2)
 
 if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_pos_AllPosition.png",width = 3.2, height = 3)
 }
 
 
-outcomes_offsets_data_negneg %>%
-  offset_groups_violin_plot(-3.5, 5.5)
+spatial_firing %>% filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                          lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  offsets_by_outcome(-1.5, 4.5)
 
 if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_neg_AllPosition.png",width = 3.2, height = 3)
 }
-  
 ```
 
 _run statistical tests_
 Run anova to compare effect of trial type (hit, try, run) on offset values for ++ and -- neurons 
 ```{r}
-
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_pospos)
+one.way <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  offsets_by_outcome_aov
 summary(one.way)
 
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_negneg)
-summary(one.way)
-
-```
-
- One-sample ttest to see whether offsets differ from 0.
-```{r}
-# Positive slope neurons
-outcomes_offsets_data_pospos %>%
-  group_by(type) %>%
-  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
-  unnest(cols = c(ttest))
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  offsets_by_outcome_t
   
-# Negative slope neurons
-outcomes_offsets_data_negneg %>%
-  group_by(type) %>%
-  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
-  unnest(cols = c(ttest))
+one.way <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  offsets_by_outcome_aov
+summary(one.way)
+
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  offsets_by_outcome_t
 ```
+
 
 _plots for conjunctive position encoding encoding neurons (PA, PSA, PS)_
 1. extract only neurons that are subset based on speed encoding(PA, PSA, PS) (Figure 3) and are ++ or -- in beaconed trials
