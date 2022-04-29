@@ -656,8 +656,8 @@ join_average_rates <- function(hit, run, try, session_id, cluster_id) {
     )
   }
   df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try)),
-               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)),
-               Position = c(rep(-30:169), rep(-30:169), rep(-30:169)))
+               Position = c(rep(-30:169), rep(-30:169), rep(-30:169)),
+               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)))
   df$Rates <- scale(df$Rates, center=TRUE, scale=TRUE)[,1]
   return (df)
 }
