@@ -656,8 +656,8 @@ join_average_rates <- function(hit, run, try, session_id, cluster_id) {
     )
   }
   df <- tibble(Rates = c(unlist(hit), unlist(run), unlist(try)),
-               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)),
-               Position = c(rep(-30:169), rep(-30:169), rep(-30:169)))
+               Position = c(rep(-30:169), rep(-30:169), rep(-30:169)),
+               Reward_indicator = c(rep("Rewarded", times=200), rep("Run Through", times=200), rep("Try", times=200)))
   df$Rates <- scale(df$Rates, center=TRUE, scale=TRUE)[,1]
   return (df)
 }
@@ -752,27 +752,105 @@ all_plots_by_outome <- function(df) {
 
 # sum(sapply(speed_neurons$avg_both_asr_b, anyNA))
 
-
-
-# Function to make violin plots for offsets according to trial outcome
-offset_groups_violin_plot <- function(df, min_y = -3.5, max_y = 3.5) {
-  ggplot(data=df, aes(y = unlist(predict), x=as.factor(unlist(type)), fill=as.factor(unlist(type)))) +
+# Function to plot slopes as a function of trial outcome
+slopes_by_outcome <- function(df, min_y = -3.5, max_y = 3.5){
+  df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, asr_b_o_rewarded_fit_slope, asr_b_try_fit_slope, asr_b_run_fit_slope) %>%
+    rename(Hit = asr_b_o_rewarded_fit_slope,
+           Try = asr_b_try_fit_slope,
+           Run = asr_b_run_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", ) %>%
+    ggplot(aes(x = fct_relevel(Outcome, "Hit", "Try", "Run"), y = Slope)) +
     coord_cartesian(ylim=c(min_y,max_y)) +
-    geom_violin(aes(y = unlist(predict), x=as.factor(unlist(type))), alpha=0.5) +
-    stat_summary(fun=mean, geom="point", shape=23, size=2) +
-    geom_jitter(alpha=0.05) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Outcome, "Hit", "Try", "Run"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    labs(x = "Outcome", y = "Slope") +
     scale_fill_manual(values=c("grey","red", "blue")) +
-    labs(y="Offset", x="") +
     theme_classic() +
-    theme(axis.text.x = element_text(size=15),
-          axis.text.y = element_text(size=15),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=15), 
-          legend.text=element_text(size=15), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+    theme(text = element_text(size=20),
+          legend.position = "none")
 }
+
+
+# Function to plot offsets as a function of trial outcome
+offsets_by_outcome <- function(df, min_y = -3.5, max_y = 3.5){
+  df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, predict_diff_hit, predict_diff_try, predict_diff_run) %>%
+    rename(Hit = predict_diff_hit,
+           Try = predict_diff_try,
+           Run = predict_diff_run) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", ) %>%
+    ggplot(aes(x = fct_relevel(Outcome, "Hit", "Try", "Run"), y = Slope)) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Outcome, "Hit", "Try", "Run"))) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    labs(x = "Outcome", y = "Offset") +
+    scale_fill_manual(values=c("grey","red", "blue")) +
+    theme_classic() +
+    theme(text = element_text(size=20),
+          legend.position = "none")
+}
+
+# One-way ANOVA to compare slopes by outcome
+slopes_by_outcome_aov <- function(df) {
+  df <- df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, asr_b_o_rewarded_fit_slope, asr_b_try_fit_slope, asr_b_run_fit_slope) %>%
+    rename(Hit = asr_b_o_rewarded_fit_slope,
+           Try = asr_b_try_fit_slope,
+           Run = asr_b_run_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", )
+aov <- aov(Slope ~ Outcome, data = df)
+}
+
+# One sample t-tests for slopes
+slopes_by_outcome_t <- function(df) {
+  df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, asr_b_o_rewarded_fit_slope, asr_b_try_fit_slope, asr_b_run_fit_slope) %>%
+    rename(Hit = asr_b_o_rewarded_fit_slope,
+           Try = asr_b_try_fit_slope,
+           Run = asr_b_run_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", ) %>%
+    group_by(Outcome) %>%
+    summarise(ttest = list(t.test(Slope, mu = 0)$p.value)) %>%
+    unnest(cols = c(ttest))
+}
+
+
+# One-way ANOVA to compare offsets by outcome
+offsets_by_outcome_aov <- function(df) {
+  df <- df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, predict_diff_hit, predict_diff_try, predict_diff_run) %>%
+    rename(Hit = predict_diff_hit,
+           Try = predict_diff_try,
+           Run = predict_diff_run) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Offset", )
+aov <- aov(Offset ~ Outcome, data = df)
+}
+
+# One sample t tests for offsets
+offsets_by_outcome_t <- function(df) {
+  df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, predict_diff_hit, predict_diff_try, predict_diff_run) %>%
+    rename(Hit = predict_diff_hit,
+           Try = predict_diff_try,
+           Run = predict_diff_run) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Offset", ) %>%
+    group_by(Outcome) %>%
+    summarise(ttest = list(t.test(Offset, mu = 0)$p.value)) %>%
+    unnest(cols = c(ttest))
+}
+
+
 
 # -------------------------------------------------------------------------------- #
 

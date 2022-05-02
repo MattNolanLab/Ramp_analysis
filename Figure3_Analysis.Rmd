@@ -22,114 +22,6 @@ rewarded trials
 3. run through = speed in the reward zone is outside the 95% confidence interval of speed in the reward zone in rewarded trials
 
 
-### --------------------------------------------------------------------------------------- ###
-
-Analysis to test whether trial outcome has a significant effect on firing rate slope. This isn't does't directly test the core hypotheses, as we know some neurons have speed / acceleration modulated firing, so we make it optional.
-
-1. First combine hit and miss trials together with an indicator of trial type (hit, try, run). Uses join_rates.
-
-2. Fit linear model to all cells and extract pval
-Fitting uses a generalised linear mixed effect model with a Tweedie response distribution (compare_models_slope_glm).
-Similar results are obtained using a linear mixed effect model (use the function compare_models_slope_lm instead).
-* Warning *
-The model fitting here takes a long time.
-
-3. Then classify cells based on the significance of the interaction between trial outcome and position in the above model (mark_neurons_sig). 
-```{r}
-test_outcomes = 0
-
-if (test_outcomes == 1) {
-  spatial_firing <- spatial_firing %>%
-    mutate(both_asr_b_by_trial = pmap(list(spikes_in_time_reward, spikes_in_time_run, spikes_in_time_try, session_id, cluster_id), join_rates),
-           pval_slope = pmap(list(both_asr_b_by_trial, Avg_FiringRate_RunTrials, Avg_FiringRate_TryTrials), compare_models_slope_glm),
-           reward_interaction_id = map(pval_slope, mark_neurons_sig))
-  
-  # Number of significant neurons
-  length(which(spatial_firing$reward_interaction_id == "Significant"))
-  
-  # Number of non-significant neurons
-  length(which(spatial_firing$reward_interaction_id == "Not-Significant"))
-  
-  # Other neurons
-  length(which(spatial_firing$reward_interaction_id == "None"))
-  
-}
-
-```
-
-
-
-
-
-### ----------------------------------------------------------------------------- ###
-
-We also want to fit a simple linear model for each trial outcome separately so we can assess the slope and reward zone offset for each neuron.
-
-1. Add position to data for try and run through trials (we already have coefficients for rewarded data from Figure 1). Function is the same as used in Figure 1.
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(asr_b_try = pmap(list(Avg_FiringRate_TryTrials, session_id, cluster_id), add_position),
-         asr_b_run = pmap(list(Avg_FiringRate_RunTrials, session_id, cluster_id), add_position)
-         )
-```
-
-2. Fit lm to data from all cells.
-Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
-```{r}
-spatial_firing <- spatial_firing %>%
-  select(-contains('asr_b_try_fit_')) %>%
-  select(-contains('asr_b_run_fit_')) %>%
-  mutate(asr_b_try_fit = pmap(list(asr_b_try, 30, 90), lm_tidy_helper)) %>%
-  mutate(asr_b_run_fit = pmap(list(asr_b_run, 30, 90), lm_tidy_helper)) %>%
-  unnest_wider(asr_b_try_fit, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(asr_b_run_fit, names_sep = "_", names_repair = "universal")
-
-```
-
-Linear model results are stored in:
-spatial_firing$asr_b_try_fit_pval
-spatial_firing$asr_b_try_fit_slope
-spatial_firing$asr_b_try_fit_r.squared
-
-
-### ----------------------------------------------------------------------------- ###
-
-## Calculate offset for run and try trials
-
-We want to find out if within the position and speed groups, is their firing rate reset or ous across the reward region?
-
-To do this, we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
-
-First, normalise firing rates. 
-```{r}
-spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_try = map(Avg_FiringRate_TryTrials, normalise_rates), 
-         normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates),
-         normalised_rates_hit = map(Avg_FiringRate_HitTrials, normalise_rates))
-```
-
-Then, predict firing rate in homebound region based on fit from real data in outbound region
-
-Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm).
-
-The function predict_homebound was used previously for analyses for Figure 1.
-```{r}
-spatial_firing <- spatial_firing %>%
-  select(-contains('predict_params_try_')) %>%
-  select(-contains('predict_params_run_')) %>%
-  mutate(predict_params_try = map(normalised_rates_try, predict_homebound),
-         predict_params_run = map(normalised_rates_run, predict_homebound)) %>%
-  unnest_wider(predict_params_try, names_sep = "_", names_repair = "universal") %>%
-  unnest_wider(predict_params_run, names_sep = "_", names_repair = "universal") 
-
-spatial_firing <- spatial_firing %>%
-  mutate(
-         predict_diff_try = map2_dbl(normalised_rates_try, predict_params_try_fit, calc_predict_diff),
-         predict_diff_run = map2_dbl(normalised_rates_run, predict_params_run_fit, calc_predict_diff))
-
-```
-
-
 
 ### ----------------------------------------------------------------------------------------- ###
 
@@ -165,10 +57,19 @@ position_all_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_gro
 # Total number of cells (not necessarily all used for plots as not all neurons have all outcomes)
 # Next to do is to remove these neurons
 dim(position_all_neurons)[1]
+
+# Cells with data for all outcomes
+sum(sapply(position_all_neurons$avg_both_asr_b, anyNA))
+
+not_anyNA <- function(df) {
+  !anyNA(df)
+}
+position_all_neurons <- position_all_neurons[sapply(position_all_neurons$avg_both_asr_b, not_anyNA),]
+
 # Cells with data for all outcomes
 sum(sapply(position_all_neurons$avg_both_asr_b, anyNA))
 ```
-
+  
 ```{r}
 position_all_neurons_plots <- all_plots_by_outome(position_all_neurons)
 plot_grid(position_all_neurons_plots[[1]][[1]],
@@ -291,6 +192,147 @@ if (save_figures==1) {
 
 
 
+
+
+
+
+### ----------------------------------------------------------------------------- ###
+
+Examine slopes and firing rate offsets 
+
+These analyses start with data in the following column of spatial firing:
+Avg_FiringRate_TryTrials
+Avg_FiringRate_RunTrials
+Avg_FiringRate_HitTrials
+
+
+We also want to fit a simple linear model for each trial outcome separately so we can assess the slope and reward zone offset for each neuron.
+
+1. Add position to data for try and run through trials (we already have coefficients for rewarded data from Figure 1). Function is the same as used in Figure 1.
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(asr_b_hit = pmap(list(Avg_FiringRate_HitTrials), add_position),
+         asr_b_try = pmap(list(Avg_FiringRate_TryTrials), add_position),
+         asr_b_run = pmap(list(Avg_FiringRate_RunTrials), add_position))
+```
+
+2. Fit lm to data from all cells.
+Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('asr_b_hit_fit_')) %>%
+  select(-contains('asr_b_try_fit_')) %>%
+  select(-contains('asr_b_run_fit_')) %>%
+  mutate(asr_b_hit_fit = pmap(list(asr_b_hit, 30, 90), lm_tidy_helper)) %>%
+  mutate(asr_b_try_fit = pmap(list(asr_b_try, 30, 90), lm_tidy_helper)) %>%
+  mutate(asr_b_run_fit = pmap(list(asr_b_run, 30, 90), lm_tidy_helper)) %>%
+  unnest_wider(asr_b_hit_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_b_try_fit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(asr_b_run_fit, names_sep = "_", names_repair = "universal")
+
+```
+
+Linear model results are stored in:
+spatial_firing$asr_b_try_fit_pval
+spatial_firing$asr_b_try_fit_slope
+spatial_firing$asr_b_try_fit_r.squared
+
+
+Trials with all try outcomes:
+spatial_firing[!sapply(spatial_firing$Avg_FiringRate_TryTrials, anyNA),]
+Trials with all run outcomes:
+spatial_firing[!sapply(spatial_firing$Avg_FiringRate_RunTrials, anyNA),]
+
+Trials with all run and try outcomes:
+spatial_firing[!(sapply(spatial_firing$Avg_FiringRate_TryTrials, anyNA) | sapply(spatial_firing$Avg_FiringRate_RunTrials, anyNA)),]
+
+To check consistency with smoothed data:
+spatial_firing[!sapply(spatial_firing$Avg_FiringRate_TryTrials, anyNA)
+== sapply(spatial_firing$Avg_FiringRate_TryTrials_smoothed, anyNA),]
+
+
+## Compare slopes before the reward zone as a function of trial outcome.
+⎄ 
+```{r}
+spatial_firing %>%
+  filter(lm_group_b == "Positive", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PSA" | final_model_o_b == "PA") %>%
+  slopes_by_outcome()
+
+spatial_firing %>%
+  filter(lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PSA" | final_model_o_b == "PA") %>%
+  slopes_by_outcome()
+
+```
+
+```{r}
+one.way <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  slopes_by_outcome_aov
+summary(one.way)
+
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  slopes_by_outcome_t
+  
+one.way <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  slopes_by_outcome_aov
+summary(one.way)
+
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  slopes_by_outcome_t
+```
+
+
+
+## Calculate offset for run and try trials
+
+We want to find out if firing rate reset depends on trial outcome.
+
+These analyses use the following columns od sptial_firing as a starting point:
+Avg_FiringRate_TryTrials
+Avg_FiringRate_RunTrials
+Avg_FiringRate_HitTrials
+
+As in Figure 1 we will predict the firing rate on the homebound zone from the activity in the outbound. Then find the difference between the predicted and real data to determine if cells have reset or continued. 
+
+First, normalise firing rates. 
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(normalised_rates_try = map(Avg_FiringRate_TryTrials, normalise_rates), 
+         normalised_rates_run = map(Avg_FiringRate_RunTrials, normalise_rates),
+         normalised_rates_hit = map(Avg_FiringRate_HitTrials, normalise_rates))
+```
+
+Then, predict firing rate in homebound region based on fit from real data in outbound region Predict mean and confidence intervals for firing rate at the start of the homebound zone (track positions 110 to 115 cm) based on firing in the outbound zone (30 to 90 cm). The function predict_homebound was used previously for analyses for Figure 1.
+```{r}
+spatial_firing <- spatial_firing %>%
+  select(-contains('predict_params_hit_')) %>%
+  select(-contains('predict_params_try_')) %>%
+  select(-contains('predict_params_run_')) %>%
+  mutate(predict_params_hit = map(normalised_rates_hit, predict_homebound),
+         predict_params_try = map(normalised_rates_try, predict_homebound),
+         predict_params_run = map(normalised_rates_run, predict_homebound)) %>%
+  unnest_wider(predict_params_hit, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(predict_params_try, names_sep = "_", names_repair = "universal") %>%
+  unnest_wider(predict_params_run, names_sep = "_", names_repair = "universal") 
+
+spatial_firing <- spatial_firing %>%
+  mutate(
+    predict_diff_hit = map2_dbl(normalised_rates_hit, predict_params_hit_fit, calc_predict_diff),
+         predict_diff_try = map2_dbl(normalised_rates_try, predict_params_try_fit, calc_predict_diff),
+         predict_diff_run = map2_dbl(normalised_rates_run, predict_params_run_fit, calc_predict_diff))
+
+```
+
+
+
+
 ### ------------------------------------------------------------------------------------------ ### 
 
 ## plot violin plots of mean apsolute difference between predicted and real in the first 5 cm of the homebound region for hit, run and try trials. 
@@ -299,281 +341,56 @@ if (save_figures==1) {
 - do this for both negative and positive slopes in the outbound zone
 
 
-1. First extract offset data into a tibble, combining data from hit, run and try trials in a tidy format.
-```{r}
-outcomes_offsets_data <- tibble(session_id = rep(unlist(spatial_firing$unique_id), times=3), 
-                    cluster_id = rep(spatial_firing$cluster_id, times=3), 
-                    predict = c(as.numeric(spatial_firing$predict_diff),
-                             as.numeric(spatial_firing$predict_diff_run),
-                             as.numeric(spatial_firing$predict_diff_try)),
-                    coef = c(as.numeric(spatial_firing$o_b_mod_coefs_speed),
-                             as.numeric(spatial_firing$o_b_mod_coefs_speed),
-                             as.numeric(spatial_firing$o_b_mod_coefs_speed)),
-                    type = rep(c("Hit", "Run", "Try"),
-                                    each = nrow(spatial_firing)),
-                    track_category = rep(as.character(spatial_firing$track_category), times=3),
-                    final_model_o_b = rep(as.character(spatial_firing$final_model_o_b), times=3),
-                    lm_group_b = rep(as.character(spatial_firing$lm_group_b), times=3),
-                    lm_group_b_h = rep(as.character(spatial_firing$lm_group_b_h), times=3))
-
-```
-
-
-Onset data for position encoding encoding neurons (P, PA, PS, PSA)
-```{r}
-outcomes_offsets_data_pospos <- outcomes_offsets_data %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
-                lm_group_b == "Positive" & lm_group_b_h == "Positive")
-
-outcomes_offsets_data_negneg <- outcomes_offsets_data %>% 
-  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
-                lm_group_b == "Negative" & lm_group_b_h == "Negative")
-```
-
 
 Make and save plots
 ```{r}
-outcomes_offsets_data_pospos %>%
-  offset_groups_violin_plot(-5, 3)
-  
+spatial_firing %>% filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                          lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  offsets_by_outcome(-4, 2)
 
 if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_pos_AllPosition.png",width = 3.2, height = 3)
 }
 
 
-outcomes_offsets_data_negneg %>%
-  offset_groups_violin_plot(-3.5, 5.5)
+spatial_firing %>% filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                          lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  offsets_by_outcome(-1.5, 4.5)
 
 if (save_figures == 1) {
   ggsave(file = "plots/PredictProbe_neg_AllPosition.png",width = 3.2, height = 3)
 }
-  
 ```
 
 _run statistical tests_
 Run anova to compare effect of trial type (hit, try, run) on offset values for ++ and -- neurons 
 ```{r}
-
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_pospos)
+one.way <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  offsets_by_outcome_aov
 summary(one.way)
 
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_negneg)
-summary(one.way)
-
-```
-
- One-sample ttest to see whether offsets differ from 0.
-```{r}
-# Positive slope neurons
-outcomes_offsets_data_pospos %>%
-  group_by(type) %>%
-  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
-  unnest(cols = c(ttest))
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  offsets_by_outcome_t
   
-# Negative slope neurons
-outcomes_offsets_data_negneg %>%
-  group_by(type) %>%
-  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
-  unnest(cols = c(ttest))
-```
-
-_plots for conjunctive position encoding encoding neurons (PA, PSA, PS)_
-1. extract only neurons that are subset based on speed encoding(PA, PSA, PS) (Figure 3) and are ++ or -- in beaconed trials
-```{r}
-outcomes_offsets_data_pospos <- outcomes_offsets_data %>%
-  filter(final_model_o_b == "PA" | final_model_o_b == "PSA" | final_model_o_b == "PS",
-                lm_group_b == "Positive" & lm_group_b_h == "Positive")
-
-outcomes_offsets_data_negneg <- outcomes_offsets_data %>%
-  filter(final_model_o_b == "PA" | final_model_o_b == "PSA" | final_model_o_b == "PS",
-                lm_group_b == "Negative" & lm_group_b_h == "Negative")
-```
-
-
-2. Select cells classified in Figure 2 as having positive or negative slopes and plot
-```{r}
-outcomes_offsets_data_pospos %>%
-  offset_groups_violin_plot(-5, 3)
-
-if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_pos_conjunctivePosition.png",width = 4, height = 3)
-}
-
-
-outcomes_offsets_data_negneg %>%
-  offset_groups_violin_plot(-3.5, 5.5)
- 
-if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_neg_conjunctivePosition.png",width = 4, height = 3)
-}
-  
-```
-
-3. run anova on above data
-```{r}
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_pospos)
+one.way <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  offsets_by_outcome_aov
 summary(one.way)
 
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_negneg)
-summary(one.way)
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
+                lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  offsets_by_outcome_t
 ```
 
 
-4. One-sample ttest to see whether offsets are above 0
-
-```{r}
-# Positive slope neurons
-outcomes_offsets_data_pospos %>%
-  group_by(type) %>%
-  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
-  unnest(cols = c(ttest))
-  
-# Negative slope neurons
-outcomes_offsets_data_negneg %>%
-  group_by(type) %>%
-  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
-  unnest(cols = c(ttest))
-```
 
 
-_plots for all Position only encoding encoding neurons (P)_
-1. extract only neurons that are subset based on speed encoding (P) (Figure 3) and are ++ or -- in beaconed trials
-```{r}
-outcomes_offsets_data_pospos <- outcomes_offsets_data %>%
-  filter(final_model_o_b == "P",
-                lm_group_b == "Positive" & lm_group_b_h == "Positive")
-
-outcomes_offsets_data_negneg <- outcomes_offsets_data %>% 
-  filter(final_model_o_b == "P",
-                lm_group_b == "Negative" & lm_group_b_h == "Negative")
-```
 
 
-5. Select cells classified in Figure 2 as having positive or negative slopes and plot
-```{r}
-outcomes_offsets_data_pospos %>%
-  offset_groups_violin_plot(-5, 3)
-
-if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_pos_onlyPosition.png",width = 4, height = 3)
-}
-
-
-outcomes_offsets_data_negneg %>%
-  offset_groups_violin_plot(-3.5, 5.5)
- 
-if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_neg_onlyPosition.png",width = 4, height = 3)
-}
-  
-```
-
-
-2. run anova on above data
-```{r}
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_pospos)
-summary(one.way)
-
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_negneg)
-summary(one.way)
-
-
-#one.way <- lm(predict ~ type, data = data_neg)
-#car::Anova(one.way)
-#summary(one.way)
-
-#one.way <- ano(predict ~ type, data = data_neg)
-#summary(one.way)
-```
-
-
-2. One-sample ttest to see whether offsets are above 0
-
-```{r}
-# Positive slope neurons
-outcomes_offsets_data_pospos %>%
-  group_by(type) %>%
-  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
-  unnest(cols = c(ttest))
-  
-# Negative slope neurons
-outcomes_offsets_data_negneg %>%
-  group_by(type) %>%
-  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
-  unnest(cols = c(ttest))
-```
-
-_plots for all speed encoding encoding neurons (S, SA)_
-1. extract only neurons that are subset based on speed encoding (S, SA) (Figure 3) and are ++ or -- in beaconed trials
-```{r}
-outcomes_offsets_data_speedpos <- outcomes_offsets_data %>%
-  filter(final_model_o_b == "S" | final_model_o_b == "SA",
-                lm_group_b == "Positive" & lm_group_b_h == "Positive")
-outcomes_offsets_data_speedneg <- outcomes_offsets_data %>% 
-  filter(final_model_o_b == "S" | final_model_o_b == "SA",
-                lm_group_b == "Negative" & lm_group_b_h == "Negative")
-```
-
-
-5. Select cells classified in Figure 2 as having positive or negative slopes and plot
-```{r}
-outcomes_offsets_data_speedpos %>%
-  offset_groups_violin_plot(-5, 3)
-if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_pos_AllSpeed.png",width = 4, height = 3)
-}
-outcomes_offsets_data_speedneg %>%
-  offset_groups_violin_plot(-3.5, 5.5)
- 
-if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_neg_AllSpeed.png",width = 4, height = 3)
-}
-  
-```
-
-2. run anova on above data
-```{r}
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_speedpos)
-summary(one.way)
-one.way <- aov(predict ~ type, data = outcomes_offsets_data_speedneg)
-summary(one.way)
-```
-
-
-2. One-sample ttest to see whether offsets are above 0
-```{r}
-# Positive slope neurons
-outcomes_offsets_data_speedpos %>%
-  group_by(type) %>%
-  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
-  unnest(cols = c(ttest))
-  
-# Negative slope neurons
-outcomes_offsets_data_speedneg %>%
-  group_by(type) %>%
-  summarise(ttest = list(t.test(predict, mu = 0)$p.value)) %>%
-  unnest(cols = c(ttest))
-```
-
-
-### ----------------------------------------------------------------------------- ###
-
-
-## Figure 3 statistical analysis
-
-Find proportion & numbers of neurons that are significant/non-significant
-
-```{r}
-if (test_outcomes == 1) {
-ramps <- subset(spatial_firing, lm_group_b == "Negative" | lm_group_b == "Positive")
-ramps_with_enough_trials <- subset(ramps, reward_interaction_id != "None" & reward_interaction_id != "NA")
-
-sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))/nrow(ramps_with_enough_trials)*100
-nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))/nrow(ramps_with_enough_trials)*100
-
-sig_ramps <- nrow(subset(ramps, reward_interaction_id == "Significant"))
-nonsig_ramps <- nrow(subset(ramps, reward_interaction_id == "Not-Significant"))
-}
-```
 
