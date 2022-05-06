@@ -99,15 +99,6 @@ spatial_firing <- spatial_firing  %>%
 ```
 
 
-
-
-1. make unique id for each neuron (session_id + cluster_id)
-```{r}
-# run on all cells
-spatial_firing <- spatial_firing  %>%
-  mutate(unique_id = pmap(list(session_id, cluster_id, sep = "_"), paste))
-```
-
 ### Plot model selection results performed in Figure1_Analysis.Rmd
 
 Standardized coefficients are in (see above):

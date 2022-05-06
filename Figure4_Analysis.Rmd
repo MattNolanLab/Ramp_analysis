@@ -267,7 +267,29 @@ We want to know about whether the slope classification of neurons on beaconed tr
 
 This needs as input columnms containing standardized coefficients (coef) and the coefficient type (coef_type). This data is in spatial_firing but not in an appropriate tidy format.
 
-This needs rewriting once access to the coefficients is clear.
+Fit GLMER to probe trial data.
+Threshold is set to > 10 probe trials.
+```{r}
+df<-data.frame()
+for (i in 1:nrow(spatial_firing)) {
+  print(as.character(i))
+  spatial_firing_i = spatial_firing[i,]
+  o_mm_b_p <- mm_fit_function(spatial_firing_i$spikes_in_time[[1]], TT = 2, thresh = 10)
+  o_mm_p_b_p <- mm_pvalues(o_mm_b_p, spatial_firing_i$session_id[1])
+  o_b_mod_coefs_p <- std_coef(o_mm_b_p)
+
+  spatial_firing_i$o_b_p_mod_coefs_pos[1] <- as.double(o_b_mod_coefs_p[1])
+  spatial_firing_i$o_b_p_mod_coefs_speed[1] <- as.double(o_b_mod_coefs_p[2])
+  spatial_firing_i$o_b_p_mod_coefs_accel[1] <- as.double(o_b_mod_coefs_p[3])
+  spatial_firing_i$o_mm_p_p_b_pos[1] <- as.double(o_mm_p_b_p[1])
+  spatial_firing_i$o_mm_p_p_b_speed[1] <- as.double(o_mm_p_b_p[2])
+  spatial_firing_i$o_mm_p_p_b_accel[1] <- as.double(o_mm_p_b_p[3])
+  df<-bind_rows(df, spatial_firing_i)
+}
+spatial_firing <- df
+rm(df, spatial_firing_i)
+```
+
 
 ```{r}
 # this cell requires data_coef made in Figure 2 Analysis Rmd

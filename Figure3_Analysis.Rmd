@@ -91,8 +91,7 @@ if (save_figures==1) {
 }
 ```
 
-Split data based on conjunctive position encoding (PA, PS, PSA) (Figure 2) as we are only interested in these neurons here
-
+Split data based on conjunctive position encoding (PA, PS, PSA) (Figure 2):
 ```{r}
 conjunctive_neurons <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative", final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
 # Total number of cells
@@ -256,11 +255,11 @@ spatial_firing[!sapply(spatial_firing$Avg_FiringRate_TryTrials, anyNA)
 ```{r}
 spatial_firing %>%
   filter(lm_group_b == "Positive", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PSA" | final_model_o_b == "PA") %>%
-  slopes_by_outcome()
+  slopes_by_outcome(-0.4, 0.8)
 
 spatial_firing %>%
   filter(lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PSA" | final_model_o_b == "PA") %>%
-  slopes_by_outcome()
+  slopes_by_outcome(-2, 0.5)
 
 ```
 

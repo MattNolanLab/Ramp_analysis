@@ -352,7 +352,9 @@ local_circ_shuffles <- function(df_in, cs_path) {
 # For use with smoothed data would need to change this to gamma (which won't work where there are zeros)
 # Or consider using Tweedie family implemented in the glmBB package.
 # Note also that we get similar results using linear mixed effect models so GLMER while more 'correct' may not be necessary.
-mm_fit <- function(df, TT = 0) {
+# TT is trial type. Codes used in the spatial_firing$spikes_in_time are 0 (beaconed), 1 (non-beaconed) and 2 (probe).
+# thresh is the minimum number of trials required for fitting the data.
+mm_fit <- function(df, TT = 0, thresh = 20) {
   if (length(df) == 1){
     return(NA)}
   df <-
@@ -379,7 +381,7 @@ mm_fit <- function(df, TT = 0) {
   
 
   
-  if (length(df) == 1 | nrow(df) < 20) {
+  if (length(df) == 1 | nrow(df) < thresh) {
     return(NA)
   }
   
@@ -388,7 +390,6 @@ mm_fit <- function(df, TT = 0) {
     return(NA)
   }
   
-  #glm1 <- glm(Rates ~ Position + Speed + Acceleration , family = poisson(link = "log"), data = df)
   df_int <- lme4::glmer(formula = Rates ~ Position + Speed + Acceleration + (1 + Position | Trials), 
                         data = df,
                         na.action = na.exclude,
@@ -396,17 +397,12 @@ mm_fit <- function(df, TT = 0) {
                         control=lme4::glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5)))
   }
 
-  
-# removed start=list(fixef=coef(glm1)) and commented out glm fit
-# removed control=glmerControl(optimizer="bobyqa",optCtrl=list(maxfun=2e5))
-# or control=glmerControl(optimizer = "nloptwrap",optCtrl=list(maxfun=2e5))
-
 # Function to extract P values for each coefficient from the model
 mm_function <- function(mm, session_id) {
   if (is.na(mm)) {
     return(tibble(pos = NA, speed = NA, accel = NA))
   }
-  #print(session_id)
+  
   modelAnova <- car::Anova(mm)
   return_tibble <- tibble(pos = modelAnova$"Pr(>Chisq)"[[1]],
                           speed = modelAnova$"Pr(>Chisq)"[[2]],
@@ -425,9 +421,9 @@ mm_pvalues <- function(mm, session_id) {
 
 
 # Helper function to link to general linear mixed model fit
-mm_fit_function <- function(mm, TT) {
+mm_fit_function <- function(mm, TT = 0, thresh = 20) {
   tryCatch({
-    mm_fit(mm,TT)
+    mm_fit(mm,TT, thresh)
   },
   error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
 }
@@ -810,7 +806,7 @@ slopes_by_outcome_aov <- function(df) {
            Run = asr_b_run_fit_slope) %>%
     mutate(unique_id = unlist(unique_id)) %>%
     pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", )
-aov <- aov(Slope ~ Outcome, data = df)
+aov <- aov(Slope ~ factor(Outcome) + Error(factor(unique_id)), data = df)
 }
 
 # One sample t-tests for slopes
@@ -837,7 +833,7 @@ offsets_by_outcome_aov <- function(df) {
            Run = predict_diff_run) %>%
     mutate(unique_id = unlist(unique_id)) %>%
     pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Offset", )
-aov <- aov(Offset ~ Outcome, data = df)
+aov <- aov(Offset ~ factor(Outcome) + Error(factor(unique_id)), data = df)
 }
 
 # One sample t tests for offsets
