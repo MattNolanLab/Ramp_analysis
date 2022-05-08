@@ -806,7 +806,26 @@ slopes_by_outcome_aov <- function(df) {
            Run = asr_b_run_fit_slope) %>%
     mutate(unique_id = unlist(unique_id)) %>%
     pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", )
-aov <- aov(Slope ~ factor(Outcome) + Error(factor(unique_id)), data = df)
+  #aov(Slope ~ as.factor(Outcome), data = df)
+  aov(Slope ~ as.factor(Outcome) + Error(as.factor(unique_id)), data = df)
+  #aov_2(df)
+}
+
+# To check AOV because F value was suspiciously low.  
+aov_2 <- function(df){
+  CF = (sum(df$Slope))^2/length(df$Slope)
+  total.ss = sum(df$Slope^2)-CF
+  between.ss = (sum(df$Slope[df$Outcome=="Try"])^2)/length(df$Slope[df$Outcome=="Try"]) +
+    (sum(df$Slope[df$Outcome=="Run"])^2)/length(df$Slope[df$Outcome=="Run"]) +
+    (sum(df$Slope[df$Outcome=="Hit"])^2)/length(df$Slope[df$Outcome=="Hit"]) - CF
+  within.ss = total.ss - between.ss
+  df.total = length(df$Slope) - 1
+  df.between = length(unique(df$Outcome)) - 1
+  df.within = df.total - df.between
+  between.ms = between.ss/df.between
+  within.ms = within.ss/df.within
+  F.value = between.ms/within.ms
+  list(CF, total.ss, between.ss, within.ss, df.total, df.between, df.within, between.ms, within.ms, F.value)
 }
 
 # One sample t-tests for slopes
@@ -833,7 +852,7 @@ offsets_by_outcome_aov <- function(df) {
            Run = predict_diff_run) %>%
     mutate(unique_id = unlist(unique_id)) %>%
     pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Offset", )
-aov <- aov(Offset ~ factor(Outcome) + Error(factor(unique_id)), data = df)
+aov <- aov(Offset ~ as.factor(Outcome) + Error(as.factor(unique_id)), data = df)
 }
 
 # One sample t tests for offsets
