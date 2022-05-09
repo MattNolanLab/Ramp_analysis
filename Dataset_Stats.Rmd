@@ -19,6 +19,8 @@ unique(spatial_firing$Mouse)
 
 # Miceidentified by cohort and number
 unique(paste(spatial_firing$Mouse, as.character(spatial_firing$cohort)))
+# or
+unique(spatial_firing$unique_mouse)
 
 # Number of mice
 length(unique(paste(spatial_firing$Mouse, as.character(spatial_firing$cohort))))
@@ -35,16 +37,18 @@ length(unique(spatial_firing$session_id))
 
 # Numbers of neurons per session
 (sessions <- spatial_firing  %>%
-  select(Mouse, session_id) %>%
-  group_by(Mouse, session_id, .drop=FALSE) %>%
+  group_by(unique_mouse, session_id, .drop=FALSE) %>%
   summarise(n = n())) 
 
 # Number of sessions per mouse
-table(sessions$Mouse)
+table(sessions$unique_mouse)
+
 # Mean
-mean(table(sessions$Mouse))
+mean(table(sessions$unique_mouse))
 # Range
-range(table(sessions$Mouse))
+range(table(sessions$unique_mouse))
+
+
 ```
 
 
@@ -60,6 +64,11 @@ dim(spatial_firing)[[1]]
   group_by(Mouse, cohort, .drop=FALSE) %>%
   summarise(n = n())) 
   
+# Numbers of neurons per mouse
+spatial_firing  %>%
+  group_by(unique_mouse, .drop=FALSE) %>%
+  summarise(n = n())
+
 # mean
 mean(neuron_numbers$n)
 

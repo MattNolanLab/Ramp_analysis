@@ -99,15 +99,6 @@ spatial_firing <- spatial_firing  %>%
 ```
 
 
-
-
-1. make unique id for each neuron (session_id + cluster_id)
-```{r}
-# run on all cells
-spatial_firing <- spatial_firing  %>%
-  mutate(unique_id = pmap(list(session_id, cluster_id, sep = "_"), paste))
-```
-
 ### Plot model selection results performed in Figure1_Analysis.Rmd
 
 Standardized coefficients are in (see above):
@@ -235,11 +226,17 @@ if (save_figures == 1) {
    ggsave(file = "plots/CoefficientValues_positivecells.png", width = 2.5, height = 2.5)
 }
 
-one.way_p <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Positive"))
+one.way_p <- aov(coef ~ as.factor(coef_type) + Error(as.factor(unique_id)), data = filter(spatial_firing_coefs, lm_group_b == "Positive"))
 summary(one.way_p)
 
-tukey.test_p <- TukeyHSD(one.way_p)
-tukey.test_p$coef_type
+(t_tests_p <- spatial_firing %>%
+  filter(lm_group_b == "Positive") %>%
+  summarise(ttest = list(t.test(o_b_mod_coefs_pos, o_b_mod_coefs_accel, paired = TRUE)$p.value,
+                         t.test(o_b_mod_coefs_pos, o_b_mod_coefs_speed, paired = TRUE)$p.value,
+            t.test(o_b_mod_coefs_accel, o_b_mod_coefs_speed, paired = TRUE)$p.value)) %>%
+  unlist() %>%
+  as.double() %>%
+  p.adjust("bonferroni"))
 ```
 
 5b. Split by negative slope _all cells_
@@ -252,11 +249,17 @@ if (save_figures == 1) {
   ggsave(file = "plots/CoefficientValues_negativecells.png", width = 2.5, height = 2.5)
 }
 
-one.way_n <- aov(coef ~ coef_type, data = filter(spatial_firing_coefs, lm_group_b == "Negative"))
+one.way_n <- aov(coef ~ coef_type + Error(as.factor(unique_id)), data = filter(spatial_firing_coefs, lm_group_b == "Negative"))
 summary(one.way_n)
 
-tukey.test_n <- TukeyHSD(one.way_n)
-tukey.test_n$coef_type
+(t_tests_n <- spatial_firing %>%
+  filter(lm_group_b == "Negative") %>%
+  summarise(ttest = list(t.test(o_b_mod_coefs_pos, o_b_mod_coefs_accel, paired = TRUE)$p.value,
+                         t.test(o_b_mod_coefs_pos, o_b_mod_coefs_speed, paired = TRUE)$p.value,
+            t.test(o_b_mod_coefs_accel, o_b_mod_coefs_speed, paired = TRUE)$p.value)) %>%
+  unlist() %>%
+  as.double() %>%
+  p.adjust("bonferroni"))
 ```
 
 _Plot coefficients for conjunctive position cells_
