@@ -74,11 +74,10 @@ spatial_firing <- spatial_firing %>%
 
 
 ```{r}
-save_results == 0
+save_results == 1
 if (save_results == 1) {
   saveRDS(spatial_firing, "data_out/SpatialFiring_with_glmer.Rda")
 }
-save_results == 0
 
 load_sf = 0
 if (load_sf==1) {
@@ -413,7 +412,7 @@ if (save_figures == 1) {
 
 
 ```{r}
-save_results = 0
+save_results = 1
 if (save_results == 1) {
   saveRDS(spatial_firing, "SpatialFiring_with_Results.Rda")
 }

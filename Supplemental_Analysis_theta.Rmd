@@ -1,0 +1,305 @@
+---
+title: "Supplemental3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+add_theta_classifier <-
+  function(ThetaIndex) {
+    if (is.na(ThetaIndex)){
+      return("Not modulated")
+    } else if (ThetaIndex >= 0.07) {
+      return("Theta-modulated")
+    } else {
+      return("Not modulated")
+    }
+  }
+add_cohort_mouse <-
+  function(Mouse, cohort) {
+    cohort_mouse = paste(cohort, Mouse, sep="_")
+    cohort_mouse = paste("C", cohort_mouse, sep="")
+    return(cohort_mouse)
+    }
+
+spatial_firing <- spatial_firing %>%
+  mutate(cohort_mouse = map2(Mouse, cohort, add_cohort_mouse))
+
+spatial_firing <- spatial_firing %>%
+  mutate(theta_classifier = map(ThetaIndex, add_theta_classifier))
+
+spatial_firing_ramps <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
+spatial_firing_thetamod <- spatial_firing_ramps %>%filter(theta_classifier == "Theta-modulated")
+spatial_firing_unmodulated <- spatial_firing_ramps %>%filter(theta_classifier == "Not modulated")
+```
+
+
+First organise the data.
+```{r}
+# Distributions of fit categories for all neurons with ramping activity before the reward zone
+
+# For TM slope neurons
+TM_neurons_groups <- spatial_firing_thetamod %>%
+  filter(theta_classifier == "Theta-modulated") %>%
+  select(final_model_o_b) %>%
+  make_coeffs_table() %>%
+  mutate(theta_classifier = "Theta-rythmic")
+
+# For UM slope neurons
+UM_neurons_groups <- spatial_firing_unmodulated %>%
+  filter(theta_classifier == "Not modulated") %>%
+  select(final_model_o_b) %>%
+  make_coeffs_table() %>%
+  mutate(theta_classifier = "Non-rythmic")
+
+# Combine
+mixed_ramps_2 <- bind_rows(TM_neurons_groups, UM_neurons_groups)
+```
+
+Plot model results.
+```{r}
+# plot data
+level_order <- c("P", "S", "A", "PS", "PA","SA", "PSA", "None")
+ggplot(mixed_ramps_2, aes(x= factor(theta_classifier), y = perc, fill=factor(ramp_id, level = level_order))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .7) +
+  labs(y = "Percent of neurons", x="") +
+  scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
+  geom_text(aes(label = num), hjust = 0.7, vjust = 0.2, size = 5, position = position_stack(vjust= 0.5)) +
+  #scale_fill_brewer(palette= "RdYlBu") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 30, vjust=0.65)) +
+  theme(axis.text.x = element_text(size=17),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=16), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+  ggsave(file = "plots/LMERProportions_theta.png", width = 4, height = 5.5)
+}
+```
+
+_Theta index histogram__ 
+```{r}
+ggplot(data=spatial_firing, aes(x=as.numeric(unlist(ThetaIndex)), fill=factor(unlist(theta_classifier)))) +
+  coord_cartesian(xlim = c(-0.25,1)) +
+  geom_histogram(aes(y=..count..), binwidth=0.01, alpha=0.5) +
+  ylab("Number of cells") +
+  xlab("Theta index") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("grey", "red")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/theta_index_histogram.png", width = 4, height = 2)
+}
+```
+_Theta index scatter by mouse__ 
+```{r}
+# Function to plot slopes as a function of trial outcome
+theta_by_mouse <- function(df, min_y = -3.5, max_y = 3.5){
+    ggplot(spatial_firing, aes(x = unlist(cohort_mouse), y = unlist(ThetaIndex), colour=unlist(cohort_mouse))) +     
+  geom_jitter() +
+  coord_cartesian(ylim=c(-0.25,1)) +
+  geom_hline(yintercept=0.07, linetype="dashed", color = "black") +
+  labs(x = "Mouse", y = "Theta index") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 30, vjust=0.615)) +
+  theme(text = element_text(size=20),
+          legend.position = "none")
+}
+
+spatial_firing %>%
+  theta_by_mouse()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/theta_by_mouse.png",width = 5.2, height = 3.5)
+}
+```
+_Theta index scatter by brain region__ 
+```{r}
+# Function to plot slopes as a function of trial outcome
+theta_by_mouse <- function(df, min_y = -3.5, max_y = 3.5){
+    ggplot(spatial_firing, aes(x = unlist(brain_region), y = unlist(ThetaIndex), colour=unlist(brain_region))) +     
+  geom_jitter() +
+  coord_cartesian(ylim=c(-0.25,1)) +
+  geom_hline(yintercept=0.07, linetype="dashed", color = "black") +
+  labs(x = "Brain region", y = "Theta index") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 30, vjust=0.65)) +
+  theme(text = element_text(size=20),
+          legend.position = "none")
+}
+
+spatial_firing %>%
+  theta_by_mouse()
+
+if (save_figures == 1) {
+  ggsave(file = "plots/theta_by_brain_region.png",width = 2.5, height = 3.5)
+}
+```
+
+1. First, make stacked histogram of slope values for real dataset 
+```{r}
+ggplot(data=spatial_firing_thetamod, aes(x=as.numeric(unlist(ramp_score)), fill=factor(unlist(lm_group_b)))) +
+  coord_cartesian(xlim = c(-1,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.05, alpha=0.5) +
+  ylab("Density") +
+  xlab("Ramp score") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_ramp_histogram_thetamodulated.png", width = 4, height = 2)
+}
+```
+
+```{r}
+ggplot(data=spatial_firing_unmodulated, aes(x=as.numeric(unlist(ramp_score)), fill=factor(unlist(lm_group_b)))) +
+  coord_cartesian(xlim = c(-1,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.05, alpha=0.5) +
+  ylab("Density") +
+  xlab("Ramp score") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_ramp_histogram_thetanotmodulated.png", width = 4, height = 2)
+}
+```
+
+1. First, make stacked histogram of slope values for real dataset 
+```{r}
+ggplot(data=spatial_firing_thetamod, aes(x=as.numeric(unlist(asr_b_o_rewarded_fit_slope)), fill=factor(unlist(lm_group_b)))) +
+  coord_cartesian(xlim = c(-1,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.05, alpha=0.5) +
+  ylab("Density") +
+  xlab("Slope") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slope_histogram_thetamodulated.png", width = 4, height = 2)
+}
+```
+
+```{r}
+ggplot(data=spatial_firing_unmodulated, aes(x=as.numeric(unlist(asr_b_o_rewarded_fit_slope)), fill=factor(unlist(lm_group_b)))) +
+  coord_cartesian(xlim = c(-1,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.05, alpha=0.5) +
+  ylab("Density") +
+  xlab("Slope") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slop_histogram_thetanotmodulated.png", width = 4, height = 2)
+}
+```
+
+
+Now lets find and plot the proportion of cells according to the classification
+```{r}
+spatial_firing_thetamod <- spatial_firing %>%filter(theta_classifier == "Theta-modulated")
+spatial_firing_unmodulated <- spatial_firing %>%filter(theta_classifier == "Not modulated")
+```
+
+1. extract proportion of cells that meet each criteria
+```{r}
+start <- nrow(subset(spatial_firing_thetamod, lm_group_b == "Negative"))/nrow(spatial_firing_thetamod)*100
+reward <- nrow(subset(spatial_firing_thetamod, lm_group_b == "Positive"))/nrow(spatial_firing_thetamod)*100
+nonslope <- nrow(subset(spatial_firing_thetamod, lm_group_b == "Unclassified"))/nrow(spatial_firing_thetamod)*100
+
+start_num <- nrow(subset(spatial_firing_thetamod, lm_group_b == "Negative"))
+reward_num <- nrow(subset(spatial_firing_thetamod, lm_group_b == "Positive"))
+nonslope_num <- nrow(subset(spatial_firing_thetamod, lm_group_b == "Unclassified"))
+
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), num=c(start_num, reward_num, nonslope_num), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent", x="") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  geom_text(aes(label = num), hjust = 1.5, vjust = 0.5, srt=90, size = 6, position = position_dodge(-0.5)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/thetamodulated_Outbound_ramp_proportions_update.png", width = 3, height = 5.5)
+}
+```
+
+
+1. extract proportion of cells that meet each criteria
+```{r}
+start <- nrow(subset(spatial_firing_unmodulated, lm_group_b == "Negative"))/nrow(spatial_firing_unmodulated)*100
+reward <- nrow(subset(spatial_firing_unmodulated, lm_group_b == "Positive"))/nrow(spatial_firing_unmodulated)*100
+nonslope <- nrow(subset(spatial_firing_unmodulated, lm_group_b == "Unclassified"))/nrow(spatial_firing_unmodulated)*100
+
+start_num <- nrow(subset(spatial_firing_unmodulated, lm_group_b == "Negative"))
+reward_num <- nrow(subset(spatial_firing_unmodulated, lm_group_b == "Positive"))
+nonslope_num <- nrow(subset(spatial_firing_unmodulated, lm_group_b == "Unclassified"))
+
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), num=c(start_num, reward_num, nonslope_num), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent", x="") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  geom_text(aes(label = num), hjust = 1.5, vjust = 0.5, srt=90, size = 6, position = position_dodge(-0.5)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/thetanotmodulated_Outbound_ramp_proportions_update.png", width = 3, height = 5.5)
+}
+```
