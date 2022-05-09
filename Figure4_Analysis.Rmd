@@ -104,6 +104,18 @@ probe_slope_tt_p[[1]]
 probe_slope_tt_n[[1]]
 
 # Test for probe slope different from zero
+probe_slope_tt_p_0 <- spatial_firing_probe_only %>%
+  filter(lm_group_b == "Positive") %>%
+  summarise(ttest = list(t.test(asr_p_o_rewarded_fit_slope, mu = 0),
+                         t.test(asr_p_h_rewarded_fit_slope, mu = 0))) 
+
+probe_slope_tt_n_0 <- spatial_firing_probe_only %>%
+  filter(lm_group_b == "Negative") %>%
+  summarise(ttest = list(t.test(asr_p_o_rewarded_fit_slope, mu = 0),
+                         t.test(asr_p_h_rewarded_fit_slope, mu = 0))) 
+
+probe_slope_tt_p_0[[1]]
+probe_slope_tt_n_0[[1]]
 ```
 
 
