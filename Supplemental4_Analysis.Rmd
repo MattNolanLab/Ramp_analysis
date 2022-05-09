@@ -285,7 +285,7 @@ ggplot() +
                aes(x = as.numeric(unlist(slopes)), 
                    y = as.numeric(unlist(slopes_h)), 
                    color=factor(unlist(shuff_lm_group_b))), shape=4, alpha=0.8) +     
-    coord_cartesian(ylim = c(-.2,.2), xlim = c(-.2,.2)) +
+    coord_cartesian(ylim = c(-.45,.61), xlim = c(-.45,.45)) +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
     geom_abline(intercept = 0, slope = -1, colour = "grey", linetype = "dashed") +
     xlab("Pre-reward slope") +
