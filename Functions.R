@@ -876,6 +876,75 @@ offsets_by_outcome_t <- function(df) {
 # Functions below here are initially in Figure 4 code.
 
 
+# To compare slopes on beaconed and probe trials
+probe_out_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45) {
+  df  %>%
+    filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA",
+           lm_group_b == group) %>%
+    select(unique_id, asr_b_o_rewarded_fit_slope, asr_p_o_rewarded_fit_slope) %>%
+    rename(Beaconed = asr_b_o_rewarded_fit_slope,
+           Probe = asr_p_o_rewarded_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Beaconed, Probe), names_to = "Trial", values_to = "Slope", ) %>%
+    ggplot(aes(x = fct_relevel(Trial, "Beaconed", "Probe"), y = Slope)) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    labs(x = "Trial", y = "Slope") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    theme_classic() +
+    theme(text = element_text(size=20),
+          legend.position = "none")
+}
+
+probe_home_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45) {
+  df  %>%
+    filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA",
+           lm_group_b == group) %>%
+    select(unique_id, asr_b_h_rewarded_fit_slope, asr_p_h_rewarded_fit_slope) %>%
+    rename(Beaconed = asr_b_h_rewarded_fit_slope,
+           Probe = asr_p_h_rewarded_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Beaconed, Probe), names_to = "Trial", values_to = "Slope", ) %>%
+    ggplot(aes(x = fct_relevel(Trial, "Beaconed", "Probe"), y = Slope)) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    labs(x = "Trial", y = "Slope") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    theme_classic() +
+    theme(text = element_text(size=20),
+          legend.position = "none")
+}
+
+# To compare offsets on beaconed and probe trials
+probe_offset_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45) {
+  df  %>%
+    filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA",
+           lm_group_b == group) %>%
+    select(unique_id, predict_diff, predict_diff_p) %>%
+    rename(Beaconed = predict_diff,
+           Probe = predict_diff_p) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Beaconed, Probe), names_to = "Trial", values_to = "Offset", ) %>%
+    ggplot(aes(x = fct_relevel(Trial, "Beaconed", "Probe"), y = Offset)) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    labs(x = "Trial", y = "Offset") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    theme_classic() +
+    theme(text = element_text(size=20),
+          legend.position = "none")
+}
+
+
 # To plot firing rate slopes after the reward zone on beaconed vs probe trials
 b_vs_p_h_slope_plot <- function(df){
   ggplot() + 

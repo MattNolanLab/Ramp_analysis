@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 First, classify neurons based on their slope activity in the outbound and homebound region in probe trials (similar to beaconed trials in Figure1_Analysis.Rmd)
 
-This analysis isn't so useful as there are relatively few probe trials results in insufficient power for classification. This may be useful for future experiments that optimise probe trial number.
+This analysis isn't so useful as there are relatively few probe trials and therefore insufficient power for classification. This may be useful for future experiments that optimise probe trial number.
 
 ```{r}
 # Use function 'mark_track_category' previously used in Figure 1
@@ -68,7 +68,7 @@ table(spatial_firing$offset_p, useNA = "always")
 
 Does the firing rate slope before or after the reward zone differ between beaconed and probe trials?
 
-Subset spatial firing to contain only cells that have probe trial data and where the number of trials in the session  is >= 30.
+Subset spatial firing to contain only cells that have probe trial data and where the number of trials in the session  is >= 120, and therefore probe trials >= 12.
 ```{r}
 sum_unlist <- function(df) {sum(unlist(df), na.rm=TRUE)}
 spatial_firing_probe_only <-
@@ -79,6 +79,34 @@ spatial_firing_probe_only <-
 ```
 
 We focus on positional neurons (P, PA, PS, PSA) that on beaconed trials are classified with positive or negative slopes on the track segment before the reward zone
+
+Plot absolute slope values for each trial type
+```{r}
+# Plots
+probe_out_slope_plot(spatial_firing_probe_only, "Positive", -0.1, 0.45)
+probe_out_slope_plot(spatial_firing_probe_only, "Negative", -0.65, 0.2)
+
+probe_home_slope_plot(spatial_firing_probe_only, "Positive", -0.35, 0.8)
+probe_home_slope_plot(spatial_firing_probe_only, "Negative", -0.4, 0.75)
+
+# Compare probe vs beaconed with a paired t-test
+probe_slope_tt_p <- spatial_firing_probe_only %>%
+  filter(lm_group_b == "Positive") %>%
+  summarise(ttest = list(t.test(asr_b_o_rewarded_fit_slope, asr_p_o_rewarded_fit_slope, paired = TRUE),
+                         t.test(asr_b_h_rewarded_fit_slope, asr_p_h_rewarded_fit_slope, paired = TRUE))) 
+
+probe_slope_tt_n <- spatial_firing_probe_only %>%
+  filter(lm_group_b == "Negative") %>%
+  summarise(ttest = list(t.test(asr_b_o_rewarded_fit_slope, asr_p_o_rewarded_fit_slope, paired = TRUE),
+                         t.test(asr_b_h_rewarded_fit_slope, asr_p_h_rewarded_fit_slope, paired = TRUE))) 
+
+probe_slope_tt_p[[1]]
+probe_slope_tt_n[[1]]
+
+# Test for probe slope different from zero
+```
+
+
 
 Plot scatter of slopes after the reward zone on beaconed & probe trials.
 ```{r}
@@ -119,6 +147,18 @@ params <- select(glance(model), r.squared, p.value)
 
 
 Now compare offsets on beaconed vs probe trials
+
+Plot absolute offset values for each trial type
+```{r}
+spatial_firing_probe_only %>% filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  probe_offset_plot("Positive", -3, 1)
+
+spatial_firing_probe_only %>% filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  probe_offset_plot("Negative", -1, 5)
+```
+
+
+Look at possible correlations
 ```{r}
 spatial_firing_probe_only %>% filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
   b_vs_p_offset_plot()
@@ -270,24 +310,24 @@ This needs as input columnms containing standardized coefficients (coef) and the
 Fit GLMER to probe trial data.
 Threshold is set to > 10 probe trials.
 ```{r}
-df<-data.frame()
-for (i in 1:nrow(spatial_firing)) {
-  print(as.character(i))
-  spatial_firing_i = spatial_firing[i,]
-  o_mm_b_p <- mm_fit_function(spatial_firing_i$spikes_in_time[[1]], TT = 2, thresh = 10)
-  o_mm_p_b_p <- mm_pvalues(o_mm_b_p, spatial_firing_i$session_id[1])
-  o_b_mod_coefs_p <- std_coef(o_mm_b_p)
-
-  spatial_firing_i$o_b_p_mod_coefs_pos[1] <- as.double(o_b_mod_coefs_p[1])
-  spatial_firing_i$o_b_p_mod_coefs_speed[1] <- as.double(o_b_mod_coefs_p[2])
-  spatial_firing_i$o_b_p_mod_coefs_accel[1] <- as.double(o_b_mod_coefs_p[3])
-  spatial_firing_i$o_mm_p_p_b_pos[1] <- as.double(o_mm_p_b_p[1])
-  spatial_firing_i$o_mm_p_p_b_speed[1] <- as.double(o_mm_p_b_p[2])
-  spatial_firing_i$o_mm_p_p_b_accel[1] <- as.double(o_mm_p_b_p[3])
-  df<-bind_rows(df, spatial_firing_i)
-}
-spatial_firing <- df
-rm(df, spatial_firing_i)
+# df<-data.frame()
+# for (i in 1:nrow(spatial_firing)) {
+#   print(as.character(i))
+#   spatial_firing_i = spatial_firing[i,]
+#   o_mm_b_p <- mm_fit_function(spatial_firing_i$spikes_in_time[[1]], TT = 2, thresh = 10)
+#   o_mm_p_b_p <- mm_pvalues(o_mm_b_p, spatial_firing_i$session_id[1])
+#   o_b_mod_coefs_p <- std_coef(o_mm_b_p)
+# 
+#   spatial_firing_i$o_b_p_mod_coefs_pos[1] <- as.double(o_b_mod_coefs_p[1])
+#   spatial_firing_i$o_b_p_mod_coefs_speed[1] <- as.double(o_b_mod_coefs_p[2])
+#   spatial_firing_i$o_b_p_mod_coefs_accel[1] <- as.double(o_b_mod_coefs_p[3])
+#   spatial_firing_i$o_mm_p_p_b_pos[1] <- as.double(o_mm_p_b_p[1])
+#   spatial_firing_i$o_mm_p_p_b_speed[1] <- as.double(o_mm_p_b_p[2])
+#   spatial_firing_i$o_mm_p_p_b_accel[1] <- as.double(o_mm_p_b_p[3])
+#   df<-bind_rows(df, spatial_firing_i)
+# }
+# spatial_firing <- df
+# rm(df, spatial_firing_i)
 ```
 
 
