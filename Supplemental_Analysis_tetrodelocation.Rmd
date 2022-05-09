@@ -1,0 +1,305 @@
+---
+title: "Supplemental3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+spatial_firing_ramps <- filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative")
+
+spatial_firing_MEC <- spatial_firing_ramps %>%filter(brain_region == "MEC")
+spatial_firing_PS <- spatial_firing_ramps %>%filter(brain_region == "PS")
+spatial_firing_RH <- spatial_firing_ramps %>%filter(brain_region == "RH")
+```
+
+
+First organise the data.
+```{r}
+# Distributions of fit categories for all neurons with ramping activity before the reward zone
+
+# For MEC slope neurons
+mec_neurons_groups <- spatial_firing_MEC %>%
+  filter(brain_region == "MEC") %>%
+  select(final_model_o_b) %>%
+  make_coeffs_table() %>%
+  mutate(brain_regionx = "MEC")
+
+# For PS slope neurons
+ps_neurons_groups <- spatial_firing_PS %>%
+  filter(brain_region == "PS") %>%
+  select(final_model_o_b) %>%
+  make_coeffs_table() %>%
+  mutate(brain_regionx = "PS")
+
+# For RH slope neurons
+rh_neurons_groups <- spatial_firing_RH %>%
+  filter(brain_region == "RH") %>%
+  select(final_model_o_b) %>%
+  make_coeffs_table() %>%
+  mutate(brain_regionx = "RH")
+
+# Combine
+mixed_ramps_2 <- bind_rows(mec_neurons_groups, ps_neurons_groups, rh_neurons_groups)
+```
+
+Plot model results.
+```{r}
+# plot data
+level_order <- c("P", "S", "A", "PS", "PA","SA", "PSA", "None")
+ggplot(mixed_ramps_2, aes(x= factor(brain_regionx), y = perc, fill=factor(ramp_id, level = level_order))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .7) +
+  labs(y = "Percent of neurons", x="") +
+  scale_fill_manual(values=c("firebrick1","gold", "dodgerblue2", "darkorange", "darkorchid1", "chartreuse3", "darkslategray", "grey78")) +
+  geom_text(aes(label = num), hjust = 0.7, vjust = 0.2, size = 5, position = position_stack(vjust= 0.5)) +
+  #scale_fill_brewer(palette= "RdYlBu") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 50, vjust=0.65)) +
+  theme(axis.text.x = element_text(size=17),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=16), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+
+if (save_figures == 1) {
+  ggsave(file = "plots/LMERProportions_tetrode_locations.png", width = 4, height = 5.5)
+}
+```
+
+
+1. First, make stacked histogram of slope values for real dataset 
+```{r}
+ggplot(data=spatial_firing_MEC, aes(x=as.numeric(unlist(ramp_score)), fill=factor(unlist(lm_group_b)))) +
+  coord_cartesian(xlim = c(-1,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.05, alpha=0.5) +
+  ylab("Density") +
+  xlab("Ramp score") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_ramp_histogram_MEC.png", width = 4, height = 2)
+}
+```
+
+```{r}
+ggplot(data=spatial_firing_PS, aes(x=as.numeric(unlist(ramp_score)), fill=factor(unlist(lm_group_b)))) +
+  coord_cartesian(xlim = c(-1,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.05, alpha=0.5) +
+  ylab("Density") +
+  xlab("Ramp score") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_ramp_histogram_PS.png", width = 4, height = 2)
+}
+```
+
+```{r}
+ggplot(data=spatial_firing_RH, aes(x=as.numeric(unlist(ramp_score)), fill=factor(unlist(lm_group_b)))) +
+  coord_cartesian(xlim = c(-1,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.05, alpha=0.5) +
+  ylab("Density") +
+  xlab("Ramp score") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_ramp_histogram_RH.png", width = 4, height = 2)
+}
+```
+
+
+1. First, make stacked histogram of slope values for real dataset 
+```{r}
+ggplot(data=spatial_firing_MEC, aes(x=as.numeric(unlist(asr_b_o_rewarded_fit_slope)), fill=factor(unlist(lm_group_b)))) +
+  coord_cartesian(xlim = c(-1,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.05, alpha=0.5) +
+  ylab("Density") +
+  xlab("Slope") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slope_histogram_MEC.png", width = 4, height = 2)
+}
+```
+
+```{r}
+ggplot(data=spatial_firing_PS, aes(x=as.numeric(unlist(asr_b_o_rewarded_fit_slope)), fill=factor(unlist(lm_group_b)))) +
+  coord_cartesian(xlim = c(-1,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.05, alpha=0.5) +
+  ylab("Density") +
+  xlab("Slope") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slop_histogram_PS.png", width = 4, height = 2)
+}
+```
+
+```{r}
+ggplot(data=spatial_firing_RH, aes(x=as.numeric(unlist(asr_b_o_rewarded_fit_slope)), fill=factor(unlist(lm_group_b)))) +
+  coord_cartesian(xlim = c(-1,1)) +
+  geom_histogram(aes(y=..count../sum(..count..)), binwidth=0.05, alpha=0.5) +
+  ylab("Density") +
+  xlab("Slope") +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 4)) +
+  scale_fill_manual(values=c("violetred2", "chartreuse3")) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.title = element_blank(),
+        legend.position = "none",
+        text = element_text(size=16),
+        legend.text=element_text(size=16),
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/Outbound_slope_histogram_RH.png", width = 4, height = 2)
+}
+```
+
+
+Now lets find and plot the proportion of cells according to the classification
+```{r}
+spatial_firing_MEC <- spatial_firing %>%filter(brain_region == "MEC")
+spatial_firing_PS <- spatial_firing %>%filter(brain_region == "PS")
+spatial_firing_RH <- spatial_firing %>%filter(brain_region == "RH")
+```
+
+1. extract proportion of cells that meet each criteria
+```{r}
+start <- nrow(subset(spatial_firing_MEC, lm_group_b == "Negative"))/nrow(spatial_firing_MEC)*100
+reward <- nrow(subset(spatial_firing_MEC, lm_group_b == "Positive"))/nrow(spatial_firing_MEC)*100
+nonslope <- nrow(subset(spatial_firing_MEC, lm_group_b == "Unclassified"))/nrow(spatial_firing_MEC)*100
+
+start_num <- nrow(subset(spatial_firing_MEC, lm_group_b == "Negative"))
+reward_num <- nrow(subset(spatial_firing_MEC, lm_group_b == "Positive"))
+nonslope_num <- nrow(subset(spatial_firing_MEC, lm_group_b == "Unclassified"))
+
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), num=c(start_num, reward_num, nonslope_num), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent", x="") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  geom_text(aes(label = num), hjust = 1.5, vjust = 0.5, srt=90, size = 6, position = position_dodge(-0.5)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/MEC_Outbound_ramp_proportions_update.png", width = 3, height = 5.5)
+}
+```
+
+
+1. extract proportion of cells that meet each criteria
+```{r}
+start <- nrow(subset(spatial_firing_PS, lm_group_b == "Negative"))/nrow(spatial_firing_PS)*100
+reward <- nrow(subset(spatial_firing_PS, lm_group_b == "Positive"))/nrow(spatial_firing_PS)*100
+nonslope <- nrow(subset(spatial_firing_PS, lm_group_b == "Unclassified"))/nrow(spatial_firing_PS)*100
+
+start_num <- nrow(subset(spatial_firing_PS, lm_group_b == "Negative"))
+reward_num <- nrow(subset(spatial_firing_PS, lm_group_b == "Positive"))
+nonslope_num <- nrow(subset(spatial_firing_PS, lm_group_b == "Unclassified"))
+
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), num=c(start_num, reward_num, nonslope_num), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent", x="") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  geom_text(aes(label = num), hjust = 1.5, vjust = 0.5, srt=90, size = 6, position = position_dodge(-0.5)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/PS_Outbound_ramp_proportions_update.png", width = 3, height = 5.5)
+}
+```
+
+1. extract proportion of cells that meet each criteria
+```{r}
+start <- nrow(subset(spatial_firing_RH, lm_group_b == "Negative"))/nrow(spatial_firing_RH)*100
+reward <- nrow(subset(spatial_firing_RH, lm_group_b == "Positive"))/nrow(spatial_firing_RH)*100
+nonslope <- nrow(subset(spatial_firing_RH, lm_group_b == "Unclassified"))/nrow(spatial_firing_RH)*100
+
+start_num <- nrow(subset(spatial_firing_RH, lm_group_b == "Negative"))
+reward_num <- nrow(subset(spatial_firing_RH, lm_group_b == "Positive"))
+nonslope_num <- nrow(subset(spatial_firing_RH, lm_group_b == "Unclassified"))
+
+proportions_mixed_ramps <- tibble(perc=c(start, reward, nonslope), num=c(start_num, reward_num, nonslope_num), ramp_id= c("Start", "ToReward", "Unclassified"),ramp_type = c("Start", "ToReward", "Unclassified"))
+
+ggplot(proportions_mixed_ramps, aes(x= ramp_type, y = perc, fill=factor(ramp_id))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .4) +
+  labs(y = "Percent", x="") +
+  scale_fill_manual(values=c("violetred2", "chartreuse3", "grey62")) +
+  geom_text(aes(label = num), hjust = 1.5, vjust = 0.5, srt=90, size = 6, position = position_dodge(-0.5)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/RH_Outbound_ramp_proportions_update.png", width = 3, height = 5.5)
+}
+```
+
+
+
