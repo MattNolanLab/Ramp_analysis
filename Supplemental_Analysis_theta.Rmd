@@ -46,14 +46,14 @@ TM_neurons_groups <- spatial_firing_thetamod %>%
   filter(theta_classifier == "Theta-modulated") %>%
   select(final_model_o_b) %>%
   make_coeffs_table() %>%
-  mutate(theta_classifier = "Theta-rythmic")
+  mutate(theta_classifier = "Theta-rhythmic") 
 
 # For UM slope neurons
 UM_neurons_groups <- spatial_firing_unmodulated %>%
   filter(theta_classifier == "Not modulated") %>%
   select(final_model_o_b) %>%
   make_coeffs_table() %>%
-  mutate(theta_classifier = "Non-rythmic")
+  mutate(theta_classifier = "Non-rhythmic")
 
 # Combine
 mixed_ramps_2 <- bind_rows(TM_neurons_groups, UM_neurons_groups)
