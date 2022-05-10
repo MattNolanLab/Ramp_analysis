@@ -49,6 +49,9 @@ spatial_firing <- spatial_firing %>%
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider). The function lm_tidy_helper fits the linear model and then returns data extracted from the model fit using glance and tidy tools.
 ```{r}
 spatial_firing <- spatial_firing %>%
+  select(-contains('asr_b_o_rewarded_fit')) %>%
+  select(-contains('asr_nb_o_rewarded_fit')) %>%
+  select(-contains('asr_p_o_rewarded_fit')) %>%
   mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_tidy_helper),
          asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_tidy_helper),
          asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_tidy_helper))
@@ -110,15 +113,18 @@ if(shuffle_type=="circular") {
   spatial_firing_circ <- local_circ_shuffles(spatial_firing, cs_path)
   
   spatial_firing <- spatial_firing %>%
-  select(-contains('shuffle_results_b_o')) %>%
-  select(-contains('shuffle_results_nb_o')) %>%
-  select(-contains('shuffle_results_pb_o')) %>%
-  mutate(shuffle_results_b_o = spatial_firing_circ$shuffle_results_b_o,
-         shuffle_results_nb_o = spatial_firing_circ$shuffled_results_nb_o,
-         shuffle_results_p_o = spatial_firing_circ$shuffled_results_p_o,
-         shuffle_results_b_h = spatial_firing_circ$shuffle_results_b_h,
-         shuffle_results_nb_h = spatial_firing_circ$shuffled_results_nb_h,
-         shuffle_results_p_h = spatial_firing_circ$shuffled_results_p_h)
+    select(-contains('shuffle_results_b_o')) %>%
+    select(-contains('shuffle_results_nb_o')) %>%
+    select(-contains('shuffle_results_pb_o')) %>%
+    select(-contains('shuffle_results_b_h')) %>%
+    select(-contains('shuffle_results_nb_h')) %>%
+    select(-contains('shuffle_results_pb_h')) %>%
+    mutate(shuffle_results_b_o = spatial_firing_circ$shuffle_results_b_o,
+           shuffle_results_nb_o = spatial_firing_circ$shuffled_results_nb_o,
+           shuffle_results_p_o = spatial_firing_circ$shuffled_results_p_o,
+           shuffle_results_b_h = spatial_firing_circ$shuffle_results_b_h,
+           shuffle_results_nb_h = spatial_firing_circ$shuffled_results_nb_h,
+           shuffle_results_p_h = spatial_firing_circ$shuffled_results_p_h)
   # Remove unused frame
   rm(spatial_firing_circ)
 }
@@ -180,6 +186,10 @@ We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neu
 2. run on all neurons
 ```{r}
 spatial_firing <- spatial_firing %>%
+  select(-contains('shuffle_results_b_o_')) %>%
+  select(-contains('shuffle_results_nb_o_')) %>%
+  select(-contains('shuffle_results_p_o_')) %>%
+  select(-contains('adjust_pval_')) %>%
   unnest_wider(shuffle_results_b_o, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(shuffle_results_nb_o, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(shuffle_results_p_o, names_sep = "_", names_repair = "universal")
@@ -189,12 +199,6 @@ spatial_firing <- spatial_firing %>%
   unnest_wider(shuffle_results_nb_h, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(shuffle_results_p_h, names_sep = "_", names_repair = "universal")
 ```
-
-removed:
-  select(-contains('shuffle_results_b_o_')) %>%
-  select(-contains('shuffle_results_nb_o_')) %>%
-  select(-contains('shuffle_results_p_o_')) %>%
-  select(-contains('adjust_pval_')) %>%
 
 We also want to correct the p values of the lm fits to the experimental data to account for multiple comparisons.
 
@@ -268,6 +272,9 @@ _note:for now we are only interested in the homebound region of the track (110 -
 Removes any previously generated results (select), fits the data (mutate) and then adds model outputs as columns to spatial firing (unnest_wider).
 ```{r}
 spatial_firing <- spatial_firing %>%
+  select(-contains('asr_b_h_rewarded_fit_')) %>%
+  select(-contains('asr_nb_h_rewarded_fit_')) %>%
+  select(-contains('asr_p_h_rewarded_fit_')) %>%
   mutate(asr_b_h_rewarded_fit = pmap(list(asr_b_rewarded, 110, 170), lm_tidy_helper),
          asr_nb_h_rewarded_fit = pmap(list(asr_nb_rewarded, 110, 170), lm_tidy_helper),
          asr_p_h_rewarded_fit = pmap(list(asr_p_rewarded, 110, 170), lm_tidy_helper)) %>%
@@ -275,18 +282,7 @@ spatial_firing <- spatial_firing %>%
   unnest_wider(asr_nb_h_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
   unnest_wider(asr_p_h_rewarded_fit, names_sep = "_", names_repair = "universal")
 ```
-Removed:
-  select(-contains('asr_b_h_rewarded_fit_')) %>%
-  select(-contains('asr_b_h_rewarded_fit_')) %>%
-  select(-contains('asr_b_h_rewarded_fit_')) %>%
-  select(-contains('asr_nb_h_rewarded_fit_')) %>%
-  select(-contains('asr_nb_h_rewarded_fit_')) %>%
-  select(-contains('asr_nb_h_rewarded_fit_')) %>%
-  select(-contains('asr_p_h_rewarded_fit_')) %>%
-  select(-contains('asr_p_h_rewarded_fit_')) %>%
-  select(-contains('asr_p_h_rewarded_fit_')) %>%
-  
-  
+
 Linear model results are stored in:
 spatial_firing$asr_b_h_rewarded_fit_pval
 spatial_firing$asr_b_h_rewarded_fit_slope
@@ -858,7 +854,7 @@ start_ramps <- start_ramps %>%
 ```
 
 Put ramp scores alongisde lm results and brain region classifier in tibble for annotating heatmap
-```{r}
+```{r, warning=FALSE}
 ramp_result <- tibble(ramp_score = as.numeric(start_ramps$start_ramp_score))
 brain_region <- tibble(region = as.character(start_ramps$brain_region))
 lm_result <- tibble(result = as.character(start_ramps$lm_group_b))
