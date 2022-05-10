@@ -266,7 +266,7 @@ mean_SEM_plots <- function(df, colour1 = "blue"){
   gg <- ggplot(data=df) +
     geom_ribbon(aes(x=Position, y=mean_r, ymin = mean_r - sem_r, ymax = mean_r + sem_r), fill = colour1, alpha=0.2) +
     geom_line(aes(y=mean_r, x=Position), color = colour1)
-  add_track(gg, xlab = "Position", ylab = "Z-scored firing rate")
+  add_track(gg, xlab = "Location (cm)", ylab = "Z-scored firing rate")
 }
 
 ## --------------------------------------------------------------------------------------------- ##
@@ -674,6 +674,15 @@ subset_for_plots <- function(df, outbound_class = "Positive", homebound_class = 
     )
 }
 
+integer_breaks <- function(n = 5, ...) {
+  fxn <- function(x) {
+    breaks <- floor(pretty(x, n, ...))
+    names(breaks) <- attr(breaks, "labels")
+    breaks
+  }
+  return(fxn)
+}
+
 # Generic function to plot firing rate ± SEM as a function of position and colour coded according to trial outcome.
 # The function expects to receive the unnested mean firing rates for all neurons that are to be plotted.
 # Conditions for selection should be given before calling the function.
@@ -694,24 +703,23 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
                      se_b = std.error(Rates, na.rm = TRUE))
   
   ggplot(data=df) +
-    annotate("rect", xmin=-30, xmax=0, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
-    annotate("rect", xmin=140, xmax=170, ymin=-2,ymax=Inf, alpha=0.2, fill="Grey60") +
-    annotate("rect", xmin=60, xmax=80, ymin=-2,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+    annotate("rect", xmin=-30, xmax=0, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=140, xmax=170, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Grey60") +
+    annotate("rect", xmin=60, xmax=80, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+    scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+    scale_y_continuous(breaks = integer_breaks()) +
     geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
                     fill=factor(Reward_indicator)), alpha=0.1) +
     geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
     scale_fill_manual(values=c("black", "red", "blue")) +
     scale_color_manual(values=c("black", "red", "blue")) +
-    #labs(y = "Mean firing rate (Hz)", x = "Location (cm)") +
     labs(y = "Z-scored firing rate", x = "Location (cm)") +
-    #xlim(-30, 170) +
     theme_classic() +
-    scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
-    theme(axis.text.x = element_text(size=14),
-          axis.text.y = element_text(size=14),
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position = "none",
           legend.title = element_blank(),
-          legend.position="none", 
-          text = element_text(size=14),
+          text = element_text(size=18),
           plot.margin = margin(21, 25, 5, 20))
 }
 
@@ -893,7 +901,7 @@ probe_out_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     labs(x = "Trial", y = "Slope") +
-    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    scale_fill_manual(values=c("black", "blue")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
@@ -915,7 +923,7 @@ probe_home_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     labs(x = "Trial", y = "Slope") +
-    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    scale_fill_manual(values=c("black", "blue")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
@@ -938,7 +946,7 @@ probe_offset_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     labs(x = "Trial", y = "Offset") +
-    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    scale_fill_manual(values=c("black", "blue")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
