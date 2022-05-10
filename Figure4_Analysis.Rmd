@@ -345,26 +345,26 @@ Threshold is set to > 10 probe trials.
 
 ```{r}
 # this cell requires data_coef made in Figure 2 Analysis Rmd
-data_coef_pos_allp <- data_coef %>%
-  subset(group == "P" | group == "PS" | group == "PSA" | group == "PA") %>%
-  subset(lm_result == "Positive")
-
-(pos_SA_coef_plot <- standard_plot(data_coef_pos_allp))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PositiveAllPositioncells.png", width = 3, height = 2.5)
-}
+# data_coef_pos_allp <- data_coef %>%
+#   subset(group == "P" | group == "PS" | group == "PSA" | group == "PA") %>%
+#   subset(lm_result == "Positive")
+# 
+# (pos_SA_coef_plot <- standard_plot(data_coef_pos_allp))
+# if (save_figures == 1) {
+#   ggsave(file = "plots/CoefficientValues_PositiveAllPositioncells.png", width = 3, height = 2.5)
+# }
 ```
 
 
 ```{r}
-data_coef_neg_allp <- data_coef %>%
-  subset(group == "P" | group == "PS" | group == "PSA" | group == "PA") %>%
-  subset(lm_result == "Negative")
-
-(neg_SA_coef_plot <- standard_plot(data_coef_neg_allp))
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_NegativeAllPositioncells.png", width = 3, height = 2.5)
-}
+# data_coef_neg_allp <- data_coef %>%
+#   subset(group == "P" | group == "PS" | group == "PSA" | group == "PA") %>%
+#   subset(lm_result == "Negative")
+# 
+# (neg_SA_coef_plot <- standard_plot(data_coef_neg_allp))
+# if (save_figures == 1) {
+#   ggsave(file = "plots/CoefficientValues_NegativeAllPositioncells.png", width = 3, height = 2.5)
+# }
 ```
 
 

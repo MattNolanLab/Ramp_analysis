@@ -1044,43 +1044,43 @@ data <- position_data %>%
 #data$lm_group_b <- as.character(data$lm_group_b)
 ```
 
-2. Plot scatter plot
+2. Plot scatter plot for cv2. Removed from pipeline output.
 ```{r}
-
-ggplot() + 
-    geom_jitter(data=position_data,
-               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-                   y = as.numeric(unlist(mean_cv2)), 
-                   color=factor(unlist(lm_group_b)))) +
-    geom_jitter(data=subset(position_data, track_category == "pospos" | track_category == "negneg"),
-               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-                   y = as.numeric(unlist(mean_cv2)), 
-                   color=factor(unlist(lm_group_b))), alpha=0.8) +
-    geom_jitter(data=subset(position_data, track_category == "posneg" | track_category == "negpos"),
-               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-                   y = as.numeric(unlist(mean_cv2)), 
-                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
-    geom_jitter(data=subset(position_data, track_category == "posnon" | track_category == "negnon"),
-               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-                   y = as.numeric(unlist(mean_cv2)), 
-                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
-    ylab("CV2") +
-    coord_cartesian(ylim = c(0.4,1.5)) +
-    xlab("Mean firing rate (Hz)") +
-    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
-    theme_classic() +
-    scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
-    theme(axis.text.x = element_text(size=18),
-          axis.text.y = element_text(size=18),
-          legend.position="bottom", 
-          legend.title = element_blank(),
-          text = element_text(size=17), 
-          legend.text=element_text(size=16), 
-          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-
-if (save_figures == 1) {
- ggsave(file = "plots/firing_properties_CV2_allrampcells.png", width = 4, height = 3.5) 
-}
+# 
+# ggplot() + 
+#     geom_jitter(data=position_data,
+#                aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+#                    y = as.numeric(unlist(mean_cv2)), 
+#                    color=factor(unlist(lm_group_b)))) +
+#     geom_jitter(data=subset(position_data, track_category == "pospos" | track_category == "negneg"),
+#                aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+#                    y = as.numeric(unlist(mean_cv2)), 
+#                    color=factor(unlist(lm_group_b))), alpha=0.8) +
+#     geom_jitter(data=subset(position_data, track_category == "posneg" | track_category == "negpos"),
+#                aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+#                    y = as.numeric(unlist(mean_cv2)), 
+#                    color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+#     geom_jitter(data=subset(position_data, track_category == "posnon" | track_category == "negnon"),
+#                aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+#                    y = as.numeric(unlist(mean_cv2)), 
+#                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
+#     ylab("CV2") +
+#     coord_cartesian(ylim = c(0.4,1.5)) +
+#     xlab("Mean firing rate (Hz)") +
+#     geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+#     theme_classic() +
+#     scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
+#     theme(axis.text.x = element_text(size=18),
+#           axis.text.y = element_text(size=18),
+#           legend.position="bottom", 
+#           legend.title = element_blank(),
+#           text = element_text(size=17), 
+#           legend.text=element_text(size=16), 
+#           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+# 
+# if (save_figures == 1) {
+#  ggsave(file = "plots/firing_properties_CV2_allrampcells.png", width = 4, height = 3.5) 
+# }
 ```
 
 

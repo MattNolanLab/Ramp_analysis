@@ -74,7 +74,6 @@ spatial_firing <- spatial_firing %>%
 
 
 ```{r}
-save_results == 1
 if (save_results == 1) {
   saveRDS(spatial_firing, "data_out/SpatialFiring_with_glmer.Rda")
 }
