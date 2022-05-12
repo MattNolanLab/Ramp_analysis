@@ -412,6 +412,45 @@ ggplot(data=subset(all_cells_percent, ramp_type != "NULL"), aes(x=classifier2, y
 ggsave(file = "plots/OFAnalysis_proportionsBOX_22.png", width = 4.5, height = 5.5)
 
 ```
+
+### Now look at speed modulation
+
+```{r}
+spatial_firing %>% filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type) %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(joined_id) %>%
+  ggplot(aes(ramp_type, speed_score)) +
+  geom_jitter() +
+  geom_violin(alpha = 0.5)
+
+speed_props <- spatial_firing %>%
+  filter(cohort == 7) %>%
+  select(speed_cell, joined_id, ramp_type) %>%
+  mutate(speed_cell = unlist(speed_cell),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(ramp_type, speed_cell, joined_id) %>%
+  summarise(n = n()) %>%
+  mutate(proportion = n / sum(n),
+         percent = proportion*100)
+
+speed_props %>% ggplot(aes(ramp_type, proportion)) +
+  geom_boxplot()
+
+
+(speed_props_summary <- speed_props %>%
+  group_by(speed_cell, ramp_type) %>%
+  summarise(avg = mean(proportion),
+         sd = std.error(proportion),
+         min=min(proportion),
+         max=max(proportion)))
+```
+
+
+
 ### ----------------------------------------------------------------------------------------- ###
 
 Then, we want to see the proportion of spatial cells (grid, border etc) throughout types of ramp cells (++, -- etc)
