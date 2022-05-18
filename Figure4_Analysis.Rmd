@@ -79,6 +79,19 @@ spatial_firing_probe_only <-
   subset(asr_p_sum != 0) %>%
   filter(lm_group_b == "Positive" | lm_group_b == "Negative",
          final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" |  final_model_o_b == "PSA") 
+
+# Number of eligible probe neurons
+dim(spatial_firing_probe_only)
+
+# Number of positional neurons
+dim(filter(spatial_firing, lm_group_b == "Positive" | lm_group_b == "Negative",
+         final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" |  final_model_o_b == "PSA"))
+
+# Number of sessions
+length(unique(spatial_firing_probe_only$session_id))
+
+# Number of mice
+unique(spatial_firing_probe_only$unique_mouse)
 ```
 
 
@@ -226,6 +239,14 @@ spatial_firing %>%
   filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
   select(predict_diff_p) %>%
   t.test(mu = 0)
+```
+Do offsets on beaconed trials predict offsets on probe trials?
+```{r}
+model <- lm(predict_diff_p ~ predict_diff, data = spatial_firing_probe_only %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") )
+summary(model)
+# get the model parameters
+params <- select(glance(model), r.squared, p.value)
 ```
 
 
