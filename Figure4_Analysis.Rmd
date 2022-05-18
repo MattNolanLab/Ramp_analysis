@@ -86,28 +86,28 @@ Plot absolute slope values for each trial type
 probe_out_slope_plot(spatial_firing_probe_only, "Positive", -0.1, 0.45)
 
 if (save_figures == 1) {
- ggsave(file = "plots/slope_comparison_beaconed_vs_probe_outbound_pos.png", width = 4, height = 4) 
+ ggsave(file = "plots/slope_comparison_beaconed_vs_probe_outbound_pos.png", width = 3.2, height = 3.5) 
 }
 
 probe_out_slope_plot(spatial_firing_probe_only, "Negative", -0.65, 0.2)
 
 
 if (save_figures == 1) {
- ggsave(file = "plots/slope_comparison_beaconed_vs_probe_outbound_neg.png", width = 4, height = 4) 
+ ggsave(file = "plots/slope_comparison_beaconed_vs_probe_outbound_neg.png", width = 3.2, height = 3.5) 
 }
 
 probe_home_slope_plot(spatial_firing_probe_only, "Positive", -0.35, 0.8)
 
 
 if (save_figures == 1) {
- ggsave(file = "plots/slope_comparison_beaconed_vs_probe_homebound_pos.png", width = 4, height = 4) 
+ ggsave(file = "plots/slope_comparison_beaconed_vs_probe_homebound_pos.png", width = 3.2, height = 3.5) 
 }
 
 probe_home_slope_plot(spatial_firing_probe_only, "Negative", -0.4, 0.75)
 
 
 if (save_figures == 1) {
- ggsave(file = "plots/slope_comparison_beaconed_vs_probe_homebound_neg.png", width = 4, height = 4) 
+ ggsave(file = "plots/slope_comparison_beaconed_vs_probe_homebound_neg.png", width = 3.2, height = 3.5) 
 }
 
 # Compare probe vs beaconed with a paired t-test
@@ -187,14 +187,14 @@ spatial_firing_probe_only %>% filter(lm_group_b == "Positive" & lm_group_b_h == 
   probe_offset_plot("Positive", -3, 1)
 
 if (save_figures == 1) {
- ggsave(file = "plots/offset_comparison_beaconed_vs_probe_pospos.png", width = 4, height = 4) 
+ ggsave(file = "plots/offset_comparison_beaconed_vs_probe_pospos.png", width =  3.2, height = 3.5) 
 }
 
 spatial_firing_probe_only %>% filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
   probe_offset_plot("Negative", -1, 5)
 
 if (save_figures == 1) {
- ggsave(file = "plots/offset_comparison_beaconed_vs_probe_negneg.png", width = 4, height = 4) 
+ ggsave(file = "plots/offset_comparison_beaconed_vs_probe_negneg.png", width = 3.2, height = 3.5) 
 }
 
 ```
