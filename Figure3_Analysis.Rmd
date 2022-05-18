@@ -258,16 +258,16 @@ spatial_firing %>%
   slopes_by_outcome(-0.4, 0.8)
 
 if (save_figures == 1) {
-  ggsave(file = "plots/slope_pos_AllPosition.png",width = 3.2, height = 3)
+  ggsave(file = "plots/slope_pos_AllPosition.png",width = 3.2, height = 3.5)
 }
 
 spatial_firing %>%
   filter(lm_group_b == "Negative", final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PSA" | final_model_o_b == "PA") %>%
-  slopes_by_outcome(-2, 0.5)
+  slopes_by_outcome(-2.5, 0.5)
 
 
 if (save_figures == 1) {
-  ggsave(file = "plots/slope_neg_AllPosition.png",width = 3.2, height = 3)
+  ggsave(file = "plots/slope_neg_AllPosition.png",width = 3.2, height = 3.5)
 }
 ```
 
@@ -358,7 +358,7 @@ spatial_firing %>% filter(final_model_o_b == "P" | final_model_o_b == "PA"  | fi
   offsets_by_outcome(-4, 2)
 
 if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_pos_AllPosition.png",width = 3.2, height = 3)
+  ggsave(file = "plots/PredictProbe_pos_AllPosition.png",width = 3.2, height = 3.5)
 }
 
 
@@ -367,7 +367,7 @@ spatial_firing %>% filter(final_model_o_b == "P" | final_model_o_b == "PA"  | fi
   offsets_by_outcome(-1.5, 4.5)
 
 if (save_figures == 1) {
-  ggsave(file = "plots/PredictProbe_neg_AllPosition.png",width = 3.2, height = 3)
+  ggsave(file = "plots/PredictProbe_neg_AllPosition.png",width = 3.2, height = 3.5)
 }
 ```
 

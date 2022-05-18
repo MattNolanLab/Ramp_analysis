@@ -247,6 +247,7 @@ add_track <- function(gg, xlab = "Location (cm)", ylab = "Stops (cm)") {
     annotate("rect", xmin=140, xmax=170, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Grey60") +
     annotate("rect", xmin=60, xmax=80, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
     scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+    scale_y_continuous(breaks = integer_breaks()) +
     labs(y = ylab, x = xlab) +
     theme_classic() +
     theme(axis.text.x = element_text(size=18),
@@ -709,8 +710,8 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
     scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
     scale_y_continuous(breaks = integer_breaks()) +
     geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
-                    fill=factor(Reward_indicator)), alpha=0.1) +
-    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
+                    fill=factor(Reward_indicator)), alpha=0.2) +
+    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=1) +
     scale_fill_manual(values=c("black", "red", "blue")) +
     scale_color_manual(values=c("black", "red", "blue")) +
     labs(y = "Z-scored firing rate", x = "Location (cm)") +
@@ -775,7 +776,7 @@ slopes_by_outcome <- function(df, min_y = -3.5, max_y = 3.5){
     geom_line(aes(group = unique_id, alpha = 0.5)) +
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Outcome, "Hit", "Try", "Run"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
-    labs(x = "Outcome", y = "Slope") +
+    labs(x = "Outcome", y = "Pre-reward zone slope") +
     scale_fill_manual(values=c("grey","red", "blue")) +
     theme_classic() +
     theme(text = element_text(size=20),
