@@ -414,7 +414,6 @@ if (save_figures == 1) {
 
 
 ```{r}
-save_results = 1
 if (save_results == 1) {
   saveRDS(spatial_firing, "SpatialFiring_with_Results.Rda")
 }

@@ -447,6 +447,12 @@ speed_props %>% ggplot(aes(ramp_type, proportion)) +
          sd = std.error(proportion),
          min=min(proportion),
          max=max(proportion)))
+
+# Compare track speed cells with arena speed cells
+
+# Does track speed classification predict arean speed classification?
+
+# Do track and arena speed scores correlate?
 ```
 
 
