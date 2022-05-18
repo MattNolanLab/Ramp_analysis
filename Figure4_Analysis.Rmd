@@ -69,16 +69,19 @@ table(spatial_firing$offset_p, useNA = "always")
 Does the firing rate slope before or after the reward zone differ between beaconed and probe trials?
 
 Subset spatial firing to contain only cells that have probe trial data and where the number of trials in the session  is >= 120, and therefore probe trials >= 12.
+
+Focus on positional neurons (P, PA, PS, PSA) that on beaconed trials are classified with positive or negative slopes on the track segment before the reward zone
 ```{r}
 sum_unlist <- function(df) {sum(unlist(df), na.rm=TRUE)}
 spatial_firing_probe_only <-
   subset(spatial_firing, max_trial_number >= 120) %>%
   mutate(asr_p_sum = map_dbl(Rates_averaged_p, sum_unlist)) %>%
   subset(asr_p_sum != 0) %>%
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative") 
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative",
+         final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" |  final_model_o_b == "PSA") 
 ```
 
-We focus on positional neurons (P, PA, PS, PSA) that on beaconed trials are classified with positive or negative slopes on the track segment before the reward zone
+
 
 Plot absolute slope values for each trial type
 ```{r}
@@ -225,6 +228,22 @@ spatial_firing_probe_only %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
   filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
   offset_ggplot(diff_colname = "predict_diff_p", group_colname = "reset_group_p", colour_2 = "violetred2")
+```
+
+Do the offsets differ between beaconed and probe trials?
+```{r}
+offset_b_vs_p_pos <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  summarise(ttest = list(t.test(predict_diff, predict_diff_p, paired = TRUE)))
+
+offset_b_vs_p_neg <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  summarise(ttest = list(t.test(predict_diff, predict_diff_p, paired = TRUE)))
+
+offset_b_vs_p_pos[[1]]
+offset_b_vs_p_neg[[1]]
 ```
 
 

@@ -204,19 +204,6 @@ spatial_firing <- spatial_firing %>%
 ### Find proportion of spatial cells
 
 ### ----------------------------------------------------------------------------------------- ###
-```{r}
-position_firing <- spatial_firing  %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
-  filter(cohort == 7) %>% 
-  filter(lm_group_b == "Positive" | lm_group_b == "Negative")
-```
-
-```{r}
-# ns <- subset(position_firing, classifier == "NS")
-# spatial <- subset(position_firing, classifier == "NG")
-```
-
-
 First, we want to know out of our dataset, how many cells classified as grid, border, pure head direction etc. 
 
 Find number of cells in each spatial catagory (grid, border, HD etc)
@@ -231,28 +218,35 @@ spatial_firing %>%
   table()
 
 # Position modulated ramping neurons  
-(arena_track_ramp <- spatial_firing %>%
-  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
-  filter(cohort == 7) %>% 
+arena_track_ramp <- spatial_firing %>%
+  filter(cohort == 7,
+         final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   filter(track_category_numeric !=0) %>%
   select(classifier2, final_model_o_b) %>%
   mutate(classifier2 = unlist(classifier2),
          final_model_o_b = unlist(final_model_o_b)) %>%
-  table())
+  table()
+arena_track_ramp <- cbind(arena_track_ramp, total = rowSums(arena_track_ramp))
+(arena_track_ramp <- rbind(arena_track_ramp, sum = colSums(arena_track_ramp)))
 
 # All neurons
-(arena_track_all <- spatial_firing %>%
-  filter(cohort == 7) %>% 
+arena_track_all <- spatial_firing %>%
+  filter(track_category_numeric !=0) %>%
   select(classifier2, final_model_o_b) %>%
   mutate(classifier2 = unlist(classifier2),
          final_model_o_b = unlist(final_model_o_b)) %>%
-  table())
+  table()
+arena_track_all <- cbind(arena_track_all, total = rowSums(arena_track_all))
+(arena_track_all <- rbind(arena_track_all, sum = colSums(arena_track_all)))
+
 ```
 
 
 ### ----------------------------------------------------------------------------------- ###
 
 Now we might want to see a plot of this, with proportions split according to type of ramp cell in VR i.e. position ramp, speed ramps, all cells.
+
+The y-axis 'Arena type' shows the proportion of each arena field (e.g. grid border, etc) within each population of the track cells (e.g. positional ramp, other ramp, non-ramp).
 
 1. First find proportions of functional cell types by animal for all cells
 ```{r}
@@ -340,7 +334,9 @@ ggsave(file = "plots/OFAnalysis_proportionsBOX.png", width = 6.5, height = 5.5)
 
 ### ----------------------------------------------------------------------------------- ###
 
+Make a plot where the y-axis 'Ramp type' shows the proportion of each ramp type(e.g. positional ramp, other ramp, non-ramp) within each population of arena cells (e.g. grid border, etc).
 
+Use 'spatial_firing$track_category_numeric' to identify ramping cells.
 
 track_category_numeric is defined in Figure 1:
 Homebound   Outbound    Text label    Numeric label
@@ -362,19 +358,11 @@ ramp_cat <- function(classifier, final_model_o_b){
   } else {return("None")}
 }
 
-```
-
-
-1. run on all cells
-```{r}
 spatial_firing <- spatial_firing %>%
   mutate(ramp_type = map2(track_category_numeric, final_model_o_b, ramp_cat))
-
 ```
 
-Now we might want to see a plot of this, with proportions split according to type of ramp cell in VR i.e. position ramp, speed ramps, all cells.
 
-Find proportions for all cells
 
 ```{r}
 all_cells_percent <- spatial_firing  %>%
@@ -390,18 +378,21 @@ all_cells_percent <- spatial_firing  %>%
          classifier2 = as.character(classifier2),
          ramp_type = as.character(ramp_type))
 
-all_cells_percent_summary <- all_cells_percent %>%
+(all_cells_percent_summary <- all_cells_percent %>%
   group_by(classifier2, ramp_type) %>%
   summarise(avg = mean(proportion),
          sd = std.error(proportion),
          min=min(proportion),
-         max=max(proportion))
+         max=max(proportion)))
+
+summary(aov(proportion ~ factor(ramp_type), data = filter(all_cells_percent, classifier2 == "Border")))
+summary(aov(proportion ~ factor(ramp_type), data = filter(all_cells_percent, classifier2 == "Grid")))
+summary(aov(proportion ~ factor(ramp_type), data = filter(all_cells_percent, classifier2 == "Non-Spatial")))
+summary(aov(proportion ~ factor(ramp_type), data = filter(all_cells_percent, classifier2 == "Pure HD")))
+summary(aov(proportion ~ factor(ramp_type), data = filter(all_cells_percent, classifier2 == "Spatial")))
 ```
 
-
-
-Make box plot and plot all at the same time
-
+Make plot
 ```{r}
 ggplot(data=subset(all_cells_percent, ramp_type != "NULL"), aes(x=classifier2, y=percent,fill = factor(ramp_type))) + 
   #coord_cartesian(ylim=c(0,100)) +
@@ -425,6 +416,51 @@ ggplot(data=subset(all_cells_percent, ramp_type != "NULL"), aes(x=classifier2, y
 ggsave(file = "plots/OFAnalysis_proportionsBOX_22.png", width = 6.5, height = 5.5)
 
 ```
+
+### Now look at speed modulation
+
+```{r}
+spatial_firing %>% filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type) %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(joined_id) %>%
+  ggplot(aes(ramp_type, speed_score)) +
+  geom_jitter() +
+  geom_violin(alpha = 0.5)
+
+speed_props <- spatial_firing %>%
+  filter(cohort == 7) %>%
+  select(speed_cell, joined_id, ramp_type) %>%
+  mutate(speed_cell = unlist(speed_cell),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(ramp_type, speed_cell, joined_id) %>%
+  summarise(n = n()) %>%
+  mutate(proportion = n / sum(n),
+         percent = proportion*100)
+
+speed_props %>% ggplot(aes(ramp_type, proportion)) +
+  geom_boxplot()
+
+
+(speed_props_summary <- speed_props %>%
+  group_by(speed_cell, ramp_type) %>%
+  summarise(avg = mean(proportion),
+         sd = std.error(proportion),
+         min=min(proportion),
+         max=max(proportion)))
+
+# Compare track speed cells with arena speed cells
+
+# Does track speed classification predict arean speed classification?
+
+# Do track and arena speed scores correlate?
+```
+
+
+
 ### ----------------------------------------------------------------------------------------- ###
 
 Then, we want to see the proportion of spatial cells (grid, border etc) throughout types of ramp cells (++, -- etc)
