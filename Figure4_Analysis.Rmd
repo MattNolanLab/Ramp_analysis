@@ -224,6 +224,22 @@ spatial_firing_probe_only %>%
   offset_ggplot(diff_colname = "predict_diff_p", group_colname = "reset_group_p", colour_2 = "violetred2")
 ```
 
+Do the offsets differ between beaconed and probe trials?
+```{r}
+offset_b_vs_p_pos <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
+  filter(lm_group_b == "Positive" & lm_group_b_h == "Positive") %>%
+  summarise(ttest = list(t.test(predict_diff, predict_diff_p, paired = TRUE)))
+
+offset_b_vs_p_neg <- spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PA" | final_model_o_b == "PS" | final_model_o_b == "PSA") %>%
+  filter(lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  summarise(ttest = list(t.test(predict_diff, predict_diff_p, paired = TRUE)))
+
+offset_b_vs_p_pos[[1]]
+offset_b_vs_p_neg[[1]]
+```
+
 
 Does the distribution mean differ from zero?
 
