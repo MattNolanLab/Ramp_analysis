@@ -337,7 +337,7 @@ summary(one.way)
 spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
                 lm_group_b == "Positive") %>%
-  slopes_by_outcome_t %>%
+  h_slopes_by_outcome_t %>%
   mutate(ttest_adj = p.adjust(ttest, "bonferroni"))
   
 one.way <- spatial_firing %>%
@@ -349,7 +349,7 @@ summary(one.way)
 spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PA"  | final_model_o_b == "PS"  | final_model_o_b == "PSA",
                 lm_group_b == "Negative") %>%
-  slopes_by_outcome_t %>%
+  h_slopes_by_outcome_t %>%
   mutate(ttest_adj = p.adjust(ttest, "bonferroni"))
 
 
