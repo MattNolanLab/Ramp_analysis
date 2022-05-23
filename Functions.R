@@ -783,6 +783,26 @@ slopes_by_outcome <- function(df, min_y = -3.5, max_y = 3.5){
           legend.position = "none")
 }
 
+h_slopes_by_outcome <- function(df, min_y = -3.5, max_y = 3.5){
+  df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, asr_b_h_hit_fit_slope, asr_b_h_try_fit_slope, asr_b_h_run_fit_slope) %>%
+    rename(Hit = asr_b_h_hit_fit_slope,
+           Try = asr_b_h_try_fit_slope,
+           Run = asr_b_h_run_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", ) %>%
+    ggplot(aes(x = fct_relevel(Outcome, "Hit", "Try", "Run"), y = Slope)) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Outcome, "Hit", "Try", "Run"))) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    labs(x = "Outcome", y = "Post-reward zone slope") +
+    scale_fill_manual(values=c("grey","red", "blue")) +
+    theme_classic() +
+    theme(text = element_text(size=20),
+          legend.position = "none")
+}
 
 # Function to plot offsets as a function of trial outcome
 offsets_by_outcome <- function(df, min_y = -3.5, max_y = 3.5){
@@ -820,6 +840,20 @@ slopes_by_outcome_aov <- function(df) {
   #aov_2(df)
 }
 
+h_slopes_by_outcome_aov <- function(df) {
+  df <- df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, asr_b_h_hit_fit_slope, asr_b_h_try_fit_slope, asr_b_h_run_fit_slope) %>%
+    rename(Hit = asr_b_h_hit_fit_slope,
+           Try = asr_b_h_try_fit_slope,
+           Run = asr_b_h_run_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", )
+  #aov(Slope ~ as.factor(Outcome), data = df)
+  aov(Slope ~ as.factor(Outcome) + Error(as.factor(unique_id)), data = df)
+  #aov_2(df)
+}
+
+
 # To check AOV because F value was suspiciously low.  
 aov_2 <- function(df){
   CF = (sum(df$Slope))^2/length(df$Slope)
@@ -851,6 +885,18 @@ slopes_by_outcome_t <- function(df) {
     unnest(cols = c(ttest))
 }
 
+h_slopes_by_outcome_t <- function(df) {
+  df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, asr_b_h_hit_fit_slope, asr_b_h_try_fit_slope, asr_b_h_run_fit_slope) %>%
+    rename(Hit = asr_b_h_hit_fit_slope,
+           Try = asr_b_h_try_fit_slope,
+           Run = asr_b_h_run_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", ) %>%
+    group_by(Outcome) %>%
+    summarise(ttest = list(t.test(Slope, mu = 0)$p.value)) %>%
+    unnest(cols = c(ttest))
+}
 
 # One-way ANOVA to compare offsets by outcome
 offsets_by_outcome_aov <- function(df) {
@@ -902,7 +948,7 @@ probe_out_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     labs(x = "Trial", y = "Slope") +
-    scale_fill_manual(values=c("black", "blue")) +
+    scale_fill_manual(values=c("black", "#1FB5B2")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
@@ -924,7 +970,7 @@ probe_home_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     labs(x = "Trial", y = "Slope") +
-    scale_fill_manual(values=c("black", "blue")) +
+    scale_fill_manual(values=c("black", "#1FB5B2")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
@@ -947,7 +993,7 @@ probe_offset_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     labs(x = "Trial", y = "Offset") +
-    scale_fill_manual(values=c("black", "blue")) +
+    scale_fill_manual(values=c("black", "#1FB5B2")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
@@ -1071,7 +1117,7 @@ mean_SEM_plots_comp_prep <- function(df) {
                                 sem_c = std.error(Rates_c, na.rm = TRUE))
 }
 
-mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "blue"){
+mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "#1FB5B2"){
   plot <- mean_SEM_plots(df, colour1)
   
   plot +
