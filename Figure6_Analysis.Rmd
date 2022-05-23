@@ -208,6 +208,7 @@ First, we want to know out of our dataset, how many cells classified as grid, bo
 
 Find number of cells in each spatial catagory (grid, border, HD etc)
 ```{r}
+# Distribution of open arena cell types among positionally modulated ramping neurons
 spatial_firing %>%
   filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
   filter(cohort == 7) %>% 
@@ -421,10 +422,20 @@ spatial_firing %>% filter(cohort == 7) %>%
   mutate(speed_score = unlist(speed_score),
          joined_id = unlist(joined_id),
          ramp_type = unlist(ramp_type)) %>%
-  group_by(joined_id) %>%
   ggplot(aes(ramp_type, speed_score)) +
   geom_jitter() +
-  geom_violin(alpha = 0.5)
+  geom_violin(alpha = 0.5) +
+  labs(x = "", y = "Speed score") +
+  theme_classic() +
+  theme(text = element_text(size=20))
+
+speed_by_ramp <- spatial_firing %>%
+  filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type) %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type))
+summary(aov(speed_score ~ ramp_type, speed_by_ramp))
 
 speed_props <- spatial_firing %>%
   filter(cohort == 7) %>%
@@ -432,29 +443,106 @@ speed_props <- spatial_firing %>%
   mutate(speed_cell = unlist(speed_cell),
          joined_id = unlist(joined_id),
          ramp_type = unlist(ramp_type)) %>%
-  group_by(ramp_type, speed_cell, joined_id) %>%
-  summarise(n = n()) %>%
+    group_by(ramp_type, speed_cell, joined_id) %>%
+    summarise(n = n()) %>%
+  group_by(ramp_type, joined_id) %>%
   mutate(proportion = n / sum(n),
          percent = proportion*100)
 
-speed_props %>% ggplot(aes(ramp_type, proportion)) +
-  geom_boxplot()
+# filter(speed_props, joined_id == "M3_7")$proportion
+
+speed_props %>% 
+  filter(speed_cell == 1) %>%
+    ggplot(aes(ramp_type, proportion)) +
+  geom_boxplot() +
+  labs(x = "", y = "Speed cells") +
+  theme_classic()+
+  theme(text = element_text(size=20))
 
 
 (speed_props_summary <- speed_props %>%
-  group_by(speed_cell, ramp_type) %>%
-  summarise(avg = mean(proportion),
-         sd = std.error(proportion),
-         min=min(proportion),
-         max=max(proportion)))
+    group_by(speed_cell, ramp_type) %>%
+    summarise(avg = mean(proportion),
+              sd = std.error(proportion),
+              min=min(proportion),
+              max=max(proportion)))
 
-# Compare track speed cells with arena speed cells
-
-# Does track speed classification predict arean speed classification?
-
-# Do track and arena speed scores correlate?
 ```
 
+Compare track speed cells with arena speed cells
+```{r}
+spatial_firing %>% filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed) %>%
+  filter(ramp_type != "None") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  ggplot(aes(o_b_mod_coefs_speed, speed_score, colour = ramp_type)) +
+  geom_point() +
+  geom_smooth(method='lm', formula= y~x)
+
+speed_corr_rp <- spatial_firing %>% 
+  filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed) %>%
+  filter(ramp_type == "Ramp_position") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(ramp_type)
+
+speed_corr_lm_rp <- lm(speed_score ~ o_b_mod_coefs_speed, speed_corr_rp) 
+
+summary(speed_corr_lm_rp)
+  
+
+speed_corr_ro <- spatial_firing %>% 
+  filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed) %>%
+  filter(ramp_type == "Ramp_Other") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(ramp_type)
+
+speed_corr_lm_ro <- lm(speed_score ~ o_b_mod_coefs_speed, speed_corr_ro) 
+
+summary(speed_corr_lm_ro)
+  
+
+speed_corr_s <- spatial_firing %>% 
+  filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed, final_model_o_b) %>%
+  filter(ramp_type == "Ramp_Other",
+         final_model_o_b == "S") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(ramp_type)
+
+speed_corr_lm_s <- lm(speed_score ~ o_b_mod_coefs_speed, speed_corr_s) 
+
+summary(speed_corr_lm_s)
+```
+
+
+Compare speed scores with mean firing rates
+In the Hippocampus high speed score cells have high firing rates (Figure 5 of Gois and Tort, 2018).
+```{r}
+spatial_firing %>% filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed, mean_firing_rate_of) %>%
+  #filter(ramp_type != "None") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  ggplot(aes(speed_score, unlist(mean_firing_rate_of), colour = ramp_type)) +
+  geom_point() +
+  geom_hline(yintercept=10, linetype='dotted') +
+  labs(x = "Speed score", y = "Firing rate (Hz)") +
+  theme_classic() +
+  theme(text = element_text(size=20),
+        legend.title=element_blank())
+
+```
 
 
 ### ----------------------------------------------------------------------------------------- ###
@@ -1065,46 +1153,6 @@ data <- position_data %>%
 #data$lm_group_b <- as.character(data$lm_group_b)
 ```
 
-2. Plot scatter plot for cv2. Removed from pipeline output.
-```{r}
-# 
-# ggplot() + 
-#     geom_jitter(data=position_data,
-#                aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-#                    y = as.numeric(unlist(mean_cv2)), 
-#                    color=factor(unlist(lm_group_b)))) +
-#     geom_jitter(data=subset(position_data, track_category == "pospos" | track_category == "negneg"),
-#                aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-#                    y = as.numeric(unlist(mean_cv2)), 
-#                    color=factor(unlist(lm_group_b))), alpha=0.8) +
-#     geom_jitter(data=subset(position_data, track_category == "posneg" | track_category == "negpos"),
-#                aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-#                    y = as.numeric(unlist(mean_cv2)), 
-#                    color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
-#     geom_jitter(data=subset(position_data, track_category == "posnon" | track_category == "negnon"),
-#                aes(x = as.numeric(unlist(mean_firing_rate_of)), 
-#                    y = as.numeric(unlist(mean_cv2)), 
-#                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
-#     ylab("CV2") +
-#     coord_cartesian(ylim = c(0.4,1.5)) +
-#     xlab("Mean firing rate (Hz)") +
-#     geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
-#     theme_classic() +
-#     scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
-#     theme(axis.text.x = element_text(size=18),
-#           axis.text.y = element_text(size=18),
-#           legend.position="bottom", 
-#           legend.title = element_blank(),
-#           text = element_text(size=17), 
-#           legend.text=element_text(size=16), 
-#           axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-# 
-# if (save_figures == 1) {
-#  ggsave(file = "plots/firing_properties_CV2_allrampcells.png", width = 4, height = 3.5) 
-# }
-```
-
-
 
 
 
@@ -1329,6 +1377,36 @@ if (save_figures == 1) {
  ggsave(file = "plots/FRdiff_dist_allrampcells.png", width = 2.5, height = 2) 
 }
 
+```
+
+
+
+# Does ramp score / slope correlate with mean firing rate?
+
+We consider this question for neurons with negative ramp slopes before the reward zone as a reasonable proportion have mean firing rates > 10 Hz.
+```{r}
+ggplot() + 
+    geom_jitter(data=subset(position_data, track_category != "None"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
+                   color=factor(unlist(lm_group_b)))) +
+    ylab("Slope") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    facet_wrap(~ track_category) +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allrampcells_facet.png", width = 7, height = 5) 
+}
 ```
 
 
