@@ -426,7 +426,7 @@ spatial_firing %>% filter(cohort == 7) %>%
   geom_jitter() +
   geom_violin(alpha = 0.5) +
   labs(x = "", y = "Speed score") +
-  theme_classic()+
+  theme_classic() +
   theme(text = element_text(size=20))
 
 speed_by_ramp <- spatial_firing %>%
@@ -443,14 +443,19 @@ speed_props <- spatial_firing %>%
   mutate(speed_cell = unlist(speed_cell),
          joined_id = unlist(joined_id),
          ramp_type = unlist(ramp_type)) %>%
-  group_by(ramp_type, speed_cell, joined_id) %>%
-  summarise(n = n()) %>%
+    group_by(ramp_type, speed_cell, joined_id) %>%
+    summarise(n = n()) %>%
+  group_by(ramp_type, joined_id) %>%
   mutate(proportion = n / sum(n),
          percent = proportion*100)
 
-speed_props %>% ggplot(aes(ramp_type, proportion)) +
+# filter(speed_props, joined_id == "M3_7")$proportion
+
+speed_props %>% 
+  filter(speed_cell == 1) %>%
+    ggplot(aes(ramp_type, proportion)) +
   geom_boxplot() +
-  labs(x = "", y = "Speed score") +
+  labs(x = "", y = "Speed cells") +
   theme_classic()+
   theme(text = element_text(size=20))
 
@@ -518,6 +523,27 @@ speed_corr_lm_s <- lm(speed_score ~ o_b_mod_coefs_speed, speed_corr_s)
 
 summary(speed_corr_lm_s)
 ```
+
+
+Compare speed scores with mean firing rates
+In the Hippocampus high speed score cells have high firing rates (Figure 5 of Gois and Tort, 2018).
+```{r}
+spatial_firing %>% filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed, mean_firing_rate_of) %>%
+  #filter(ramp_type != "None") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  ggplot(aes(speed_score, unlist(mean_firing_rate_of), colour = ramp_type)) +
+  geom_point() +
+  geom_hline(yintercept=10, linetype='dotted') +
+  labs(x = "Speed score", y = "Firing rate (Hz)") +
+  theme_classic() +
+  theme(text = element_text(size=20),
+        legend.title=element_blank())
+
+```
+
 
 ### ----------------------------------------------------------------------------------------- ###
 
