@@ -96,7 +96,7 @@ colnames(spatial_firing)
 # stop from printing too much if looking at variables
 
 
-options(max.print = 50)
+options(max.print = 100)
 ```
 
 
