@@ -976,11 +976,60 @@ probe_home_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 
           legend.position = "none")
 }
 
+# To compare outbound slopes on beaconed, non-beaconed and probe trials.
+nb_probe_out_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45) {
+  df  %>%
+    filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA",
+           lm_group_b == group) %>%
+    select(unique_id, asr_b_o_rewarded_fit_slope, asr_nb_o_rewarded_fit_slope, asr_p_o_rewarded_fit_slope) %>%
+    rename(Beaconed = asr_b_o_rewarded_fit_slope,
+           Nonbeaconed = asr_nb_o_rewarded_fit_slope,
+           Probe = asr_p_o_rewarded_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Beaconed, Nonbeaconed,Probe), names_to = "Trial", values_to = "Slope", ) %>%
+    ggplot(aes(x = fct_relevel(Trial, "Beaconed", "Nonbeaconed", "Probe"), y = Slope)) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Nonbeaconed", "Probe"))) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    labs(x = "Trial", y = "Slope") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    theme_classic() +
+    theme(text = element_text(size=20),
+          legend.position = "none")
+}
+
+# To compare homebound slopes on beaconed, non-beaconed and probe trials.
+nb_probe_home_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45) {
+  df  %>%
+    filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA",
+           lm_group_b == group) %>%
+    select(unique_id, asr_b_h_rewarded_fit_slope, asr_nb_h_rewarded_fit_slope, asr_p_h_rewarded_fit_slope) %>%
+    rename(Beaconed = asr_b_h_rewarded_fit_slope,
+           Nonbeaconed = asr_nb_h_rewarded_fit_slope,
+           Probe = asr_p_h_rewarded_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Beaconed, Nonbeaconed,Probe), names_to = "Trial", values_to = "Slope", ) %>%
+    ggplot(aes(x = fct_relevel(Trial, "Beaconed", "Nonbeaconed", "Probe"), y = Slope)) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Nonbeaconed", "Probe"))) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    labs(x = "Trial", y = "Slope") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey")) +
+    theme_classic() +
+    theme(text = element_text(size=20),
+          legend.position = "none")
+}
+
 # To compare offsets on beaconed and probe trials
 probe_offset_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45) {
   df  %>%
     filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA",
-           lm_group_b == group) %>%
+           lm_group_b == group,
+           predict_diff_p != "NaN") %>%
     select(unique_id, predict_diff, predict_diff_p) %>%
     rename(Beaconed = predict_diff,
            Probe = predict_diff_p) %>%
@@ -994,6 +1043,31 @@ probe_offset_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     labs(x = "Trial", y = "Offset") +
     scale_fill_manual(values=c("black", "#1FB5B2")) +
+    theme_classic() +
+    theme(text = element_text(size=20),
+          legend.position = "none")
+}
+
+# To compare offsets on beaconed, non-beaconed and probe trials
+nb_probe_offset_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45) {
+  df  %>%
+    filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA",
+           lm_group_b == group,
+           predict_diff_p != "NaN") %>%
+    select(unique_id, predict_diff, predict_diff_nb, predict_diff_p) %>%
+    rename(Beaconed = predict_diff,
+           Nonbeaconed = predict_diff_nb,
+           Probe = predict_diff_p) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Beaconed, Nonbeaconed, Probe), names_to = "Trial", values_to = "Offset", ) %>%
+    ggplot(aes(x = fct_relevel(Trial, "Beaconed", "Nonbeaconed", "Probe"), y = Offset)) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Nonbeaconed", "Probe"))) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    labs(x = "Trial", y = "Offset") +
+    scale_fill_manual(values=c("violetred2", "chartreuse3", "grey")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
@@ -1107,6 +1181,16 @@ extract_cols_for_plot <- function(df, bin = 200){
                Homebound_beaconed_p = rep(df$lm_group_p_h, each=bin)) 
 }
 
+# Helper function to format data for mean_SEM_plots_comp_3
+extract_cols_for_plot_3 <- function(df, bin = 200){
+  df <- tibble(Position = rep(-29.5:(-29.5+199), times=nrow(df)), 
+               Rates_b = unlist(df$normalised_rates_smoothed),
+               Rates_nb = unlist(df$normalised_rates_nb_smoothed),
+               Rates_p = unlist(df$normalised_rates_p_smoothed),
+               Outbound_beaconed_b = rep(df$lm_group_b, each=bin), 
+               Homebound_beaconed_b = rep(df$lm_group_b_h, each=bin)) 
+}
+
 
 # Function to add extra trace in Rates_c to a mean_SEM_plot.
 # The function mean_SEM_plots was first used in Figure 1.
@@ -1126,6 +1210,27 @@ mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "#1FB5B2"){
     geom_ribbon(aes(x=Position, y=mean_c, ymin = mean_c - sem_c, ymax = mean_c + sem_c), fill = colour2, alpha=0.2) +
     geom_line(aes(y=mean_c, x=Position), color = colour2) 
 }
+
+# Versions for comparison of beaconed, non-beaconed and probe trials
+mean_SEM_plots_comp_prep_3 <- function(df) {
+  df <- df %>% dplyr::summarise(mean_r = mean(Rates_b, na.rm = TRUE),
+                                sem_r = std.error(Rates_b, na.rm = TRUE),
+                                mean_nb = mean(Rates_nb, na.rm = TRUE),
+                                sem_nb = std.error(Rates_nb, na.rm = TRUE),
+                                mean_p = mean(Rates_p, na.rm = TRUE),
+                                sem_p = std.error(Rates_p, na.rm = TRUE))
+}
+
+mean_SEM_plots_comp_3 <- function(df, colour1 = "black", colour2 = "blue", colour4 = "red"){
+  plot <- mean_SEM_plots(df, colour1)
+  
+  plot +
+    geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sem_nb, ymax = mean_nb + sem_nb), fill = colour2, alpha=0.2) +
+    geom_line(aes(y=mean_nb, x=Position), color = colour2) +
+    geom_ribbon(aes(x=Position, y=mean_p, ymin = mean_p - sem_p, ymax = mean_p + sem_p), fill = colour3, alpha=0.2) +
+    geom_line(aes(y=mean_p, x=Position), color = colour3) 
+}
+
 
 
 # OB_b, HB_b, OB_p, HB_p are strings that define the slope for each track segment and trial type 
@@ -1151,6 +1256,15 @@ plot_beaconed_vs_probe <- function(df, OB_b, HB_b) {
     mean_SEM_plots_comp()
 }
 
+plot_beaconed_vs_nonbeaconed_vs_probe <- function(df, OB_b, HB_b) {
+  df  %>%
+    extract_cols_for_plot_3() %>%
+    filter(Outbound_beaconed_b == OB_b &
+             Homebound_beaconed_b == HB_b) %>%
+    group_by(Position) %>%
+    mean_SEM_plots_comp_prep_3() %>%
+    mean_SEM_plots_comp_3()
+}
 
 
 # Functions to make families of plots comparing beaconed and probe trials
@@ -1180,6 +1294,30 @@ comp_beacon_probe_rate_plots <- function(df){
   return(list(a, b, c, d))
 }
 
+# As above but including non-beaconed trials
+comp_beacon_probe_rate_plots_3 <- function(df){
+  a <- df %>% plot_beaconed_vs_nonbeaconed_vs_probe("Negative", "Negative")
+  
+  b <- df %>% plot_beaconed_vs_nonbeaconed_vs_probe("Negative", "Positive")
+  
+  c <- df %>% plot_beaconed_vs_nonbeaconed_vs_probe("Positive", "Positive")
+  
+  d <- df %>% plot_beaconed_vs_nonbeaconed_vs_probe("Positive", "Negative")
+  
+  return(list(a, b, c, d))
+}
+
+
+
+plot_beaconed_vs_nb_vs_probe <- function(df, OB_b, HB_b) {
+  df  %>%
+    extract_cols_for_plot_3() %>%
+    filter(Outbound_beaconed_b == OB_b &
+             Homebound_beaconed_b == HB_b) %>%
+    group_by(Position) %>%
+    mean_SEM_plots_comp_prep_3() %>%
+    mean_SEM_plots_comp_3()
+}
 
 
 ## ----------------------------------------------------------##
