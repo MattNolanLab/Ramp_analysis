@@ -303,6 +303,10 @@ if (save_figures == 1) {
   ggsave(file = "plots/Negneg_probe_JustB.png",width = 3.6, height = 2.9)
 }
 
+# Look at non-beaconed trials too
+spatial_firing_probe_only %>% filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% comp_beacon_probe_rate_plots_3
+
+
 
 # only P cells
 spatial_firing_probe_only %>% filter(final_model_o_b == "P") %>% comp_beacon_probe_rate_plots

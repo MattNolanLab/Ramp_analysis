@@ -1124,6 +1124,16 @@ extract_cols_for_plot <- function(df, bin = 200){
                Homebound_beaconed_p = rep(df$lm_group_p_h, each=bin)) 
 }
 
+# Helper function to format data for mean_SEM_plots_comp_3
+extract_cols_for_plot_3 <- function(df, bin = 200){
+  df <- tibble(Position = rep(-29.5:(-29.5+199), times=nrow(df)), 
+               Rates_b = unlist(df$normalised_rates_smoothed),
+               Rates_nb = unlist(df$normalised_rates_nb_smoothed),
+               Rates_p = unlist(df$normalised_rates_p_smoothed),
+               Outbound_beaconed_b = rep(df$lm_group_b, each=bin), 
+               Homebound_beaconed_b = rep(df$lm_group_b_h, each=bin)) 
+}
+
 
 # Function to add extra trace in Rates_c to a mean_SEM_plot.
 # The function mean_SEM_plots was first used in Figure 1.
@@ -1143,6 +1153,27 @@ mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "blue"){
     geom_ribbon(aes(x=Position, y=mean_c, ymin = mean_c - sem_c, ymax = mean_c + sem_c), fill = colour2, alpha=0.2) +
     geom_line(aes(y=mean_c, x=Position), color = colour2) 
 }
+
+# Versions for comparison of beaconed, non-beaconed and probe trials
+mean_SEM_plots_comp_prep_3 <- function(df) {
+  df <- df %>% dplyr::summarise(mean_r = mean(Rates_b, na.rm = TRUE),
+                                sem_r = std.error(Rates_b, na.rm = TRUE),
+                                mean_nb = mean(Rates_nb, na.rm = TRUE),
+                                sem_nb = std.error(Rates_nb, na.rm = TRUE),
+                                mean_p = mean(Rates_p, na.rm = TRUE),
+                                sem_p = std.error(Rates_p, na.rm = TRUE))
+}
+
+mean_SEM_plots_comp_3 <- function(df, colour1 = "black", colour2 = "blue", colour4 = "red"){
+  plot <- mean_SEM_plots(df, colour1)
+  
+  plot +
+    geom_ribbon(aes(x=Position, y=mean_nb, ymin = mean_nb - sem_nb, ymax = mean_nb + sem_nb), fill = colour2, alpha=0.2) +
+    geom_line(aes(y=mean_nb, x=Position), color = colour2) +
+    geom_ribbon(aes(x=Position, y=mean_p, ymin = mean_p - sem_p, ymax = mean_p + sem_p), fill = colour3, alpha=0.2) +
+    geom_line(aes(y=mean_p, x=Position), color = colour3) 
+}
+
 
 
 # OB_b, HB_b, OB_p, HB_p are strings that define the slope for each track segment and trial type 
@@ -1168,6 +1199,15 @@ plot_beaconed_vs_probe <- function(df, OB_b, HB_b) {
     mean_SEM_plots_comp()
 }
 
+plot_beaconed_vs_nonbeaconed_vs_probe <- function(df, OB_b, HB_b) {
+  df  %>%
+    extract_cols_for_plot_3() %>%
+    filter(Outbound_beaconed_b == OB_b &
+             Homebound_beaconed_b == HB_b) %>%
+    group_by(Position) %>%
+    mean_SEM_plots_comp_prep_3() %>%
+    mean_SEM_plots_comp_3()
+}
 
 
 # Functions to make families of plots comparing beaconed and probe trials
@@ -1197,6 +1237,30 @@ comp_beacon_probe_rate_plots <- function(df){
   return(list(a, b, c, d))
 }
 
+# As above but including non-beaconed trials
+comp_beacon_probe_rate_plots_3 <- function(df){
+  a <- df %>% plot_beaconed_vs_nonbeaconed_vs_probe("Negative", "Negative")
+  
+  b <- df %>% plot_beaconed_vs_nonbeaconed_vs_probe("Negative", "Positive")
+  
+  c <- df %>% plot_beaconed_vs_nonbeaconed_vs_probe("Positive", "Positive")
+  
+  d <- df %>% plot_beaconed_vs_nonbeaconed_vs_probe("Positive", "Negative")
+  
+  return(list(a, b, c, d))
+}
+
+
+
+plot_beaconed_vs_nb_vs_probe <- function(df, OB_b, HB_b) {
+  df  %>%
+    extract_cols_for_plot_3() %>%
+    filter(Outbound_beaconed_b == OB_b &
+             Homebound_beaconed_b == HB_b) %>%
+    group_by(Position) %>%
+    mean_SEM_plots_comp_prep_3() %>%
+    mean_SEM_plots_comp_3()
+}
 
 
 ## ----------------------------------------------------------##
