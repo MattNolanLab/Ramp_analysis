@@ -1017,6 +1017,7 @@ b_vs_p_h_slope_plot <- function(df){
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) + 
     geom_smooth(data=subset(df, track_category != "None"),aes(x=asr_b_h_rewarded_fit_slope, y=asr_p_h_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    coord_cartesian(ylim=c(-0.65,0.65), xlim = c(-0.65,0.65)) +
     xlab("Beaconed slope") +
     ylab("Probe slope") +
     theme_classic() +
@@ -1048,6 +1049,7 @@ b_vs_p_o_slope_plot <- function(df){
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) + 
     geom_smooth(data=subset(df, track_category != "None"),aes(x=asr_b_o_rewarded_fit_slope, y=asr_p_o_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    coord_cartesian(ylim=c(-0.65,0.65), xlim = c(-0.65,0.65)) +
     xlab("Beaconed slope") +
     ylab("Probe slope") +
     theme_classic() +

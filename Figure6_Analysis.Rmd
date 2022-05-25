@@ -426,12 +426,16 @@ spatial_firing %>% filter(cohort == 7) %>%
   mutate(speed_score = unlist(speed_score),
          joined_id = unlist(joined_id),
          ramp_type = unlist(ramp_type)) %>%
-  ggplot(aes(ramp_type, speed_score)) +
+  ggplot(aes(x=ramp_type, y=speed_score, fill=ramp_type)) + 
   geom_jitter() +
   geom_violin(alpha = 0.5) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
   labs(x = "", y = "Speed score") +
+  scale_fill_manual(values=c("#F04E4E","#19D3D6","#FF9719")) +
   theme_classic() +
-  theme(text = element_text(size=20))
+  theme(text = element_text(size=20),legend.position="none")
+
+ggsave(file = "plots/speed_score_by_ramp_type.png", width = 6, height = 3.5)
 
 speed_by_ramp <- spatial_firing %>%
   filter(cohort == 7) %>%
@@ -483,7 +487,13 @@ spatial_firing %>% filter(cohort == 7) %>%
          ramp_type = unlist(ramp_type)) %>%
   ggplot(aes(o_b_mod_coefs_speed, speed_score, colour = ramp_type)) +
   geom_point() +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  geom_vline(xintercept=0, linetype="dashed", color = "black") +
+  theme_classic() +
+  scale_colour_manual(values=c("#19D3D6","#FF9719")) +
+  theme(text = element_text(size=20), legend.position = "none") +
   geom_smooth(method='lm', formula= y~x)
+ggsave(file = "plots/speed_score_vs_speed_coef_by_ramp_type.png", width = 6, height = 3.5)
 
 speed_corr_rp <- spatial_firing %>% 
   filter(cohort == 7) %>%
@@ -543,8 +553,10 @@ spatial_firing %>% filter(cohort == 7) %>%
   geom_hline(yintercept=10, linetype='dotted') +
   labs(x = "Speed score", y = "Firing rate (Hz)") +
   theme_classic() +
+  scale_colour_manual(values=c("#F04E4E","#19D3D6","#FF9719")) +
   theme(text = element_text(size=20),
         legend.title=element_blank())
+ggsave(file = "plots/speed_score_vs_firing_rate_by_ramp_type.png", width = 6, height = 3.5)
 
 ```
 
