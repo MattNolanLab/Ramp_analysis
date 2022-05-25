@@ -25,40 +25,43 @@ This analysis isn't so useful as there are relatively few probe trials and there
 ```{r}
 # Use function 'mark_track_category' previously used in Figure 1
 spatial_firing <- spatial_firing %>%
-  mutate(track_category_p = map2(lm_group_p, lm_group_p_h, mark_track_category))
+  mutate(track_category_nb = map2(lm_group_nb, lm_group_nb_h, mark_track_category),
+         track_category_p = map2(lm_group_p, lm_group_p_h, mark_track_category))
 
 # Find predicted rates after the reward zone based on rates before the reward zone
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_p = map(Rates_averaged_rewarded_p, normalise_rates))
+  mutate(normalised_rates_nb = map(Rates_averaged_rewarded_nb, normalise_rates),
+         normalised_rates_p = map(Rates_averaged_rewarded_p, normalise_rates))
 
 spatial_firing <- spatial_firing %>%
-  mutate(normalised_rates_p_smoothed = map(Rates_averaged_rewarded_smoothed_p, normalise_rates))
+  mutate(normalised_rates_nb_smoothed = map(Rates_averaged_rewarded_smoothed_nb, normalise_rates),
+         normalised_rates_p_smoothed = map(Rates_averaged_rewarded_smoothed_p, normalise_rates))
 
 spatial_firing <- spatial_firing %>%
+  select(-contains('predict_params_nb_')) %>%
   select(-contains('predict_params_p_')) %>%
-  mutate(predict_params_p = map(normalised_rates_p, predict_homebound)) %>%
+  mutate(predict_params_nb = map(normalised_rates_nb, predict_homebound),
+         predict_params_p = map(normalised_rates_p, predict_homebound)) %>%
+  unnest_wider(predict_params_nb,
+               names_sep = "_",
+               names_repair = "universal") %>%
   unnest_wider(predict_params_p,
                names_sep = "_",
                names_repair = "universal")
 
 spatial_firing <- spatial_firing %>%
-  mutate(
-    offset_p = pmap_chr(
-      list(
-        normalised_rates_p,
-        predict_params_p_lwr,
-        predict_params_p_upr
-      ),
-      offset_test
-    ),
-    predict_diff_p = map2_dbl(normalised_rates_p, predict_params_p_fit, calc_predict_diff)
-  )
+  mutate(offset_nb = pmap_chr(list(normalised_rates_nb, predict_params_nb_lwr, predict_params_nb_upr), offset_test),
+         predict_diff_nb = map2_dbl(normalised_rates_nb, predict_params_nb_fit, calc_predict_diff),
+         offset_p = pmap_chr(list(normalised_rates_p, predict_params_p_lwr, predict_params_p_upr), offset_test),
+         predict_diff_p = map2_dbl(normalised_rates_p, predict_params_p_fit, calc_predict_diff))
 
 # Classify cells based on their predicted activity using function 'mark_reset_group_predict' defined in Figure 1.
 
 spatial_firing <- spatial_firing %>%
-  mutate(reset_group_p = map(offset_p, mark_reset_group_predict))
+  mutate(reset_group_nb = map(offset_nb, mark_reset_group_predict),
+         reset_group_p = map(offset_p, mark_reset_group_predict))
 
+table(spatial_firing$offset_nb, useNA = "always")
 table(spatial_firing$offset_p, useNA = "always")
 ```
 
@@ -125,6 +128,15 @@ probe_home_slope_plot(spatial_firing_probe_only, "Negative", -0.4, 0.75)
 if (save_figures == 1) {
  ggsave(file = "plots/slope_comparison_beaconed_vs_probe_homebound_neg.png", width = 4, height = 4) 
 }
+
+
+# Plots with non-beaconed trials
+nb_probe_out_slope_plot(spatial_firing_probe_only, "Positive", -0.1, 0.45)
+nb_probe_out_slope_plot(spatial_firing_probe_only, "Negative", -0.65, 0.2)
+
+nb_probe_home_slope_plot(spatial_firing_probe_only, "Positive", -0.45, 0.8)
+nb_probe_home_slope_plot(spatial_firing_probe_only, "Negative", -0.6, 0.8)
+
 
 # Compare probe vs beaconed with a paired t-test
 probe_slope_tt_p <- spatial_firing_probe_only %>%
@@ -213,6 +225,12 @@ if (save_figures == 1) {
  ggsave(file = "plots/offset_comparison_beaconed_vs_probe_negneg.png", width = 4, height = 4) 
 }
 
+
+spatial_firing_probe_only %>% filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  nb_probe_offset_plot("Positive", -3, 1)
+
+spatial_firing_probe_only %>% filter(lm_group_b == "Positive" & lm_group_b_h == "Positive" | lm_group_b == "Negative" & lm_group_b_h == "Negative") %>%
+  nb_probe_offset_plot("Negative", -1, 5)
 ```
 
 
@@ -322,10 +340,16 @@ if (save_figures==1) {
   ggsave(file = "plots/beaconed_vs_probe_posneg_position_all.png", plot = P_plots[[4]], width = 3.6, height = 2.9)
 }
 
+
 nrow(filter(spatial_firing_probe_only, lm_group_b == "Negative" & lm_group_b_h == "Negative"))
 nrow(filter(spatial_firing_probe_only, lm_group_b == "Negative" & lm_group_b_h == "Positive"))
 nrow(filter(spatial_firing_probe_only, lm_group_b == "Positive" & lm_group_b_h == "Positive"))
 nrow(filter(spatial_firing_probe_only, lm_group_b == "Positive" & lm_group_b_h == "Negative"))
+
+
+# Look at non-beaconed trials too
+spatial_firing_probe_only %>% filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% comp_beacon_probe_rate_plots_3
+
 
 # only P cells
 spatial_firing_probe_only %>% filter(final_model_o_b == "P") %>% comp_beacon_probe_rate_plots
