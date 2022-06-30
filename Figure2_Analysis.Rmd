@@ -87,7 +87,7 @@ if (load_sf==1) {
 
 ### ----------------------------------------------------------------------------------------- ###
 
-
+  
 ## Categorise neurons based on significant model coefficients
 
 The idea here is to categorise each neuron according to whether it has coefficients for P, S or A that are 'significant' at a threshold of 0.01.
