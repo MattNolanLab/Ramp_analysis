@@ -229,7 +229,6 @@ arena_track_ramp <- spatial_firing %>%
   table()
 arena_track_ramp <- cbind(arena_track_ramp, total = rowSums(arena_track_ramp))
 (arena_track_ramp <- rbind(arena_track_ramp, sum = colSums(arena_track_ramp)))
-
 # All neurons
 arena_track_all <- spatial_firing %>%
   filter(track_category_numeric !=0) %>%
@@ -313,7 +312,9 @@ ggplot(df_all, aes(x=classifier2, y=percent)) +
   geom_boxplot(aes(fill = group), alpha=0.9, outlier.colour="black", outlier.shape=16,
              outlier.size=2, notch=FALSE) +
   scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3")) +
+  scale_y_continuous(breaks=seq(0,100,25)) +
   theme_classic() +
+  ylim(0, 100) +
   labs(y = "Arena type (%)", x ="") +
   theme(axis.text.x = element_text(angle = 70)) +
   theme(axis.text.x=element_text(hjust=1)) +
@@ -323,8 +324,8 @@ ggplot(df_all, aes(x=classifier2, y=percent)) +
         legend.title = element_blank(),
         text = element_text(size=18), 
         legend.text=element_text(size=18), 
-        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/OFAnalysis_proportionsBOX.png", width = 4.5, height = 5.5)
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+ggsave(file = "plots/OFAnalysis_proportionsBOX.png", width = 6.5, height = 5.5)
 
 ```
 
@@ -399,7 +400,9 @@ ggplot(data=subset(all_cells_percent, ramp_type != "NULL"), aes(x=classifier2, y
   geom_boxplot(aes(fill = ramp_type), alpha=0.9, outlier.colour="black", outlier.shape=16,
              outlier.size=2, notch=FALSE) +
   scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3")) +
+  scale_y_continuous(breaks=seq(0,100,25)) +
   theme_classic() +
+  ylim(0, 100) +
   labs(y = "Ramp type (%)", x ="") +
   theme(axis.text.x = element_text(angle = 70)) +
   theme(axis.text.x=element_text(hjust=1)) +
@@ -410,7 +413,7 @@ ggplot(data=subset(all_cells_percent, ramp_type != "NULL"), aes(x=classifier2, y
         text = element_text(size=18), 
         legend.text=element_text(size=18), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
-ggsave(file = "plots/OFAnalysis_proportionsBOX_22.png", width = 4.5, height = 5.5)
+ggsave(file = "plots/OFAnalysis_proportionsBOX_22.png", width = 6.5, height = 5.5)
 
 ```
 
@@ -422,12 +425,16 @@ spatial_firing %>% filter(cohort == 7) %>%
   mutate(speed_score = unlist(speed_score),
          joined_id = unlist(joined_id),
          ramp_type = unlist(ramp_type)) %>%
-  ggplot(aes(ramp_type, speed_score)) +
+  ggplot(aes(x=ramp_type, y=speed_score, fill=ramp_type)) + 
   geom_jitter() +
   geom_violin(alpha = 0.5) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
   labs(x = "", y = "Speed score") +
+  scale_fill_manual(values=c("#F04E4E","#19D3D6","#FF9719")) +
   theme_classic() +
-  theme(text = element_text(size=20))
+  theme(text = element_text(size=20),legend.position="none")
+
+ggsave(file = "plots/speed_score_by_ramp_type.png", width = 6, height = 3.5)
 
 speed_by_ramp <- spatial_firing %>%
   filter(cohort == 7) %>%
@@ -479,7 +486,13 @@ spatial_firing %>% filter(cohort == 7) %>%
          ramp_type = unlist(ramp_type)) %>%
   ggplot(aes(o_b_mod_coefs_speed, speed_score, colour = ramp_type)) +
   geom_point() +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  geom_vline(xintercept=0, linetype="dashed", color = "black") +
+  theme_classic() +
+  scale_colour_manual(values=c("#19D3D6","#FF9719")) +
+  theme(text = element_text(size=20), legend.position = "none") +
   geom_smooth(method='lm', formula= y~x)
+ggsave(file = "plots/speed_score_vs_speed_coef_by_ramp_type.png", width = 6, height = 3.5)
 
 speed_corr_rp <- spatial_firing %>% 
   filter(cohort == 7) %>%
@@ -539,8 +552,10 @@ spatial_firing %>% filter(cohort == 7) %>%
   geom_hline(yintercept=10, linetype='dotted') +
   labs(x = "Speed score", y = "Firing rate (Hz)") +
   theme_classic() +
+  scale_colour_manual(values=c("#F04E4E","#19D3D6","#FF9719")) +
   theme(text = element_text(size=20),
         legend.title=element_blank())
+ggsave(file = "plots/speed_score_vs_firing_rate_by_ramp_type.png", width = 6, height = 3.5)
 
 ```
 
