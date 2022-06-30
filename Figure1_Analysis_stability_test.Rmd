@@ -1,0 +1,45 @@
+---
+title: "RampCodes_Figure1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+---
+title: "RampCodes_Figure1"
+author: "Sarah Tennant & Matt Nolan"
+date: "20/10/2021"
+output: html_document
+---
+
+
+### ------------------------------------------------------------------------------------------ ### 
+
+## Does the classifcation of ramping neurons effect the ability of first half slopes to predict second half slopes
+
+### ------------------------------------------------------------------------------------------ ### 
+
+
+
+1. Test model
+
+```{r}
+
+a<-read.csv("C:\\Users\\44756\\Documents\\Ramp_analysis\\data_in\\half_scores_wtih_ramp_annotation.csv")
+```
+
+```{r}
+model <- lm(all_slope_b_o2 ~ all_slope_b_o1 * ramp_type, data = a)
+summary(aov(model))
+```
+
+```{r}
+model <- lm(all_slope_b_h2 ~ all_slope_b_h1 * ramp_type, data = a)
+summary(aov(model))
+```
+
+
+

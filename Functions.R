@@ -247,6 +247,7 @@ add_track <- function(gg, xlab = "Location (cm)", ylab = "Stops (cm)") {
     annotate("rect", xmin=140, xmax=170, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Grey60") +
     annotate("rect", xmin=60, xmax=80, ymin=-Inf,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
     scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
+    scale_y_continuous(breaks = integer_breaks()) +
     labs(y = ylab, x = xlab) +
     theme_classic() +
     theme(axis.text.x = element_text(size=18),
@@ -709,8 +710,8 @@ mean_SEM_plots_by_Outcome <- function(df, x_start = -30, x_end = 170) {
     scale_x_continuous(breaks=seq(-30,170,100), expand = c(0, 0)) +
     scale_y_continuous(breaks = integer_breaks()) +
     geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b,
-                    fill=factor(Reward_indicator)), alpha=0.1) +
-    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=0.5) +
+                    fill=factor(Reward_indicator)), alpha=0.2) +
+    geom_line(aes(y=mean_b, x=Position, color=factor(Reward_indicator)), alpha=1) +
     scale_fill_manual(values=c("black", "red", "blue")) +
     scale_color_manual(values=c("black", "red", "blue")) +
     labs(y = "Z-scored firing rate", x = "Location (cm)") +
@@ -775,13 +776,33 @@ slopes_by_outcome <- function(df, min_y = -3.5, max_y = 3.5){
     geom_line(aes(group = unique_id, alpha = 0.5)) +
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Outcome, "Hit", "Try", "Run"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
-    labs(x = "Outcome", y = "Slope") +
+    labs(x = "Outcome", y = "Pre-reward zone slope") +
     scale_fill_manual(values=c("grey","red", "blue")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
 }
 
+h_slopes_by_outcome <- function(df, min_y = -3.5, max_y = 3.5){
+  df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, asr_b_h_hit_fit_slope, asr_b_h_try_fit_slope, asr_b_h_run_fit_slope) %>%
+    rename(Hit = asr_b_h_hit_fit_slope,
+           Try = asr_b_h_try_fit_slope,
+           Run = asr_b_h_run_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", ) %>%
+    ggplot(aes(x = fct_relevel(Outcome, "Hit", "Try", "Run"), y = Slope)) +
+    coord_cartesian(ylim=c(min_y,max_y)) +
+    geom_point() +
+    geom_line(aes(group = unique_id, alpha = 0.5)) +
+    geom_violin(aes(alpha = 0.5, fill = fct_relevel(Outcome, "Hit", "Try", "Run"))) +
+    geom_hline(yintercept=0, linetype="dashed", color = "black") +
+    labs(x = "Outcome", y = "Post-reward zone slope") +
+    scale_fill_manual(values=c("grey","red", "blue")) +
+    theme_classic() +
+    theme(text = element_text(size=20),
+          legend.position = "none")
+}
 
 # Function to plot offsets as a function of trial outcome
 offsets_by_outcome <- function(df, min_y = -3.5, max_y = 3.5){
@@ -819,6 +840,20 @@ slopes_by_outcome_aov <- function(df) {
   #aov_2(df)
 }
 
+h_slopes_by_outcome_aov <- function(df) {
+  df <- df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, asr_b_h_hit_fit_slope, asr_b_h_try_fit_slope, asr_b_h_run_fit_slope) %>%
+    rename(Hit = asr_b_h_hit_fit_slope,
+           Try = asr_b_h_try_fit_slope,
+           Run = asr_b_h_run_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", )
+  #aov(Slope ~ as.factor(Outcome), data = df)
+  aov(Slope ~ as.factor(Outcome) + Error(as.factor(unique_id)), data = df)
+  #aov_2(df)
+}
+
+
 # To check AOV because F value was suspiciously low.  
 aov_2 <- function(df){
   CF = (sum(df$Slope))^2/length(df$Slope)
@@ -850,6 +885,18 @@ slopes_by_outcome_t <- function(df) {
     unnest(cols = c(ttest))
 }
 
+h_slopes_by_outcome_t <- function(df) {
+  df[!(sapply(df$Avg_FiringRate_TryTrials, anyNA) | sapply(df$Avg_FiringRate_RunTrials, anyNA)),] %>% filter(lm_group_b == "Positive" | lm_group_b == "Negative") %>%
+    select(unique_id, asr_b_h_hit_fit_slope, asr_b_h_try_fit_slope, asr_b_h_run_fit_slope) %>%
+    rename(Hit = asr_b_h_hit_fit_slope,
+           Try = asr_b_h_try_fit_slope,
+           Run = asr_b_h_run_fit_slope) %>%
+    mutate(unique_id = unlist(unique_id)) %>%
+    pivot_longer(cols = c(Hit, Try, Run), names_to = "Outcome", values_to = "Slope", ) %>%
+    group_by(Outcome) %>%
+    summarise(ttest = list(t.test(Slope, mu = 0)$p.value)) %>%
+    unnest(cols = c(ttest))
+}
 
 # One-way ANOVA to compare offsets by outcome
 offsets_by_outcome_aov <- function(df) {
@@ -901,7 +948,7 @@ probe_out_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     labs(x = "Trial", y = "Slope") +
-    scale_fill_manual(values=c("black", "blue")) +
+    scale_fill_manual(values=c("black", "#1FB5B2")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
@@ -923,7 +970,7 @@ probe_home_slope_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     labs(x = "Trial", y = "Slope") +
-    scale_fill_manual(values=c("black", "blue")) +
+    scale_fill_manual(values=c("black", "#1FB5B2")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
@@ -995,7 +1042,7 @@ probe_offset_plot <- function(df, group = "Positive", min_y = -0.1, max_y = 0.45
     geom_violin(aes(alpha = 0.5, fill = fct_relevel(Trial, "Beaconed", "Probe"))) +
     geom_hline(yintercept=0, linetype="dashed", color = "black") +
     labs(x = "Trial", y = "Offset") +
-    scale_fill_manual(values=c("black", "blue")) +
+    scale_fill_manual(values=c("black", "#1FB5B2")) +
     theme_classic() +
     theme(text = element_text(size=20),
           legend.position = "none")
@@ -1044,6 +1091,7 @@ b_vs_p_h_slope_plot <- function(df){
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) + 
     geom_smooth(data=subset(df, track_category != "None"),aes(x=asr_b_h_rewarded_fit_slope, y=asr_p_h_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    coord_cartesian(ylim=c(-0.65,0.65), xlim = c(-0.65,0.65)) +
     xlab("Beaconed slope") +
     ylab("Probe slope") +
     theme_classic() +
@@ -1075,6 +1123,7 @@ b_vs_p_o_slope_plot <- function(df){
                    color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) + 
     geom_smooth(data=subset(df, track_category != "None"),aes(x=asr_b_o_rewarded_fit_slope, y=asr_p_o_rewarded_fit_slope), method = "lm", se = FALSE, color ="red", size = 0.5, linetype="dashed") +
     geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    coord_cartesian(ylim=c(-0.65,0.65), xlim = c(-0.65,0.65)) +
     xlab("Beaconed slope") +
     ylab("Probe slope") +
     theme_classic() +
@@ -1154,7 +1203,7 @@ mean_SEM_plots_comp_prep <- function(df) {
                                 sem_c = std.error(Rates_c, na.rm = TRUE))
 }
 
-mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "blue"){
+mean_SEM_plots_comp <- function(df, colour1 = "black", colour2 = "#1FB5B2"){
   plot <- mean_SEM_plots(df, colour1)
   
   plot +
