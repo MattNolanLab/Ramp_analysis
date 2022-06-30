@@ -535,7 +535,7 @@ stops_plot <-
   
 ```
 
-
+```{r}
 spatial_firing_probe_positional <- select(spatial_firing_probe_positional, session_id, cluster_id, unique_id, final_model_o_b, lm_group_b, lm_group_nb, lm_group_p) %>%
   unnest(cols = c(unique_id,final_model_o_b, lm_group_b, lm_group_nb, lm_group_p)) %>%
   as.tibble()

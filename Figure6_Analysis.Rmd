@@ -229,7 +229,6 @@ arena_track_ramp <- spatial_firing %>%
   table()
 arena_track_ramp <- cbind(arena_track_ramp, total = rowSums(arena_track_ramp))
 (arena_track_ramp <- rbind(arena_track_ramp, sum = colSums(arena_track_ramp)))
-
 # All neurons
 arena_track_all <- spatial_firing %>%
   filter(track_category_numeric !=0) %>%
