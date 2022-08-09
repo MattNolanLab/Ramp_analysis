@@ -44,6 +44,6 @@ The code has been written with the purpose of analysing data in the manuscript b
 
 
 # Contact
-The code is tested using Python (version 3.5.1) and R versions: 3.3.1 to 4.2.0. If you have problems running the code please make sure you are using these versions and you have relevant libraries installed. If you still run into issues, or have suggestions to improve the code, then please submit an issue. When submitting an issue, if you'd like a response then please include a reproducible example of what you're trying to achieve and details of errors produced. If you've done this and don't receive a response then please contact the corresponding author.
+The code is tested using Python (version 3.5.1) and R versions: 3.3.1 to 4.2.0. If you have problems running the code please make sure you are using these versions and you have relevant libraries installed. If you still run into issues, or have suggestions to improve the code, then please submit an issue. When submitting an issue, if you'd like a response then please include a reproducible example of what you're trying to achieve and details of errors produced. If you've done this and don't receive a response within a couple of weeks (we will try to respond sooner, but may have other pressing commitments) then please contact the corresponding author.
 
 
