@@ -443,6 +443,7 @@ speed_by_ramp <- spatial_firing %>%
          joined_id = unlist(joined_id),
          ramp_type = unlist(ramp_type))
 summary(aov(speed_score ~ ramp_type, speed_by_ramp))
+TukeyHSD(aov(speed_score ~ ramp_type, speed_by_ramp))
 
 speed_props <- spatial_firing %>%
   filter(cohort == 7) %>%
