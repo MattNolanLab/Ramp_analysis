@@ -4,7 +4,7 @@
 ## Overview
 This repository was designed to carry out analysis of in vivo electrophysiology recordings from the virtual reality for the Ramp manuscript (Tennant et al., 2022). The aim is to classify neurons based on their firing activity along the linear track of the virtual reality task. 
 
-For the analysis of electrophysiological and behavioural data from the virtual reality task we have developed a framework that uses data frames implemented in Python and R. Python is used to pre-process the experimental data. For example, splitting data on trials based on success or failure, calculating acceleration and removing stationary activity. The outputs of this pre-processing, saved in pickled (.pkl) format, are then used for subsequent analyses in R. Analysis in R generates the plots used in figures and performs statistical analysis on processed datasets. 
+For the analysis of electrophysiological and behavioural data from the virtual reality task we have developed a framework that uses data frames implemented in Python and R. Python is used to pre-process the experimental data. For example, splitting data based on trial outcome. The outputs of this pre-processing, saved in pickled (.pkl) format, are then used for subsequent analyses in R. Analysis in R generates most of the plots used in figures and performs statistical analysis on processed datasets. 
 
 Analysis in R classifies whether firing rates of individual neurons show 'ramping' activity (continuous increases or decreases in activity) within specific regions of the track (0-60 cm and 80 - 140 cm). For this, a linear model is ran on average firing rates binned in space for each neuron. We are also interested to see whether firing rate can be explained best by position, speed or acceleration (or a combination). For this we run a GLMER on firing rates binned in time for each neuron. 
 
@@ -20,20 +20,13 @@ dplyr v1.0.7, purrr v0.3.4, Pheatmap v1.0.12, RColorBrewer v1.1-2, tidyr v1.1.4 
 
 
 ## Preconditions to running RampAnalysis
-1. All Open Ephys recordings in virtual reality have been sorted as described : https://github.com/MattNolanLab/in_vivo_ephys_openephys/blob/master/documentation/user_guide_for_running_analyss.md
+1. All Open Ephys recordings in virtual reality have been sorted as described : https://github.com/MattNolanLab/in_vivo_ephys_openephys/blob/master/documentation/user_guide_for_running_analysis.md
 2. The postsorting analysis for processing spatial firing outputs the following columns : ‘spike_rates_on_trials_smoothed’, ‘spike_rates_in_time’ *note these are necessary for the RampAnalysis pipeline. 
 _Note : Entire list of necessary columns for analysis is in ‘Data_Organisation.md’._ 
-3. Dataframes have been concatenated across days/mice of interest using ‘concat_server_frames.py’ 
+3. Dataframes have been concatenated across days/mice of interest using ‘concantenate_spatial_firing.py’ 
 Note : Harry also has a version of this
-4. If necessary (i.e. if the data is needed), paired Open field recordings are sorted together with the virtual reality recordings and dataframes from paired open field recordings have also been concatenated across days/mice of interest using ‘concat_server_frames_of.py’
+4. If necessary (i.e. if the data is needed), paired Open field recordings are sorted together with the virtual reality recordings and dataframes from paired open field recordings
 5. _You now have a single dataframe per cohort of mice/per mouse with all the recordings days in it and you want to analyse the data further._
-
-
-PLEASE NOTE : This pipeline was generated specifically for the analysis and generation of figures for the Ramp manuscript. You may need to edit the pipeline for your own needs!!
-
-
-## Adding new analyses
-New analysis code should be added in a way that uses the data frames. If analyses require access to raw data, then a processing step should be used to add the required data to the data frames. Results of subsequent analyses should be added into these data frames as new columns. For instance, if we implement calculating the speed score of cells, this should be a new column in the data frame that contains information on clusters.
 
 
 ## How to contribute
