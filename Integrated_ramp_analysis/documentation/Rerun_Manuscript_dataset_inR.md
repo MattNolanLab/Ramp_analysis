@@ -18,7 +18,7 @@ Specifically, this analyses determines whether firing rates of individual neuron
 ## Preconditions
 1. You have the following datafiles that contain all cells for each cohort:
   - ‘PythonOutput_Concat_final.Rda’
-
+  - ‘all_mice_concatenated_shuffle_data_rewarded_unsmoothened.feather’
 Alternatively, you have run the python postsorting side of the pipeline, and have a .pkl dataframe containing all cells for each cohort (or a .pkl file for each cohort)
 _if you have these .pkl dataframes go to loading data IF running code for the first time from Python output_
 
