@@ -2,7 +2,7 @@
 # Overview
 This repository contains code for analyses in the manuscript 'Spatial representation by ramping activity of neurons in the retrohippocampal cortex', Tennant et al., 2022 (https://www.biorxiv.org/content/10.1101/2021.03.15.435518v3). 
 
-The repository is organised as follows. The top level folder contains code for analyses carried out in R. This code is used for Figures 1-5 of the manuscript and for the associated supplemental figures. The code uses as an input data that is output from our spike sorting pipeline and then pre-processed with Python scripts. The pre-processing scripts are in the 'Python_PostSorting' folder. The pipeline code is here: https://github.com/MattNolanLab/in_vivo_ephys_openephys
+The repository is organised as follows. The top level folder contains code for analyses carried out in R. This code is used for Figures 1-5 of the manuscript and for the associated supplemental figures. The code uses as an input data that is output from our spike sorting pipeline and then pre-processed with Python scripts. The pre-processing scripts are in the 'Integrated_ramp_analysis' folder. The pipeline code is here: https://github.com/MattNolanLab/in_vivo_ephys_openephys
 
 Data used for analyses in the study will be deposited here: https://datashare.ed.ac.uk/handle/10283/777
 
@@ -31,12 +31,12 @@ Some of the R analyses, for example shuffling and fitting generalised linear mix
 3. Proceed as for step 3 above.
 
 
-## Parameters for saving outputs
-In the R code the variables save_figures and save_results are set to zero. This reduces the time to run the code by avoiding saving the outputs. If you wish to save outputs then make high level folders called ' 'data_out' and 'plots' and set these variables to 1.
+## Saving outputs
+In the R code the variables save_figures and save_results are set to zero. This reduces the time to run the code by avoiding saving the outputs. If you wish to save outputs then make high level folders called 'data_out' and 'plots' and set these variables to 1.
 
 
 # Additional documentation
-Most analysis files for specific figures also contain documentation. We have tried to make these as complete as possible. Please be aware though that they are working notes and may not be perfect. Some additional documentation is in the /documentation folder (these refer in part to older versions of the code and may no longer be fully accurate).
+Most analysis files for specific figures also contain documentation. We have tried to make these as complete as possible. Please be aware though that they are working notes and may not be perfect. Additional documentation, including how to set up Python scripts for pre-processing, is in the /documentation folder.
 
 
 # Disclaimer

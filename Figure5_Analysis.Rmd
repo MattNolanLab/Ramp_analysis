@@ -1,997 +1,1448 @@
 ---
-title: "RampCodes_Figure5"
-author: "Sarah Tennant & Matt Nolan"
-date: "20/10/2021"
+title: "RampCodes_Figure3"
 output: html_document
 ---
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+---
+title: "RampCodes_Figure5"
+author: "SHarry Clark, arah Tennant, Matt Nolan"
+date: "20/10/2021"
+output: html_document
+---
 
 ### --------------------------------------------------------------------------------- ###
+## Compares ramp scores to open field spatial scores. 
 
 
-## Runs analysis that compares cued trials (Beaconed) to uncued (Non-beaconed + Probe)
+First, we are interested to see what proportion of neurons have the following patterns of activity in the open field:
+
+1. Grid cells
+2. Head direction
+3. Border
+
+To classify cells into these categories above, we will use the classification established in (https://www.sciencedirect.com/science/article/pii/S0896627317301873). 
 
 
-### --------------------------------------------------------------------------------- ###
+### ----------------------------------------------------------------------------------------- ###
 
+### Create joined ID for unique mouse identifier (some mice have similar names but in different cohorts)
 
-First, we are interested to see what proportion of neurons have the following patterns of ramp activity:
+### ----------------------------------------------------------------------------------------- ###
 
-1. Cue-independent ('PI'): ramp in both cued (B) and uncued (NB/P)
-2. Cue-dependent ('cue'): ramp in just cued (B)
-3. Cue-impaired ('onlypi'   ): ramp in just uncued (NB/P)
-
-To classify cells into these categories above, we will use the classification established in Figure 2. This requires that Figure 2 analyses have been run for B and NB/P groups. Note that in the code 'nb' includes non-beaconed and probe trials.
-
-1. Make function to classify cells based on activity in beaconed / non-beaconed & probe trials 
+1. make function to join mouse and cohort into one label
 ```{r}
-mark_neurons <- function(beac, nb){
-  if (is.na(beac) | is.na(nb) ) {
-    return( "None" )
-  } else if( beac == "Positive" & nb == "Positive") {
-    return( "Positive-PI" )
-  } else if( beac == "Negative" & nb == "Negative") {
-    return( "Negative-PI" )
-  } else if( beac == "Positive" & nb == "Unclassified") {
-    return( "Positive-cue" )
-  } else if( beac == "Negative" & nb == "Unclassified") {
-    return( "Negative-cue" )
-  } else if( beac == "Unclassified" & nb == "Positive") {
-    return( "Positive-onlypi" )
-  } else if( beac == "Unclassified" & nb == "Negative") {
-    return( "Negative-onlypi" )
-  } else if( beac == "Unclassified" & nb == "Unclassified") {
-    return( "Unclassified" )
-    } else {
-    return("None")
-  }
+join_mouse_cohort <- function(mouse, cohort_n){
+  if (is.na(cohort_n)) {
+    return('NaN')
+  }  
+  df <- paste0(mouse, "_", cohort_n)
+  df
 }
+
 ```
 
-2. run on all neurons
+2. run on all cells
 ```{r}
 spatial_firing <- spatial_firing %>%
-  mutate(cue_group_o = map2(lm_group_b, lm_group_p, mark_neurons))
-```
-
-
-_Figure 4B-E stats_
-position encoding ramp neurons were classified with a similar slope on the non-beaconed and probe trials as on beaconed trials ....
-1. extract position cells
-```{r}
-position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-
-position_ramp_cells <- subset(position_cells, lm_group_b == "Negative" | lm_group_b == "Positive")
-
-```
-
-2. from above, extract position neurons that are ramp like in beaconed trials
-```{r}
-pos_position_cells <- subset(position_ramp_cells, lm_group_b == "Positive")
-neg_position_cells <- subset(position_ramp_cells, lm_group_b == "Negative")
-```
-
-3. find neurons that maintain ramp polarity in the non beaconed trial
-```{r}
-posnb_position_cells <- nrow(subset(pos_position_cells, lm_group_p == "Positive"))
-negnb_position_cells <- nrow(subset(neg_position_cells, lm_group_p == "Negative"))
-
-```
-
-4. calculate numbers of neurons that stay the same slope in beaconed and non beaconed
-```{r}
-total <- nrow(pos_position_cells) + nrow(neg_position_cells)
-neurons_same <- (posnb_position_cells + negnb_position_cells)
-```
-
-Do the same as above but for neurons that switch ramp polarity in the non beaconed trial
-
-1. extract position ramp neurons that switch ramp polarity on the non-beaconed trial
-```{r}
-posnb_position_cells <- nrow(subset(pos_position_cells, lm_group_p != "Positive"))
-negnb_position_cells <- nrow(subset(neg_position_cells, lm_group_p != "Negative"))
-```
-
-2. calculate number of neurons that change slope on beaconed and non beaconed
-```{r}
-total <- nrow(pos_position_cells) + nrow(neg_position_cells)
-neurons_diff <- (posnb_position_cells + negnb_position_cells)
-```
-
-3. finally, also want to calculate numbers of neurons that are unclassified on beaconed and ramp like on non-beaconed
-```{r}
-un_position_cells <- subset(spatial_firing, lm_group_b == "Unclassified")
-unnb_position_cells <- nrow(subset(un_position_cells, lm_group_p == "Positive" | lm_group_p == "Negative"))
+  mutate(joined_id = map2(Mouse, cohort, join_mouse_cohort))
 
 ```
 
 
 ### ----------------------------------------------------------------------------------------- ###
 
+### Classify neurons by their open field activity
 
-Visualise the proportion of cells that fit the above criteria.  
+### ----------------------------------------------------------------------------------------- ###
 
-We will first focus on neurons classified as having a positive or negative slope in Figure 2. A problem with this analysis is that it includes neurons that in Figure 3 are shown to be modulated by speed or acceleration but not position. The further analysis below will address this.
-
-
-Function to return a tibble with proportions of neurons classified as cue-dependent, cue-independent or path integration only.
 ```{r}
-calc_props_cue_dep <- function(cue_group){
-  cue_group <- as.character(cue_group)
-  num_cells <- length(cue_group)
-  
-  pi_num <- length(which(cue_group == "Positive-PI" | cue_group == "Negative-PI"))
-  cue_num <- length(which(cue_group == "Positive-cue" | cue_group == "Negative-cue"))
-  pionly_num <- length(which(cue_group == "Positive-onlypi" | cue_group == "Negative-onlypi"))
-  uc_num <- length(which(cue_group == "Unclassified"))
-  none_num <- length(which(cue_group == "None"))
-  
-  pi <- pi_num / num_cells
-  cue <- cue_num / num_cells
-  pionly <- pionly_num / num_cells
-  uc <-uc_num / num_cells
-  none <- none_num / num_cells
-
-proportions_mixed_ramps <- tibble(perc=c(pi, cue, pionly, uc, none), num=c(pi_num, cue_num, pionly_num, uc_num, none_num),ramp_type = c("Cue-independent", "Cue-dependant", "Path-Integration-only", "Unclassified", "None"))
-}
-```
-
-Calculate proportions for neurons with +/- ramps on beaconed trials.
-```{r}
-proportions_mixed_ramps <- calc_props_cue_dep(spatial_firing$cue_group_o)
-```
-
-
-Plot a pie chart of results, 
-_note : pie segments represent the proportions with numbers in text_
-```{r}
-proportions_mixed_ramps_pi_maker <- function(df){
-  # Compute the position of labels
-data <- df %>% 
-  arrange(desc(ramp_type)) %>%
-  mutate(prop = perc) %>%
-  mutate(ypos = cumsum(prop)- 0.5*prop )
-
-# Basic piechart
-ggplot(data, aes(x="", y=prop, fill=ramp_type)) +
-  geom_bar(stat="identity", width=1, color="white") +
-  coord_polar("y", start=0) +
-  theme_void() + 
-  #theme(legend.position="none") +
-  
-  geom_text(aes(y = ypos, label = num), color = "white", size=3) +
-  scale_fill_brewer(palette="Set1")
+is_grid_cell <- function(grid_score, grid_threshold){
+  if (is.na(grid_score) | is.na(grid_threshold) ) {
+    return( "NaN" )  
+  } else if( as.numeric(grid_score) > as.numeric(grid_threshold)) {
+    return( "1" ) 
+  } else {
+    return("0")
+  }
 }
 
-proportions_mixed_ramps_pi_maker(proportions_mixed_ramps)
-
-if (save_figures == 1) {
-  ggsave(file = "plots/CueComparison_proportions.png", width = 4, height = 4)
-}
-```
-
-
-
-
-### -------------------------------------------------------------------------------------------------------- ###
-
-We also want to compare the classification of neurons between cued and uncued trials. We will do this using a Sankey plot
-
-We need a pair of vectors called 'value' that contain the number of cells for each group transition between 'source' and 'target', which are categories for slopes the beaconed and the non-beaconed trials.
-The transitions will be ordered as:
-++
-+-
-+NC
--+
---
--NC
-NC+
-NC-
-NCNC
-
-```{r}
-# ob_group and h_group are column names from the results data frame that contain the grouping information.
-calc_transitions <- function(group1, group2){
-  df <- tibble(g1 = as.character(group1), g2 = as.character(group2))
-  
-  transition_values <- c(length(which(df$g1 == "Positive" & df$g2 == "Positive")),
-                         length(which(df$g1 == "Positive" & df$g2 == "Negative")),
-                         length(which(df$g1 == "Positive" & df$g2 == "Unclassified")),
-                         length(which(df$g1 == "Negative" & df$g2 == "Positive")),
-                         length(which(df$g1 == "Negative" & df$g2 == "Negative")),
-                         length(which(df$g1 == "Negative" & df$g2 == "Unclassified")),
-                         length(which(df$g1 == "Unclassified" & df$g2 == "Positive")),
-                         length(which(df$g1 == "Unclassified" & df$g2 == "Negative")),
-                         length(which(df$g1 == "Unclassified" & df$g2 == "Unclassified")))
-  transition_values_long <- tibble(value = transition_values,
-                                   source= c("Positive","Positive", "Positive", "Negative", "Negative", "Negative", "Unclassified","Unclassified", "Unclassified"),
-                                   target= c(" Positive"," Negative", " Unclassified"," Positive"," Negative", " Unclassified"," Positive"," Negative", " Unclassified")
-                                   ) %>%
-    filter(value > 0)
-  
-  nodes <- data.frame(name=c(as.character(transition_values_long$source), as.character(transition_values_long$target)) %>% unique())
-  transition_values_long$IDsource=match(transition_values_long$source, nodes$name)-1
-  transition_values_long$IDtarget=match(transition_values_long$target, nodes$name)-1
-  return(transition_values_long)
-}
-```
-
-Make a data frame that contains numbers to be used for the Sankey plot.
-```{r}
-data_long <- calc_transitions(spatial_firing$lm_group_b, spatial_firing$lm_group_p)
-
-# Probably a more elegant way to do this as already made in calc_transitions
-nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
-
-```
-
-Plot Sankey diagram
-```{r}
-# prepare colour scale
-ColourScal ='d3.scaleOrdinal() .range(["#66cd00","#EE3A8C", "#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
-
-# Make the Network
-sankeyNetwork(Links = data_long, Nodes = nodes,
-              Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", LinkGroup='source',
-              sinksRight=FALSE, colourScale=ColourScal,
-              nodeWidth=40, fontSize=0, nodePadding=30)
-
-if (save_figures == 1) {
-  ggsave(file = "plots/model_movement.png", width = 24, height = 18)
-}
-```
-
-
-
-
-
-### ------------------------------------------------------------------------------------------ ### 
-
-## Seperate 
-
-```{r}
-spatial_firing_high  <- subset(spatial_firing, max_trial_number >= 60 )
-```
-
-
-1. Write function to add position
-```{r}
-add_position <- function(df, session_id, cluster_id) {
-  sum = sum(unlist(df), na.rm=TRUE)
-  return(sum)
-}
-```
-
-2. Run on dataframe : Average trials with reward
-
-input columns: 
-Rates_averaged_rewarded_b = beaconed trials
-Rates_averaged_rewarded_nb = non-beaconed and probe trials
-Rates_averaged_rewarded_p = probe trials only
-```{r}
-spatial_firing_high <- spatial_firing_high %>%
-  mutate(asr_p_sum = pmap(list(Rates_averaged_rewarded_p, session_id, cluster_id), add_position))
 ```
 
 ```{r}
-spatial_firing_probeonly <- subset(spatial_firing_high, asr_p_sum != 0 )
-```
-
-
-### ----------------------------------------------------------------------------------------------- ###
-
-### ------------------------------------------------------------------------------------------ ### 
-
-
-_same as above but just for position modulated cells_
-
-Here, we want to focus the analysis exclusively on neurons that have a +/- slope on beaconed trials (Figure 2) and are position modulated (Figure 3).
-
-```{r}
-position_neurons <- filter(spatial_firing_probeonly, lm_group_b == "Positive" | lm_group_b == "Negative",
-                           final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-Calculate proportions for neurons with +/- ramps on beaconed trials.
-```{r}
-proportions_pos_mixed_ramps <- calc_props_cue_dep(position_neurons$cue_group_o)
-
-proportions_mixed_ramps_pi_maker(proportions_pos_mixed_ramps)
-```
-
-
-```{r}
-# ob_group and h_group are column names from the results data frame that contain the grouping information.
-calc_transitions <- function(group1, group2){
-  df <- tibble(g1 = as.character(group1), g2 = as.character(group2))
-  
-  transition_values <- c(
-                         length(which(df$g1 == "Positive" & df$g2 == "Unclassified")),
-                         length(which(df$g1 == "Negative" & df$g2 == "Unclassified")))
-  transition_values_long <- tibble(value = transition_values,
-                                   source= c("Positive", "Negative"),
-                                   target= c(" Unclassified"," Unclassified")
-                                   ) %>%
-    filter(value > 0)
-  
-  nodes <- data.frame(name=c(as.character(transition_values_long$source), as.character(transition_values_long$target)) %>% unique())
-  transition_values_long$IDsource=match(transition_values_long$source, nodes$name)-1
-  transition_values_long$IDtarget=match(transition_values_long$target, nodes$name)-1
-  return(transition_values_long)
-}
-```
-
-Make a data frame that contains numbers to be used for the Sankey plot.
-```{r}
-data_long_pos <- calc_transitions(position_neurons$lm_group_b, position_neurons$lm_group_p)
-
-# Probably a more elegant way to do this as already made in calc_transitions
-nodes_pos <- data.frame(name=c(as.character(data_long_pos$source), as.character(data_long_pos$target)) %>% unique())
-
-```
-
-Plot Sankey diagram
-```{r}
-# prepare colour scale
-ColourScal ='d3.scaleOrdinal() .range(["#66cd00","#EE3A8C", "#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
-
-# Make the Network
-sankeyNetwork(Links = data_long_pos, Nodes = nodes_pos,
-              Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", LinkGroup='source',
-              sinksRight=FALSE, colourScale=ColourScal,
-              nodeWidth=40, fontSize=0, nodePadding=30)
-
-if (save_figures == 1) {
-  ggsave(file = "plots/model_movement.png", width = 24, height = 18)
+is_border_cell <- function(border_score, border_threshold){
+  if (is.na(border_score) | is.na(border_threshold)) {
+    return( "NaN" )  
+  } else if( as.numeric(border_score) > as.numeric(border_threshold)) {
+    return( "1" ) 
+  } else {
+    return("0")
+  }
 }
 
-
 ```
 
-
-
-
 ```{r}
-position_neurons <- filter(spatial_firing_probeonly, lm_group_b_h == "Positive" | lm_group_b_h == "Negative",
-                           final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-
-
-Make a data frame that contains numbers to be used for the Sankey plot.
-```{r}
-data_long_pos <- calc_transitions(position_neurons$lm_group_b_h, position_neurons$lm_group_p_h)
-
-# Probably a more elegant way to do this as already made in calc_transitions
-nodes_pos <- data.frame(name=c(as.character(data_long_pos$source), as.character(data_long_pos$target)) %>% unique())
-
-```
-
-Plot Sankey diagram
-```{r}
-# prepare colour scale
-ColourScal ='d3.scaleOrdinal() .range(["#66cd00","#EE3A8C", "#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
-
-# Make the Network
-sankeyNetwork(Links = data_long_pos, Nodes = nodes_pos,
-              Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", LinkGroup='source',
-              sinksRight=FALSE, colourScale=ColourScal,
-              nodeWidth=40, fontSize=0, nodePadding=30)
-
-if (save_figures == 1) {
-  ggsave(file = "plots/model_movement.png", width = 24, height = 18)
+is_HD_cell <- function(hd_score, hd_threshold){
+  if (is.na(hd_score) | is.na(hd_threshold)) {
+    return( "NaN" )  
+  } else if( as.numeric(hd_score) > as.numeric(hd_threshold)) {
+    return( "1" ) 
+  } else {
+    return("0")
+  }
 }
 
+```
+
+```{r}
+is_speed_cell <- function(speed_score, speed_threshold){
+  if (is.na(speed_score) | is.na(speed_threshold)) {
+    return( "NaN" )  
+  } else if( as.numeric(speed_score) > as.numeric(speed_threshold)) {
+    return( "1" ) 
+  } else {
+    return("0")
+  }
+}
 
 ```
 
-### --------------------------------------------------------------------------------------- ###
-
-Now we want to visualise the average firing rate for each of the groups (cue dependant & cue independent / positive & negative).
-
-We will again focus exclusively on neurons that have a +/- slope (Figure 2) and are position modulated (Figure 3). To do so we will use the tibble 'position_neurons' generated above.
-
-Function to plot data mean and SEM of the population data based on the classification, as per Figure 2, on beaconed and non-beaconed trials.
 ```{r}
-mean_SEM_plots_BvsNB <- function(df, group_b, group_p, x_start = -10, x_end = 70){
-  df <- df %>%
-    filter(lm_group_b == group_b,
-           lm_group_p == group_p) %>%
-    select(normalised_rates, normalised_rates_p, cue_group_o) %>%
-    unnest(c(normalised_rates, normalised_rates_p))
- df$normalised_rates <- as.double(df$normalised_rates)
- df$normalised_rates_p <- as.double(df$normalised_rates_p)
- df$cue_group_o <- as.character(df$cue_group_o)
- numcells <- length(df$normalised_rates)/200
- df$Position <- rep(-30:169, times = numcells)
- 
- df <- df %>%
-   group_by(cue_group_o, Position) %>%
-   summarise(mean_b = mean(normalised_rates, na.rm = TRUE),
-             mean_p = mean(normalised_rates_p, na.rm = TRUE),
-             se_b = std.error(normalised_rates, na.rm = TRUE),
-             se_p = std.error(normalised_rates_p, na.rm = TRUE))
- 
- ggplot(data=df) +
-  geom_ribbon(aes(x=Position, y=mean_b, ymin = mean_b - se_b, ymax = mean_b + se_b), fill = "grey70", alpha=0.2) +
-  geom_ribbon(aes(x=Position, y=mean_p, ymin = mean_p - se_p, ymax = mean_p + se_p), fill = "blue", alpha=0.05) +
-  geom_line(aes(y=mean_b, x=Position), color = "Grey32") +
-  geom_line(aes(y=mean_p, x=Position), color = "blue") +
-  annotate("rect", xmin=-10, xmax=0, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Grey60") +
-  annotate("rect", xmin=60, xmax=70, ymin=-1.5,ymax=Inf, alpha=0.2, fill="Chartreuse4") +
+is_spatial_cell <- function(spatial_score, spatial_threshold){
+  if (is.na(spatial_score) | is.na(spatial_threshold)) {
+    return( "NaN" )  
+  } else if( as.numeric(spatial_score) > as.numeric(spatial_threshold)) {
+    return( "1" ) 
+  } else {
+    return("0")
+  }
+}
+
+```
+
+1. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(grid_cell = map2(grid_score, grid_threshold, is_grid_cell)) %>%
+  mutate(border_cell = map2(border_score, border_threshold, is_border_cell)) %>%
+  mutate(HD_cell = map2(hd_score, hd_threshold, is_HD_cell)) %>%
+  mutate(speed_cell = map2(speed_score, spatial_threshold, is_speed_cell)) %>%
+  mutate(nongrid_cell = map2(spatial_information_score, spatial_threshold, is_spatial_cell))
+
+```
+
+
+
+```{r}
+classify_cells <- function(grid_cell, border_cell, HD_cell, nongrid_cell){
+  if (is.na(grid_cell) & is.na(border_cell) & is.na(HD_cell) & is.na(nongrid_cell)) {
+    return( "NI" )  
+  } else if( grid_cell == 1) {
+    return( "G" ) 
+  } else if( border_cell == 1) {
+    return( "B" ) 
+  } else if( nongrid_cell == 1) {
+    return( "NG" ) 
+  } else if( HD_cell == 1) {
+    return( "HD" ) 
+  } else if( (grid_cell == 0 & border_cell == 0 & HD_cell == 0 & nongrid_cell == 0)) {
+    return( "NS" ) 
+  } else {
+    return("NS")
+  }
+}
+
+```
+
+
+1. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(classifier = pmap(list(grid_cell, border_cell, HD_cell, nongrid_cell), classify_cells))
+
+```
+
+
+
+
+```{r}
+classify_cells2 <- function(classifier){
+  if( classifier == "G") {
+    return( "Grid" ) 
+  } else if( classifier == "B") {
+    return( "Border" ) 
+  } else if( classifier == "NG") {
+    return( "Spatial" ) 
+  } else if( classifier == "HD") {
+    return( "Pure HD" ) 
+  } else if( classifier == "NS") {
+    return( "Non-Spatial" ) 
+  } else if( classifier == "NI") {
+    return( "Not-identified" ) 
+  } else {
+    return("Non-Spatial")
+  }
+}
+
+```
+
+
+1. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(classifier2 = map(classifier, classify_cells2))
+
+```
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+### Find proportion of spatial cells
+
+### ----------------------------------------------------------------------------------------- ###
+First, we want to know out of our dataset, how many cells classified as grid, border, pure head direction etc. 
+
+Find number of cells in each spatial catagory (grid, border, HD etc)
+```{r}
+# Distribution of open arena cell types among positionally modulated ramping neurons
+spatial_firing %>%
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(cohort == 7) %>% 
+  filter(track_category_numeric !=0) %>%
+  select(classifier2) %>%
+  mutate(classifier2 = unlist(classifier2)) %>%
+  unlist() %>%
+  table()
+
+# Position modulated ramping neurons  
+arena_track_ramp <- spatial_firing %>%
+  filter(cohort == 7,
+         final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% 
+  filter(track_category_numeric !=0) %>%
+  select(classifier2, final_model_o_b) %>%
+  mutate(classifier2 = unlist(classifier2),
+         final_model_o_b = unlist(final_model_o_b)) %>%
+  table()
+arena_track_ramp <- cbind(arena_track_ramp, total = rowSums(arena_track_ramp))
+(arena_track_ramp <- rbind(arena_track_ramp, sum = colSums(arena_track_ramp)))
+# All neurons
+arena_track_all <- spatial_firing %>%
+  filter(track_category_numeric !=0) %>%
+  select(classifier2, final_model_o_b) %>%
+  mutate(classifier2 = unlist(classifier2),
+         final_model_o_b = unlist(final_model_o_b)) %>%
+  table()
+arena_track_all <- cbind(arena_track_all, total = rowSums(arena_track_all))
+(arena_track_all <- rbind(arena_track_all, sum = colSums(arena_track_all)))
+
+```
+
+
+### ----------------------------------------------------------------------------------- ###
+
+Now we might want to see a plot of this, with proportions split according to type of ramp cell in VR i.e. position ramp, speed ramps, all cells.
+
+The y-axis 'Arena type' shows the proportion of each arena field (e.g. grid border, etc) within each population of the track cells (e.g. positional ramp, other ramp, non-ramp).
+
+1. First find proportions of functional cell types by animal for all cells
+```{r}
+cell_types_prop <- function(df) {
+  df %>% select(joined_id, classifier2) %>%
+    mutate(joined_id = unlist(joined_id),
+           classifier2 = unlist(classifier2)) %>%
+    group_by(joined_id, classifier2) %>%
+    summarise(n = n()) %>%
+    mutate(proportion = n / sum(n),
+           percent = proportion * 100)
+}
+
+# Proportions by animal
+all_cells_percent <- spatial_firing %>%
+  filter(cohort == 7) %>%
+  cell_types_prop()
+
+# Summary across animals
+all_cells_summary <- all_cells_percent %>%
+  group_by(classifier2) %>%
+  summarise(avg = mean(proportion), sd = std.error(proportion), min=min(proportion), max=max(proportion))
+
+```
+
+
+# Proportions separately for postional ramp, other ramp and other cells
+```{r}
+position_ramp_percent <- spatial_firing %>%
+  filter(cohort == 7,
+         lm_group_b == "Positive" | lm_group_b == "Negative",
+         final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>%
+  cell_types_prop()
+
+other_ramp_percent <- spatial_firing %>%
+  filter(cohort == 7,
+         lm_group_b == "Positive" | lm_group_b == "Negative",
+         !(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")) %>%
+  cell_types_prop()
+
+other_cells_percent <- spatial_firing %>%
+  filter(cohort == 7,
+         !(lm_group_b == "Positive" | lm_group_b == "Negative")) %>%
+  cell_types_prop()
+
+# check groups are complete (should be TRUR)
+sum(position_ramp_percent$n) + sum(other_ramp_percent$n) + sum(other_cells_percent$n)  == sum(all_cells_percent$n)
+```
+Add group labels and combine
+```{r}
+position_ramp_percent$group <- "PosRamp"
+other_ramp_percent$group <- "OtherRamp"
+other_cells_percent$group <- "NonRamp"
+df_all <- rbind(position_ramp_percent, other_ramp_percent, other_cells_percent)
+```
+
+
+Make box plot and plot all at the same time
+```{r}
+ggplot(df_all, aes(x=classifier2, y=percent)) + 
+  coord_cartesian(ylim=c(0,100)) +
+  #stat_summary(fun.data=mean_sdl, mult=1, geom="pointrange", color="red") +
+  geom_boxplot(aes(fill = group), alpha=0.9, outlier.colour="black", outlier.shape=16,
+             outlier.size=2, notch=FALSE) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3")) +
+  scale_y_continuous(breaks=seq(0,100,25)) +
   theme_classic() +
-  labs(y = "Z-scored firing rate", x = "Location (cm)") +
-  xlim(x_start, x_end) +
-  ylim(-1.5, 2.5) +
-  #scale_x_discrete(breaks=c("40","60","80"), labels=c("10", "30", "50")) +
-  theme(axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        legend.title = element_blank(),
-        text = element_text(size=14))
-}
-```
-
-
-
-Subset data by group then average rates for plotting          **Negative Cue**
-```{r}
-(NegUC_plot <- mean_SEM_plots_BvsNB(position_neurons, "Negative", "Unclassified"))
-
-if (save_figures == 1) {
-  ggsave(file = "plots/AverageRates_PositionCells_NegCue.png", width = 3, height = 2.35)
-}
-```
-
-
-Subset data by group then average rates for plotting          **Positive Cue**
-```{r}
-(PosUC_plot <- mean_SEM_plots_BvsNB(position_neurons, "Positive", "Unclassified"))
-
-if (save_figures == 1) {
-  ggsave(file = "plots/AverageRates_PositionCells_PosCue.png", width = 3, height = 2.35)
-}
-```
-
-
-Subset data by group then average rates for plotting          **Positive PI**
-
-```{r}
-(PosPos_plot <- mean_SEM_plots_BvsNB(position_neurons, "Positive", "Positive"))
-
-if (save_figures == 1) {
-  ggsave(file = "plots/AverageRates_PositionCells_PosPI.png", width = 3, height = 2.35)
-}
-```
-
-
-Subset data by group then average rates for plotting          **Negative PI**
-
-```{r}
-(NegNeg_plot <- mean_SEM_plots_BvsNB(position_neurons, "Negative", "Negative"))
-
-if (save_figures == 1) {
-  ggsave(file = "plots/AverageRates_PositionCells_NegPI.png", width = 3, height = 2.35)
-}
-```
-
-
-Subset data by group then average rates for plotting          **Negative PI only**
-
-These data are not in position neurons so make a new data frame containing these neurons.
-```{r}
-unclassified_neurons <- filter(spatial_firing, lm_group_b == "Unclassified")
-```
-
-```{r}
-(UCNeg_plot <- mean_SEM_plots_BvsNB(unclassified_neurons, "Unclassified", "Negative"))
-
-if (save_figures == 1) {
-  ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5)
-}
-```
-
-Subset data by group then average rates for plotting          **Positive PI only**
-
-```{r}
-(UCPos_plot <- mean_SEM_plots_BvsNB(unclassified_neurons, "Unclassified", "Positive"))
-
-if (save_figures == 1) {
- ggsave(file = "plots/AverageRates_PositionCells_NegPIonly.png", width = 3.5, height = 2.5) 
-}
-```
-
-
-
-
-
-###----------------------------------------------------------------------------------------------###
-Additional analyses related to Figure 5.
-
-First split data based on cue independent/cue dependent as we are only interested in position neurons here
-```{r}
-cue_independant_neurons <- filter(position_neurons, cue_group_o == "Positive-PI" | cue_group_o == "Negative-PI")
-cue_dependant_neurons <- filter(position_neurons, cue_group_o == "Positive-cue" | cue_group_o == "Negative-cue")
-
-```
-
-
-Make bar charts showing the distribution of P, PS, PA and PSA neurons.
-```{r}
-make_mm_class_bar <- function(df){
-  pos <-subset(df, lm_group_b == "Positive")
-  neg <-subset(df, lm_group_b == "Negative")
-  mixed_ramps <- tibble(perc=c(nrow(subset(pos, final_model_o_b == "P"))/nrow(pos)*100,
-                             nrow(subset(neg, final_model_o_b == "P"))/nrow(neg)*100,
-                             nrow(subset(pos,final_model_o_b == "PS"))/nrow(pos)*100,
-                             nrow(subset(neg,final_model_o_b == "PS"))/nrow(neg)*100,
-                             nrow(subset(pos ,final_model_o_b == "PA"))/nrow(pos)*100,
-                             nrow(subset(neg ,final_model_o_b == "PA"))/nrow(neg)*100,
-                             nrow(subset(pos ,final_model_o_b == "PSA"))/nrow(pos)*100, 
-                             nrow(subset(neg ,final_model_o_b == "PSA"))/nrow(neg)*100), 
-                      
-                      ramp_id= c("P","P", 
-                                 "PS", "PS",
-                                 "PA", "PA", 
-                                 "PAS", "PAS"), 
-                      ramp_type= rep(c("Positive", "Negative"), 4))
-  
-  level_order <- c("P", "PS", "PA", "PAS")
-ggplot(mixed_ramps, aes(x= factor(ramp_type), y = perc, fill=factor(ramp_id, level = level_order))) +
-  geom_bar(stat="identity",width = 0.9, alpha = .7) +
-  labs(y = "Percent of neurons") +
-  scale_fill_manual(values=c("firebrick1","gold", "darkorchid1", "darkslategray")) +
-  #scale_fill_brewer(palette= "RdYlBu") +
-  theme_classic() +
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
+  ylim(0, 100) +
+  labs(y = "Arena type (%)", x ="") +
+  theme(axis.text.x = element_text(angle = 70)) +
+  theme(axis.text.x=element_text(hjust=1)) +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
         legend.position="bottom", 
         legend.title = element_blank(),
-        text = element_text(size=12), 
-        legend.text=element_text(size=12), 
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
         axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
-}
-
-make_mm_class_bar(cue_dependant_neurons)
-
-if (save_figures == 1) {
-  ggsave(file = "plots/LMERProportions_beaconed_cuedependant.png", width = 4, height = 4.5)
-}
-
-
-make_mm_class_bar(cue_independant_neurons)
-
-if (save_figures == 1) {
- ggsave(file = "plots/LMERProportions_beaconed_cueindependant.png", width = 4, height = 4.5) 
-}
-```
-
-
-
-
-Plot the distribution of standardised coefficients for cue-dependent and cue-independent cells with positve / negative slopes.
-
-Use function 'standard_plot' from Figure 3. This expects a tibble with columns 'coef_type' (either P, S or A) and 'coef' (the coefficients)
-
-Make tibble for coefficient plots
-4. put data into a tibble for plotting.
-```{r}
-data_coef_2 <- tibble(session_id = rep(unlist(position_neurons$unique_id), times=3), 
-                    cluster_id = rep(position_neurons$cluster_id, times=3), 
-                    coef = c(as.character(position_neurons$o_b_mod_coefs_pos),
-                             as.character(position_neurons$o_b_mod_coefs_speed),
-                             as.character(position_neurons$o_b_mod_coefs_accel)),
-                    group = rep(as.character(position_neurons$final_model_o_b), 3),
-                    cue_group = rep(as.character(position_neurons$cue_group_o), 3),
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(position_neurons)),
-                    lm_result = rep(as.character(position_neurons$lm_group_b), times=3))
-```
-
-Use function 'standard_plot' from Figure 2. This expects a tibble with columns 'coef_type' (either P, S or A) and 'coef' (the coefficients)
-
-
-Plot coefficients for cells classified in Figure 3 as having 'significant' positional coefficients in the mixed effect model, and Figure 4 as having ramp-like activity on both beaconed and non-beaconed/probe trials. 
-
-```{r}
-data_coef_PSA_PI_pos <- data_coef_2 %>%
-  subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
-  subset(cue_group == "Positive-PI")
-
-(PSA_PI_pos_coef_plot <- standard_plot(data_coef_PSA_PI_pos))
-
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PSAPIposcells.png", width = 2.2, height = 3.5)
-}
-
+ggsave(file = "plots/OFAnalysis_proportionsBOX.png", width = 6.5, height = 5.5)
 
 ```
 
 
+### ----------------------------------------------------------------------------------- ###
+
+### ----------------------------------------------------------------------------------- ###
+
+Make a plot where the y-axis 'Ramp type' shows the proportion of each ramp type(e.g. positional ramp, other ramp, non-ramp) within each population of arena cells (e.g. grid border, etc).
+
+Use 'spatial_firing$track_category_numeric' to identify ramping cells.
+
+track_category_numeric is defined in Figure 1:
+Homebound   Outbound    Text label    Numeric label
+Positive    Positive    pospos        1
+Positive    Negative    posneg        2
+Positive    Unlcassified    posnon    3
+Negative    Negative    negneg        4
+Negative    Positive    negpos        5
+Negative    Unclassified    negnon    6
+Other                                 0
+
 ```{r}
-data_coef_PSA_PI_neg <- data_coef_2 %>%
-  subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
-  subset(cue_group == "Negative-PI")
-
-(PSA_PI_neg_coef_plot <- standard_plot(data_coef_PSA_PI_neg))
-
-if (save_figures == 1) {
-  ggsave(file = "plots/CoefficientValues_PSAPInegcells.png", width = 2.2, height = 3.5)
+ramp_cat <- function(classifier, final_model_o_b){
+  if( classifier != 0 ) {
+    if(final_model_o_b == "P" | final_model_o_b == "PSA" | final_model_o_b == "PA" | final_model_o_b == "PS") {
+    return( "Ramp_position" ) 
+  } else {return( "Ramp_Other" ) 
+  }
+  } else {return("None")}
 }
+
+spatial_firing <- spatial_firing %>%
+  mutate(ramp_type = map2(track_category_numeric, final_model_o_b, ramp_cat))
 ```
 
 
 
-Plot coefficients for cells classified in Figure 2 as having 'significant' positional coefficients in the mixed effect model, and Figure 4 as having ramp-like activity on beaconed but not non-beaconed/probe trials. 
+```{r}
+all_cells_percent <- spatial_firing  %>%
+  filter(cohort == 7) %>% 
+  select(joined_id, classifier2, ramp_type) %>%
+  mutate(joined_id = unlist(joined_id),
+         classifier2= unlist(classifier2),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(joined_id, classifier2, ramp_type) %>%
+  summarise(n = n()) %>%
+  mutate(proportion = n / sum(n),
+         percent = proportion*100,
+         classifier2 = as.character(classifier2),
+         ramp_type = as.character(ramp_type))
 
+(all_cells_percent_summary <- all_cells_percent %>%
+  group_by(classifier2, ramp_type) %>%
+  summarise(avg = mean(proportion),
+         sd = std.error(proportion),
+         min=min(proportion),
+         max=max(proportion)))
+
+summary(aov(proportion ~ factor(ramp_type), data = filter(all_cells_percent, classifier2 == "Border")))
+summary(aov(proportion ~ factor(ramp_type), data = filter(all_cells_percent, classifier2 == "Grid")))
+summary(aov(proportion ~ factor(ramp_type), data = filter(all_cells_percent, classifier2 == "Non-Spatial")))
+summary(aov(proportion ~ factor(ramp_type), data = filter(all_cells_percent, classifier2 == "Pure HD")))
+summary(aov(proportion ~ factor(ramp_type), data = filter(all_cells_percent, classifier2 == "Spatial")))
+```
+
+Make plot
+```{r}
+ggplot(data=subset(all_cells_percent, ramp_type != "NULL"), aes(x=classifier2, y=percent,fill = factor(ramp_type))) + 
+  #coord_cartesian(ylim=c(0,100)) +
+  #stat_summary(fun.data=mean_sdl, mult=1, geom="pointrange", color="red") +
+  geom_boxplot(aes(fill = ramp_type), alpha=0.9, outlier.colour="black", outlier.shape=16,
+             outlier.size=2, notch=FALSE) +
+  scale_fill_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3")) +
+  scale_y_continuous(breaks=seq(0,100,25)) +
+  theme_classic() +
+  ylim(0, 100) +
+  labs(y = "Ramp type (%)", x ="") +
+  theme(axis.text.x = element_text(angle = 70)) +
+  theme(axis.text.x=element_text(hjust=1)) +
+  theme(axis.text.x = element_text(size=18),
+        axis.text.y = element_text(size=18),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=18), 
+        legend.text=element_text(size=18), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+ggsave(file = "plots/OFAnalysis_proportionsBOX_22.png", width = 6.5, height = 5.5)
+
+```
+
+### Now look at speed modulation
 
 ```{r}
-data_coef_PSA_cue_pos <- data_coef_2 %>%
-  subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
-  subset(cue_group == "Positive-cue")
+spatial_firing %>% filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type) %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  ggplot(aes(x=ramp_type, y=speed_score, fill=ramp_type)) + 
+  geom_jitter() +
+  geom_violin(alpha = 0.5) +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  labs(x = "", y = "Speed score") +
+  scale_fill_manual(values=c("#F04E4E","#19D3D6","#FF9719")) +
+  theme_classic() +
+  theme(text = element_text(size=20),legend.position="none")
 
-standard_plot(data_coef_PSA_cue_pos)
+ggsave(file = "plots/speed_score_by_ramp_type.png", width = 6, height = 3.5)
+
+speed_by_ramp <- spatial_firing %>%
+  filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type) %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type))
+summary(aov(speed_score ~ ramp_type, speed_by_ramp))
+TukeyHSD(aov(speed_score ~ ramp_type, speed_by_ramp))
+
+speed_props <- spatial_firing %>%
+  filter(cohort == 7) %>%
+  select(speed_cell, joined_id, ramp_type) %>%
+  mutate(speed_cell = unlist(speed_cell),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+    group_by(ramp_type, speed_cell, joined_id) %>%
+    summarise(n = n()) %>%
+  group_by(ramp_type, joined_id) %>%
+  mutate(proportion = n / sum(n),
+         percent = proportion*100)
+
+# filter(speed_props, joined_id == "M3_7")$proportion
+
+speed_props %>% 
+  filter(speed_cell == 1) %>%
+    ggplot(aes(ramp_type, proportion)) +
+  geom_boxplot() +
+  labs(x = "", y = "Speed cells") +
+  theme_classic()+
+  theme(text = element_text(size=20))
+
+
+(speed_props_summary <- speed_props %>%
+    group_by(speed_cell, ramp_type) %>%
+    summarise(avg = mean(proportion),
+              sd = std.error(proportion),
+              min=min(proportion),
+              max=max(proportion)))
+
+```
+
+Compare track speed cells with arena speed cells
+```{r}
+spatial_firing %>% filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed) %>%
+  filter(ramp_type != "None") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  ggplot(aes(o_b_mod_coefs_speed, speed_score, colour = ramp_type)) +
+  geom_point() +
+  geom_hline(yintercept=0, linetype="dashed", color = "black") +
+  geom_vline(xintercept=0, linetype="dashed", color = "black") +
+  theme_classic() +
+  scale_colour_manual(values=c("#19D3D6","#FF9719")) +
+  theme(text = element_text(size=20), legend.position = "none") +
+  geom_smooth(method='lm', formula= y~x)
+ggsave(file = "plots/speed_score_vs_speed_coef_by_ramp_type.png", width = 6, height = 3.5)
+
+speed_corr_rp <- spatial_firing %>% 
+  filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed) %>%
+  filter(ramp_type == "Ramp_position") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(ramp_type)
+
+speed_corr_lm_rp <- lm(speed_score ~ o_b_mod_coefs_speed, speed_corr_rp) 
+
+summary(speed_corr_lm_rp)
+  
+
+speed_corr_ro <- spatial_firing %>% 
+  filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed) %>%
+  filter(ramp_type == "Ramp_Other") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(ramp_type)
+
+speed_corr_lm_ro <- lm(speed_score ~ o_b_mod_coefs_speed, speed_corr_ro) 
+
+summary(speed_corr_lm_ro)
+  
+
+speed_corr_s <- spatial_firing %>% 
+  filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed, final_model_o_b) %>%
+  filter(ramp_type == "Ramp_Other",
+         final_model_o_b == "S") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  group_by(ramp_type)
+
+speed_corr_lm_s <- lm(speed_score ~ o_b_mod_coefs_speed, speed_corr_s) 
+
+summary(speed_corr_lm_s)
 ```
 
 
+Compare speed scores with mean firing rates
+In the Hippocampus high speed score cells have high firing rates (Figure 5 of Gois and Tort, 2018).
 ```{r}
-data_coef_PSA_cue_neg <- data_coef_2 %>%
-  subset(group == "P" | group == "PS" | group == "PA" | group == "PSA") %>%
-  subset(cue_group == "Negative-cue")
+spatial_firing %>% filter(cohort == 7) %>%
+  select(speed_score, joined_id, ramp_type, o_b_mod_coefs_speed, mean_firing_rate_of) %>%
+  #filter(ramp_type != "None") %>%
+  mutate(speed_score = unlist(speed_score),
+         joined_id = unlist(joined_id),
+         ramp_type = unlist(ramp_type)) %>%
+  ggplot(aes(speed_score, unlist(mean_firing_rate_of), colour = ramp_type)) +
+  geom_point() +
+  geom_hline(yintercept=10, linetype='dotted') +
+  labs(x = "Speed score", y = "Firing rate (Hz)") +
+  theme_classic() +
+  scale_colour_manual(values=c("#F04E4E","#19D3D6","#FF9719")) +
+  theme(text = element_text(size=20),
+        legend.title=element_blank())
+ggsave(file = "plots/speed_score_vs_firing_rate_by_ramp_type.png", width = 6, height = 3.5)
 
-standard_plot(data_coef_PSA_cue_pos)
 ```
 
 
 ### ----------------------------------------------------------------------------------------- ###
 
-_Figure 5C stats_
+Then, we want to see the proportion of spatial cells (grid, border etc) throughout types of ramp cells (++, -- etc)
 
-Compare coefficients for position, speed and acceleration from lmer model for neurons that maintain slope on beaconed and non beaconed
-
-
-1.focus on all position neurons (Figure 2) that have positive or negative slope (Figure 1)
+1. extract neurons ramps and position encoding, remove cells not identified in VR and open field 
 ```{r}
-position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA" )
+position_data <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
+  filter(cohort == 7) %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+  
+```
 
-position_ramp_cells <- subset(position_cells, lm_group_b == "Negative" | lm_group_b == "Positive")
+2. extract proportion of cells that meet each criteria
+```{r}
+pospos <- subset(position_data, track_category == "pospos")
+negneg <- subset(position_data, track_category == "negneg")
+posneg <- subset(position_data, track_category == "posneg")
+negpos <- subset(position_data, track_category == "negpos")
+posnon <- subset(position_data, track_category == "posnon")
+negnon <- subset(position_data, track_category == "negnon")
 
 ```
+
+3. plot proportion of positive and negative ramps that are grid/non-grid
+
+```{r}
+pospos_grid <- nrow(subset(pospos, classifier == "G"))/nrow(pospos)*100
+negneg_grid <- nrow(subset(negneg, classifier == "G"))/nrow(negneg)*100
+posneg_grid <- nrow(subset(posneg, classifier == "G"))/nrow(posneg)*100
+negpos_grid <- nrow(subset(negpos, classifier == "G"))/nrow(negpos)*100
+negnon_grid <- nrow(subset(negnon, classifier == "G"))/nrow(negnon)*100
+posnon_grid <- nrow(subset(posnon, classifier == "G"))/nrow(posnon)*100
+
+pospos_border <- nrow(subset(pospos, classifier == "B"))/nrow(pospos)*100
+negneg_border <- nrow(subset(negneg, classifier == "B"))/nrow(negneg)*100
+posneg_border <- nrow(subset(posneg, classifier == "B"))/nrow(posneg)*100
+negpos_border <- nrow(subset(negpos, classifier == "B"))/nrow(negpos)*100
+negnon_border <- nrow(subset(negnon, classifier == "B"))/nrow(negnon)*100
+posnon_border <- nrow(subset(posnon, classifier == "B"))/nrow(posnon)*100
+
+pospos_speed <- nrow(subset(pospos, classifier == "S"))/nrow(pospos)*100
+negneg_speed <- nrow(subset(negneg, classifier == "S"))/nrow(negneg)*100
+posneg_speed <- nrow(subset(posneg, classifier == "S"))/nrow(posneg)*100
+negpos_speed <- nrow(subset(negpos, classifier == "S"))/nrow(negpos)*100
+negnon_speed <- nrow(subset(negnon, classifier == "S"))/nrow(negnon)*100
+posnon_speed <- nrow(subset(posnon, classifier == "S"))/nrow(posnon)*100
+
+pospos_hd <- nrow(subset(pospos, classifier == "HD"))/nrow(pospos)*100
+negneg_hd <- nrow(subset(negneg, classifier == "HD"))/nrow(negneg)*100
+posneg_hd <- nrow(subset(posneg, classifier == "HD"))/nrow(posneg)*100
+negpos_hd <- nrow(subset(negpos, classifier == "HD"))/nrow(negpos)*100
+negnon_hd <- nrow(subset(negnon, classifier == "HD"))/nrow(negnon)*100
+posnon_hd <- nrow(subset(posnon, classifier == "HD"))/nrow(posnon)*100
+
+pospos_spatial <- nrow(subset(pospos, classifier == "NG"))/nrow(pospos)*100
+negneg_spatial <- nrow(subset(negneg, classifier == "NG"))/nrow(negneg)*100
+posneg_spatial <- nrow(subset(posneg, classifier == "NG"))/nrow(posneg)*100
+negpos_spatial <- nrow(subset(negpos, classifier == "NG"))/nrow(negpos)*100
+negnon_spatial <- nrow(subset(negnon, classifier == "NG"))/nrow(negnon)*100
+posnon_spatial <- nrow(subset(posnon, classifier == "NG"))/nrow(posnon)*100
+
+pospos_non <- nrow(subset(pospos, classifier == "NS" | classifier == "NaN"))/nrow(pospos)*100
+negneg_non <- nrow(subset(negneg, classifier == "NS" | classifier == "NaN"))/nrow(negneg)*100
+posneg_non <- nrow(subset(posneg, classifier == "NS" | classifier == "NaN"))/nrow(posneg)*100
+negpos_non <- nrow(subset(negpos, classifier == "NS" | classifier == "NaN"))/nrow(negpos)*100
+negnon_non <- nrow(subset(negnon, classifier == "NS" | classifier == "NaN"))/nrow(negnon)*100
+posnon_non <- nrow(subset(posnon, classifier == "NS" | classifier == "NaN"))/nrow(posnon)*100
+
+```
+
+4. Put into a tibble 
+```{r}
+proportions_mixed_ramps <- tibble(
+  perc=c(pospos_grid, negneg_grid, posneg_grid, negpos_grid, negnon_grid, posnon_grid, 
+         pospos_border, negneg_border, posneg_border, negpos_border, negnon_border, posnon_border,
+         pospos_speed, negneg_speed, posneg_speed, negpos_speed, negnon_speed, posnon_speed,
+         pospos_hd, negneg_hd, posneg_hd, negpos_hd, negnon_hd, posnon_hd,
+         pospos_spatial, negneg_spatial, posneg_spatial, negpos_spatial, negnon_spatial, posnon_spatial,
+         pospos_non, negneg_non, posneg_non, negpos_non, negnon_non, posnon_non), 
+  ramp_id= c("pospos",  "negneg", "posneg", "negpos", "negnon", "posnon","pospos", "negneg", "posneg", "negpos", "negnon", "posnon","pospos", "negneg", "posneg", "negpos", "negnon", "posnon","pospos", "negneg", "posneg", "negpos", "negnon", "posnon","pospos", "negneg", "posneg", "negpos", "negnon", "posnon","pospos", "negneg", "posneg", "negpos", "negnon", "posnon"),
+  ramp_type = c("Grid", "Grid", "Grid", "Grid", "Grid", "Grid", "Border", "Border", "Border", "Border", "Border", "Border", "Speed", "Speed", "Speed", "Speed", "Speed", "Speed", "Pure HD", "Pure HD", "Pure HD", "Pure HD", "Pure HD", "Pure HD", "Spatial", "Spatial", "Spatial", "Spatial", "Spatial", "Spatial", "Non-spatial", "Non-spatial", "Non-spatial", "Non-spatial", "Non-spatial", "Non-spatial"))
+```
+
+5. Plot bar graph of proportions
+```{r}
+ggplot(proportions_mixed_ramps, aes(x= ramp_id, y = perc, fill=factor(ramp_type))) +
+  geom_bar(stat="identity",width = 0.9, alpha = .9) +
+  labs(y = "Percent", x="") +
+  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+  #geom_text(aes(label = num), hjust = 1.5, vjust = 0.5, srt=90, size = 6, position = position_dodge(-0.5)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 70)) +
+  theme(axis.text.x=element_text(hjust=1)) +
+  theme(axis.text.x = element_text(size=19),
+        axis.text.y = element_text(size=20),
+        legend.position="right", 
+        legend.title = element_blank(),
+        text = element_text(size=19), 
+        legend.text=element_text(size=19), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+  ggsave(file = "plots/OF_Analysis_proportions_groups_allpositioncells.png", width = 7, height = 4)
+}
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+```{r}
+border_cells <- nrow(subset(spatial_firing, classifier == "B"))
+border <- subset(spatial_firing, classifier == "B")
+border_ramps <- subset(border, track_category_numeric != 0 & lm_group_b == "Positive" | lm_group_b == "Negative")
+border_p_ramps <- nrow(subset(border_ramps, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA"))
+
+grid_cells <- nrow(subset(spatial_firing, classifier == "G"))
+grid <- subset(spatial_firing, classifier == "G")
+grid_ramps <- subset(grid, track_category_numeric != 0 & lm_group_b == "Positive" | lm_group_b == "Negative")
+grid_p_ramps <- nrow(subset(grid_ramps, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA"))
+
+
+hd_cells <- nrow(subset(spatial_firing, classifier == "HD"))
+hd <- subset(spatial_firing, classifier == "HD")
+hd_ramps <- subset(hd, track_category_numeric != 0 & lm_group_b == "Positive" | lm_group_b == "Negative")
+hd_p_ramps <- nrow(subset(hd_ramps, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA"))
+
+```
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+Now we might want to see properties of spatial cells in the open field and VR. 
+
+First, lets ensure all the cells spatial information score is over the shuffled cut off
+
+1. Plot scatter plot of spatial threshold versus spatial information score
+```{r}
+
+ggplot() + 
+    geom_point(data=spatial_firing,
+               aes(x = as.numeric(unlist(spatial_threshold)), 
+                   y = as.numeric(unlist(spatial_information_score)), 
+                   color=factor(unlist(classifier2)))) +
+
+    coord_cartesian(ylim = c(0,1), xlim = c(0,0.25)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Shuffled data cutoff (bits/spikes)") +
+    ylab("Spatial Information (bits/spikes)") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/Spatialscore_vs_cutoff_groups.png", width = 4, height = 3.5) 
+}
+```
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+Now we might want to see if speed scores in the open field are related to the standard coefficient for speed from the linear mixed effect model in VR. 
+
+1. Plot scatter plot of speed score in open field versus speed coefficient in VR
+```{r}
+
+speed_data <- spatial_firing %>%
+  filter(final_model_o_b == "S" )
+
+ggplot() + 
+    geom_point(data=speed_data,
+               aes(x = as.numeric(unlist(speed_score)), 
+                   y = as.numeric(unlist(o_b_mod_coefs_speed)), 
+                   color=factor(unlist(classifier2)))) +
+
+    coord_cartesian(ylim = c(-0.9,0.9)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Speed score (of)") +
+    ylab("std coef (speed) (vr)") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/speedvr_vs_speedof_groups_speedcellsvr.png", width = 4, height = 3.5) 
+}
+```
+
+
+```{r}
+speed_data <- spatial_firing %>%
+  filter(speed_cell == 1 )
+
+ggplot() + 
+    geom_point(data=speed_data,
+               aes(x = as.numeric(unlist(speed_score)), 
+                   y = as.numeric(unlist(o_b_mod_coefs_speed)), 
+                   color=factor(unlist(classifier2)))) +
+
+    coord_cartesian(ylim = c(-0.9,0.9)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Speed score (of)") +
+    ylab("std coef (speed) (vr)") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/speedvr_vs_speedof_groups_speedcellsof.png",width = 4, height = 3.5) 
+}
+```
+
+
+
+```{r}
+position_data <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+  
+```
+
+```{r}
+ggplot() + 
+    geom_point(data=position_data,
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(speed_score)), 
+                   color=factor(unlist(classifier2)))) +
+    coord_cartesian(ylim = c(-0.5,0.7), xlim = c(-0.5,0.5)) +
+    geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    ylab("Speed score (of)") +
+    xlab("Outbound slope (Hz/cm)") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/speedvr_vs_slope_groups_position.png", width = 4, height = 3.5) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_point(data=position_data,
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(hd_score)), 
+                   color=factor(unlist(classifier2)))) +
+    coord_cartesian(ylim = c(0,1), xlim = c(-0.4,0.4)) +
+    #geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Outbound slope (Hz/cm)") +
+    ylab("HD score") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/HDscore_vs_slope_allcells_position.png", width = 4, height = 3.5) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_point(data=position_data,
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(border_score)), 
+                   color=factor(unlist(classifier2)))) +
+    coord_cartesian(ylim = c(-1,0.8), xlim = c(-0.4,0.4)) +
+    #geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Outbound slope (Hz/cm)") +
+    ylab("border score") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/borderscore_vs_slope_allcells_position.png", width = 4, height = 3.5) 
+}
+```
+
+
+
+
+2. Plot scatter plot
+```{r}
+ggplot() + 
+    geom_point(data=position_data,
+               aes(x = as.numeric(unlist(asr_b_o_rewarded_fit_slope)), 
+                   y = as.numeric(unlist(grid_score)), 
+                   color=factor(unlist(classifier2)))) +
+    coord_cartesian(ylim = c(-0.8,0.8), xlim = c(-0.4,0.4)) +
+    #geom_abline(intercept = 0, slope = 1, colour = "grey", linetype = "dashed") +
+    xlab("Outbound slope (Hz/cm)") +
+    ylab("Grid score") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/gridscore_vs_slope_allcells_position.png", width = 4, height = 3.5) 
+}
+```
+
+
+
+
+### ----------------------------------------------------------------------------------------- ###
+
+## firing rate properties
+
+### ----------------------------------------------------------------------------------------- ###
+
+
+# Label neurons as either excitatory or inhibitory
+
+1.
+```{r}
+label_cell_type <- function(mean_firing_rate_of){
+  if (is.na(mean_firing_rate_of)) {
+    return( "NaN" )  
+  } else if( as.numeric(mean_firing_rate_of) > 10) {
+    return( "Inhibitory" ) 
+  } else if( as.numeric(mean_firing_rate_of) < 10) {
+    return( "Excitatory" ) 
+  } else {
+    return("NaN")
+  }
+}
+
+```
+
+
+2. run on all cells
+```{r}
+spatial_firing <- spatial_firing %>%
+  mutate(cell_type = map(mean_firing_rate_of, label_cell_type))
+
+```
+
+
+
+```{r}
+position_data <- spatial_firing %>%
+  filter(lm_group_b == "Positive" | lm_group_b == "Negative")  %>% 
+  filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA"| final_model_o_b == "PSA")
+  
+```
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_jitter(data=position_data,
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(classifier2)))) +
+    #coord_cartesian(ylim = c(-1,0.8), xlim = c(-0.9,0.9)) +
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allpositioncells.png", width = 4, height = 3.5) 
+}
+```
+
+```{r}
+position_data$classifier2 <- as.character(position_data$classifier2)
+
+ggplot() + 
+    geom_jitter(data=subset(position_data, track_category != "None"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)),
+                   color=factor(unlist(classifier2)))) +
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    facet_wrap(~ classifier2) +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allcells_facet_groupbyclassifier.png", width = 7, height = 5) 
+}
+```
+
+
+```{r}
+data <- spatial_firing %>%
+  dplyr::select(track_category, classifier, cell_type, Mouse, Day) %>%
+  filter(cell_type != "NaN") %>%
+  dplyr::group_by(Mouse,  classifier, cell_type, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = round(n / sum(n), 2)) %>%
+  group_by(classifier,cell_type) %>%
+  summarise(avg = mean(proportion), sd = std.error(proportion))
+
+#data$lm_group_b <- as.character(data$lm_group_b)
+```
+
+
+`
+
+2. Plot scatter plot
+```{r}
+ggplot() + 
+    geom_jitter(data=spatial_firing,
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(cell_type)))) +
+    #coord_cartesian(ylim = c(-1,0.8), xlim = c(-0.9,0.9)) +
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allcells_test.png", width = 4, height = 3.5) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+ggplot() + 
+    geom_jitter(data=position_data,
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(cell_type)))) +
+    #coord_cartesian(ylim = c(-1,0.8), xlim = c(-0.9,0.9)) +
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    theme_classic() +
+    scale_color_manual(values=c("brown2", "darkturquoise", "darkorange","blueviolet", "blue3", "brown2")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_positioncells_test.png", width = 4, height = 3.5) 
+}
+```
+
+```{r}
+#proportion
+df <- position_data %>%
+  dplyr::select(lm_group_b, cell_type, Mouse, Day) %>%
+  filter(cell_type != "NaN", lm_group_b == "Positive") %>%
+  dplyr::group_by(cell_type, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = round(n / sum(n), 2))
+  
+
+```
+
+
+2. Plot scatter plot
+```{r}
+
+ggplot() + 
+    geom_jitter(data=subset(position_data, track_category == "pospos" | track_category == "negneg"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(lm_group_b))), alpha=0.8) +
+    geom_jitter(data=subset(position_data, track_category == "posneg" | track_category == "negpos"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(lm_group_b))), shape=2, alpha=0.8) +
+    geom_jitter(data=subset(position_data, track_category == "posnon" | track_category == "negnon"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)), 
+                   color=factor(unlist(lm_group_b))), shape=3, alpha=0.8) +  
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
+    theme(axis.text.x = element_text(size=18),
+          axis.text.y = element_text(size=18),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0))) 
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allrampcells.png",width = 4, height = 3.5) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+position_data$track_category <- as.character(position_data$track_category)
+
+ggplot() + 
+    geom_jitter(data=subset(position_data, track_category != "None"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(spike_width)),
+                   color=factor(unlist(lm_group_b)))) +
+    ylab("Spike half width (ms)") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    facet_wrap(~ track_category) +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allrampcells_facet.png", width = 7, height = 5) 
+}
+```
+
+```{r}
+data <- position_data %>%
+  dplyr::select(track_category, cell_type, Mouse) %>%
+  filter(cell_type != "NaN", track_category != "None") %>%
+  dplyr::group_by( Mouse, track_category, cell_type, .drop=FALSE) %>%
+  dplyr::summarise(n = n()) %>%
+  dplyr::mutate(proportion = round(n / sum(n), 2)) %>%
+  group_by(track_category,cell_type) %>%
+  summarise(avg = mean(proportion), sd = std.error(proportion))
+
+#data$lm_group_b <- as.character(data$lm_group_b)
+```
+
+
+
+
+2. Plot scatter plot
+```{r}
+  ggplot(data=subset(spatial_firing,lm_group_b == "Unclassified"), aes(x = unlist(mean_firing_rate_of), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FR_dist_nonrampcells.png", width = 2.5, height = 2) 
+}
+```
+
+
+2. Plot scatter plot
+```{r}
+spatial_firing$track_category <- as.character(spatial_firing$track_category)
+
+  ggplot(data=subset(spatial_firing,lm_group_b == "Unclassified" & lm_group_b_h == "Unclassified"), aes(x = unlist(mean_firing_rate), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  xlab("Mean firing rate (Hz)") +
+  facet_wrap(~ track_category) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=17), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRvr_dist_nonrampcells_facet.png",  width = 2.5, height = 2) 
+}
+```
+
+
+
+2. Plot scatter plot
+```{r}
+position_data$track_category <- as.character(position_data$track_category)
+
+  ggplot(data=subset(position_data,track_category != "None"), aes(x = unlist(mean_firing_rate), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  xlab("Mean firing rate (Hz)") +
+  facet_wrap(~ track_category) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=17), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRvr_dist_allrampcells_facet.png",  width = 7, height = 5) 
+}
+```
+
+
+
+2. Plot scatter plot
+```{r}
+
+ggplot(data=subset(spatial_firing,lm_group_b == "Unclassified"), aes(x = unlist(mean_firing_rate), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRvr_dist_nonrampcells.png", width = 2.5, height = 2) 
+}
+```
+
+
+```{r}
+
+ggplot(data=position_data, aes(x = unlist(mean_firing_rate_of), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80), ylim=c(0,100)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FR_dist_allrampcells.png",width = 2.5, height = 2) 
+}
+```
+
+
+
+```{r}
+
+ggplot(data=subset(position_data,track_category != "None"), aes(x = unlist(mean_firing_rate_of), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  xlab("Mean firing rate (Hz) (open field)") +
+  facet_wrap(~ track_category) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=16),
+        axis.text.y = element_text(size=16),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=17), 
+        legend.text=element_text(size=16), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+if (save_figures == 1) {
+ ggsave(file = "plots/FR_dist_allrampcells_facet.png", width = 2.5, height = 2) 
+}
+```
+
+
+```{r}
+
+ggplot(data=position_data, aes(x = unlist(mean_firing_rate), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim=c(0,80)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRvr_dist_allrampcells.png", width = 2.5, height = 2) 
+}
+
+```
+
+
+
+```{r}
+
+ggplot(data=subset(spatial_firing,lm_group_b == "Unclassified"), aes(x = (unlist(mean_firing_rate)-unlist(mean_firing_rate_of)), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim = c(-50,50)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRdiff_dist_nonrampcells.png", width = 2.5, height = 2) 
+}
+
+```
+
+
+```{r}
+
+ggplot(data=position_data, aes(x = (unlist(mean_firing_rate)-unlist(mean_firing_rate_of)), fill=as.factor(unlist(classifier2)))) +
+  geom_histogram(aes(y=..count..)) +
+  coord_cartesian(xlim = c(-50,50)) +
+  scale_fill_manual(values=c("brown2", "darkturquoise","blueviolet","darkorange", "blue3", "brown2")) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  labs(y="Count", x="") +
+  theme_classic() +
+  theme(axis.text.x = element_text(size=13),
+        axis.text.y = element_text(size=13),
+        legend.position="bottom", 
+        legend.title = element_blank(),
+        text = element_text(size=13), 
+        legend.text=element_text(size=13), 
+        axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/FRdiff_dist_allrampcells.png", width = 2.5, height = 2) 
+}
+
+```
+
+
+
+# Does ramp score / slope correlate with mean firing rate?
+
+We consider this question for neurons with negative ramp slopes before the reward zone as a reasonable proportion have mean firing rates > 10 Hz.
+```{r}
+ggplot() + 
+    geom_jitter(data=subset(position_data, track_category != "None"),
+               aes(x = as.numeric(unlist(mean_firing_rate_of)), 
+                   y = as.numeric(unlist(asr_b_o_rewarded_fit_slope)),
+                   color=factor(unlist(lm_group_b)))) +
+    ylab("Slope") +
+    xlab("Mean firing rate (Hz)") +
+    geom_vline(xintercept = 10, color = "grey30", linetype = "longdash") +
+    facet_wrap(~ track_category) +
+    theme_classic() +
+    scale_color_manual(values=c("violetred2", "chartreuse3", "grey", "grey6")) +
+    theme(axis.text.x = element_text(size=16),
+          axis.text.y = element_text(size=16),
+          legend.position="bottom", 
+          legend.title = element_blank(),
+          text = element_text(size=17), 
+          legend.text=element_text(size=16), 
+          axis.title.y = element_text(margin = margin(t = 0, r = 20, b = 0, l = 0)))
+
+if (save_figures == 1) {
+ ggsave(file = "plots/firing_properties_allrampcells_facet.png", width = 7, height = 5) 
+}
+```
+
+
+
+
+
+
+
+## Save output to manually find examples
 
 2. take only columns we need for the rest of the analysis
 ```{r}
-spatial_firing_save <- select(position_ramp_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
-  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b)) %>%
+spatial_firing_save <- select(spatial_firing, session_id, cluster_id, unique_id, classifier2, hd_score,border_score,grid_score, speed_score,spatial_information_score, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
+  unnest(cols = c(unique_id, classifier2, hd_score,border_score,grid_score, speed_score, spatial_information_score, o_b_mod_coefs_accel, final_model_o_b, lm_group_b)) %>%
   as.tibble()
 
 ```
 
-3. put data into a tibble for plotting
+3. save to csv file _this is for matching to plots from python_
 ```{r}
-data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
-                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
-                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save$final_model_o_b),
-                              as.character(spatial_firing_save$final_model_o_b),
-                              as.character(spatial_firing_save$final_model_o_b)), 
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save)),
-                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
-```
-
-4. run anova
-```{r}
-one.way <- aov(coef ~ coef_type, data = data_coef)
-
-summary(one.way)
-```
-
-5. Post hoc Tukey's test
-```{r}
-tukey.test <- TukeyHSD(one.way)
-tukey.test$coef_type
-```
-
-
-same as above but split by positive or negative slope
-1.focus on all position neurons (Figure 2)
-```{r}
-position_cells <- subset(spatial_firing, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-2. Split by positive or negative slope (Figure 1)
-```{r}
-pos_position_cells <- subset(spatial_firing, lm_group_b == "Positive")
-neg_position_cells <- subset(spatial_firing, lm_group_b == "Negative")
-
-```
-
-3. take only columns we need for the rest of the analysis
-```{r}
-spatial_firing_save <- select(pos_position_cells, session_id, cluster_id, unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel, final_model_o_b, lm_group_b) %>%
-  unnest(cols = c(unique_id, o_b_mod_coefs_pos, o_b_mod_coefs_speed, o_b_mod_coefs_accel,
-    final_model_o_b, lm_group_b)) %>%
-  as.tibble()
-
-```
-
-4. put data into a tibble for plotting
-```{r}
-data_coef <- tibble(session_id = rep(unlist(spatial_firing_save$unique_id), times=3), 
-                    cluster_id = rep(spatial_firing_save$cluster_id, times=3), 
-                    coef = c(as.character(spatial_firing_save$o_b_mod_coefs_pos),
-                             as.character(spatial_firing_save$o_b_mod_coefs_speed),
-                             as.character(spatial_firing_save$o_b_mod_coefs_accel)),
-                    group = c(as.character(spatial_firing_save$final_model_o_b),
-                              as.character(spatial_firing_save$final_model_o_b),
-                              as.character(spatial_firing_save$final_model_o_b)), 
-                    coef_type = rep(c("P", "S", "A"),
-                                    each = nrow(spatial_firing_save)),
-                    lm_result = rep(as.character(spatial_firing_save$lm_group_b), times=3))
-```
-
-5. run anova
-```{r}
-one.way <- aov(coef ~ coef_type, data = data_coef)
-
-summary(one.way)
-```
-
-6. Post hoc Tukey's test
-```{r}
-tukey.test <- TukeyHSD(one.way)
-tukey.test$coef_type
-```
-
-
-
-
-
-
-### ------------------------------------------------------------------------------------------------------------------- ###
-
-We want to know about whether the slope classification of neurons on beaconed trials is maintained on probe trials.
-
-We first ask this question for all neurons whose classification is independent of the reward zone cue.
-
-1. Split by position neurons (Figure 2)
-```{r}
-position_cells <- subset(spatial_firing_high , final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
-```
-
-2. Select cells that have slopes on both the beaconed and non-beaconed (Figure 1)
-```{r}
-pi_data <- subset(spatial_firing_high, lm_group_b == "Positive" | lm_group_b == "Negative")
-```
-
-The groups we want to consider are +/+(O), +/+(C), +/-, -/-(O), -/-(C) and -/+. In addition for probe trials there will be a group 'other' for activity that is no longer in one of these categories.
-
-3. Split by linear model result (figure 2) in outbound and homebound region for beaconed trials
-```{r}
-pospos <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Positive")
-posneg <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Negative")
-negpos <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Positive")
-negneg <-subset(pi_data, lm_group_b == "Negative" & lm_group_b_h == "Negative")
-posnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
-negnon <-subset(pi_data, lm_group_b == "Positive" & lm_group_b_h == "Unclassified")
-
-```
-
-# test
-```{r}
-x <- (nrow(pospos) + nrow(negneg) + nrow(posneg) + (nrow(negpos) +nrow(posnon) + nrow(negnon)))
-```
-
-4. Split by linear model result (figure 1) in outbound and homebound region for beaconed trials
-```{r}
-# Beaconed: pospos
-# stays the same
-pospos_pospos <-nrow(subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-# homebound changes
-pospos_posneg <-nrow(subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-pospos_posnon <-nrow(subset(pospos, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-
-# outbound changes
-pospos_negpos <-nrow(subset(pospos, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-pospos_negnon <-nrow(subset(pospos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-pospos_negneg <-nrow(subset(pospos, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-
-# Beaconed: posneg
-posneg_posneg <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-
-posneg_posnon <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-posneg_pospos <-nrow(subset(posneg, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-posneg_negpos <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-posneg_negnon <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-posneg_negneg <-nrow(subset(posneg, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-
-# Beaconed: negneg
-# stays the same
-negneg_negneg <-nrow(subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-# homebound changes
-negneg_negpos <-nrow(subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-negneg_negnon <-nrow(subset(negneg, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-
-# outbound changes
-negneg_posneg <-nrow(subset(negneg, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negneg_posnon <-nrow(subset(negneg, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negneg_pospos <-nrow(subset(negneg, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-
-# Beaconed: negpos
-# stays the same
-negpos_negpos <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-
-# homebound changes
-negpos_negnon <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negpos_negneg <-nrow(subset(negpos, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-# Outbound changes
-negpos_posneg <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negpos_posnon <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negpos_pospos <-nrow(subset(negpos, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-
-# Beaconed: posnon
-posnon_posneg <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-
-posnon_posnon <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-posnon_pospos <-nrow(subset(posnon, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-posnon_negpos <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-posnon_negnon <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-posnon_negneg <-nrow(subset(posnon, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-# Beaconed: negnon
-# stays the same
-negnon_negpos <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Positive"))
-
-# homebound changes
-negnon_negnon <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Unclassified"))
-negnon_negneg <-nrow(subset(negnon, lm_group_p == "Negative" & lm_group_p_h == "Negative"))
-
-# Outbound changes
-negnon_posneg <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Negative"))
-negnon_posnon <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Unclassified"))
-negnon_pospos <-nrow(subset(negnon, lm_group_p == "Positive" & lm_group_p_h == "Positive"))
-
-```
-
-
-5. put into tibble
-```{r}
-
-data_long <-
-  tibble(
-    value = c(
-    
-      posneg_posnon,
-
-      pospos_posnon
-    ),
-    
-    source = c(
-      "+ -",
-
-      "+ +"
-    ),
-    
-    target = c(
-      " + non",
-      " + non"
-    )
-  )
-
-
-data_long <- data_long %>%
-  filter(value > 0)                           
-                    
-```
-
-
-```{r}
-# From these flows we need to create a node data frame: it lists every entities involved in the flow
-nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
- 
-```
-
-```{r}
-# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
-data_long$IDsource=match(data_long$source, nodes$name)-1 
-data_long$IDtarget=match(data_long$target, nodes$name)-1
-```
-
-```{r}
-# prepare colour scale
-ColourScal ='d3.scaleOrdinal() .range(["#66cd00","#EE3A8C", "#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
-
-# Make the Network
-sankeyNetwork(Links = data_long, Nodes = nodes,
-              Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", LinkGroup='source',
-              sinksRight=FALSE, colourScale=ColourScal,
-              nodeWidth=40, fontSize=13, nodePadding=20)
-
-if (save_figures == 1) {
-  ggsave(file = "plots/model_movement.png", width = 24, height = 18)
-}
-```
-
-
-
-
-
-```{r}
-
-data_long <-
-  tibble(
-    value = c(
-    
-      negpos_negnon,
-
-      negneg_negnon
-    ),
-    
-    source = c(
-
-      "- +",
-
-      "- -"
-    ),
-    
-    target = c(
-      " - non",
-      " - non"
-    )
-  )
-
-
-data_long <- data_long %>%
-  filter(value > 0)                           
-                    
-```
-
-
-```{r}
-# From these flows we need to create a node data frame: it lists every entities involved in the flow
-nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
- 
-```
-
-```{r}
-# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
-data_long$IDsource=match(data_long$source, nodes$name)-1 
-data_long$IDtarget=match(data_long$target, nodes$name)-1
-```
-
-```{r}
-# prepare colour scale
-ColourScal ='d3.scaleOrdinal() .range(["#EE3A8C", "#6DCD59FF","#35B779FF","#1F9E89FF","#26828EFF","#31688EFF","#3E4A89FF","#482878FF","#440154FF"])'
-
-# Make the Network
-sankeyNetwork(Links = data_long, Nodes = nodes,
-              Source = "IDsource", Target = "IDtarget",
-              Value = "value", NodeID = "name", LinkGroup='source',
-              sinksRight=FALSE, colourScale=ColourScal,
-              nodeWidth=40, fontSize=13, nodePadding=20)
-
-if (save_figures == 1) {
-  ggsave(file = "plots/model_movement.png", width = 24, height = 18)
-}
+write_csv2(spatial_firing_save, "all_results_openfield_matching2.csv")
 ```
 

@@ -55,35 +55,6 @@ spatial_firing <- spatial_firing %>%
   mutate(asr_b_o_rewarded_fit = pmap(list(asr_b_rewarded, 30, 90), lm_tidy_helper),
          asr_nb_o_rewarded_fit = pmap(list(asr_nb_rewarded, 30, 90), lm_tidy_helper),
          asr_p_o_rewarded_fit = pmap(list(asr_p_rewarded, 30, 90), lm_tidy_helper))
-# m is a matrix
-# r.squared, pos = 1
-# p.value, pos = 2
-# intercept, pos = 3
-# slope, pos = 4
-
-# Send asr_b_o_rewarded_fit
-# fit_vals <- function(m) {
-#   vals <- mapply(function(x) x[[1]], m)
-#   df <- tibble(r.squared = vals[c(TRUE, rep(FALSE, 3))],
-#                p.value = vals[c(FALSE, TRUE, rep(FALSE, 2))],
-#                intercept = vals[c(rep(FALSE, 2), TRUE, FALSE)],
-#                slope = vals[c(rep(FALSE, 3), TRUE)])
-# }
-# 
-# spatial_firing <- spatial_firing %>%
-#   select(-contains('asr_b_o_rewarded_fit_')) %>%
-#   select(-contains('asr_nb_o_rewarded_fit_')) %>%
-#   select(-contains('asr_p_o_rewarded_fit_')) 
-#    
-# spatial_firing$asr_b_o_rewarded_fit <-
-#   mapply(lm_tidy_helper, spatial_firing$asr_b_rewarded, 30, 90) %>%
-#   fit_vals()
-# spatial_firing$asr_nb_o_rewarded_fit <-
-#   mapply(lm_tidy_helper, spatial_firing$asr_nb_rewarded, 30, 90) %>%
-#   fit_vals()
-# spatial_firing$asr_p_o_rewarded_fit <-
-#   mapply(lm_tidy_helper, spatial_firing$asr_p_rewarded, 30, 90) %>%
-#   fit_vals()
 
 spatial_firing <- spatial_firing %>%
   unnest_wider(asr_b_o_rewarded_fit, names_sep = "_", names_repair = "universal") %>%
@@ -174,9 +145,6 @@ spatial_firing <- spatial_firing %>%
 ```
 
 
-removed:
-  select(-contains('shuffle_min_slope_')) %>%
-  select(-contains('shuffle_max_slope_')) %>%
   
   
 We also want to extract slopes, r2 and pvalues of the 1000 shuffles for each neuron
