@@ -83,9 +83,6 @@ spatial_firing <- spatial_firing  %>%
 
 ***Warning***
 Spatial firing is a very large object. Even running str takes many minutes.
-Look at how we can fix this?
-
-This code chunk can be used to find out about spatial firing
 ```{r}
 options(max.print = 1000)
 dim(spatial_firing)

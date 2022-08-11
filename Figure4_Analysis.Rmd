@@ -324,15 +324,9 @@ spatial_firing %>%
 ### -------------------------------------------------------------------------------------------------------------------------------------------------- ###
 
 
-## Plot average firing rates for neurons with firing rate profile (e.g. ++, +-, etc) that doesn't change when the reward zone cues are removed.
-
-
+## Plot average firing rates for neurons with different firing rate profiles (e.g. ++, +-, etc).
 
 ```{r}
-# all neurons negative and positive
-#(ci_plots <- comp_beacon_probe_rate_plots(spatial_firing_probe_only))
-
-
 # all P cells (used for the manuscript)
 spatial_firing_probe_only %>% filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% comp_beacon_probe_rate_plots
 spatial_firing_probe_only_P <- filter(spatial_firing_probe_only, final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA")
@@ -351,10 +345,6 @@ nrow(filter(spatial_firing_probe_only, lm_group_b == "Negative" & lm_group_b_h =
 nrow(filter(spatial_firing_probe_only, lm_group_b == "Negative" & lm_group_b_h == "Positive"))
 nrow(filter(spatial_firing_probe_only, lm_group_b == "Positive" & lm_group_b_h == "Positive"))
 nrow(filter(spatial_firing_probe_only, lm_group_b == "Positive" & lm_group_b_h == "Negative"))
-
-
-# Look at non-beaconed trials too
-spatial_firing_probe_only %>% filter(final_model_o_b == "P" | final_model_o_b == "PS" | final_model_o_b == "PA" | final_model_o_b == "PSA") %>% comp_beacon_probe_rate_plots_3
 
 
 # only P cells
@@ -422,62 +412,6 @@ We want to know about whether the slope classification of neurons on beaconed tr
 ```
 
 
-### ------------------------------------------------------------------------------------------ ### 
-
-## Plot coefficients for Figure 4I
-
-This needs as input columnms containing standardized coefficients (coef) and the coefficient type (coef_type). This data is in spatial_firing but not in an appropriate tidy format.
-
-Fit GLMER to probe trial data.
-Threshold is set to > 10 probe trials.
-```{r}
-# df<-data.frame()
-# for (i in 1:nrow(spatial_firing)) {
-#   print(as.character(i))
-#   spatial_firing_i = spatial_firing[i,]
-#   o_mm_b_p <- mm_fit_function(spatial_firing_i$spikes_in_time[[1]], TT = 2, thresh = 10)
-#   o_mm_p_b_p <- mm_pvalues(o_mm_b_p, spatial_firing_i$session_id[1])
-#   o_b_mod_coefs_p <- std_coef(o_mm_b_p)
-# 
-#   spatial_firing_i$o_b_p_mod_coefs_pos[1] <- as.double(o_b_mod_coefs_p[1])
-#   spatial_firing_i$o_b_p_mod_coefs_speed[1] <- as.double(o_b_mod_coefs_p[2])
-#   spatial_firing_i$o_b_p_mod_coefs_accel[1] <- as.double(o_b_mod_coefs_p[3])
-#   spatial_firing_i$o_mm_p_p_b_pos[1] <- as.double(o_mm_p_b_p[1])
-#   spatial_firing_i$o_mm_p_p_b_speed[1] <- as.double(o_mm_p_b_p[2])
-#   spatial_firing_i$o_mm_p_p_b_accel[1] <- as.double(o_mm_p_b_p[3])
-#   df<-bind_rows(df, spatial_firing_i)
-# }
-# spatial_firing <- df
-# rm(df, spatial_firing_i)
-```
-
-
-```{r}
-# this cell requires data_coef made in Figure 2 Analysis Rmd
-# data_coef_pos_allp <- data_coef %>%
-#   subset(group == "P" | group == "PS" | group == "PSA" | group == "PA") %>%
-#   subset(lm_result == "Positive")
-# 
-# (pos_SA_coef_plot <- standard_plot(data_coef_pos_allp))
-# if (save_figures == 1) {
-#   ggsave(file = "plots/CoefficientValues_PositiveAllPositioncells.png", width = 3, height = 2.5)
-# }
-```
-
-
-```{r}
-# data_coef_neg_allp <- data_coef %>%
-#   subset(group == "P" | group == "PS" | group == "PSA" | group == "PA") %>%
-#   subset(lm_result == "Negative")
-# 
-# (neg_SA_coef_plot <- standard_plot(data_coef_neg_allp))
-# if (save_figures == 1) {
-#   ggsave(file = "plots/CoefficientValues_NegativeAllPositioncells.png", width = 3, height = 2.5)
-# }
-```
-
-
-
 
 ### ------------------------------------------------------------------------------------------ ### 
 
@@ -535,10 +469,3 @@ stops_plot <-
   
 ```
 
-```{r}
-spatial_firing_probe_positional <- select(spatial_firing_probe_positional, session_id, cluster_id, unique_id, final_model_o_b, lm_group_b, lm_group_nb, lm_group_p) %>%
-  unnest(cols = c(unique_id,final_model_o_b, lm_group_b, lm_group_nb, lm_group_p)) %>%
-  as.tibble()
-spatial_firing_probe_positional$cluster_id <- as.numeric(spatial_firing_probe_positional$cluster_id)
-write.table(spatial_firing_probe_positional, "data_out/positional_cells_with_probe_data.csv", quote=FALSE, sep="\t")
-```
