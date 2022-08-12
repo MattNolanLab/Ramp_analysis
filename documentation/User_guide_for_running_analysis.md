@@ -28,6 +28,12 @@ Note : Harry also has a version of this
 4. If necessary (i.e. if the data is needed), paired Open field recordings are sorted together with the virtual reality recordings and dataframes from paired open field recordings
 5. _You now have a single dataframe per cohort of mice/per mouse with all the recordings days in it and you want to analyse the data further._
 
+## Steps to reproduce analysis
+1. follow guide for pre-processing Open Ephys recordings in Python:
+https://github.com/MattNolanLab/Ramp_analysis/blob/master/documentation/Rerun_manuscript_dataset_inPython.md
+2. Follow guide for producing figures and stats in R:
+https://github.com/MattNolanLab/Ramp_analysis/blob/master/documentation/Rerun_Manuscript_Dataset_inR.md
+
 
 ## How to contribute
 Please submit an issue to discuss.
