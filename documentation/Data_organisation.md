@@ -19,30 +19,27 @@ Rewarded trials : trials in which the animal has stopped successfully in the rew
 The 'clusters' data frame contains data for each cluster and their spatial firing. Each row is a cluster. The columns are organised as follows:
 spatial_firing (this is the name of the df in the main code)
 
-session_id : name of main recording folder (example: M5_2018-03-06_15-34-44)
-
-Mouse : id of the mouse (e.g. M3)
-Day : Recording day (e.g. D4)
-Day_numeric : Recording day (e.g. 4)
-cluster_id : id of cluster within session
-mean_firing_rate : total number of spikes / total time
-cohort : cohort recorded from (e.g. 7)
-brain_region : region of the brain tetrodes were identified in (MEC : medial entorhinal cortex; PS : pre or parasubiculum; VC : visual cortex or RH: retrohippocampus)
-max_trial_number : max number of trials within the session
-firing_times : array of all firing event times that belong to cluster from the virtual reality session (in sampling points - 30kHz)
-x_position_cm : array of x coordinates of position of animal in virtual track in cm for each firing event, synchronised with the ephys data 
-trial_number : array of the current trial number for each firing event, synchronised with the ephys data
-trial_type : arrays of the current trial type (beaconed, non beaconed, probe), for each firing event, synchronised with the ephys data
-spike_rate_in_time : nested list of 5 lists, each list has shape of length of recording in ms / 100.  [ [spike rate] [speed] [position] [trial numbers] [trial type] ]
-
-spikes_in_time : nested list of 6 lists, each list has shape of length of recording in ms / 100. Only includes data for rewarded trials. Speed outliers are removed (> 3 SD from mean). Rates and speed data is convolved (2cm, 2 SD). [ [spike rate] [speed] [position] [acceleration] [trial numbers] [trial type] ]
- 
-Rates_averaged_rewarded_b : binned data array for each cluster with firing rate maps averaged over beaconed trials 
-Rates_averaged_rewarded_nb : binned data array for each cluster with firing rate maps averaged over non-beaconed trials 
-Rates_averaged_rewarded_p : binned data array for each cluster with firing rate maps averaged over probe trials 
-stop_location_cm : array of positions along the track in cm which the animal has stopped (speed < 4.7 cm/s* *depending on the stage of experiment). 
-stop_trial_numbers : array of trial numbers for each stop along the track (1 - max trial number). 
-rewarded_stop_locations : array of positions along the track in cm which the animal has stopped (speed < 4.7 cm/s* *depending on stage of experiment). Only includes rewarded trials.
-rewarded_trial_numbers : array of trial numbers for each stop along the track. Only includes rewarded trials.
+- session_id : name of main recording folder (example: M5_2018-03-06_15-34-44)
+- Mouse : id of the mouse (e.g. M3)
+- Day : Recording day (e.g. D4)
+- Day_numeric : Recording day (e.g. 4)
+- cluster_id : id of cluster within session
+- mean_firing_rate : total number of spikes / total time
+- cohort : cohort recorded from (e.g. 7)
+- brain_region : region of the brain tetrodes were identified in (MEC : medial entorhinal cortex; PS : pre or parasubiculum; VC : visual cortex or RH: retrohippocampus)
+- max_trial_number : max number of trials within the session
+- firing_times : array of all firing event times that belong to cluster from the virtual reality session (in sampling points - 30kHz)
+- x_position_cm : array of x coordinates of position of animal in virtual track in cm for each firing event, synchronised with the ephys data 
+- trial_number : array of the current trial number for each firing event, synchronised with the ephys data
+- trial_type : arrays of the current trial type (beaconed, non beaconed, probe), for each firing event, synchronised with the ephys data
+- spike_rate_on_trials_smoothed : nested list of 3 lists, each list has shape of length of recording in 1 cm bin lengths. [[spike_rate] [trial_numbers] [trial_types]] (Note: At this stage in the analysis, no data is not smoothed regardless of the poor naming of the variable)
+- spikes_in_time : nested list of 6 lists, each list has shape of length of recording in ms / 100. Only includes data for rewarded trials. Speed outliers are removed (> 3 SD from mean). [ [spike rate] [speed] [position] [acceleration] [trial numbers] [trial type] ]
+- Rates_averaged_rewarded_b : binned data array for each cluster with firing rate maps averaged over beaconed trials 
+- Rates_averaged_rewarded_nb : binned data array for each cluster with firing rate maps averaged over non-beaconed trials 
+- Rates_averaged_rewarded_p : binned data array for each cluster with firing rate maps averaged over probe trials 
+- stop_location_cm : array of positions along the track in cm which the animal has stopped (speed < 4.7 cm/s* *depending on the stage of experiment). 
+- stop_trial_numbers : array of trial numbers for each stop along the track (1 - max trial number). 
+- rewarded_stop_locations : array of positions along the track in cm which the animal has stopped (speed < 4.7 cm/s* *depending on stage of experiment). Only includes rewarded trials.
+- rewarded_trial_numbers : array of trial numbers for each stop along the track. Only includes rewarded trials.
 
 
