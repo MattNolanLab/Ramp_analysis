@@ -1,11 +1,6 @@
 
 # How to rerun data for the Tennant et al., 2022 Ramp cell manuscript (R pipeline)
 
-## Overview
-This repository was designed to carry out analysis of in vivo electrophysiology recordings from the virtual reality for the Ramp manuscript (Tennant et al., 2022). The aim is to classify neurons based on their firing activity along the linear track of the virtual reality task.
-
-Specifically, this analyses determines whether firing rates of individual neurons show 'ramping' activity (linear increases or decreases in activity) within specific regions of the track (0-60 cm and 80 - 140 cm), whether firing rate can be explained best by position, speed or acceleration (or a combination), if ramping activity is stable across trial types (beaconed, non-beaconed, probe) and outcomes (hit, run through, try). Subsequent analyses in generates the plots used in figures and performs statistical analysis on processed datasets. 
-
 
 ## What this analysis pipeline does:
 1. Runs a linear model on average firing rates binned in space for each neuron to determine if there are linear increases or decreases in activity with position.
