@@ -18,7 +18,9 @@ Rewarded trials : trials in which the animal has stopped successfully in the rew
 ## Organisation of dataframes
 The 'clusters' data frame contains data for each cluster and their spatial firing. Each row is a cluster. The columns are organised as follows:
 spatial_firing (this is the name of the df in the main code)
+
 session_id : name of main recording folder (example: M5_2018-03-06_15-34-44)
+
 Mouse : id of the mouse (e.g. M3)
 Day : Recording day (e.g. D4)
 Day_numeric : Recording day (e.g. 4)
