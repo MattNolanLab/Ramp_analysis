@@ -25,6 +25,11 @@ Additionally
 
 
 ## Setting up
+Note: Concatenated spatial firing and shuffle dataframes are already provided for users looking to reproduce the analysis, therefore Integrated_ramp_analysis/Concatenate_spatial_firing.py, Integrated_ramp_analysis/shuffle_analysis.py, Integrated_ramp_analysis/Concatenate_vr_shuffle_analysis.py python scipts are not possible without the large recording files (not provided).
+
+1. Navigate to Integrated_ramp_analyis/Python_PostSorting/Control_PostSorting_Analysis, ensure load and save paths for the cohort spatial firing concatenated dataframes, ramp score dataframe, tetrode location dataframe, criteria day dataframe and the plots save path all correspond to where you want to load and save data from. 
+2. Navigate to Integrated_ramp_analyis/Python_PostSorting/Control_PostSorting_Analysis_of, ensure load and save paths for the cohort open field spatial firing concatenated correspond to where you want to load and save data from
+3. Navigate to Integrated_ramp_analyis/Python_PostSorting/Match_Session_and_Cluster, ensure load and save paths for the cohort open field spatial firing concatenated correspond to where you want to load and save data from (only the cohort 7 dataframe is appended with open field metrics)
 
 ## Steps to run RampAnalysis (Python pipeline)
 
