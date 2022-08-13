@@ -46,6 +46,6 @@ Run in this order:
 Once all scripts are run, you can begin running the R scripts following:
 https://github.com/MattNolanLab/Ramp_analysis/blob/master/documentation/Rerun_Manuscript_Dataset_inR.md
 
-
+Some plots and statistics were generated with Python rather than R, these scripts are found within Integrated_ramp_analysis/
 ## How to contribute
 Please submit an issue to discuss.
