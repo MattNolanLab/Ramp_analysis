@@ -1,0 +1,229 @@
+### Import
+
+```{r, message=FALSE, include=FALSE}
+library(rstatix)
+library(feather)
+library(tidyverse)
+library(rjson)
+library(reticulate)
+library(ggeffects)
+library(broomExtra)
+library(modelr)
+library(ggpubr)
+library(knitr)
+library(kableExtra)
+library(lme4)
+library(progress)
+library(glue)
+
+knitr::opts_chunk$set(
+  fig.show = "hold"
+)
+
+```
+
+### Read data from python
+
+```{r}
+use_condaenv("glm_mec_model")
+pd <- import("pandas")
+pickle <-import("pickle")
+cohort = 2 # 2,3,4,5,7
+file <- glue("/mnt/datastore/Teris/CurrentBiology_2022/cohort", cohort, "_df4r.pkl")
+df <- pd$read_pickle(file)
+df <- as_tibble(df)
+
+
+```
+### Nest the data
+
+```{r}
+# Nest the data into session and animal
+
+df_nested <- df %>%  group_by(session_id, animal, cluster_id) %>% nest()
+```
+
+
+### Analyze each session
+
+```{r}
+
+
+fmlStrTime= "firingRate ~ time_relative_outbound +(1|trial_number)"
+fmlStrPos= "firingRate ~ position_relative_outbound +(1|trial_number)"
+
+
+fit_lmer <- function(df,fmlStr) {
+  return(lmer(as.formula(fmlStr),data=df))
+
+}
+
+get_pvalue <- function(data) {
+  return(data[['p.value']][[2]])
+}
+
+aic_p_min_t <- function(data) {
+  return(data[['AIC']][[2]] - data[['AIC']][[1]])
+}
+
+getTrialLength <-function(data){
+  nrow(data)
+}
+
+fit_models <- function(data){
+  # train two models
+  # Note: the fitting will run into problem if the firing rate is zero
+  # subsequence wilcoxon comparison will then generate an error
+  df_cross <- data %>% crossv_kfold(k = 10)%>%
+  mutate(time_model = map(train, fit_lmer, fmlStrTime),
+         pos_model = map(train, fit_lmer, fmlStrPos)) %>%
+   pivot_longer(cols = contains("model"), #make tidy
+               names_to = "model_type",
+               values_to = "model") %>%
+    mutate(metrics_rsquare = map2_dbl(model, test, possibly(rsquare, otherwise=-1)), #get performance metrics
+           metrics_rmse = map2_dbl(model, test, possibly(rmse, otherwise = -1)),
+           model_type=factor(model_type)) %>%
+    select(-train, -test, -model)
+}
+
+wilcoxon_compare <- function(df){
+    # compare model
+    df_wilcoxon <- df %>%
+    wilcox_test(metrics_rmse~ model_type) %>%
+    add_significance()
+}
+
+extra_wilcoxon_p <-function(data) {
+  # extract p value
+  if (! typeof(data$p)=="NULL") {
+    data$p[[1]]
+  }else{
+    1.0
+  }
+}
+
+extract_metrics <- function(data){
+  # extract the fitting metrics
+  data %>%
+    select(model_type, contains("metrics"))
+}
+
+getTrialN <- function(data) {
+  return(length(unique(data$trial_number)))
+}
+
+get_unique_trial <- function(data){
+  # get number of trial in each trial type
+  length(unique(data$trial_number))
+}
+
+analyze_data <- function(df){
+  #add the case with all the trial types
+  
+
+  df_all <- df
+  df_all$trial_length_type = 3
+  df_all <- bind_rows(df,df_all)
+  
+  (df2 <- df_all %>%
+      unnest_longer(spiketrain, indices_to='neuron', values_to='firingRate') %>% #expand the spike train to long format
+      mutate(neuron=factor(neuron)) %>%
+      mutate(trial_length_type=recode(trial_length_type, #recode the trial length type to text
+             `0` = "Short",
+             `1` = "Middle",
+             `2` = "Long",
+             `3` = 'All'
+             ))
+  )
+  
+  # calculate trial length
+  df3 <- df2 %>%
+    group_by(neuron, trial_length_type, trial_number) %>%
+    nest() %>%
+    mutate(trial_length = map(data, getTrialLength)) %>%
+    unnest(data)
+
+  
+  # fit model
+  df_model <- df3 %>%
+    filter(speed>3) %>% #filter by speed
+    group_by(trial_length_type,neuron) %>% #do the analysis for each trial length type and for each neuron
+    nest() %>%
+    mutate(unique_trials = map_int(data, get_unique_trial)) %>% 
+    filter(unique_trials>1) %>% #make sure we only do fitting on each trials
+    mutate(time_model=map(data, fit_lmer, fmlStrTime)) %>% #time model
+    mutate(pos_model=map(data, fit_lmer, fmlStrPos))   #position model
+
+  df_model <- df_model %>%
+    mutate(anova_p_vs_t = map2(time_model, pos_model, anova)) %>% #model comparison
+    mutate(anova_p_vs_t = map(anova_p_vs_t, tidy)) %>%
+    mutate(anova_t_vs_p = map2(pos_model, time_model, anova)) %>% #model comparison
+    mutate(anova_t_vs_p = map(anova_t_vs_p, tidy)) %>%
+    mutate(anova_pvalue_p_vs_t = map_dbl(anova_p_vs_t, get_pvalue)) %>%  #get p value
+    mutate(anova_pvalue_t_vs_p = map_dbl(anova_t_vs_p, get_pvalue))
+
+
+  # Cross validation
+  #tidy the model
+  df_model <- df_model %>%
+      mutate(time_model_t = map(time_model,tidy)) %>%
+      mutate(pos_model_t = map(pos_model, tidy))
+
+  #fit model
+  df_model <- df_model %>%
+    mutate(fitted_models=map(data, fit_models))
+
+  #Compare with wilcoxon
+  df_model <- df_model %>%
+    mutate(wilcox_result=map(fitted_models, possibly(wilcoxon_compare, otherwise = NULL))) %>% # compare with error handling
+    mutate(pvalue = map_dbl(wilcox_result, extra_wilcoxon_p)) %>%
+    mutate(metrics = map(fitted_models, possibly(extract_metrics, otherwise=NULL))) #extract metrics
+
+  df_model <- df_model %>%
+    mutate(trialN=map(data,getTrialN))
+
+
+}
+
+model_fit <- analyze_data(df_nested$data[[22]])
+
+sapply(model_fit, object.size) %>% data.frame()
+
+```
+
+
+
+
+```{r, warning=FALSE,message=FALSE}
+# use a loop for easiler debug
+df_list = vector(mode = "list", length = nrow(df_nested))
+
+pb <- progress_bar$new(total = nrow(df_nested), format = "[:bar] :current/:total (:percent)")
+
+# for (i in seq(10)){
+for (i in seq(nrow(df_nested))){
+  pb$tick()
+
+  df_timeModels <- df_nested[i,] %>% 
+  mutate(models=map(data, analyze_data)) %>%
+  unnest(models, names_sep = ".")
+  
+  df_list[[i]] <- df_timeModels 
+}
+
+
+```
+
+
+### Save
+
+```{r}
+
+#concatenate and save
+df_mixed_models <- bind_rows(df_list) %>%
+                  select(-data,-models.data)
+
+output_file <- glue("/mnt/datastore/Teris/CurrentBiology_2022/cohort", cohort, "_mixed_effect_models.pkl")
+saveRDS(df_mixed_models, output_file, compress = FALSE) #disable compression to make things faster
+```
+

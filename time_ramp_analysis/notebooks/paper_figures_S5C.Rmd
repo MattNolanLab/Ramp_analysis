@@ -1,0 +1,253 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+---
+
+This scripts aggregate the mixed effect models
+
+
+### Import
+
+
+```{r include=FALSE, message=FALSE}
+library(rstatix)
+library(feather)
+library(tidyverse)
+library(rjson)
+library(lme4)
+library(reticulate)
+library(ggeffects)
+library(broom)
+library(glue)
+library(progress)
+library(ggforce)
+library(patchwork)
+library(ggpubr)
+
+# knitr::opts_chunk$set(
+#   fig.show = "hold",
+#   fig.width = 7,
+#   fig.asp = 0.6
+# )
+
+```
+
+### Load data
+
+```{r}
+# d <- readRDS('E:/in_vivo_vr/sarah_glm_202006/time_model_data2plot.rds')
+
+# Load a particular cohort
+use_condaenv("glm_mec_model")
+pd <- import("pandas")
+pickle <-import("pickle")
+cohort = c(2,3,4,5,7) # 2,3,4,5,7
+
+#load all files
+dfs = lst(n=5)
+for (i in seq(5)){
+  file <- glue("/mnt/datastore/Teris/CurrentBiology_2022/cohort", cohort[[i]], "_df4r.pkl")
+  df <- pd$read_pickle(file)
+  df <- as_tibble(df)
+  dfs[[i]] = df
+}
+
+df_ramp = as_tibble(pd$read_pickle("/mnt/datastore/Teris/CurrentBiology_2022/all_rampscore.pkl"))
+
+
+```
+
+```{r}
+
+df <- bind_rows(dfs)
+
+getFiringRate <- function(spiketrain){
+  spiketrain[[1]]/100
+}
+
+lm_cls <- read_tsv('/mnt/datastore/Teris/CurrentBiology_2022/all_results_coefficients.csv')
+df_merged <- df %>% inner_join(lm_cls,by=c("session_id"="session_id","cluster_id"="cluster_id")) %>%
+              inner_join(df_ramp, by=c("session_id"="session_id","cluster_id"="cluster_id")) %>%
+      filter(ramp_region=="outbound", trial_type=="beaconed") 
+
+# Extract the firing rate
+df_merged <- df_merged %>%
+  mutate(firingRate = map_dbl(spiketrain, getFiringRate)) %>%
+  mutate(trial_length_type = recode(trial_length_type, `0` = "Short", `1` = "Middle", `2` = "Long")) 
+
+
+included_sessions = unique(df$session_id)
+df_merged
+
+```
+### Figure 5C
+Extrapolate firing rate at reward zone
+
+Normalize the firing rate
+
+```{r}
+getMaxFr <- function(data) {
+  max(data$firingRate)
+}
+
+# Get max firing rate of each cells
+fr_max <- df_merged %>%
+    group_by(session_id, cluster_id) %>%
+  nest() %>%
+  mutate(max_fr = map_dbl(data,getMaxFr)) %>%
+  select(session_id, cluster_id, max_fr) 
+
+norm_data <- function(data){
+    data$firingRate <- data$firingRate/data$max_fr
+    return(data)
+}
+
+# Match back to the original 
+
+df_merged_norm <- df_merged %>%
+  inner_join(fr_max, by=c("session_id","cluster_id")) 
+
+df_merged_norm <- df_merged_norm %>%
+    group_by(session_id, cluster_id, trial_length_type) %>%
+   nest() %>%
+    mutate(data_norm = map(data, norm_data))
+
+```
+
+```{r}
+df_merged_filt <- df_merged_norm %>% filter(session_id=='M1_D31_2018-11-01_12-28-25', cluster_id==7)
+print(df_merged_filt)
+```
+
+Fit a linear model with time and compare with the firing rate at the reward zone to see if it matches the time model
+
+```{r}
+time_model <- function(data){
+#     print(names(data))
+    tidy(lm(firingRate ~ time_relative_outbound, data=data))
+}
+
+predict_reward_firingRate <- function(intercept, slope, trial_time){
+    slope*trial_time+intercept
+}
+
+find_reward_fringRate <- function(data){
+    last(data$firingRate)
+}
+
+fitSlopePeak <- function(row){
+    row %>% group_by(trial_number) %>%
+    nest() %>%
+    mutate(time_model = map(data, time_model)) %>%
+    mutate(intercept=map_dbl(time_model, ~ .x[[1, 'estimate']])) %>% #get intercept
+    mutate(slope = map_dbl(time_model, ~ .x[[2,'estimate']])) %>% #get slope
+    mutate(trial_time = map_dbl(data, ~last(.x$time_relative_outbound))) %>%
+    mutate(reward_fr = pmap_dbl(list(intercept,slope,trial_time),predict_reward_firingRate)) %>%
+    mutate(final_reward_fr = map_dbl(data,find_reward_fringRate)) %>%
+    group_by() %>%
+    summarize(mean_intercept=mean(intercept), 
+              mean_slope = mean(slope), 
+              mean_reward_fr = mean(reward_fr),
+             final_reward_fr = mean(final_reward_fr))
+}
+
+x2 <- df_merged_filt[1,]$data_norm[[1]]
+fitSlopePeak(x2)
+```
+
+```{r}
+# get the predicted firing rate at the reward
+data_merged_reward <- df_merged_norm %>% mutate(reward_fr_data = map(data_norm,possibly(fitSlopePeak,otherwise = NA))) %>%
+    unnest_wider(reward_fr_data)
+```
+
+
+```{r}
+
+getLMcls <- function(data){
+  data$lm_group_b[[1]]
+}
+
+data2plot <- data_merged_reward %>%
+    filter(trial_length_type %in% c('Long','Short')) 
+data2plot$trial_length_type <- factor(data2plot$trial_length_type, levels=c('Long','Short'))
+data2plot <- data2plot %>% mutate(cell_id = glue("{session_id}_{cluster_id}")) %>%
+    mutate(lm_group_b = map_chr(data, getLMcls))
+
+```
+
+
+```{r}
+# Simplify data for analysis
+data_merged_reward_sel <- data2plot %>%
+    select(-data_norm, -data)
+
+saveRDS(data_merged_reward_sel,'/mnt/datastore/Teris/CurrentBiology_2022/S5C_data2plot.rds', compress = FALSE)
+# print(data_merged_reward_sel,n=3,width=300)
+```
+
+
+```{r  fig.height=4, fig.width=4}
+# options(repr.plot.width=8, repr.plot.height=15)
+
+comp = list(c('Long','Short'))
+
+p1 <- ggboxplot(data2plot, y='final_reward_fr',
+          x='trial_length_type',facet.by='lm_group_b', id = 'cell_id',
+          nrow=1, scales='free', xlab='Trial length', ylab='Intercept',
+              fill = "trial_length_type") +
+            labs(fill="Trial length") +
+    stat_compare_means(comparisons=comp,label = "p.signif",vjust=0.2, paired= TRUE, method='wilcox.test') +
+    theme_minimal(base_size=20)+
+    theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),axis.line = element_line())
+
+
+p2 <- ggboxplot(data2plot, y='mean_slope',
+               fill = "trial_length_type",
+          x='trial_length_type',facet.by='lm_group_b',
+               nrow=1,scales='free',xlab='Trial length', 
+               ylab='Slope',id='cell_id') +
+          labs(fill="Trial length") +
+    stat_compare_means(comparisons=comp,label = "p.signif", paired= TRUE, vjust=0.2, method='wilcox.test') +
+        theme_minimal(base_size=20)+
+        theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),axis.line = element_line())
+
+
+p1 / p2
+ggsave('paper_figures/timeAnalysis_C.pdf',width=12,height=8)
+# ggboxplot(data2plot, y='mean_slope',color='trial_length_type',x='lm_result_outbound')
+```
+
+
+```{r fig.height=4, fig.width=4}
+
+p1 <- ggboxplot(data2plot, y='final_reward_fr',
+          x='trial_length_type',facet.by='lm_group_b', id = 'cell_id',
+          nrow=1, scales='free', xlab='Trial length', ylab='Intercept',
+              fill = "trial_length_type") +
+            labs(fill="Trial length") +
+    stat_compare_means(comparisons=comp,label = "p.format",vjust=0.3, paired= TRUE, method='wilcox.test') +
+    theme_minimal(base_size=20)+
+    theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),axis.line = element_line())
+
+
+p2 <- ggboxplot(data2plot, y='mean_slope',
+               fill = "trial_length_type",
+          x='trial_length_type',facet.by='lm_group_b',
+               nrow=1,scales='free',xlab='Trial length', 
+               ylab='Slope',id='cell_id') +
+          labs(fill="Trial length") +
+    stat_compare_means(comparisons=comp,label = "p.format", paired= TRUE, vjust=0.3, method='wilcox.test') +
+        theme_minimal(base_size=20)+
+        theme(panel.grid.major = element_blank(),panel.grid.minor = element_blank(),axis.line = element_line())
+
+
+p1 / p2
+
+ggsave('paper_figures/timeAnalysis_pvalue.pdf',width=12,height=8)
+
+```
+
