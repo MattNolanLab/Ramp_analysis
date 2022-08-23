@@ -16,7 +16,7 @@ There are various ways to run analyses.
 ## From the pre-processing output:
 1. First make a folder in the top level directory called 'data_in'.  Download the file 'PythonOutput_Concat_final.Rda' from the Datashare repository into this folder. 
 
-2. In the file 'Setup.Rmd' uncomment line 60 and comment line 63. Then execute the code in this file. This should load the data, initialise most of the required libraries and initialise functions used for analyses .
+2. In the file 'Setup.Rmd' uncomment line 60 and comment line 63. Then execute the code in this file. This should load the data, initialise most of the required libraries and initialise functions used for analyses.
 
 3. You should then be able to execute the analyses. Files are named according to the figure for which they generate analyses. Our standard workflow is to execute each analysis in order. There are some dependencies and things may not work if you execute out of order. E.g. Some analyses for Figures 3 and 4 depend on outputs from Figure 2.
 
@@ -26,10 +26,7 @@ Some of the R analyses, for example shuffling and fitting generalised linear mix
 
 1. First make a folder in the top level directory called 'data_in'. Download the file 'SpatialFiring_with_Results.Rda' from the Datashare repository into this folder.
 
-2. Execute the code in 'Setup.Rmd' as above.
-
-3. Proceed as for step 3 above.
-
+2. Execute the code in 'Setup.Rmd' as above. Or open 'Figure2_Analysis.Rmd' and set the load_sf = 1 and execute the code from line 74 (this skips GLMER fitting).
 
 ## Saving outputs
 In the R code the variables save_figures and save_results are set to zero. This reduces the time to run the code by avoiding saving the outputs. If you wish to save outputs then make high level folders called 'data_out' and 'plots' and set these variables to 1.
