@@ -52,10 +52,6 @@ for (i in 1:nrow(spatial_firing)) {
 spatial_firing <- df
 rm(df, spatial_firing_i)
 
-load_sf = 0
-if (load_sf==1) {
-  spatial_firing <- readRDS(file="data_in/SpatialFiring_with_Results.Rda")
-}
 
 
 # number with fits / NAs
@@ -74,13 +70,10 @@ spatial_firing <- spatial_firing %>%
 
 
 ```{r}
-if (save_results == 1) {
-  saveRDS(spatial_firing, "data_out/SpatialFiring_with_glmer.Rda")
-}
-
+# Can load data here to save time. Important to do this after the step above, otherwise multiple comparison adjustment happens twice.
 load_sf = 0
 if (load_sf==1) {
-  spatial_firing <- readRDS(file="data_in/SpatialFiring_with_glmer.Rda")
+  spatial_firing <- readRDS(file="data_in/SpatialFiring_with_Results.Rda")
 }
 
 ```
@@ -414,7 +407,8 @@ if (save_figures == 1) {
 
 
 ```{r}
+# Save results so code can be run later without repeating model fitting.
 if (save_results == 1) {
-  saveRDS(spatial_firing, "SpatialFiring_with_Results.Rda")
+  saveRDS(spatial_firing, "data_in/SpatialFiring_with_Results.Rda")
 }
 ```
